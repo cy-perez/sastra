@@ -78,6 +78,26 @@ docs/        producto, arquitectura, ui, marca, operación, trabajo con IA
 | Verificación completa | `gradlew.bat check` y `npm run verify` |
 | Estado de las migraciones | `curl localhost:8080/actuator/flyway` |
 
+## Integración continua
+
+`.github/workflows/verificacion.yml` se ejecuta en cada pull request y en cada
+integración a `main`, con dos trabajos en paralelo:
+
+| Trabajo | Qué hace |
+|---|---|
+| Backend | `gradlew check`: compila, Spotless, las reglas de ArchUnit, las pruebas con Testcontainers y el mínimo de cobertura |
+| Frontend | `npm ci`, linter y formato, Vitest con cobertura, compilación y las pruebas de extremo a extremo con Playwright |
+
+Si algo falla, los informes quedan como artefactos de la ejecución durante siete
+días. Es lo mismo que corre en local: `gradlew.bat check` y `npm run verify`.
+
+**Todavía no despliega.** El flujo completo está descrito en
+`docs/operacion/entornos.md` y se añade cuando existan las cuentas de Vercel,
+Cloud Run y la base gestionada.
+
+Las dependencias las revisa Dependabot cada semana, agrupadas por ecosistema.
+Las subidas de versión mayor no se proponen automáticamente: exigen una ADR.
+
 ## Licencia y titularidad
 
 Proyecto privado. Sastra, NIT 1054994043-1, Medellín, Colombia.

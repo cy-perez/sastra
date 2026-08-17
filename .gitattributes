@@ -1,0 +1,27 @@
+# Finales de linea normalizados.
+#
+# Sin esto, un archivo escrito en Windows se guarda con CRLF y las herramientas
+# de formato del proyecto lo reescriben a LF: Spotless en el backend y Prettier
+# en el frontend. El resultado es que `gradlew check` falla en cualquier maquina
+# y cada persona revierte el cambio de la anterior sin que nadie toque una linea
+# de codigo real.
+#
+# Se guarda siempre LF en el repositorio. Windows lo maneja sin problema: ni
+# IntelliJ ni VS Code ni Git necesitan CRLF en disco.
+
+* text=auto eol=lf
+
+# Los guiones de Windows si necesitan CRLF: cmd.exe no interpreta un .bat con
+# finales de linea de Unix.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binarios: que Git no intente normalizarlos ni mostrarlos como texto.
+*.jar binary
+*.woff2 binary
+*.png binary
+*.ico binary
+*.zip binary
+*.p12 binary
+*.jks binary

@@ -1,4 +1,10 @@
 {
-  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=827846
-  "recommendations": ["angular.ng-template"]
+  "recommendations": [
+    // Autocompletado y comprobacion de tipos dentro de las plantillas
+    "angular.ng-template",
+    // El linter hace ejecutable la regla de capas: conviene verla al escribir,
+    // no al ejecutar npm run lint
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode"
+  ]
 }

@@ -3,7 +3,15 @@ import { expect, test } from '@playwright/test';
 /**
  * Estas si necesitan navegador. Si falla con "Executable doesn't exist", falta
  * el paso explicito: npx playwright install chromium
+ *
+ * El idioma se fija a proposito. Chromium arranca con Accept-Language: en-US y
+ * el servidor le sirve la pagina en ingles, que es justo lo que debe hacer; sin
+ * fijarlo, estas pruebas dependerian del idioma con el que venga el navegador
+ * del runner. Que la negociacion de idioma funciona lo demuestra ssr.spec.ts,
+ * que es donde corresponde.
  */
+test.use({ locale: 'es-CO' });
+
 test.describe('cascaron del sitio', () => {
   test('el enlace de salto lleva el foco al contenido', async ({ page }) => {
     await page.goto('/');

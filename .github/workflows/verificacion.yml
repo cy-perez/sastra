@@ -1,0 +1,112 @@
+# Compila, prueba y analiza las dos mitades del monorepo.
+#
+# Se ejecuta en cada pull request y en cada integracion a main. No hay filtros
+# por carpeta a proposito: con dos mitades que se hablan por un contrato, un
+# cambio en docs/ que toque el contrato de la API deberia poder romper algo, y
+# saltarse la verificacion por la ruta del archivo es como se cuelan esos casos.
+#
+# Aqui no se despliega nada. El despliegue esta descrito en
+# docs/operacion/entornos.md y se anade cuando existan las cuentas.
+
+name: Verificación
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Solo lectura: esta canalizacion no escribe en el repositorio.
+permissions:
+  contents: read
+
+# Un empujon nuevo cancela la verificacion anterior de la misma rama: no tiene
+# sentido gastar minutos en un commit que ya quedo atras.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # El JDK se instala aqui en lugar de dejar que lo descargue el toolchain
+      # de Gradle: es el mismo Temurin 25 y ahorra la descarga en cada ejecucion.
+      # La version sale de backend/gradle/libs.versions.toml.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # `check` es compilar, formato con Spotless, las doce reglas de
+      # arquitectura de ArchUnit, las pruebas con Testcontainers y el minimo de
+      # cobertura. Docker ya viene en el runner, que es lo que necesita
+      # Testcontainers para levantar PostgreSQL.
+      - name: Verificar
+        run: ./gradlew check
+
+      - name: Publicar informes si algo falla
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: informes-backend
+          path: backend/*/build/reports/
+          retention-days: 7
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      # En pasos separados y no con `npm run verify` para que, cuando falle, la
+      # interfaz diga cual de los tres fue sin abrir el registro.
+      - name: Linter y formato
+        run: npm run lint
+
+      - name: Pruebas
+        run: npm test
+
+      - name: Compilar
+        run: npm run build
+
+      - name: Instalar navegador
+        run: npx playwright install --with-deps chromium
+
+      # Comprueban el HTML que sale del servidor, sin ejecutar JavaScript: es la
+      # unica forma de demostrar lo que promete ADR-0006.
+      - name: Pruebas de extremo a extremo
+        run: npm run e2e
+
+      - name: Publicar informes si algo falla
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: informes-frontend
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          retention-days: 7

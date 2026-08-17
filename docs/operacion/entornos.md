@@ -49,6 +49,12 @@ un requisito de residencia de datos, se revisa.
 
 Todo por integración continua. Nadie despliega desde su máquina.
 
+> **Estado a agosto de 2026.** De este flujo solo existe la verificación:
+> `.github/workflows/verificacion.yml` compila, prueba y analiza en cada pull
+> request y en cada integración a `main`. Los pasos de despliegue se añaden
+> cuando existan la cuenta de Vercel, el proyecto de Cloud Run y la base
+> gestionada. Hoy no hay nada desplegado.
+
 ```
 rama de trabajo -> pull request -> verificación -> main -> dev automático
                                                        -> prod con aprobación manual

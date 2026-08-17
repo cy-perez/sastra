@@ -30,6 +30,12 @@ correo, ningún NIT, ningún porcentaje de comisión.
 | `JWT_SECRET` | clave de 256 bits como mínimo | sí |
 | `JWT_ACCESS_TTL` | `PT15M` | sí |
 | `JWT_REFRESH_TTL` | `P30D` | sí |
+| `JWT_REFRESH_GRACE` | `PT10S` | no, `PT10S` por omisión |
+| `RATE_LIMIT_CREDENTIALS_MAX` | `10` | no, `10` por omisión |
+| `RATE_LIMIT_CREDENTIALS_WINDOW` | `PT1M` | no, `PT1M` por omisión |
+| `RATE_LIMIT_SESSION_MAX` | `60` | no, `60` por omisión |
+| `RATE_LIMIT_SESSION_WINDOW` | `PT1M` | no, `PT1M` por omisión |
+| `RATE_LIMIT_MAX_KEYS` | `50000` | no, `50000` por omisión |
 | `APP_BASE_URL` | `https://sastra.co` | sí |
 | `APP_API_BASE_URL` | `https://api.sastra.co` | sí |
 | `APP_TIME_ZONE` | `America/Bogota` | no, `America/Bogota` por omisión |
@@ -64,6 +70,34 @@ correo, ningún NIT, ningún porcentaje de comisión.
 `APP_TIME_ZONE` no es cosmética: RN-008 compara fechas de calendario, no
 instantes. Con UTC, alguien en Colombia cumpliría 18 años cinco horas antes de
 que aquí sea su cumpleaños.
+
+`JWT_REFRESH_GRACE` es la ventana de gracia de RN-007 (ADR-0014). Durante ese
+tiempo después de rotar un token, y sólo mientras el que salió de la rotación
+siga sin usarse, recibirlo de nuevo se trata como una carrera entre dos pestañas
+y no como reutilización: se rechaza la petición pero no se revoca la familia ni
+se avisa al titular. Se mide en segundos porque cubre una ida y vuelta, no una
+sesión. Subirla a minutos le regala ese mismo tiempo a un token robado para
+reproducirse sin levantar la alarma; ponerla en `PT0S` devuelve el comportamiento
+anterior a ADR-0014, con sus falsos avisos de incidente.
+
+Las variables `RATE_LIMIT_*` limitan cuántas peticiones acepta cada origen en las
+rutas de cuenta. RN-006 protege una cuenta; esto protege el endpoint, que es otra
+cosa: sin ello, cinco intentos por cuenta no impiden probar una contraseña común
+contra todas las cuentas que se quiera, ni usar el registro como emisor de correo
+gratuito contra la cuota de Resend, ni mantener bloqueada indefinidamente la
+cuenta de alguien cuyo correo se conozca.
+
+Son dos grupos porque las rutas no se parecen. `CREDENTIALS` cubre ingreso,
+registro, verificación y recuperación, que son actos humanos y poco frecuentes.
+`SESSION` cubre refresco y cierre, que los dispara el navegador solo y con varias
+pestañas abiertas se repiten sin que nadie haga nada raro. Un límite único
+tendría que ser el más flojo de los dos.
+
+**La cuenta es de cada instancia.** Con dos réplicas detrás de un balanceador,
+cada una permite el máximo por separado y el límite real se duplica. Es aceptable
+mientras el despliegue sea de una sola instancia (ADR-0009); al escalar
+horizontalmente el conteo tiene que mudarse a un almacén compartido o al
+balanceador.
 
 `MAIL_PROVIDER=console` sustituye el envío real por un adaptador que imprime el
 enlace de verificación en el registro de la aplicación. Es lo que permite

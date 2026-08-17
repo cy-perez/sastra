@@ -20,7 +20,11 @@ Cada regla tiene identificador. Úsalo en el código y en las pruebas:
 - **RN-006** Cinco intentos fallidos de inicio de sesión bloquean el acceso a esa
   cuenta durante 15 minutos, contados desde el último intento.
 - **RN-007** El token de acceso dura 15 minutos. El de refresco dura 30 días,
-  rota en cada uso y se revoca toda la familia si se detecta reutilización.
+  rota en cada uso y se revoca toda la familia si se detecta reutilización. No
+  cuenta como reutilización que un token vuelva a llegar dentro de los segundos
+  siguientes a su rotación mientras el que salió de ella siga sin usarse: eso es
+  una carrera entre dos pestañas del mismo navegador, que comparten la cookie. En
+  ese caso se rechaza la petición pero no se revoca ni se avisa (ADR-0014).
 - **RN-008** Solo mayores de 18 años. Se declara en el registro y se confirma en
   la verificación de identidad.
 - **RN-009** El usuario puede cerrar su cuenta en cualquier momento. Si tiene

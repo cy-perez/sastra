@@ -13,7 +13,9 @@ import {
   authInterceptor,
   errorInterceptor,
   languageInterceptor,
+  refreshInterceptor,
 } from './core/http/interceptors';
+import { provideAuthSession } from './features/auth/application/session.providers';
 import { provideQuery } from './core/query/query.providers';
 import { TranslatedTitleStrategy } from './core/seo/translated-title.strategy';
 
@@ -34,11 +36,23 @@ export const appConfig: ApplicationConfig = {
     ),
     // withFetch es lo que permite que las peticiones hechas durante el
     // renderizado en servidor se transfieran al navegador en vez de repetirse.
+    // El orden importa y no es intercambiable. refreshInterceptor va por fuera
+    // de authInterceptor para que su reintento recoja el token recien renovado,
+    // y por fuera de errorInterceptor para ver el fallo ya convertido en
+    // ApiError. Moverlo de sitio lo deja sin efecto sin romper ninguna prueba de
+    // las otras piezas.
     provideHttpClient(
       withFetch(),
-      withInterceptors([apiUrlInterceptor, authInterceptor, languageInterceptor, errorInterceptor]),
+      withInterceptors([
+        apiUrlInterceptor,
+        refreshInterceptor,
+        authInterceptor,
+        languageInterceptor,
+        errorInterceptor,
+      ]),
     ),
     provideQuery(),
+    provideAuthSession(),
     { provide: TitleStrategy, useClass: TranslatedTitleStrategy },
   ],
 };

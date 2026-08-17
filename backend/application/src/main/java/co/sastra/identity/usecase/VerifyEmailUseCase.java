@@ -1,5 +1,7 @@
 package co.sastra.identity.usecase;
 
+import co.sastra.identity.dto.IssueSessionCommand;
+import co.sastra.identity.dto.SessionResult;
 import co.sastra.identity.dto.VerifyEmailCommand;
 import co.sastra.identity.dto.VerifyEmailResult;
 import co.sastra.identity.exception.VerificationTokenInvalidException;
@@ -16,26 +18,30 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Activacion de la cuenta con el enlace del correo. Criterios 7 a 9 de HU-001.
  *
- * <p>El criterio 9 dice ademas que la persona "entra directamente". Eso exige
- * emitir la sesion, que es la maquinaria de la rebanada B: aqui la cuenta queda
- * activa y el ingreso automatico se conecta cuando existan los tokens. Esta
- * anotado en el plan, no omitido en silencio.
+ * <p>El criterio 9 pide dos cosas: que la cuenta quede activa y que la persona
+ * entre directamente. La sesion se emite en la misma transaccion que consume el
+ * token, porque el enlace es de un solo uso: si se emitiera en una segunda llamada
+ * y esa llamada se perdiera, el token ya estaria gastado y no habria forma de
+ * recuperar la sesion.
  */
 public class VerifyEmailUseCase {
 
     private final UserRepository usuarios;
     private final VerificationTokenRepository tokens;
     private final TokenGenerator generadorDeTokens;
+    private final IssueSessionUseCase abrirSesion;
     private final Clock reloj;
 
     public VerifyEmailUseCase(
             UserRepository usuarios,
             VerificationTokenRepository tokens,
             TokenGenerator generadorDeTokens,
+            IssueSessionUseCase abrirSesion,
             Clock reloj) {
         this.usuarios = usuarios;
         this.tokens = tokens;
         this.generadorDeTokens = generadorDeTokens;
+        this.abrirSesion = abrirSesion;
         this.reloj = reloj;
     }
 
@@ -60,9 +66,15 @@ public class VerifyEmailUseCase {
         User usuario = usuarios.buscarPorId(token.userId()).orElseThrow(VerificationTokenInvalidException::new);
         boolean yaEstabaVerificado = usuario.tieneElCorreoVerificado();
 
-        usuarios.actualizar(usuario.conCorreoVerificado(ahora));
+        User verificado = usuario.conCorreoVerificado(ahora);
+        usuarios.actualizar(verificado);
         tokens.actualizar(token.marcarUsado(ahora));
 
-        return new VerifyEmailResult(usuario.id(), usuario.email().value(), yaEstabaVerificado);
+        // Con el usuario ya verificado, no con el de antes: el token de acceso lleva
+        // el estado del correo y tiene que nacer diciendo que la cuenta esta activa.
+        SessionResult sesion =
+                abrirSesion.execute(new IssueSessionCommand(verificado, comando.userAgent(), comando.ipHash()));
+
+        return new VerifyEmailResult(sesion, yaEstabaVerificado);
     }
 }

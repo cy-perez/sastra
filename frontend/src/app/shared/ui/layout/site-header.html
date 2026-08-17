@@ -59,6 +59,11 @@
           </svg>
         }
       </button>
+
+      <!-- Lo de la sesion llega proyectado desde app.html. La cabecera es de
+           shared y no puede depender de la funcionalidad de cuentas; con
+           ng-content ofrece el sitio sin tener que saber que se pone ahi. -->
+      <ng-content />
     </div>
   </div>
 </header>

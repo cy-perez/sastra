@@ -16,6 +16,10 @@
     "verify": {
       "title": "Verificar correo",
       "description": "Confirma tu correo para activar tu cuenta en Sastra."
+    },
+    "login": {
+      "title": "Entrar",
+      "description": "Entra a tu cuenta de Sastra para comprar y vender moda con respaldo."
     }
   },
   "layout": {
@@ -33,6 +37,10 @@
     },
     "footer": {
       "tagline": "Compra y vende moda con respaldo."
+    },
+    "session": {
+      "login": "Entrar",
+      "logout": "Salir"
     }
   },
   "home": {
@@ -55,7 +63,11 @@
       "AUTH_VERIFICATION_TOKEN_INVALID": "Este enlace ya no sirve. Puede que lo hayas usado antes.",
       "AUTH_VERIFICATION_TOKEN_EXPIRED": "Este enlace venció. Los enlaces duran 24 horas.",
       "AUTH_RESEND_LIMIT_REACHED": "Ya pediste varios enlaces. Espera una hora antes de intentarlo de nuevo.",
+      "AUTH_INVALID_CREDENTIALS": "El correo o la contraseña no coinciden.",
+      "AUTH_ACCOUNT_LOCKED": "Demasiados intentos fallidos. Por seguridad bloqueamos el acceso un momento; te escribimos al correo. Vuelve a intentarlo más tarde.",
+      "AUTH_SESSION_INVALID": "Tu sesión terminó. Vuelve a entrar.",
       "COMMON_VALIDATION_FAILED": "Revisa los datos del formulario.",
+      "COMMON_TOO_MANY_REQUESTS": "Demasiados intentos seguidos. Espera un momento y vuelve a intentarlo.",
       "COMMON_UNEXPECTED": "Algo salió mal de nuestro lado. Inténtalo de nuevo."
     }
   },
@@ -101,13 +113,34 @@
         "spam": "Si no lo ves, revisa la carpeta de no deseados."
       }
     },
+    "login": {
+      "title": "Entra a tu cuenta",
+      "subtitle": "Escribe el correo y la contraseña con los que creaste tu cuenta.",
+      "submit": "Entrar",
+      "fields": {
+        "email": "Correo electrónico",
+        "password": "Contraseña"
+      },
+      "errors": {
+        "email": "Escribe un correo válido, como nombre@correo.com.",
+        "password": "Escribe tu contraseña."
+      },
+      "noAccount": "¿Todavía no tienes cuenta?",
+      "goToRegister": "Créala aquí"
+    },
+    "pending": {
+      "label": "Verificación de correo pendiente",
+      "body": "Falta confirmar tu correo. Hasta entonces no puedes comprar ni publicar.",
+      "resend": "Enviar el enlace de nuevo",
+      "resent": "Listo, te enviamos un enlace nuevo. Revisa tu correo."
+    },
     "verify": {
       "pending": {
         "title": "Confirmando tu correo"
       },
       "done": {
         "title": "Tu cuenta quedó activa",
-        "body": "Ya confirmaste tu correo. Ahora puedes entrar a Sastra.",
+        "body": "Ya confirmaste tu correo y entraste. No necesitas escribir tu contraseña.",
         "continue": "Ir al inicio"
       },
       "failed": {

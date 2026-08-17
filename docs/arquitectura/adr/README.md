@@ -36,3 +36,4 @@ la referencia.
 | 0011 | El tipo se aplica por rol, no por tamaño | Aceptada |
 | 0012 | Resend como proveedor de correo transaccional | Aceptada |
 | 0013 | Contraseñas filtradas con Have I Been Pwned y k-anonimato | Aceptada |
+| 0014 | Ventana de gracia en la detección de reutilización del refresco | Aceptada |

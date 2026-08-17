@@ -1,0 +1,60 @@
+:host {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-8);
+}
+
+/* Mismo aspecto para el enlace de entrar y el boton de salir: hacen el mismo
+   papel en la barra y una diferencia visual solo sugeriria que uno pesa mas. */
+.accion {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 var(--esp-12);
+  border: 1px solid var(--color-borde-control);
+  border-radius: var(--radio-md);
+  background: var(--color-superficie);
+  color: var(--color-texto);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.accion:hover {
+  background: var(--color-primario-suave);
+}
+
+.accion:disabled {
+  color: var(--color-deshabilitado);
+  cursor: default;
+}
+
+/* Mide lo mismo que el control que lo sustituye, para que la barra no de un
+   salto al resolverse la sesion. .esqueleto trae el brillo de marca.css; aqui va
+   solo la caja. */
+.hueco-de-sesion {
+  display: inline-block;
+  width: 76px;
+  height: 44px;
+  border-radius: var(--radio-md);
+}
+
+/* display:none y no una clase de solo lectores: el nombre tampoco se anuncia en
+   movil. Es deliberado. No es informacion necesaria para usar la barra, y
+   dejarlo audible pero invisible haria que las dos experiencias contaran cosas
+   distintas sin motivo. */
+.nombre {
+  display: none;
+  color: var(--color-texto-suave);
+  max-width: 16ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (min-width: 640px) {
+  .nombre {
+    display: inline-block;
+  }
+}

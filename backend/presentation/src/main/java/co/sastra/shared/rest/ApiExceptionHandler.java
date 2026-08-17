@@ -1,10 +1,12 @@
 package co.sastra.shared.rest;
 
+import co.sastra.identity.exception.AccountLockedException;
 import co.sastra.identity.exception.ResendLimitReachedException;
 import co.sastra.shared.error.DomainException;
 import co.sastra.shared.error.ErrorCode;
 import java.net.URI;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -51,7 +53,34 @@ public class ApiExceptionHandler {
                     .header(HttpHeaders.RETRY_AFTER, String.valueOf(ESPERA_TRAS_LIMITE.toSeconds()))
                     .body(problema);
         }
+        if (e instanceof AccountLockedException bloqueada) {
+            // Segundos restantes y no la hora de desbloqueo: la RFC 9110 admite las
+            // dos formas, y una duracion no dice nada del reloj del servidor
+            // (criterio 12).
+            return ResponseEntity.status(estado)
+                    .header(HttpHeaders.RETRY_AFTER, String.valueOf(segundosHasta(bloqueada.desbloqueoEn())))
+                    .body(problema);
+        }
         return ResponseEntity.status(estado).body(problema);
+    }
+
+    /**
+     * Demasiadas peticiones desde el mismo origen.
+     *
+     * <p>Se registra en {@code warn} y no en {@code info}: un limite que salta es
+     * o un ataque o un cliente roto, y las dos cosas hay que verlas. No se
+     * registra la clave, que lleva el hash del origen.
+     */
+    @ExceptionHandler(RateLimitExceededException.class)
+    public ResponseEntity<ProblemDetail> deLimiteDeTasa(RateLimitExceededException e) {
+        String traceId = nuevoTraceId();
+        LOG.warn("Limite de peticiones alcanzado traceId={}", traceId);
+
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header(
+                        HttpHeaders.RETRY_AFTER,
+                        String.valueOf(Math.max(e.espera().toSeconds(), 1)))
+                .body(construir(HttpStatus.TOO_MANY_REQUESTS, ErrorCode.COMMON_TOO_MANY_REQUESTS, traceId));
     }
 
     /** Lo que el dominio rechaza por formato despues de que el borde lo dejo pasar. */
@@ -105,10 +134,21 @@ public class ApiExceptionHandler {
         return problema;
     }
 
+    /** Nunca cero ni negativo: un Retry-After de 0 invita a reintentar de inmediato. */
+    private static long segundosHasta(Instant momento) {
+        return Math.max(Duration.between(Instant.now(), momento).toSeconds(), 1);
+    }
+
     private static HttpStatus estadoDe(ErrorCode code) {
         return switch (code) {
-            // 429: no es que la peticion este mal, es que llegaron demasiadas.
-            case AUTH_RESEND_LIMIT_REACHED -> HttpStatus.TOO_MANY_REQUESTS;
+            // 429: no es que la peticion este mal, es que llegaron demasiadas. El
+            // bloqueo por intentos entra aqui por lo mismo: la peticion es correcta
+            // y lo que sobra son los intentos.
+            case AUTH_RESEND_LIMIT_REACHED, AUTH_ACCOUNT_LOCKED -> HttpStatus.TOO_MANY_REQUESTS;
+            // 401: no es que falte permiso, es que la credencial no sirve. Con 403 el
+            // cliente no sabria que lo que toca es volver a pedir la contrasena
+            // (docs/arquitectura/contrato-api.md).
+            case AUTH_INVALID_CREDENTIALS, AUTH_SESSION_INVALID -> HttpStatus.UNAUTHORIZED;
             // 422: se entiende lo que se envio, pero el negocio lo rechaza.
             // Se llama UNPROCESSABLE_CONTENT desde la RFC 9110; el nombre
             // anterior, UNPROCESSABLE_ENTITY, esta obsoleto en Spring 7.
@@ -119,6 +159,7 @@ public class ApiExceptionHandler {
                     AUTH_VERIFICATION_TOKEN_INVALID,
                     AUTH_VERIFICATION_TOKEN_EXPIRED -> HttpStatus.UNPROCESSABLE_CONTENT;
             case COMMON_VALIDATION_FAILED -> HttpStatus.BAD_REQUEST;
+            case COMMON_TOO_MANY_REQUESTS -> HttpStatus.TOO_MANY_REQUESTS;
             case COMMON_UNEXPECTED -> HttpStatus.INTERNAL_SERVER_ERROR;
         };
     }

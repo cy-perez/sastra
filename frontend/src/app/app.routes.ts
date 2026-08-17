@@ -25,6 +25,12 @@ export const routes: Routes = [
       import('./features/auth/presentation/register-page').then((m) => m.RegisterPage),
   },
   {
+    path: 'ingresar',
+    title: 'meta.login.title',
+    data: { descriptionKey: 'meta.login.description' },
+    loadComponent: () => import('./features/auth/presentation/login-page').then((m) => m.LoginPage),
+  },
+  {
     path: 'verificar-correo',
     title: 'meta.verify.title',
     data: { descriptionKey: 'meta.verify.description' },

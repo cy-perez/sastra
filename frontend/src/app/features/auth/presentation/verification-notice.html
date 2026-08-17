@@ -1,0 +1,45 @@
+@if (visible()) {
+  <!-- El landmark se queda en el aside. Ponerle role="status" lo sustituiria por
+       una region viva y este bloque, con su boton, dejaria de pertenecer a
+       ninguna region de la pagina: ni banner, ni main, ni complementary. La
+       region viva es la de mas abajo, que es lo unico que de verdad cambia. -->
+  <aside class="aviso" [attr.aria-label]="'auth.pending.label' | transloco">
+    <div class="contenedor cuerpo">
+      <p class="tipo-cuerpo">{{ 'auth.pending.body' | transloco }}</p>
+
+      <!-- Ni se deshabilita ni se sustituye por el mensaje de exito. Las dos
+           cosas se llevan por delante el foco de quien acaba de pulsarlo con el
+           teclado y lo devuelven al principio del documento. Se queda donde
+           esta, anuncia que trabaja con aria-busy, y el doble envio lo corta el
+           propio manejador. -->
+      <button
+        type="button"
+        class="reenviar tipo-secundario"
+        [attr.aria-busy]="reenvio.isPending() ? 'true' : null"
+        (click)="reenviar()"
+      >
+        {{ 'auth.pending.resend' | transloco }}
+      </button>
+
+      <!-- Las dos regiones existen siempre, aunque esten vacias. Una region viva
+           que nace ya con su texto dentro no se anuncia: el lector de pantalla
+           avisa de lo que cambia en una region que ya estaba, no de la aparicion
+           de la region entera. -->
+      <p class="mensaje tipo-secundario" [class.con-texto]="reenvio.isSuccess()" role="status">
+        @if (reenvio.isSuccess()) {
+          {{ 'auth.pending.resent' | transloco }}
+        }
+      </p>
+
+      <p
+        class="mensaje error tipo-secundario"
+        [class.con-texto]="errorDelReenvio() !== null"
+        role="alert"
+      >
+        @if (errorDelReenvio(); as fallo) {
+          {{ fallo | transloco }}
+        }
+      </p>
+    </div>
+  </aside>
+}

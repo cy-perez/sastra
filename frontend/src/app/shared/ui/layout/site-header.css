@@ -49,8 +49,12 @@
   width: auto;
 }
 
+/* Envuelve igual que .barra. Con el hueco proyectado son ya tres controles, y
+   con el texto al 200% la fila no cabe en un movil: sin wrap eso saca una barra
+   de desplazamiento horizontal en una cabecera que ademas es pegajosa. */
 .acciones {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--esp-8);
 }

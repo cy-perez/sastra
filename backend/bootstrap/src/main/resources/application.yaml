@@ -66,6 +66,45 @@ sastra:
     address: ${COMPANY_ADDRESS}
   commission:
     rate: ${COMMISSION_RATE}
+  session:
+    # Las variables se llaman JWT_* porque asi estan publicadas en
+    # docs/operacion/configuracion.md y en .env.example. Los cuatro valores son
+    # obligatorios: una clave de firma por omision seria una clave conocida.
+    issuer: ${JWT_ISSUER}
+    secret: ${JWT_SECRET}
+    # RN-007: 15 minutos y 30 dias.
+    access-ttl: ${JWT_ACCESS_TTL:PT15M}
+    refresh-ttl: ${JWT_REFRESH_TTL:P30D}
+    # Ventana de gracia de RN-007. Cubre una carrera entre dos peticiones del
+    # mismo navegador, que dura una ida y vuelta, no mas. Subirla a minutos le
+    # regalaria a un token robado ese mismo tiempo para reproducirse sin que
+    # salte la deteccion de reutilizacion; ponerla en cero devuelve el
+    # comportamiento anterior a ADR-0014, con sus falsos incidentes.
+    refresh-grace: ${JWT_REFRESH_GRACE:PT10S}
+    cookie:
+      name: ${SESSION_COOKIE_NAME:sastra_refresh}
+      # Limitada a las rutas de sesion (ADR-0003): el navegador no la manda en
+      # ninguna otra peticion.
+      path: ${SESSION_COOKIE_PATH:/api/v1/auth}
+      # Solo se apaga en desarrollo detras de HTTP sin cifrar. En la nube, nunca.
+      secure: ${SESSION_COOKIE_SECURE:true}
+  rate-limit:
+    # Peticiones por origen en las rutas de cuenta. RN-006 protege una cuenta;
+    # esto protege el endpoint, que es otra cosa.
+    credentials:
+      # Escribir credenciales es un acto humano: diez por minuto sobra para
+      # cualquiera que se equivoque varias veces y no le sirve a quien quiera
+      # probar contrasenas contra muchas cuentas.
+      max-requests: ${RATE_LIMIT_CREDENTIALS_MAX:10}
+      window: ${RATE_LIMIT_CREDENTIALS_WINDOW:PT1M}
+    session:
+      # Refrescar lo hace el navegador solo, y con varias pestanas abiertas se
+      # dispara mas veces sin que nadie haga nada raro. Por eso es mas holgado.
+      max-requests: ${RATE_LIMIT_SESSION_MAX:60}
+      window: ${RATE_LIMIT_SESSION_WINDOW:PT1M}
+    # Techo de origenes en memoria: sin el, variar la IP a voluntad haria crecer
+    # el mapa hasta agotarla y la defensa seria la via de ataque.
+    max-tracked-keys: ${RATE_LIMIT_MAX_KEYS:50000}
   mail:
     # console imprime el enlace en el registro; resend envia de verdad (ADR-0012).
     provider: ${MAIL_PROVIDER:resend}

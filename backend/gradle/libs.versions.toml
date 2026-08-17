@@ -49,6 +49,10 @@ spring-security-crypto = { module = "org.springframework.security:spring-securit
 # modulo que no atiende ninguna peticion.
 spring-web = { module = "org.springframework:spring-web" }
 
+# Emision y lectura del token de acceso con HS256 (ADR-0003). Aporta JwtEncoder,
+# JwtDecoder y Nimbus JOSE por debajo. La version la fija el BOM.
+spring-security-oauth2-jose = { module = "org.springframework.security:spring-security-oauth2-jose" }
+
 # Argon2PasswordEncoder lo exige explicitamente y el BOM de Spring Boot no
 # gestiona su version, asi que va fijada aqui. El hash de almacenamiento es
 # Argon2id (docs/arquitectura/modelo-datos.md).
@@ -63,6 +67,12 @@ springdoc-openapi-webmvc-ui = { module = "org.springdoc:springdoc-openapi-starte
 # El borde HTTP es quien declara que rutas quedan abiertas, asi que el filtro de
 # seguridad vive aqui (ADR-0003, backend/CLAUDE.md).
 spring-boot-starter-security = { module = "org.springframework.boot:spring-boot-starter-security" }
+
+# La DSL oauth2ResourceServer, con la que el borde valida el JWT en cada peticion.
+# Se prefiere a un filtro propio: la extraccion del bearer, el 401 con
+# WWW-Authenticate y el contexto de seguridad ya estan resueltos (ADR-0003).
+spring-boot-starter-oauth2-resource-server = { module = "org.springframework.boot:spring-boot-starter-oauth2-resource-server" }
+
 spring-security-test = { module = "org.springframework.security:spring-security-test" }
 
 # --- bootstrap -------------------------------------------------------------

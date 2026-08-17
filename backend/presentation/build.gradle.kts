@@ -25,6 +25,11 @@ dependencies {
     // no. Nada queda accesible por omision (backend/CLAUDE.md).
     implementation(libs.spring.boot.starter.security)
 
+    // Validacion del token de acceso en cada peticion. El decodificador lo aporta
+    // infrastructure, que es quien tiene el secreto; aqui solo se declara que la
+    // cadena lo use (ADR-0003).
+    implementation(libs.spring.boot.starter.oauth2.resource.server)
+
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.spring.security.test)
 }

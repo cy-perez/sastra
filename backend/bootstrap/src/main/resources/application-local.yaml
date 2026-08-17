@@ -35,6 +35,17 @@ sastra:
     address: ${COMPANY_ADDRESS:Medellin, Colombia}
   commission:
     rate: ${COMMISSION_RATE:0.05}
+  session:
+    issuer: ${JWT_ISSUER:http://localhost:8080}
+    # Clave de desarrollo, no un secreto: esta en el repositorio y por eso mismo no
+    # sirve para nada fuera de localhost. En dev y prod la variable es obligatoria y
+    # sin ella la aplicacion no arranca.
+    secret: ${JWT_SECRET:clave-de-desarrollo-solo-para-localhost-32+}
+    cookie:
+      # En localhost el navegador acepta cookies Secure incluso por HTTP, pero no
+      # las acepta si se sirve desde una IP de la red local. Se apaga aqui para que
+      # probar desde el movil contra el portatil no exija montar TLS.
+      secure: ${SESSION_COOKIE_SECURE:false}
   mail:
     # En local no sale ningun correo: el enlace de verificacion se imprime en el
     # registro de la aplicacion. Asi HU-001 se recorre entera sin credenciales.

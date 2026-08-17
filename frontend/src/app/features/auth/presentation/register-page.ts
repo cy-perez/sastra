@@ -1,9 +1,19 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  afterNextRender,
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  Injector,
+  signal,
+} from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
 import { AuthStore } from '../application/auth.store';
+import { esCorreoValido } from '../domain/credentials';
 import { cumpleElLargoMinimo, fuerzaDe } from '../domain/password-policy';
 import { esMayorDeEdad } from '../domain/registration';
 import { CheckboxField } from '../../../shared/ui/form/checkbox-field';
@@ -31,6 +41,8 @@ import { TextField } from '../../../shared/ui/form/text-field';
 export class RegisterPage {
   private readonly store = inject(AuthStore);
   private readonly transloco = inject(TranslocoService);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly injector = inject(Injector);
 
   protected readonly form = new FormGroup({
     email: new FormControl('', { nonNullable: true }),
@@ -50,10 +62,7 @@ export class RegisterPage {
   protected readonly registro = this.store.registration;
 
   protected readonly emailError = computed(() =>
-    this.errorSi(
-      !/^[^@\s]+@[^@\s.]+(\.[^@\s.]+)+$/.test(this.valores().email ?? ''),
-      'auth.register.errors.email',
-    ),
+    this.errorSi(!esCorreoValido(this.valores().email ?? ''), 'auth.register.errors.email'),
   );
 
   protected readonly passwordError = computed(() =>
@@ -109,6 +118,7 @@ export class RegisterPage {
   protected enviar(): void {
     this.intentado.set(true);
     if (this.hayErrores()) {
+      this.enfocarElPrimerError();
       return;
     }
 
@@ -132,6 +142,36 @@ export class RegisterPage {
 
   protected casilla(nombre: 'acceptsTerms' | 'acceptsPrivacy'): FormControl<boolean> {
     return this.form.controls[nombre];
+  }
+
+  /**
+   * Al fallar la validacion el foco esta en el boton, al final de un formulario
+   * de seis campos, y los mensajes salen repartidos por encima. Sin moverlo, la
+   * persona pulsa y no ve que haya pasado nada.
+   *
+   * <p>El orden es el del formulario, no el de importancia: se lleva al primero
+   * que haya que corregir, que es por donde va a seguir bajando.
+   */
+  private enfocarElPrimerError(): void {
+    const primero = [
+      ['correo', this.emailError()],
+      ['nombre', this.displayNameError()],
+      ['contrasena', this.passwordError()],
+      ['nacimiento', this.birthDateError()],
+      ['terminos', this.termsError()],
+      ['privacidad', this.privacyError()],
+    ].find(([, error]) => error !== null);
+
+    if (primero === undefined) {
+      return;
+    }
+
+    afterNextRender(
+      () => {
+        this.host.nativeElement.querySelector<HTMLInputElement>(`#${primero[0]}`)?.focus();
+      },
+      { injector: this.injector },
+    );
   }
 
   private errorSi(condicion: boolean, clave: string): string | null {

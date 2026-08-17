@@ -73,7 +73,14 @@ const esCatalogoDeApisProhibidas =
 if (enBackend && es('.java') && !esCatalogoDeApisProhibidas) {
   const reglas = [
     [/com\.fasterxml\.jackson/, 'Jackson 2. Spring Boot 4 usa Jackson 3: paquete tools.jackson.'],
-    [/javax\./, 'Espacio de nombres javax. Se usa jakarta.'],
+    // Solo los espacios de nombres que de verdad se movieron a jakarta. Un
+    // /javax\./ a secas acusaba tambien a javax.crypto, javax.net y javax.sql, que
+    // son del JDK y nunca se renombraron: la firma HS256 del token de acceso
+    // necesita javax.crypto.SecretKey y no existe otra forma de escribirla.
+    [
+      /javax\.(persistence|servlet|validation|annotation|inject|transaction|ejb|jms|mail|enterprise|faces|batch|json|ws\.rs|xml\.bind|xml\.ws)\b/,
+      'Espacio de nombres de Java EE. Se usa jakarta.',
+    ],
     [/RestTemplate/, 'RestTemplate. Se usa RestClient o una interfaz @HttpExchange.'],
     [/@MockBean|@SpyBean/, 'Anotacion retirada. Se usa @MockitoBean y @MockitoSpyBean.'],
     [/WebSecurityConfigurerAdapter/, 'Clase eliminada hace varias versiones. La seguridad se configura con un bean SecurityFilterChain.'],

@@ -1,17 +1,28 @@
 package co.sastra.config;
 
+import co.sastra.identity.config.SessionProperties;
+import co.sastra.identity.port.out.AccessTokenIssuer;
 import co.sastra.identity.port.out.BreachedPasswordChecker;
 import co.sastra.identity.port.out.ConsentRepository;
+import co.sastra.identity.port.out.CredentialsRepository;
 import co.sastra.identity.port.out.LegalDocuments;
+import co.sastra.identity.port.out.LoginAttemptRecorder;
 import co.sastra.identity.port.out.MailSender;
 import co.sastra.identity.port.out.PasswordHasher;
+import co.sastra.identity.port.out.RefreshTokenRepository;
 import co.sastra.identity.port.out.TokenGenerator;
 import co.sastra.identity.port.out.UserRepository;
 import co.sastra.identity.port.out.VerificationTokenRepository;
+import co.sastra.identity.usecase.IssueSessionUseCase;
+import co.sastra.identity.usecase.LoginUseCase;
+import co.sastra.identity.usecase.LogoutUseCase;
+import co.sastra.identity.usecase.RefreshSessionUseCase;
 import co.sastra.identity.usecase.RegisterUserUseCase;
+import co.sastra.identity.usecase.RequestEmailVerificationUseCase;
 import co.sastra.identity.usecase.ResendVerificationUseCase;
 import co.sastra.identity.usecase.VerifyEmailUseCase;
 import co.sastra.shared.config.AppProperties;
+import co.sastra.shared.rest.RefreshCookies;
 import java.time.Clock;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -70,8 +81,9 @@ public class IdentityWiring {
             UserRepository usuarios,
             VerificationTokenRepository tokens,
             TokenGenerator generadorDeTokens,
+            IssueSessionUseCase abrirSesion,
             Clock reloj) {
-        return new VerifyEmailUseCase(usuarios, tokens, generadorDeTokens, reloj);
+        return new VerifyEmailUseCase(usuarios, tokens, generadorDeTokens, abrirSesion, reloj);
     }
 
     @Bean
@@ -82,5 +94,81 @@ public class IdentityWiring {
             MailSender correo,
             Clock reloj) {
         return new ResendVerificationUseCase(usuarios, tokens, generadorDeTokens, correo, reloj);
+    }
+
+    @Bean
+    RequestEmailVerificationUseCase requestEmailVerificationUseCase(
+            UserRepository usuarios,
+            VerificationTokenRepository tokens,
+            TokenGenerator generadorDeTokens,
+            MailSender correo,
+            Clock reloj) {
+        return new RequestEmailVerificationUseCase(usuarios, tokens, generadorDeTokens, correo, reloj);
+    }
+
+    /**
+     * La vigencia del refresco llega como {@link java.time.Duration} y no como el
+     * objeto de configuracion completo: un caso de uso no tiene por que conocer el
+     * formato en que se configura el sistema, solo el plazo que debe aplicar.
+     */
+    @Bean
+    IssueSessionUseCase issueSessionUseCase(
+            RefreshTokenRepository refrescos,
+            AccessTokenIssuer accesos,
+            TokenGenerator generadorDeTokens,
+            SessionProperties sesion,
+            Clock reloj) {
+        return new IssueSessionUseCase(refrescos, accesos, generadorDeTokens, sesion.refreshTtl(), reloj);
+    }
+
+    @Bean
+    LoginUseCase loginUseCase(
+            UserRepository usuarios,
+            CredentialsRepository credenciales,
+            PasswordHasher hasher,
+            LoginAttemptRecorder intentos,
+            MailSender correo,
+            IssueSessionUseCase abrirSesion,
+            Clock reloj) {
+        return new LoginUseCase(usuarios, credenciales, hasher, intentos, correo, abrirSesion, reloj);
+    }
+
+    @Bean
+    RefreshSessionUseCase refreshSessionUseCase(
+            RefreshTokenRepository refrescos,
+            UserRepository usuarios,
+            AccessTokenIssuer accesos,
+            TokenGenerator generadorDeTokens,
+            MailSender correo,
+            SessionProperties sesion,
+            Clock reloj) {
+        return new RefreshSessionUseCase(
+                refrescos,
+                usuarios,
+                accesos,
+                generadorDeTokens,
+                correo,
+                sesion.refreshTtl(),
+                sesion.refreshGrace(),
+                reloj);
+    }
+
+    @Bean
+    LogoutUseCase logoutUseCase(RefreshTokenRepository refrescos, TokenGenerator generadorDeTokens, Clock reloj) {
+        return new LogoutUseCase(refrescos, generadorDeTokens, reloj);
+    }
+
+    /**
+     * La cookie del token de refresco.
+     *
+     * <p>Vive aqui por lo mismo que el origen de CORS: necesita a la vez la
+     * configuracion tipada, que es de {@code infrastructure}, y el tipo que consume
+     * el controlador, que es de {@code presentation}. Ningun otro modulo ve las dos
+     * cosas.
+     */
+    @Bean
+    RefreshCookies refreshCookies(SessionProperties sesion) {
+        return new RefreshCookies(
+                sesion.cookie().name(), sesion.cookie().path(), sesion.cookie().secure(), sesion.refreshTtl());
     }
 }

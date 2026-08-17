@@ -2,6 +2,7 @@ package co.sastra.identity.client;
 
 import co.sastra.identity.model.User;
 import co.sastra.identity.port.out.MailSender;
+import java.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -19,7 +20,10 @@ import org.springframework.stereotype.Component;
  * {@code sastra.mail.provider} vale {@code console}, algo que los perfiles
  * {@code dev} y {@code prod} no hacen.
  */
-@Component
+// El nombre lo comparte con ResendMailSender a proposito: solo uno de los dos
+// esta activo, y AsyncMailSender pide "transporteDeCorreo" sin tener que saber
+// cual de ellos le toco.
+@Component("transporteDeCorreo")
 @ConditionalOnProperty(prefix = "sastra.mail", name = "provider", havingValue = "console")
 public class ConsoleMailSender implements MailSender {
 
@@ -49,6 +53,28 @@ public class ConsoleMailSender implements MailSender {
                 ================ AVISO DE REGISTRO CON CORREO EXISTENTE =======================
                 Para: {}
                 Alguien intento registrarse con este correo. No se creo ninguna cuenta nueva.
+                ===============================================================================
+                """, titular.email().value());
+    }
+
+    @Override
+    public void enviarAvisoDeCuentaBloqueada(User titular, Instant desbloqueoEn) {
+        LOG.info("""
+
+                ================ AVISO DE CUENTA BLOQUEADA (RN-006) ===========================
+                Para:       {}
+                Desbloqueo: {}
+                ===============================================================================
+                """, titular.email().value(), desbloqueoEn);
+    }
+
+    @Override
+    public void enviarAvisoDeSesionRevocadaPorSeguridad(User titular) {
+        LOG.info("""
+
+                ================ AVISO DE SESION REVOCADA POR SEGURIDAD =======================
+                Para: {}
+                Llego un token de refresco ya usado: se revoco la familia completa.
                 ===============================================================================
                 """, titular.email().value());
     }

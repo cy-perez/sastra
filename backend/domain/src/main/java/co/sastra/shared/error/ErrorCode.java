@@ -40,8 +40,41 @@ public enum ErrorCode {
     /** Se agotaron los reenvios permitidos dentro de la hora. */
     AUTH_RESEND_LIMIT_REACHED,
 
+    /**
+     * El correo o la contrasena no coinciden. Criterio 11 de HU-001: es el mismo
+     * codigo para las dos causas, y tambien para un correo que no existe. Un
+     * codigo distinto por caso convertiria el formulario de acceso en un
+     * detector de cuentas.
+     */
+    AUTH_INVALID_CREDENTIALS,
+
+    /**
+     * RN-006: cinco intentos fallidos bloquean el acceso 15 minutos.
+     *
+     * <p>Solo se responde cuando la contrasena era correcta. Con contrasena
+     * incorrecta se responde {@link #AUTH_INVALID_CREDENTIALS}, porque decirle
+     * "esta bloqueada" a quien no sabe la clave le confirma que la cuenta existe.
+     */
+    AUTH_ACCOUNT_LOCKED,
+
+    /**
+     * RN-007: el token de refresco no sirve. Da igual si caduco, si se revoco o
+     * si ya se habia usado: hacia afuera es el mismo codigo, y la reaccion del
+     * cliente es la misma, volver a pedir las credenciales.
+     */
+    AUTH_SESSION_INVALID,
+
     /** La peticion no cumple el contrato. El detalle por campo va en {@code errors}. */
     COMMON_VALIDATION_FAILED,
+
+    /**
+     * Llegaron demasiadas peticiones desde el mismo origen.
+     *
+     * <p>No es una regla de negocio sino una defensa del borde, pero el codigo
+     * vive aqui como los demas: el catalogo de codigos es uno solo y el frontend
+     * lo traduce igual (docs/arquitectura/contrato-api.md).
+     */
+    COMMON_TOO_MANY_REQUESTS,
 
     /** Cualquier fallo no previsto. Nunca lleva detalle hacia afuera. */
     COMMON_UNEXPECTED

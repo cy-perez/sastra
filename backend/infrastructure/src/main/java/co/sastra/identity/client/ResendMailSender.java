@@ -4,7 +4,11 @@ import co.sastra.identity.config.MailProperties;
 import co.sastra.identity.model.User;
 import co.sastra.identity.model.UserLocale;
 import co.sastra.identity.port.out.MailSender;
+import co.sastra.shared.config.AppProperties;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
@@ -15,6 +19,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
 /**
  * Adaptador de correo transaccional con Resend (ADR-0012).
@@ -26,20 +31,33 @@ import org.springframework.web.client.RestClient;
  * crear la cuenta: la persona siempre puede pedir el reenvio, y perder el
  * registro entero por una caida del proveedor es peor que llegar tarde.
  */
-@Component
+// Mismo nombre que ConsoleMailSender: solo uno de los dos esta activo, y
+// AsyncMailSender pide "transporteDeCorreo" sin saber cual le toco.
+@Component("transporteDeCorreo")
 @ConditionalOnProperty(prefix = "sastra.mail", name = "provider", havingValue = "resend", matchIfMissing = true)
 public class ResendMailSender implements MailSender {
 
     private static final Logger LOG = LoggerFactory.getLogger(ResendMailSender.class);
     private static final Duration TIEMPO_DE_ESPERA = Duration.ofSeconds(10);
 
+    /**
+     * Solo horas y minutos, sin nombre de zona ni formato regional: "15:42" se
+     * entiende igual en los dos idiomas y no depende de la configuracion regional
+     * del servidor.
+     */
+    private static final DateTimeFormatter HORA = DateTimeFormatter.ofPattern("HH:mm");
+
     private final RestClient cliente;
     private final MailProperties propiedades;
     private final VerificationLink enlaces;
 
-    public ResendMailSender(MailProperties propiedades, VerificationLink enlaces) {
+    /** Para dar la hora de desbloqueo en la zona de operacion y no en UTC. */
+    private final ZoneId zona;
+
+    public ResendMailSender(MailProperties propiedades, VerificationLink enlaces, AppProperties app) {
         this.propiedades = propiedades;
         this.enlaces = enlaces;
+        this.zona = app.timeZone();
 
         JdkClientHttpRequestFactory fabrica = new JdkClientHttpRequestFactory();
         fabrica.setReadTimeout(TIEMPO_DE_ESPERA);
@@ -88,6 +106,41 @@ public class ResendMailSender implements MailSender {
                                 + "If it was you, you already have an account: sign in instead.</p>");
     }
 
+    @Override
+    public void enviarAvisoDeCuentaBloqueada(User titular, Instant desbloqueoEn) {
+        boolean espanol = titular.locale() == UserLocale.ES;
+        String hora = HORA.format(desbloqueoEn.atZone(zona));
+
+        enviar(
+                titular.email().value(),
+                espanol ? "Bloqueamos el acceso a tu cuenta" : "We locked access to your account",
+                espanol
+                        ? "<p>Hubo varios intentos fallidos de entrar a tu cuenta, asi que bloqueamos "
+                                + "el acceso por seguridad. Puedes volver a intentarlo a partir de las " + hora
+                                + ".</p><p>Si no fuiste tu, tu contrasena sigue siendo la misma y nadie entro. "
+                                + "Cuando puedas, cambiala.</p>"
+                        : "<p>There were several failed attempts to sign in to your account, so we locked "
+                                + "access for safety. You can try again after " + hora
+                                + ".</p><p>If this was not you, your password has not changed and nobody got in. "
+                                + "Change it when you can.</p>");
+    }
+
+    @Override
+    public void enviarAvisoDeSesionRevocadaPorSeguridad(User titular) {
+        boolean espanol = titular.locale() == UserLocale.ES;
+
+        enviar(
+                titular.email().value(),
+                espanol ? "Cerramos tus sesiones por seguridad" : "We closed your sessions for safety",
+                espanol
+                        ? "<p>Detectamos que se reutilizo una credencial de sesion antigua, que es senal "
+                                + "de que alguien pudo haberla copiado. Cerramos esa sesion completa.</p>"
+                                + "<p>Entra de nuevo con tu contrasena. Si no reconoces esto, cambiala.</p>"
+                        : "<p>We detected an old session credential being reused, which can mean someone "
+                                + "copied it. We closed that whole session.</p>"
+                                + "<p>Sign in again with your password. If this looks wrong, change it.</p>");
+    }
+
     private static String cuerpo(String titulo, String texto, String enlace, String etiquetaDelBoton) {
         return "<h1>" + titulo + "</h1><p>" + texto + "</p><p><a href=\"" + enlace + "\">" + etiquetaDelBoton
                 + "</a></p>";
@@ -103,10 +156,20 @@ public class ResendMailSender implements MailSender {
                     .body(peticion)
                     .retrieve()
                     .toBodilessEntity();
+        } catch (RestClientResponseException e) {
+            // Solo el codigo de estado. El mensaje de esta excepcion incluye parte
+            // del cuerpo que devolvio el proveedor, y ese cuerpo puede repetir la
+            // direccion de destino (docs/operacion/datos-personales.md).
+            LOG.error(
+                    "El proveedor rechazo un correo transaccional con estado {}",
+                    e.getStatusCode().value());
         } catch (RuntimeException e) {
-            // Sin el asunto ni el cuerpo: el registro no debe llevar el enlace de
-            // verificacion, que es una credencial.
-            LOG.error("No se pudo enviar un correo transaccional: {}", e.getMessage());
+            // Sin el asunto, sin el cuerpo y sin el mensaje: el registro no debe
+            // llevar el enlace de verificacion, que es una credencial, ni la
+            // direccion de nadie.
+            LOG.error(
+                    "No se pudo enviar un correo transaccional: {}",
+                    e.getClass().getName());
         }
     }
 }

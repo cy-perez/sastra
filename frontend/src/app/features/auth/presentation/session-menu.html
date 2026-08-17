@@ -1,0 +1,27 @@
+@if (sesion.status() === 'desconocida') {
+  <!-- Todavia no se sabe si hay sesion: el token vive en memoria y se pierde al
+       recargar, asi que hay que preguntarle al servidor con la cookie. Pintar
+       "Entrar" mientras tanto le cambiaria el boton bajo el cursor a quien si
+       tiene sesion. El hueco mide lo mismo que lo que va a ocupar despues, para
+       que la barra no se mueva. -->
+  <span class="esqueleto hueco-de-sesion" aria-hidden="true"></span>
+} @else if (sesion.user(); as usuario) {
+  <!-- El nombre no es un control: dice de quien es la sesion. En movil se oculta
+       por completo, tambien para el lector de pantalla, porque en esa barra no
+       cabe sin empujar el resto a otra linea. No se pierde nada necesario para
+       usar el sitio: el boton de al lado dice lo que hace por si mismo. -->
+  <span class="nombre tipo-secundario">{{ usuario.displayName }}</span>
+
+  <button
+    type="button"
+    class="accion tipo-secundario"
+    [disabled]="cierre.isPending()"
+    (click)="salir()"
+  >
+    {{ 'layout.session.logout' | transloco }}
+  </button>
+} @else {
+  <a class="accion tipo-secundario" routerLink="/ingresar">
+    {{ 'layout.session.login' | transloco }}
+  </a>
+}

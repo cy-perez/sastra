@@ -22,6 +22,11 @@ dependencies {
     // spring-web: aqui no se atiende ninguna peticion HTTP.
     implementation(libs.spring.web)
 
+    // Emision del token de acceso, y el decodificador que consume la cadena de
+    // seguridad. Va aqui porque necesita el secreto de firma, que es configuracion
+    // y la configuracion vive en esta capa (ADR-0003).
+    api(libs.spring.security.oauth2.jose)
+
     // La configuracion se declara en clases @ConfigurationProperties validadas:
     // si falta una variable obligatoria, la aplicacion no arranca
     // (docs/operacion/configuracion.md).

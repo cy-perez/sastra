@@ -19,9 +19,9 @@ import { AuthStore } from '../application/auth.store';
  * carga. Como la ruta se renderiza en servidor, el estado inicial ya viaja en el
  * HTML y no hay un parpadeo de "cargando" para quien tenga la red lenta.
  *
- * <p>El criterio 9 dice que la persona entra directamente al verificar. Eso
- * exige emitir la sesion, que llega con la rebanada B: por ahora la cuenta queda
- * activa y desde aqui se pasa a iniciar sesion.
+ * <p>Criterio 9: la persona entra directamente al verificar. El servidor
+ * devuelve la sesion junto con el resultado y el almacen la guarda, asi que al
+ * llegar a esta pantalla ya esta dentro y no vuelve a escribir la contrasena.
  */
 @Component({
   selector: 'sastra-verify-email-page',

@@ -121,6 +121,31 @@ describe('RegisterPage', () => {
     TestBed.inject(HttpTestingController).expectNone(`${API}/auth/register`);
   });
 
+  /**
+   * Son seis campos y el foco se queda en el boton, al final. Sin moverlo, la
+   * persona pulsa y no ve que haya pasado nada.
+   */
+  it('lleva el foco al primer campo con error', async () => {
+    const fixture = await render();
+
+    enviar(fixture);
+    await asentar(fixture);
+
+    expect(document.activeElement?.id).toBe('correo');
+  });
+
+  // El orden es el del formulario: se lleva al primero que haya que corregir.
+  it('se salta los campos que ya estan bien', async () => {
+    const fixture = await render();
+    escribir(fixture, 'correo', 'ana@correo.co');
+    escribir(fixture, 'nombre', 'Ana Maria');
+
+    enviar(fixture);
+    await asentar(fixture);
+
+    expect(document.activeElement?.id).toBe('contrasena');
+  });
+
   it('dice cual de los dos consentimientos falta, no un mensaje generico', async () => {
     const fixture = await render();
     rellenarTodoBien(fixture);

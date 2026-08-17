@@ -30,8 +30,12 @@ class ValueObjectsTest {
         assertThat(new UserId(uuid)).hasToString(uuid.toString());
         assertThat(ConsentId.nuevo().value()).isNotNull();
         assertThat(VerificationTokenId.nuevo().toString()).isNotBlank();
+        assertThat(new RefreshTokenId(uuid)).hasToString(uuid.toString());
+        assertThat(new TokenFamilyId(uuid)).hasToString(uuid.toString());
         assertThatThrownBy(() -> new ConsentId(null)).isInstanceOf(NullPointerException.class);
         assertThatThrownBy(() -> new VerificationTokenId(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new RefreshTokenId(null)).isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> new TokenFamilyId(null)).isInstanceOf(NullPointerException.class);
     }
 
     // Si esto se imprimiera, la contrasena acabaria en un registro de servidor.

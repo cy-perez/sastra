@@ -21,5 +21,10 @@ dependencies {
     // (docs/arquitectura/contrato-api.md). Apagado en el perfil prod.
     implementation(libs.springdoc.openapi.webmvc.ui)
 
+    // Spring Security 7.1: el borde declara que rutas quedan abiertas y cuales
+    // no. Nada queda accesible por omision (backend/CLAUDE.md).
+    implementation(libs.spring.boot.starter.security)
+
     testImplementation(libs.spring.boot.starter.test)
+    testImplementation(libs.spring.security.test)
 }

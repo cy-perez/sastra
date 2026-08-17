@@ -35,3 +35,12 @@ sastra:
     address: ${COMPANY_ADDRESS:Medellin, Colombia}
   commission:
     rate: ${COMMISSION_RATE:0.05}
+  mail:
+    # En local no sale ningun correo: el enlace de verificacion se imprime en el
+    # registro de la aplicacion. Asi HU-001 se recorre entera sin credenciales.
+    provider: ${MAIL_PROVIDER:console}
+    from: ${MAIL_FROM:no-responder@localhost}
+    provider-api-key: ${MAIL_PROVIDER_API_KEY:sin-clave-en-local}
+  legal:
+    terms-version: ${LEGAL_TERMS_VERSION:borrador-local}
+    privacy-version: ${LEGAL_PRIVACY_VERSION:borrador-local}

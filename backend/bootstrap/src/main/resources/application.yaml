@@ -58,12 +58,32 @@ sastra:
     api-base-url: ${APP_API_BASE_URL}
     support-email: ${SUPPORT_EMAIL}
     cors-allowed-origins: ${CORS_ALLOWED_ORIGINS}
+    # Zona con la que se calculan las fechas de negocio, RN-008 incluida.
+    time-zone: ${APP_TIME_ZONE:America/Bogota}
   company:
     name: ${COMPANY_NAME}
     tax-id: ${COMPANY_TAX_ID}
     address: ${COMPANY_ADDRESS}
   commission:
     rate: ${COMMISSION_RATE}
+  mail:
+    # console imprime el enlace en el registro; resend envia de verdad (ADR-0012).
+    provider: ${MAIL_PROVIDER:resend}
+    from: ${MAIL_FROM}
+    provider-api-key: ${MAIL_PROVIDER_API_KEY}
+    api-url: ${MAIL_API_URL:https://api.resend.com/emails}
+    # Ruta del frontend que recibe el enlace. Se concatena a app.base-url.
+    verification-path: ${MAIL_VERIFICATION_PATH:/verificar-correo}
+  legal:
+    # Version del texto que la persona acepta. Sin ella el consentimiento no se
+    # puede demostrar (docs/operacion/datos-personales.md).
+    terms-version: ${LEGAL_TERMS_VERSION}
+    privacy-version: ${LEGAL_PRIVACY_VERSION}
+  password:
+    # Contrasenas filtradas con k-anonimato (ADR-0013). Falla abierto.
+    breach-check-enabled: ${PASSWORD_BREACH_CHECK_ENABLED:true}
+    breach-check-timeout: ${PASSWORD_BREACH_CHECK_TIMEOUT:PT2S}
+    breach-check-api-url: ${PASSWORD_BREACH_API_URL:https://api.pwnedpasswords.com/range}
   features:
     # Todas apagadas en Fase 1. Se encienden por variable, no por despliegue.
     seller-verification: ${FEATURE_SELLER_VERIFICATION:false}

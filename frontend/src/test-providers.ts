@@ -4,6 +4,7 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 
 import { APP_CONFIG, type AppConfig } from './app/core/config/app-config';
 import { provideActiveLocaleFromDocument, provideI18n } from './app/core/i18n/i18n.providers';
+import { provideQuery } from './app/core/query/query.providers';
 import { BundledTranslationLoader } from './app/core/i18n/translation-loaders';
 
 /**
@@ -23,10 +24,16 @@ const testConfig: AppConfig = {
 
 const providers: (Provider | EnvironmentProviders)[] = [
   { provide: APP_CONFIG, useValue: testConfig },
+  // Sin interceptores: cada prueba que los necesite los declara en su propio
+  // TestBed. Importarlos desde este archivo arrastra @angular/common al paquete
+  // de arranque de las pruebas y rompe la compilacion de toda la suite.
   provideHttpClient(),
   provideHttpClientTesting(),
   provideActiveLocaleFromDocument(),
   provideI18n(BundledTranslationLoader),
+  // Las pantallas que llaman a la API usan mutaciones de TanStack Query, que
+  // necesitan su QueryClient en el inyector.
+  provideQuery(),
 ];
 
 export default providers;

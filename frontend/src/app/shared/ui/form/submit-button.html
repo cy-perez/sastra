@@ -1,0 +1,14 @@
+<!-- Unico uso del acento ocre en la pantalla, y siempre como relleno con texto
+     oscuro encima: el ocre nunca va como color de texto sobre fondo claro. -->
+<button
+  type="submit"
+  class="btn-cta boton-envio tipo-etiqueta-boton"
+  [disabled]="loading()"
+  [attr.aria-busy]="loading() ? 'true' : null"
+>
+  {{ labelKey() | transloco }}
+  @if (loading()) {
+    <span class="indicador" aria-hidden="true"></span>
+    <span class="solo-lectores">{{ loadingLabelKey() | transloco }}</span>
+  }
+</button>

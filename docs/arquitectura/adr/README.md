@@ -34,3 +34,5 @@ la referencia.
 | 0009 | Hospedaje escalonado: Vercel primero, GCP después | Aceptada |
 | 0010 | Ocho tomas a 45 grados y proporción 3:4 para el visor | Aceptada |
 | 0011 | El tipo se aplica por rol, no por tamaño | Aceptada |
+| 0012 | Resend como proveedor de correo transaccional | Aceptada |
+| 0013 | Contraseñas filtradas con Have I Been Pwned y k-anonimato | Aceptada |

@@ -1,5 +1,10 @@
 import { type ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
-import { provideRouter, TitleStrategy, withInMemoryScrolling } from '@angular/router';
+import {
+  provideRouter,
+  TitleStrategy,
+  withComponentInputBinding,
+  withInMemoryScrolling,
+} from '@angular/router';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 
 import { routes } from './app.routes';
@@ -22,6 +27,9 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideRouter(
       routes,
+      // El token del enlace de verificacion llega como parametro de consulta y
+      // entra directo al input() del componente, sin ActivatedRoute de por medio.
+      withComponentInputBinding(),
       withInMemoryScrolling({ scrollPositionRestoration: 'enabled', anchorScrolling: 'enabled' }),
     ),
     // withFetch es lo que permite que las peticiones hechas durante el

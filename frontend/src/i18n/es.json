@@ -8,6 +8,14 @@
     "notFound": {
       "title": "Página no encontrada",
       "description": "La dirección que abriste no existe en Sastra."
+    },
+    "register": {
+      "title": "Crear cuenta",
+      "description": "Crea tu cuenta en Sastra para comprar y vender moda con respaldo."
+    },
+    "verify": {
+      "title": "Verificar correo",
+      "description": "Confirma tu correo para activar tu cuenta en Sastra."
     }
   },
   "layout": {
@@ -39,6 +47,79 @@
   "errors": {
     "fallback": "No pudimos completar la operación. Inténtalo de nuevo.",
     "network": "No hay conexión con el servidor. Revisa tu red e inténtalo de nuevo.",
-    "byCode": {}
+    "byCode": {
+      "AUTH_PASSWORD_TOO_SHORT": "La contraseña necesita al menos 10 caracteres.",
+      "AUTH_PASSWORD_BREACHED": "Esa contraseña apareció en una filtración conocida. Elige otra.",
+      "AUTH_UNDERAGE": "Debes tener 18 años cumplidos para crear una cuenta.",
+      "AUTH_CONSENT_REQUIRED": "Necesitas aceptar los términos y autorizar el tratamiento de tus datos.",
+      "AUTH_VERIFICATION_TOKEN_INVALID": "Este enlace ya no sirve. Puede que lo hayas usado antes.",
+      "AUTH_VERIFICATION_TOKEN_EXPIRED": "Este enlace venció. Los enlaces duran 24 horas.",
+      "AUTH_RESEND_LIMIT_REACHED": "Ya pediste varios enlaces. Espera una hora antes de intentarlo de nuevo.",
+      "COMMON_VALIDATION_FAILED": "Revisa los datos del formulario.",
+      "COMMON_UNEXPECTED": "Algo salió mal de nuestro lado. Inténtalo de nuevo."
+    }
+  },
+  "form": {
+    "sending": "Enviando"
+  },
+  "auth": {
+    "register": {
+      "title": "Crea tu cuenta",
+      "subtitle": "Con una cuenta puedes comprar con respaldo y, cuando quieras, empezar a vender.",
+      "submit": "Crear cuenta",
+      "fields": {
+        "email": "Correo electrónico",
+        "displayName": "Nombre",
+        "password": "Contraseña",
+        "birthDate": "Fecha de nacimiento",
+        "acceptsTerms": "Acepto los términos y condiciones",
+        "acceptsPrivacy": "Autorizo el tratamiento de mis datos personales según la política de privacidad"
+      },
+      "hints": {
+        "displayName": "Así te verán quienes visiten tus publicaciones.",
+        "password": "Diez caracteres como mínimo. Una frase larga es más segura que una palabra con símbolos.",
+        "birthDate": "Sastra es solo para mayores de 18 años."
+      },
+      "strength": {
+        "label": "Fortaleza:",
+        "corta": "muy corta",
+        "aceptable": "aceptable",
+        "buena": "buena"
+      },
+      "errors": {
+        "email": "Escribe un correo válido, como nombre@correo.com.",
+        "displayName": "Escribe tu nombre.",
+        "passwordTooShort": "La contraseña necesita al menos 10 caracteres.",
+        "birthDateRequired": "Escribe tu fecha de nacimiento.",
+        "underage": "Debes tener 18 años cumplidos para crear una cuenta.",
+        "termsRequired": "Necesitas aceptar los términos y condiciones.",
+        "privacyRequired": "Necesitas autorizar el tratamiento de tus datos personales."
+      },
+      "sent": {
+        "title": "Revisa tu correo",
+        "body": "Si ese correo puede usarse, te enviamos un enlace para confirmarlo. El enlace vence en 24 horas.",
+        "spam": "Si no lo ves, revisa la carpeta de no deseados."
+      }
+    },
+    "verify": {
+      "pending": {
+        "title": "Confirmando tu correo"
+      },
+      "done": {
+        "title": "Tu cuenta quedó activa",
+        "body": "Ya confirmaste tu correo. Ahora puedes entrar a Sastra.",
+        "continue": "Ir al inicio"
+      },
+      "failed": {
+        "title": "No pudimos confirmar tu correo",
+        "canResend": "Podemos enviarte un enlace nuevo al mismo correo.",
+        "resend": "Enviar un enlace nuevo"
+      },
+      "missing": {
+        "title": "Falta el enlace",
+        "body": "Abre el enlace tal como llegó en el correo, sin recortarlo."
+      },
+      "resent": "Listo, te enviamos un enlace nuevo. Revisa tu correo."
+    }
   }
 }

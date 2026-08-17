@@ -32,10 +32,19 @@ correo, ningún NIT, ningún porcentaje de comisión.
 | `JWT_REFRESH_TTL` | `P30D` | sí |
 | `APP_BASE_URL` | `https://sastra.co` | sí |
 | `APP_API_BASE_URL` | `https://api.sastra.co` | sí |
+| `APP_TIME_ZONE` | `America/Bogota` | no, `America/Bogota` por omisión |
 | `CORS_ALLOWED_ORIGINS` | lista separada por comas | sí |
 | `COMMISSION_RATE` | `0.05` | sí |
-| `MAIL_PROVIDER_API_KEY` | | sí |
+| `MAIL_PROVIDER` | `resend` o `console` | no, `resend` por omisión |
+| `MAIL_PROVIDER_API_KEY` | clave de Resend, ver ADR-0012 | sí |
 | `MAIL_FROM` | `hola@sastra.co` | sí |
+| `MAIL_API_URL` | `https://api.resend.com/emails` | no |
+| `MAIL_VERIFICATION_PATH` | `/verificar-correo` | no |
+| `LEGAL_TERMS_VERSION` | `2026-08-01` | sí |
+| `LEGAL_PRIVACY_VERSION` | `2026-08-01` | sí |
+| `PASSWORD_BREACH_CHECK_ENABLED` | `true` | no, `true` por omisión |
+| `PASSWORD_BREACH_CHECK_TIMEOUT` | `PT2S` | no |
+| `PASSWORD_BREACH_API_URL` | `https://api.pwnedpasswords.com/range` | no |
 | `STORAGE_BUCKET` | `sastra-media-dev` | sí |
 | `STORAGE_SIGNED_URL_TTL` | `PT10M` | sí |
 | `WOMPI_PUBLIC_KEY` | | Fase 3 |
@@ -51,6 +60,26 @@ correo, ningún NIT, ningún porcentaje de comisión.
 | `COMPANY_TAX_ID` | `1054994043-1` | sí |
 | `COMPANY_ADDRESS` | | sí |
 | `SUPPORT_EMAIL` | | sí |
+
+`APP_TIME_ZONE` no es cosmética: RN-008 compara fechas de calendario, no
+instantes. Con UTC, alguien en Colombia cumpliría 18 años cinco horas antes de
+que aquí sea su cumpleaños.
+
+`MAIL_PROVIDER=console` sustituye el envío real por un adaptador que imprime el
+enlace de verificación en el registro de la aplicación. Es lo que permite
+recorrer HU-001 entera sin credenciales, y por eso es el valor del perfil
+`local`. En `dev` y `prod` no se usa: imprimiría un token de un solo uso, que es
+una credencial.
+
+`LEGAL_TERMS_VERSION` y `LEGAL_PRIVACY_VERSION` identifican el texto que la
+persona acepta al registrarse. Se guardan con el consentimiento y son la prueba
+de a qué dijo que sí: una versión equivocada invalida esa prueba. Cambian cada
+vez que se publica un texto nuevo.
+
+`PASSWORD_BREACH_CHECK_ENABLED` apaga la consulta a Have I Been Pwned
+(ADR-0013). Se apaga en las pruebas de extremo a extremo y en desarrollo sin
+red; el mínimo de diez caracteres de RN-005 se sigue comprobando siempre, porque
+esa regla vive en el dominio y no depende de nadie.
 
 La tasa de comisión es configurable a propósito: es un número de negocio que
 puede cambiar, y no debería exigir un despliegue de código.

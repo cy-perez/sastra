@@ -19,6 +19,13 @@ dependencies {
     implementation(libs.spring.boot.starter.base)
     implementation(libs.spring.boot.starter.actuator)
 
+    // El cableado de los casos de uso necesita ver los puertos y la
+    // configuracion tipada, que son api de application e infrastructure.
+    implementation(libs.spring.boot.starter.validation)
+
+    // Para declarar el origen permitido de CORS a partir de la configuracion.
+    implementation(libs.spring.web)
+
     // Flyway gobierna el esquema y sus migraciones viven en este modulo. Ningun
     // codigo importa Flyway: es puro arranque, por eso runtimeOnly.
     runtimeOnly(libs.spring.boot.starter.flyway)

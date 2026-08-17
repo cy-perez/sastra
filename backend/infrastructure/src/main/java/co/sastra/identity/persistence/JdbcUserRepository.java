@@ -1,0 +1,154 @@
+package co.sastra.identity.persistence;
+
+import co.sastra.identity.model.BirthDate;
+import co.sastra.identity.model.DisplayName;
+import co.sastra.identity.model.Email;
+import co.sastra.identity.model.PasswordHash;
+import co.sastra.identity.model.Role;
+import co.sastra.identity.model.User;
+import co.sastra.identity.model.UserId;
+import co.sastra.identity.model.UserLocale;
+import co.sastra.identity.model.UserStatus;
+import co.sastra.identity.port.out.UserRepository;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
+import java.util.Set;
+import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.stereotype.Repository;
+
+/**
+ * Adaptador de persistencia del agregado de cuenta.
+ *
+ * <p>SQL explicito con {@link JdbcClient} en lugar del mapeo automatico de Spring
+ * Data JDBC. El agregado vive en tres tablas y la columna de correo es
+ * {@code citext}: describirlo con anotaciones costaria mas que escribir estas
+ * consultas, y escondería justo lo que conviene tener a la vista
+ * (backend/CLAUDE.md, ADR-0004).
+ */
+@Repository
+public class JdbcUserRepository implements UserRepository {
+
+    private static final String SELECT_BASE = """
+            SELECT u.id, u.email, u.email_verified_at, u.display_name, u.birth_date,
+                   u.locale, u.status, u.created_at
+            FROM users u
+            """;
+
+    private final JdbcClient jdbc;
+
+    public JdbcUserRepository(JdbcClient jdbc) {
+        this.jdbc = jdbc;
+    }
+
+    @Override
+    public void crear(User usuario, PasswordHash hash) {
+        jdbc.sql("""
+                        INSERT INTO users (id, email, display_name, birth_date, locale, status, created_at, updated_at)
+                        VALUES (:id, :email, :displayName, :birthDate, :locale, :status, :ahora, :ahora)
+                        """)
+                .param("id", usuario.id().value())
+                .param("email", usuario.email().value())
+                .param("displayName", usuario.displayName().value())
+                .param("birthDate", usuario.birthDate().value())
+                .param("locale", usuario.locale().etiqueta())
+                .param("status", usuario.status().name())
+                .param("ahora", Timestamp.from(usuario.createdAt()))
+                .update();
+
+        for (Role rol : usuario.roles()) {
+            jdbc.sql("INSERT INTO user_roles (user_id, role, granted_at) VALUES (:usuario, :rol, :ahora)")
+                    .param("usuario", usuario.id().value())
+                    .param("rol", rol.name())
+                    .param("ahora", Timestamp.from(usuario.createdAt()))
+                    .update();
+        }
+
+        jdbc.sql("""
+                        INSERT INTO user_credentials (user_id, password_hash, password_updated_at)
+                        VALUES (:usuario, :hash, :ahora)
+                        """)
+                .param("usuario", usuario.id().value())
+                .param("hash", hash.value())
+                .param("ahora", Timestamp.from(usuario.createdAt()))
+                .update();
+    }
+
+    @Override
+    public void actualizar(User usuario) {
+        jdbc.sql("""
+                        UPDATE users
+                        SET email_verified_at = :verificado,
+                            display_name      = :displayName,
+                            locale            = :locale,
+                            status            = :status,
+                            updated_at        = now()
+                        WHERE id = :id
+                        """)
+                .param(
+                        "verificado",
+                        usuario.emailVerifiedAt() == null ? null : Timestamp.from(usuario.emailVerifiedAt()))
+                .param("displayName", usuario.displayName().value())
+                .param("locale", usuario.locale().etiqueta())
+                .param("status", usuario.status().name())
+                .param("id", usuario.id().value())
+                .update();
+    }
+
+    @Override
+    public Optional<User> buscarPorCorreo(Email correo) {
+        // La comparacion la resuelve citext: "Ana@Correo.co" encuentra la fila de
+        // "ana@correo.co" sin funciones alrededor de la columna, que ademas
+        // inutilizarian el indice unico (RN-001).
+        return jdbc.sql(SELECT_BASE + " WHERE u.email = :email")
+                .param("email", correo.value())
+                .query(this::mapear)
+                .optional();
+    }
+
+    @Override
+    public Optional<User> buscarPorId(UserId id) {
+        return jdbc.sql(SELECT_BASE + " WHERE u.id = :id")
+                .param("id", id.value())
+                .query(this::mapear)
+                .optional();
+    }
+
+    private User mapear(ResultSet fila, int numeroDeFila) throws SQLException {
+        UserId id = new UserId(fila.getObject("id", java.util.UUID.class));
+
+        return User.rehidratar(
+                id,
+                new Email(fila.getString("email")),
+                new DisplayName(fila.getString("display_name")),
+                new BirthDate(fila.getObject("birth_date", java.time.LocalDate.class)),
+                UserLocale.de(fila.getString("locale")),
+                UserStatus.valueOf(fila.getString("status").toUpperCase(Locale.ROOT)),
+                instanteONulo(fila.getTimestamp("email_verified_at")),
+                rolesDe(id),
+                fila.getTimestamp("created_at").toInstant());
+    }
+
+    /**
+     * Consulta aparte y no un JOIN con agregacion: sin sesion ni carga perezosa,
+     * dos consultas claras se leen mejor que una con GROUP BY, y el volumen aqui
+     * es de un puñado de filas (ADR-0004).
+     */
+    private Set<Role> rolesDe(UserId usuario) {
+        List<Role> roles = jdbc.sql("SELECT role FROM user_roles WHERE user_id = :usuario")
+                .param("usuario", usuario.value())
+                .query((fila, numero) -> Role.valueOf(fila.getString("role")))
+                .list();
+
+        return roles.isEmpty() ? EnumSet.noneOf(Role.class) : EnumSet.copyOf(roles);
+    }
+
+    private static Instant instanteONulo(Timestamp marca) {
+        return marca == null ? null : marca.toInstant();
+    }
+}

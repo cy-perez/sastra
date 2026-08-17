@@ -28,6 +28,7 @@ PostgreSQL 17. Migraciones con Flyway en
 | email | citext | único, normalizado |
 | email_verified_at | timestamptz | nulo mientras no verifique |
 | display_name | text | |
+| birth_date | date | RN-008: solo mayores de 18. Se guarda la fecha, no el resultado |
 | city | text | |
 | phone | text | opcional |
 | avatar_url | text | opcional |
@@ -46,7 +47,9 @@ PostgreSQL 17. Migraciones con Flyway en
 El `family_id` permite revocar toda una cadena al detectar reutilización.
 
 **verification_tokens**: `id`, `user_id`, `purpose` (`EMAIL_VERIFICATION`,
-`PASSWORD_RESET`, `EMAIL_CHANGE`), `token_hash`, `expires_at`, `used_at`.
+`PASSWORD_RESET`, `EMAIL_CHANGE`), `token_hash`, `expires_at`, `used_at`,
+`created_at`. La fecha de creación es la que permite contar los reenvíos de la
+última hora: HU-001 limita a tres y sin ella no hay con qué contarlos.
 
 **login_attempts**: `id`, `email_hash`, `ip_hash`, `succeeded`, `created_at`.
 Se conserva 90 días.

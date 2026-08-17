@@ -24,7 +24,7 @@ Si alguna no tiene respuesta, el campo no se crea.
 | Nivel | Datos | Trato |
 |---|---|---|
 | Publico | Nombre de vendedor, ciudad, publicaciones | Visible en el sitio |
-| Interno | Correo, telefono, historial de pedidos | Solo el titular y la operacion |
+| Interno | Correo, telefono, fecha de nacimiento, historial de pedidos | Solo el titular y la operacion |
 | Sensible | Documento de identidad, selfie, cuenta bancaria | Cifrado, acceso restringido y auditado |
 | Secreto | Contrasenas, tokens | Nunca legibles, ni por la operacion |
 

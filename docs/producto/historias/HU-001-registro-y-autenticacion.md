@@ -33,49 +33,55 @@ dejar el modelo abierto a varios métodos de autenticación.
 3. La contraseña se rechaza si tiene menos de 10 caracteres o si aparece en la
    lista de contraseñas filtradas. El mensaje explica cuál de las dos falló.
 4. El indicador de fortaleza es orientativo y no bloquea el envío.
-5. La persona debe aceptar términos y política de tratamiento de datos con una
-   casilla explícita, sin marcar por omisión. Se guarda fecha, hora, versión del
-   documento y dirección IP.
+5. La persona acepta los términos y la política de tratamiento de datos en **dos
+   casillas separadas**, ninguna marcada por omisión. Una sola casilla para las
+   dos cosas no es consentimiento válido
+   (`docs/operacion/datos-personales.md`). De cada una se guarda su propia
+   evidencia: documento, versión, fecha, hora y dirección IP.
+6. La persona declara su fecha de nacimiento y el registro se rechaza si no ha
+   cumplido 18 años (RN-008). La fecha se guarda, no solo el resultado de la
+   comprobación, porque se confirma contra el documento en la verificación de
+   identidad de Fase 2.
 
 **Verificación**
 
-6. El enlace caduca a las 24 horas y funciona una sola vez.
-7. Con un enlace caducado se ofrece reenviar, con un máximo de tres reenvíos por
+7. El enlace caduca a las 24 horas y funciona una sola vez.
+8. Con un enlace caducado se ofrece reenviar, con un máximo de tres reenvíos por
    hora.
-8. Verificado el correo, la cuenta queda activa y la persona entra directamente.
+9. Verificado el correo, la cuenta queda activa y la persona entra directamente.
 
 **Inicio de sesión**
 
-9. Credenciales correctas devuelven token de acceso de 15 minutos y token de
-   refresco de 30 días en cookie `HttpOnly`, `Secure`, `SameSite=Strict`.
-10. Credenciales incorrectas devuelven siempre el mismo mensaje genérico y el
+10. Credenciales correctas devuelven token de acceso de 15 minutos y token de
+    refresco de 30 días en cookie `HttpOnly`, `Secure`, `SameSite=Strict`.
+11. Credenciales incorrectas devuelven siempre el mismo mensaje genérico y el
     mismo tiempo de respuesta, sin distinguir si falló el correo o la clave.
-11. Al quinto intento fallido la cuenta se bloquea 15 minutos y se avisa al
+12. Al quinto intento fallido la cuenta se bloquea 15 minutos y se avisa al
     titular por correo.
-12. Una cuenta sin verificar puede entrar pero solo ve el aviso de verificación
+13. Una cuenta sin verificar puede entrar pero solo ve el aviso de verificación
     pendiente y el botón de reenvío.
 
 **Sesión**
 
-13. El token de refresco rota en cada uso; el anterior queda inválido.
-14. Si llega un token de refresco ya usado, se revoca toda la familia de tokens
+14. El token de refresco rota en cada uso; el anterior queda inválido.
+15. Si llega un token de refresco ya usado, se revoca toda la familia de tokens
     de ese usuario y se le notifica.
-15. Cerrar sesión revoca el token de refresco en el servidor, no solo en el
+16. Cerrar sesión revoca el token de refresco en el servidor, no solo en el
     navegador.
-16. La persona puede ver sus sesiones activas y cerrarlas.
+17. La persona puede ver sus sesiones activas y cerrarlas.
 
 **Recuperación**
 
-17. El enlace caduca a los 30 minutos y es de un solo uso.
-18. La respuesta es idéntica exista o no el correo.
-19. Al cambiar la contraseña se cierran todas las sesiones y se notifica.
+18. El enlace caduca a los 30 minutos y es de un solo uso.
+19. La respuesta es idéntica exista o no el correo.
+20. Al cambiar la contraseña se cierran todas las sesiones y se notifica.
 
 **Perfil y cierre**
 
-20. La persona edita nombre, ciudad, teléfono y foto. Cambiar el correo exige
+21. La persona edita nombre, ciudad, teléfono y foto. Cambiar el correo exige
     verificar el nuevo antes de reemplazar el anterior.
-21. Puede descargar sus datos en un archivo legible.
-22. Puede cerrar su cuenta previa confirmación escrita.
+22. Puede descargar sus datos en un archivo legible.
+23. Puede cerrar su cuenta previa confirmación escrita.
 
 ## Casos borde
 
@@ -109,6 +115,14 @@ Tablas: `users`, `user_credentials`, `refresh_tokens`, `verification_tokens`,
 
 Correos transaccionales: verificación, restablecimiento, aviso de bloqueo, aviso
 de cambio de contraseña, aviso de intento de registro con correo existente.
+
+Dependencias externas, ambas detrás de un puerto en `application`: el envío de
+correo con Resend (ADR-0012) y la comprobación de contraseñas filtradas con Have
+I Been Pwned por k-anonimato (ADR-0013). La segunda falla abierta: si no
+responde a tiempo, la contraseña se acepta y se registra el evento. El mínimo de
+diez caracteres se comprueba siempre en el dominio, sin salir a la red, así que
+el criterio 3 necesita dos códigos de error distintos para poder explicar cuál
+de las dos reglas falló.
 
 ## Pruebas requeridas
 

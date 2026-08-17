@@ -1,0 +1,60 @@
+/* Estilos compartidos por los campos del formulario. Ningun HEX, ningun tamano
+   de letra ni peso: el tipo entero lo aplica la clase de rol de tipografia.css,
+   que es su unica fuente de verdad. */
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+  margin-bottom: var(--esp-24);
+}
+
+.etiqueta {
+  color: var(--color-texto);
+}
+
+.pista {
+  color: var(--color-texto-suave);
+  margin: 0;
+}
+
+.entrada {
+  min-height: 44px;
+  padding: 0 var(--esp-12);
+  border: 1px solid var(--color-borde-control);
+  border-radius: var(--radio-md);
+  background: var(--color-superficie);
+  color: var(--color-texto);
+  font: inherit;
+}
+
+/* El estado de error se anuncia por aria-invalid y por el texto; el borde es
+   refuerzo, no la unica senal. Quien no distingue colores tiene el mensaje. */
+.entrada[aria-invalid='true'] {
+  border-color: var(--color-error);
+  border-width: 2px;
+}
+
+.error {
+  color: var(--color-error);
+  margin: 0;
+}
+
+/* Casilla de verificacion: el destino tactil es la etiqueta entera, no solo el
+   cuadrito que dibuja el navegador. */
+.casilla {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--esp-12);
+  min-height: 44px;
+  padding: var(--esp-8) 0;
+  margin-bottom: var(--esp-16);
+  cursor: pointer;
+}
+
+.casilla input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  flex-shrink: 0;
+}

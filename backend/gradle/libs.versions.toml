@@ -22,6 +22,7 @@ mockito = "5.23.0"
 archunit = "1.5.0"
 jacoco = "0.8.15"
 spotless = "8.9.0"
+bouncycastle = "1.85.2"
 palantir-java-format = "2.97.0"
 
 [libraries]
@@ -39,12 +40,30 @@ spring-tx = { module = "org.springframework:spring-tx" }
 # --- infrastructure --------------------------------------------------------
 spring-boot-starter-data-jdbc = { module = "org.springframework.boot:spring-boot-starter-data-jdbc" }
 spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
+# Solo el modulo de criptografia, no el starter completo: infrastructure hashea
+# contrasenas, no configura filtros HTTP. La version la fija el BOM.
+spring-security-crypto = { module = "org.springframework.security:spring-security-crypto" }
+
+# Solo para RestClient: los adaptadores de Resend y de Have I Been Pwned salen a
+# la red. No es el starter web, que traeria el servidor y el stack de MVC a un
+# modulo que no atiende ninguna peticion.
+spring-web = { module = "org.springframework:spring-web" }
+
+# Argon2PasswordEncoder lo exige explicitamente y el BOM de Spring Boot no
+# gestiona su version, asi que va fijada aqui. El hash de almacenamiento es
+# Argon2id (docs/arquitectura/modelo-datos.md).
+bouncycastle-provider = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
 
 # --- presentation ----------------------------------------------------------
 # El starter monolitico spring-boot-starter no se usa: en Boot 4 cada pieza
 # tiene el suyo (backend/CLAUDE.md).
 spring-boot-starter-webmvc = { module = "org.springframework.boot:spring-boot-starter-webmvc" }
 springdoc-openapi-webmvc-ui = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
+
+# El borde HTTP es quien declara que rutas quedan abiertas, asi que el filtro de
+# seguridad vive aqui (ADR-0003, backend/CLAUDE.md).
+spring-boot-starter-security = { module = "org.springframework.boot:spring-boot-starter-security" }
+spring-security-test = { module = "org.springframework.security:spring-security-test" }
 
 # --- bootstrap -------------------------------------------------------------
 spring-boot-starter-base = { module = "org.springframework.boot:spring-boot-starter" }

@@ -1,0 +1,74 @@
+import org.gradle.testing.jacoco.tasks.JacocoReportBase
+import org.springframework.boot.gradle.tasks.run.BootRun
+
+// El unico modulo que conoce a todos: contiene el main, la configuracion, las
+// migraciones y las pruebas que verifican el cableado completo.
+// Nadie depende de bootstrap.
+
+plugins {
+    id("sastra.spring-conventions")
+    alias(libs.plugins.spring.boot)
+}
+
+dependencies {
+    implementation(project(":domain"))
+    implementation(project(":application"))
+    implementation(project(":infrastructure"))
+    implementation(project(":presentation"))
+
+    implementation(libs.spring.boot.starter.base)
+    implementation(libs.spring.boot.starter.actuator)
+
+    // Flyway gobierna el esquema y sus migraciones viven en este modulo. Ningun
+    // codigo importa Flyway: es puro arranque, por eso runtimeOnly.
+    runtimeOnly(libs.spring.boot.starter.flyway)
+    runtimeOnly(libs.flyway.database.postgresql)
+    runtimeOnly(libs.postgresql)
+
+    // Las pruebas de este modulo si necesitan JDBC y Validation al compilar: la
+    // de migraciones consulta el historial de Flyway con SQL explicito, y la de
+    // contexto lee las clases de configuracion validadas. Los modulos internos
+    // los declaran como `implementation`, o sea que no se heredan: se piden
+    // aqui, que es justo lo que se quiere.
+    testImplementation(libs.spring.boot.starter.data.jdbc)
+    testImplementation(libs.spring.boot.starter.validation)
+
+    testImplementation(libs.spring.boot.starter.test)
+    testImplementation(libs.spring.boot.testcontainers)
+    testImplementation(libs.testcontainers.postgresql)
+    testImplementation(libs.testcontainers.junit.jupiter)
+
+    // Segunda linea de defensa de la arquitectura, despues del grafo de Gradle
+    // (docs/arquitectura/vision-tecnica.md).
+    testImplementation(libs.archunit.junit5)
+}
+
+// La clase de arranque no entra en la medicion de cobertura: es configuracion de
+// framework sin logica propia, y docs/arquitectura/pruebas.md dice expresamente
+// que eso no se prueba. Que el cableado funciona lo demuestra
+// ApplicationContextTest levantando el contexto completo, no un porcentaje.
+val clasesMedibles = the<SourceSetContainer>()
+    .named("main")
+    .get()
+    .output
+    .classesDirs
+    .asFileTree
+    .matching { exclude("co/sastra/SastraApplication.class") }
+
+tasks.withType<JacocoReportBase>().configureEach {
+    classDirectories.setFrom(clasesMedibles)
+}
+
+// `gradlew.bat bootRun` arranca en el perfil local sin pedir nada mas. El
+// artefacto empaquetado no lleva perfil por omision a proposito: en la nube
+// SPRING_PROFILES_ACTIVE es obligatorio y olvidarlo debe romper el arranque.
+tasks.named<BootRun>("bootRun") {
+    systemProperty("spring.profiles.active", providers.systemProperty("spring.profiles.active").getOrElse("local"))
+
+    // Se ejecuta desde backend/, que es donde el README dice que uno se para.
+    // Asi el `optional:file:../.env` de application.yaml apunta al .env de la
+    // raiz del repositorio, el mismo que lee docker compose. Sin esto, la
+    // aplicacion usa sus valores por omision y la base los del .env: la
+    // contrasena no coincide y el arranque falla por una causa que no es real.
+    workingDir = rootProject.projectDir
+}

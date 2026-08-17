@@ -1,0 +1,62 @@
+/* Sastra — tokens de marca. Pegar en el CSS global del sitio o de la app.
+   Los mismos valores estan en tokens.json. */
+:root {
+  --color-tinta: #16192A;
+  --color-tinta-oscuro: #0C0F1B;
+  --color-tinta-suave: #2B3145;
+  --color-hilo: #D69A3C;
+  --color-hilo-oscuro: #8A5A12;
+  --color-fondo: #F7F5F1;
+  --color-superficie: #FFFFFF;
+  --color-texto: #16192A;
+  --color-texto-suave: #5B6072;
+  --color-borde: #E3DFD7;
+  --color-verificado: #1F7A55;
+  --color-alerta: #B3402A;
+
+  --fuente-display: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --fuente-texto: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --fuente-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --texto-xs: 0.75rem;   --texto-sm: 0.875rem;  --texto-base: 1rem;
+  --texto-lg: 1.25rem;   --texto-xl: 1.625rem;  --texto-2xl: 2.125rem;
+  --texto-3xl: 2.875rem; --texto-4xl: 3.875rem;
+
+  --espacio-1: 4px;  --espacio-2: 8px;  --espacio-3: 12px; --espacio-4: 16px;
+  --espacio-6: 24px; --espacio-8: 32px; --espacio-12: 48px; --espacio-16: 64px;
+
+  --radio-sm: 4px; --radio-md: 8px; --radio-lg: 14px; --radio-full: 9999px;
+
+  --icono-trazo: 1.75;
+}
+
+/* El CTA: relleno ocre con texto tinta. 7.3:1. Nunca texto ocre sobre claro. */
+.boton-principal {
+  background: var(--color-hilo);
+  color: var(--color-tinta);
+  border-radius: var(--radio-md);
+  font-family: var(--fuente-texto);
+  font-weight: 700;
+}
+
+/* La firma de marca como divisor: guion 16, hueco 9 */
+.regla-puntada {
+  height: 2px;
+  border: 0;
+  background-image: linear-gradient(to right,
+    var(--color-hilo) 0 16px, transparent 16px 25px);
+  background-size: 25px 2px;
+  background-repeat: repeat-x;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-fondo: #0C0F1B;
+    --color-superficie: #2B3145;
+    --color-texto: #F2F1EE;
+    --color-texto-suave: #A0A5B5;
+    --color-borde: #343B52;
+    --color-verificado: #4FBE8E;
+    --color-alerta: #E8735A;
+  }
+}

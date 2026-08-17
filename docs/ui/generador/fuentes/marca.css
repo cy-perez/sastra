@@ -1,0 +1,232 @@
+/* ============================================================
+   Sastra — capa de marca
+   Orden de carga:  tokens.css  ->  tipografia.css  ->  marca.css
+
+   tokens.css lo genera kit_ui.py y no se edita a mano.
+   Este archivo hace tres cosas que aquel no puede hacer solo:
+
+   1. Anade los tokens que el generador no emite (mono, ancho maximo,
+      superficie elevada).
+   2. Corrige el modo oscuro: el generador solo deriva fondo, superficie,
+      texto, borde y primario. Los semanticos, el anillo de foco y el borde
+      de control se quedaban con el valor de modo claro y fallaban contraste
+      sobre fondo oscuro. Aqui se reemplazan por los valores oscuros del
+      manual de marca, todos verificados.
+   3. Define los componentes propios de un marketplace de moda: tarjeta de
+      producto, precio, sello de verificado, estado de la prenda, y la regla
+      de puntada que es la firma de la marca.
+   ============================================================ */
+
+:root {
+  --fuente-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  --ancho-max: 1200px;              /* 5 productos de ~210px con canaleta de 24 */
+  --superficie-alta: #FFFFFF;       /* modal y menu flotante sobre superficie */
+  --relacion-foto: 3 / 4;           /* toda foto de producto, sin excepcion */
+
+  /* Franja oscura de marca: hero y footer. Es tinta en los DOS modos.
+     Sin este token, en modo oscuro se invertian a claro y el logo blanco
+     del footer desaparecia. */
+  --fondo-oscuro-marca: #16192A;
+  --sobre-fondo-oscuro: #F2F1EE;    /* 16.8:1 */
+
+  /* Color del texto sobre el CTA. Token propio y NO --color-primario: ese se
+     invierte a claro en modo oscuro, y el CTA es ocre en los dos modos, asi que
+     su texto no tiene motivo para cambiar. Da 7.1:1 sobre el ocre.
+
+     Es un valor fijo a proposito, porque el manual pide tinta sobre el acento.
+     Si algun dia cambia el acento en tokens.json, este color puede dejar de
+     servir: verificar.py lo detecta y avisa. Probado cambiando el ocre por un
+     azul, donde el tinta caia a 3.13:1 y el verificador lo marco. */
+  --color-sobre-cta: #16192A;
+
+  /* Anillo de foco DENTRO de la franja oscura. El anillo normal es tinta, y la
+     franja tambien es tinta: sobre ella el foco desaparecia, justo en el CTA
+     principal del sitio. El hueso da 15.4:1 contra la franja. */
+  --color-foco-franja: #F2F1EE;
+}
+
+/* ---------- Modo oscuro: lo que el generador dejo sin cubrir ---------- */
+[data-tema="oscuro"] {
+  /* El generador aclara el primario hasta pasar contraste y produce un gris
+     apagado (#85868E). En oscuro, el rol estructural lo toma el hueso claro:
+     16.8:1 sobre el fondo, y el boton primario se invierte como corresponde. */
+  --color-primario: #F2F1EE;
+  --color-primario-hover: #DAD8D3;
+  --color-primario-pressed: #C4C2BD;
+  --color-primario-suave: #2B3145;   /* tinta-suave: fondo de etiqueta y hover */
+  --color-sobre-primario: #0C0F1B;
+
+  /* Semanticos en su version clara. Los de modo claro daban 2.2-2.5:1 aqui. */
+  --color-exito: #4FBE8E;            /* 5.7:1 sobre superficie */
+  --color-aviso: #D69A3C;            /* el hilo se lee solo en oscuro: 5.3:1 */
+  --color-error: #E97961;            /* alerta clara: 4.6:1 */
+
+  --color-foco: #D69A3C;             /* tinta era invisible aqui; hilo da 7.7:1 */
+  --color-borde-control: #8F94A6;    /* 4.3:1 sobre superficie */
+  --superficie-alta: #363A4C;
+  /* --fondo-oscuro-marca NO se toca: en oscuro el tinta queda un paso POR ENCIMA
+     del fondo de pagina (#0E101B) y por eso el hero y el footer se siguen leyendo
+     como franja. Bajarlo a tinta-oscuro los fundia con la pagina. */
+}
+
+/* ---------- Franja oscura: hero y footer ----------
+   Redefinir --color-foco DENTRO del bloque es lo que hace que cualquier boton,
+   enlace o campo que se meta aqui herede el anillo correcto sin acordarse. */
+.franja-oscura {
+  background: var(--fondo-oscuro-marca);
+  color: var(--sobre-fondo-oscuro);
+  --color-foco: var(--color-foco-franja);
+}
+.franja-oscura a { color: var(--sobre-fondo-oscuro); }
+
+/* ---------- Logo adaptable ----------
+   El logo va en tinta y sobre fondo oscuro desaparece. Se montan las dos
+   versiones y se alterna por CSS. El nombre accesible vive en el contenedor,
+   asi que los dos <img> llevan alt vacio y no se anuncia dos veces. */
+.logo-sitio { display: inline-flex; align-items: center; }
+.logo-sitio .logo-oscuro { display: none; }
+[data-tema="oscuro"] .logo-sitio .logo-claro  { display: none; }
+[data-tema="oscuro"] .logo-sitio .logo-oscuro { display: inline-block; }
+
+/* ---------- La firma: regla de puntada, guion 16 y hueco 9 ---------- */
+.regla-puntada {
+  height: 2px;
+  border: 0;
+  margin: var(--esp-48) 0;
+  background-image: linear-gradient(to right,
+    var(--color-acento) 0 16px, transparent 16px 25px);
+  background-size: 25px 2px;
+  background-repeat: repeat-x;
+}
+
+/* ---------- Boton de llamada a la accion ----------
+   La marca reserva el ocre para UN elemento por pantalla. Relleno ocre con
+   texto tinta encima: 7.1:1. El ocre nunca va como color de texto. */
+.btn-cta {
+  background: var(--color-acento);
+  color: var(--color-sobre-cta);
+  border-color: transparent;
+  font-weight: 700;
+}
+.btn-cta:hover  { background: #C88A2C; }
+.btn-cta:active { background: #B87D26; transform: translateY(1px); }
+
+/* ---------- Precio ----------
+   Vive en tipografia.css, que es la unica fuente de verdad del tipo.
+   Aqui no se redefine: marca.css carga DESPUES y lo sobrescribiria. */
+
+/* ---------- Sellos y estados de prenda ---------- */
+.sello {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: var(--radio-completo);
+  border: 1px solid currentColor;
+}
+.sello-verificado { color: var(--color-exito); }
+.sello-alerta     { color: var(--color-error); }
+.sello svg { width: 14px; height: 14px; stroke-width: 1.75; }
+
+.chip {
+  display: inline-block;
+  font-size: var(--texto-xs);
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: var(--radio-sm);
+  background: var(--color-primario-suave);
+  color: var(--color-texto);
+}
+
+/* ---------- Tarjeta de producto ---------- */
+.tarjeta-producto {
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow .15s, transform .15s;
+}
+.tarjeta-producto:hover { box-shadow: var(--sombra-md); transform: translateY(-2px); }
+.tarjeta-producto:focus-within { outline: 3px solid var(--color-foco); outline-offset: 2px; }
+.tarjeta-producto .foto {
+  aspect-ratio: var(--relacion-foto);
+  background: var(--color-primario-suave);
+  display: grid;
+  place-items: center;
+  color: var(--color-texto-suave);
+  font-size: var(--texto-xs);
+}
+.tarjeta-producto .cuerpo { padding: var(--esp-12) var(--esp-16) var(--esp-16); }
+.tarjeta-producto h4 {
+  font-family: var(--fuente-texto);
+  font-size: var(--texto-sm);
+  font-weight: 500;
+  margin: var(--esp-8) 0 var(--esp-4);
+  line-height: 1.35;
+}
+/* Toda la tarjeta es clicable: el enlace del titulo se estira sobre ella. */
+.tarjeta-producto h4 a { color: inherit; text-decoration: none; }
+.tarjeta-producto h4 a::after { content: ""; position: absolute; inset: 0; }
+.tarjeta-producto { position: relative; }
+.tarjeta-producto .vendedor {
+  display: flex; align-items: center; gap: 6px;
+  font-size: var(--texto-xs); color: var(--color-texto-suave);
+  margin-top: var(--esp-8);
+  flex-wrap: wrap;              /* al 200% el sello y el nombre no caben en linea */
+}
+
+/* ---------- Buscador del header ---------- */
+.buscador {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--esp-8);
+  background: var(--color-fondo);
+  border: 1px solid var(--color-borde-control);
+  border-radius: var(--radio-completo);
+  padding: 0 var(--esp-16);
+  min-height: 48px;
+  max-width: 480px;
+}
+.buscador:focus-within { outline: 3px solid var(--color-foco); outline-offset: 2px; }
+.buscador input {
+  flex: 1; border: 0; background: transparent; font: inherit;
+  font-size: var(--texto-base); color: var(--color-texto); min-height: 46px;
+}
+.buscador input:focus { outline: none; }
+
+/* ---------- Estado de carga: esqueleto ---------- */
+.esqueleto {
+  background: linear-gradient(90deg,
+    var(--color-primario-suave) 25%,
+    var(--color-borde) 37%,
+    var(--color-primario-suave) 63%);
+  background-size: 400% 100%;
+  animation: brillo 1.4s ease infinite;
+  border-radius: var(--radio-sm);
+}
+@keyframes brillo { 0% { background-position: 100% 50% } 100% { background-position: 0 50% } }
+@media (prefers-reduced-motion: reduce) { .esqueleto { animation: none } }
+
+/* ---------- Estado vacio ---------- */
+.vacio {
+  text-align: center;
+  padding: var(--esp-48) var(--esp-24);
+  border: 1px dashed var(--color-borde-control);
+  border-radius: var(--radio-lg);
+  color: var(--color-texto-suave);
+}
+
+/* ---------- Barra inferior fija en movil ---------- */
+.barra-inferior {
+  display: flex; align-items: center; gap: var(--esp-12);
+  background: var(--color-superficie);
+  border-top: 1px solid var(--color-borde);
+  padding: var(--esp-12) var(--esp-16);
+  box-shadow: 0 -4px 12px rgba(0,0,0,.06);
+}
+.barra-inferior .btn { flex: 1; justify-content: center; }

@@ -1,0 +1,72 @@
+# Fuente unica de verdad de las versiones del backend (ADR-0002).
+# Nunca se escribe una version suelta en un build.gradle.kts.
+#
+# Dos grupos:
+#   1. Lo que gestiona el BOM de Spring Boot va SIN version aqui. La plataforma
+#      la fija, y asi no hay dos numeros que mantener sincronizados.
+#   2. Lo que vive fuera del mundo Spring (dominio y pruebas puras) si lleva
+#      version, porque `domain` no aplica el BOM: no puede.
+#
+# Las versiones del grupo 2 estan alineadas a proposito con las que gestiona
+# Spring Boot 4.1.0, para que no aparezcan dos versiones de JUnit en el mismo
+# classpath cuando un modulo Spring y `domain` se prueban juntos.
+
+[versions]
+java = "25"
+spring-boot = "4.1.0"
+springdoc = "3.1.0"
+jspecify = "1.0.0"
+junit = "6.0.3"
+assertj = "3.27.7"
+mockito = "5.23.0"
+archunit = "1.5.0"
+jacoco = "0.8.15"
+spotless = "8.9.0"
+palantir-java-format = "2.97.0"
+
+[libraries]
+
+# --- Plataformas: solo fijan versiones, no aportan una sola clase ------------
+spring-boot-bom = { module = "org.springframework.boot:spring-boot-dependencies", version.ref = "spring-boot" }
+junit-bom = { module = "org.junit:junit-bom", version.ref = "junit" }
+
+# --- domain: lo unico que se le permite ------------------------------------
+jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecify" }
+
+# --- application: solo esto de todo Spring ---------------------------------
+spring-tx = { module = "org.springframework:spring-tx" }
+
+# --- infrastructure --------------------------------------------------------
+spring-boot-starter-data-jdbc = { module = "org.springframework.boot:spring-boot-starter-data-jdbc" }
+spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
+
+# --- presentation ----------------------------------------------------------
+# El starter monolitico spring-boot-starter no se usa: en Boot 4 cada pieza
+# tiene el suyo (backend/CLAUDE.md).
+spring-boot-starter-webmvc = { module = "org.springframework.boot:spring-boot-starter-webmvc" }
+springdoc-openapi-webmvc-ui = { module = "org.springdoc:springdoc-openapi-starter-webmvc-ui", version.ref = "springdoc" }
+
+# --- bootstrap -------------------------------------------------------------
+spring-boot-starter-base = { module = "org.springframework.boot:spring-boot-starter" }
+spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+spring-boot-starter-flyway = { module = "org.springframework.boot:spring-boot-starter-flyway" }
+flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
+postgresql = { module = "org.postgresql:postgresql" }
+
+# --- pruebas ---------------------------------------------------------------
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+assertj-core = { module = "org.assertj:assertj-core", version.ref = "assertj" }
+mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
+mockito-junit-jupiter = { module = "org.mockito:mockito-junit-jupiter", version.ref = "mockito" }
+archunit-junit5 = { module = "com.tngtech.archunit:archunit-junit5", version.ref = "archunit" }
+spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-testcontainers" }
+testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql" }
+testcontainers-junit-jupiter = { module = "org.testcontainers:testcontainers-junit-jupiter" }
+
+# --- solo para buildSrc: el artefacto del plugin, no el plugin --------------
+spotless-gradle-plugin = { module = "com.diffplug.spotless:spotless-plugin-gradle", version.ref = "spotless" }
+
+[plugins]
+spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }

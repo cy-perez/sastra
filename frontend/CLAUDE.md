@@ -1,0 +1,153 @@
+# Frontend — convenciones
+
+Angular 21 con SSR e hidratación · TypeScript estricto · Transloco · TanStack
+Query · Vitest · CSS propio sobre los tokens de marca.
+
+Lee primero `../CLAUDE.md`. Aquí solo está lo específico del frontend.
+
+## Estructura
+
+Las mismas cuatro capas del backend, aplicadas por funcionalidad:
+
+```
+src/app/
+  core/                       transversal, se carga una vez
+    config/                   configuración por entorno
+    http/                     interceptores: auth, errores, idioma
+    i18n/                     configuración de Transloco
+    theme/                    modo claro y oscuro
+  shared/                     componentes sin lógica de negocio
+    ui/                       botón, campo, tarjeta, sello, visor 360
+    directives/  pipes/
+  features/<funcionalidad>/
+    domain/                   modelos y reglas puras. Sin Angular.
+    application/              casos de uso, puertos, estado
+    infrastructure/           adaptadores HTTP, mapeadores DTO a dominio
+    presentation/             componentes y rutas
+```
+
+- `domain` de una funcionalidad no importa `@angular/*` ni `rxjs`. Es TypeScript
+  puro y se prueba sin TestBed.
+- Los DTO de la API viven en `infrastructure` y se mapean a modelos de dominio.
+  Un tipo generado desde OpenAPI nunca llega a una plantilla.
+- `features/x` no importa de `features/y`. Lo compartido sube a `shared` o
+  `core`.
+
+## Componentes
+
+- Standalone siempre. Sin `NgModule`.
+- `changeDetection: ChangeDetectionStrategy.OnPush` en todos.
+- Entradas y salidas con las funciones `input()`, `output()` y `model()`, no con
+  los decoradores `@Input` y `@Output`.
+- Estado local con `signal` y `computed`. `effect` solo para sincronizar con algo
+  externo al marco, nunca para derivar valores.
+- Inyección con la función `inject()`, no por constructor.
+- Flujo de control de plantilla: `@if`, `@for`, `@switch`, `@defer`. Las
+  directivas `*ngIf` y `*ngFor` no se usan en este proyecto.
+- `@for` siempre con `track` sobre un identificador estable.
+- Un componente de presentación no llama HTTP. Llama a un caso de uso.
+
+## Datos remotos
+
+- TanStack Query para todo lo que venga del servidor: `injectQuery` y
+  `injectMutation`, envueltos en un servicio de la capa `application`. Los
+  componentes no ven la librería.
+- El paquete es `@tanstack/angular-query-experimental` y sigue en estado
+  experimental: la versión va **fijada exacta** en `package.json`, sin `^`. Solo
+  se sube con una ADR.
+- Claves de consulta centralizadas por funcionalidad en un objeto `queryKeys`.
+  Nunca un arreglo literal suelto.
+- Toda pantalla que carga datos define sus tres estados: cargando (con el
+  esqueleto de `marca.css`), vacío y error. La guía visual ya los especifica.
+
+## Estilos
+
+- El orden lo fija `src/styles.css` y no se altera: `fuentes.css`, `tokens.css`,
+  `tipografia.css`, `marca.css`, antes de cualquier estilo del proyecto.
+  Las tres primeras son copias publicadas por `../docs/ui/generador/publicar.py`:
+  **no se editan aquí**, se edita el original en `../docs/ui/generador/` y se
+  vuelve a publicar. Ubicación de cada activo en
+  `../docs/ui/ubicacion-de-activos.md`.
+- **El tipo se aplica con clases de rol**, nunca con `font-size` propio:
+  `.tipo-h1`, `.tipo-cuerpo`, `.tipo-titulo-tarjeta`, `.precio`,
+  `.tipo-secundario`. `tipografia.css` es la única fuente de verdad del texto y
+  un hook rechaza cualquier `font-size` o `font-family` fuera de ella. El nivel
+  del encabezado lo decide la estructura del documento; el tamaño, la clase.
+- **Ningún HEX ni píxel suelto.** Todo por variable: `var(--color-superficie)`,
+  `var(--esp-16)`, `var(--radio-md)`. Un hook bloquea la escritura si aparece un
+  color literal.
+- Modo oscuro con `data-tema="oscuro"` en el elemento raíz. La preferencia del
+  usuario se guarda y, si no la hay, se sigue la del sistema. En SSR se resuelve
+  antes de pintar para evitar el parpadeo.
+- Medidas fijas del sistema: cabecera 72px en escritorio y 60px en móvil, logo a
+  34px, ancho máximo de contenido 1200px, puntos de quiebre en 640px y 1024px.
+- Destinos táctiles de 44px como mínimo. Sin excepción.
+- El acento ocre aparece una sola vez por pantalla, siempre como relleno.
+- La regla de puntada (`.regla-puntada`) es el único elemento decorativo. No se
+  sustituye por una línea continua.
+
+## Accesibilidad
+
+Es requisito de aceptación, no un extra. Cada componente entra con:
+
+- HTML semántico antes que ARIA. `aria-*` solo cuando no hay elemento nativo.
+- Un solo `h1` por página y sin saltos de nivel.
+- Foco visible de 3px en todo lo interactivo. No se elimina el `outline`.
+- Todo formulario con `label` asociado; los errores con `aria-describedby` y
+  `aria-invalid`.
+- Toda imagen con `alt` real, o `alt=""` si es decorativa.
+- Navegación completa por teclado, incluido el menú móvil y el visor 360.
+- Respeto a `prefers-reduced-motion`, ya contemplado en los tokens.
+- Contraste mínimo 4.5:1 en texto normal y 3:1 en texto grande, iconos y bordes
+  de control. El informe está en `../docs/ui/contraste.md` y lo regenera
+  `verificar.py` en los dos modos.
+- **Si un componente nuevo usa una combinación de colores que no existía**, se
+  agrega ese par a la lista `PARES` de `../docs/ui/generador/verificar.py`. Un
+  par que no está en la lista no se está comprobando, y por ahí se cuela un texto
+  ilegible.
+- Dentro de la franja oscura del hero y del pie se usa la clase `.franja-oscura`,
+  que redefine el anillo de foco. Sin ella, el foco del CTA principal es
+  invisible: es tinta sobre tinta.
+
+## Internacionalización
+
+- Transloco con `es` por defecto y `en` disponible. Ningún texto visible se
+  escribe en una plantilla o en un `.ts`.
+- Claves jerárquicas por funcionalidad: `catalog.product.publishButton`. Nada de
+  claves con la frase completa.
+- El idioma se resuelve en el servidor durante el SSR, no en el cliente, para
+  que el HTML llegue ya traducido.
+- Fechas, números y precios con las API de `Intl` y la configuración regional
+  activa. Los precios usan la fuente monoespaciada del sistema.
+- Los términos de dominio se traducen según `../docs/producto/glosario.md`, que
+  es bilingüe justamente para esto.
+
+## SSR
+
+- El código de servidor no puede tocar `window`, `document`, `localStorage` ni
+  `navigator`. Si algo los necesita, se aísla y se protege con `afterNextRender`
+  o una comprobación de plataforma.
+- La ficha de producto y el listado deben renderizarse en servidor con metadatos
+  completos: título, descripción, `og:image` y datos estructurados de producto.
+  De esto vive el posicionamiento del marketplace.
+- El estado transferido del servidor al cliente no incluye datos privados.
+
+## Pruebas
+
+- Vitest con el constructor `@angular/build:unit-test`. Karma y Jasmine no están
+  en el proyecto.
+- `domain` y `application` se prueban sin TestBed: son funciones puras.
+- Componentes: se prueba comportamiento observable por el usuario, no métodos
+  internos. Consultas por rol y por texto accesible antes que por selector CSS.
+- HTTP siempre simulado. Ninguna prueba sale a la red.
+- Extremo a extremo con Playwright para los caminos críticos: registro, inicio de
+  sesión, publicación y compra.
+- Cobertura mínima: 80% global, 90% en `domain` y `application`.
+
+## Rendimiento
+
+- Rutas con carga diferida. `@defer` para lo que está bajo el pliegue.
+- Imágenes con `NgOptimizedImage`, dimensiones explícitas y formato moderno. La
+  foto de producto es 3:4; el visor 360 usa los mismos fotogramas.
+- Presupuesto inicial: 200KB comprimido en la ruta principal. Si un cambio lo
+  excede, se justifica o se revierte.

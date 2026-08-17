@@ -1,0 +1,21 @@
+# Produccion. Sin valores por omision y con la superficie expuesta al minimo.
+
+logging:
+  level:
+    root: INFO
+    co.sastra: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # Solo lo que necesita el orquestador para saber si el proceso vive.
+        include: health
+
+springdoc:
+  # La documentacion de la API no se sirve en produccion: describe la superficie
+  # completa del sistema y no aporta nada al comprador.
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

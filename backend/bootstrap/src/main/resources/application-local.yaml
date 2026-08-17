@@ -1,0 +1,37 @@
+# Desarrollo en la maquina de quien programa.
+#
+# Los valores por omision permiten arrancar sin .env contra el PostgreSQL del
+# docker compose. Ninguno es real ni sirve fuera de localhost: el NIT es un
+# marcador de posicion y el correo no existe. Los valores reales, incluso los no
+# secretos, llegan por variable de entorno tambien aqui.
+
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/sastra}
+    username: ${DB_USERNAME:sastra}
+    password: ${DB_PASSWORD:sastra}
+
+logging:
+  level:
+    co.sastra: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # flyway responde que migraciones se aplicaron y cuando. En produccion no
+        # se expone: dice demasiado sobre el esquema.
+        include: health,info,flyway
+
+sastra:
+  app:
+    base-url: ${APP_BASE_URL:http://localhost:4200}
+    api-base-url: ${APP_API_BASE_URL:http://localhost:8080}
+    support-email: ${SUPPORT_EMAIL:soporte@localhost}
+    cors-allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
+  company:
+    name: ${COMPANY_NAME:Sastra}
+    tax-id: ${COMPANY_TAX_ID:000000000-0}
+    address: ${COMPANY_ADDRESS:Medellin, Colombia}
+  commission:
+    rate: ${COMMISSION_RATE:0.05}

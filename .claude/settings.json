@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(gradlew.bat *)",
+      "Bash(./gradlew *)",
+      "Bash(npm run *)",
+      "Bash(npm test *)",
+      "Bash(npm ci)",
+      "Bash(npx ng *)",
+      "Bash(docker compose *)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git switch *)",
+      "Bash(git restore *)",
+      "Bash(python3 publicar.py)",
+      "Bash(python3 construir.py)",
+      "Bash(python3 verificar.py)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./**/*.pem)",
+      "Read(./**/*.p12)",
+      "Read(./**/id_rsa*)",
+      "Read(./**/service-account*.json)",
+      "Write(./frontend/src/styles/tokens.css)",
+      "Write(./frontend/src/styles/tipografia.css)",
+      "Write(./frontend/src/styles/marca.css)",
+      "Write(./docs/ui/tokens.css)",
+      "Write(./docs/ui/tipografia.css)",
+      "Write(./docs/ui/marca.css)",
+      "Write(./docs/ui/index.html)",
+      "Write(./docs/ui/contraste.md)",
+      "Write(./docs/marca/**)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(rm -rf *)"
+    ],
+    "ask": [
+      "Bash(git push*)",
+      "Bash(npm install *)",
+      "Bash(npx *)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/proteger-archivos.mjs",
+            "timeout": 10
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/proteger-comandos.mjs",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/revisar-convenciones.mjs",
+            "timeout": 20
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/contexto-de-sesion.mjs",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

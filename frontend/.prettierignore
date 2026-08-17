@@ -1,0 +1,14 @@
+dist
+coverage
+.angular
+out-tsc
+node_modules
+playwright-report
+test-results
+
+# Entregables del kit de marca y del generador: se publican, no se editan aqui
+public/
+src/styles/tokens.css
+src/styles/tipografia.css
+src/styles/marca.css
+src/styles/fuentes.css

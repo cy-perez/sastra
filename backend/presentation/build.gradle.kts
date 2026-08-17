@@ -1,0 +1,25 @@
+// El borde HTTP: controladores, DTO de peticion y respuesta, y traduccion de
+// errores a ProblemDetail. No decide nada de negocio.
+
+plugins {
+    id("sastra.spring-conventions")
+}
+
+dependencies {
+    implementation(project(":application"))
+    implementation(project(":domain"))
+
+    // El starter especifico, no el monolitico spring-boot-starter-web
+    // (backend/CLAUDE.md).
+    implementation(libs.spring.boot.starter.webmvc)
+
+    // Jakarta Validation en el DTO de entrada. La otra mitad de la validacion
+    // la hace el dominio: las dos, no una.
+    implementation(libs.spring.boot.starter.validation)
+
+    // OpenAPI generado desde el codigo, servido en /swagger-ui.html
+    // (docs/arquitectura/contrato-api.md). Apagado en el perfil prod.
+    implementation(libs.springdoc.openapi.webmvc.ui)
+
+    testImplementation(libs.spring.boot.starter.test)
+}

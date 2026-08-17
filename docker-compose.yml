@@ -1,0 +1,30 @@
+# Servicios locales de desarrollo.
+#
+# Solo PostgreSQL: Typesense entra en Fase 3, cuando exista la busqueda. Levantar
+# hoy un contenedor que nadie consulta solo gasta memoria y confunde sobre que
+# esta realmente en uso.
+#
+# Las credenciales salen del .env de esta misma carpeta, que Docker Compose lee
+# solo. Los valores por omision sirven unicamente en local.
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: sastra-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-sastra}
+      POSTGRES_USER: ${DB_USERNAME:-sastra}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-sastra}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-sastra} -d ${DB_NAME:-sastra}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  postgres-data:

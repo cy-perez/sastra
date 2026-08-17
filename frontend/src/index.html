@@ -1,0 +1,42 @@
+<!doctype html>
+<!-- El atributo lang y el atributo data-tema los reescribe el servidor en cada
+     peticion, antes de enviar el HTML. Ver src/server.ts. Asi la pagina llega
+     ya traducida y con el tema correcto: sin parpadeo al cargar. -->
+<html lang="es" data-tema="claro">
+  <head>
+    <meta charset="utf-8" />
+    <base href="/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Iconos y manifiesto: docs/marca/dist/web/head-snippet.html -->
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!-- Solo dos fuentes se precargan. Precargarlas todas compite con las fotos
+         de producto y retrasa la pagina. El atributo crossorigin es obligatorio
+         aunque sean del mismo dominio: sin el, el navegador las baja dos veces.
+         Detalle en public/fuentes/LEEME.md -->
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      crossorigin
+      href="/fuentes/instrument-sans-400.woff2"
+    />
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="/fuentes/archivo-700.woff2" />
+
+    <!-- Metadatos que no cambian con el idioma. El titulo, la descripcion y
+         og:locale los pone la aplicacion en cada ruta, traducidos: viven en
+         core/seo, no aqui. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Sastra" />
+    <meta property="og:image" content="/og-image.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="/twitter-card.png" />
+  </head>
+  <body class="tipo-cuerpo">
+    <sastra-root></sastra-root>
+  </body>
+</html>

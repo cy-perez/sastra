@@ -1,0 +1,90 @@
+/* Enlace de salto: fuera de la vista hasta que recibe el foco. No se oculta con
+   display:none porque entonces el teclado tampoco lo alcanzaria. */
+.salto-al-contenido {
+  position: absolute;
+  z-index: 10;
+  left: var(--esp-8);
+  top: var(--esp-8);
+  transform: translateY(-250%);
+  padding: var(--esp-8) var(--esp-16);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  background: var(--color-superficie);
+  color: var(--color-texto);
+  text-decoration: none;
+}
+
+.salto-al-contenido:focus {
+  transform: translateY(0);
+}
+
+.cabecera {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: var(--color-superficie);
+  border-bottom: 1px solid var(--color-borde);
+}
+
+/* Medidas del sistema: 60 en movil, 72 en escritorio. Es min-height y no height
+   para que con el texto al 200% la barra crezca en vez de recortar. */
+.barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-16);
+  min-height: 60px;
+  flex-wrap: wrap;
+}
+
+@media (min-width: 640px) {
+  .barra {
+    min-height: 72px;
+  }
+}
+
+.logo-sitio img {
+  display: block;
+  height: 34px;
+  width: auto;
+}
+
+.acciones {
+  display: flex;
+  align-items: center;
+  gap: var(--esp-8);
+}
+
+/* Todo destino tactil llega a 44px. Sin excepcion. */
+.selector-idioma {
+  min-height: 44px;
+  padding: 0 var(--esp-8);
+  border: 1px solid var(--color-borde-control);
+  border-radius: var(--radio-md);
+  background: var(--color-superficie);
+  color: var(--color-texto);
+  font: inherit;
+}
+
+.boton-icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 1px solid var(--color-borde-control);
+  border-radius: var(--radio-md);
+  background: var(--color-superficie);
+  color: var(--color-texto);
+  cursor: pointer;
+}
+
+.boton-icono:hover {
+  background: var(--color-primario-suave);
+}
+
+.boton-icono svg {
+  width: 20px;
+  height: 20px;
+}

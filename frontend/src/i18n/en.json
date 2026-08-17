@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "siteName": "Sastra",
+    "home": {
+      "title": "Sastra",
+      "description": "Buy and sell fashion, with the platform standing behind it."
+    },
+    "notFound": {
+      "title": "Page not found",
+      "description": "The address you opened does not exist on Sastra."
+    }
+  },
+  "layout": {
+    "skipToContent": "Skip to content",
+    "home": "Home",
+    "logoAlt": "Sastra, go to home",
+    "theme": {
+      "toDark": "Switch to dark mode",
+      "toLight": "Switch to light mode"
+    },
+    "language": {
+      "label": "Language",
+      "es": "Español",
+      "en": "English"
+    },
+    "footer": {
+      "tagline": "Buy and sell fashion, with the platform standing behind it."
+    }
+  },
+  "home": {
+    "title": "Buy and sell fashion, with the platform standing behind it",
+    "underConstruction": "This home page is not built yet. The scaffolding already works: language, theme and server-side rendering."
+  },
+  "notFound": {
+    "title": "This page does not exist",
+    "body": "The link may be misspelled, or the page may have moved.",
+    "backHome": "Back to home"
+  },
+  "errors": {
+    "fallback": "We could not complete the operation. Please try again.",
+    "network": "There is no connection to the server. Check your network and try again.",
+    "byCode": {}
+  }
+}

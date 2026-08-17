@@ -1,0 +1,33 @@
+# Entorno
+.env
+.env.local
+.env.*.local
+*.pem
+*.p12
+*.jks
+service-account*.json
+
+# Java
+build/
+bin/
+out/
+.gradle/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Node
+node_modules/
+dist/
+.angular/
+coverage/
+*.tsbuildinfo
+
+# Herramientas
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.iml
+.DS_Store
+Thumbs.db
+
+# Claude Code
+.claude/settings.local.json

@@ -1,0 +1,14 @@
+# Entorno de desarrollo desplegado. Todo valor llega por variable de entorno:
+# aqui no hay ningun valor por omision, para que una variable olvidada se note
+# al desplegar y no en produccion.
+
+logging:
+  level:
+    root: INFO
+    co.sastra: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,flyway

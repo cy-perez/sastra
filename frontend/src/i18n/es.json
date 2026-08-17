@@ -1,0 +1,44 @@
+{
+  "meta": {
+    "siteName": "Sastra",
+    "home": {
+      "title": "Sastra",
+      "description": "Compra y vende moda con respaldo."
+    },
+    "notFound": {
+      "title": "Página no encontrada",
+      "description": "La dirección que abriste no existe en Sastra."
+    }
+  },
+  "layout": {
+    "skipToContent": "Saltar al contenido",
+    "home": "Inicio",
+    "logoAlt": "Sastra, ir al inicio",
+    "theme": {
+      "toDark": "Cambiar a modo oscuro",
+      "toLight": "Cambiar a modo claro"
+    },
+    "language": {
+      "label": "Idioma",
+      "es": "Español",
+      "en": "English"
+    },
+    "footer": {
+      "tagline": "Compra y vende moda con respaldo."
+    }
+  },
+  "home": {
+    "title": "Compra y vende moda con respaldo",
+    "underConstruction": "Esta portada todavía no está construida. El andamiaje ya funciona: idioma, tema y renderizado en servidor."
+  },
+  "notFound": {
+    "title": "Esta página no existe",
+    "body": "Puede que el enlace esté mal escrito o que la página se haya movido.",
+    "backHome": "Volver al inicio"
+  },
+  "errors": {
+    "fallback": "No pudimos completar la operación. Inténtalo de nuevo.",
+    "network": "No hay conexión con el servidor. Revisa tu red e inténtalo de nuevo.",
+    "byCode": {}
+  }
+}

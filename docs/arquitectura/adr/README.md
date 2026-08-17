@@ -1,0 +1,36 @@
+# Decisiones de arquitectura
+
+Una ADR registra una decisión y, sobre todo, **por qué** se tomó. Sirve para no
+volver a discutir lo mismo dentro de seis meses y para que quien llegue después
+entienda el razonamiento en lugar de suponerlo.
+
+## Cuándo se escribe una
+
+- Se elige entre dos o más opciones técnicas con consecuencias duraderas.
+- Se agrega, cambia o elimina una dependencia importante.
+- Se cambia la estructura de módulos o el grafo de dependencias.
+- Se acepta deliberadamente una deuda técnica.
+
+No se escribe una ADR para decisiones reversibles en una tarde.
+
+## Cómo
+
+Se copia `PLANTILLA.md`, se numera consecutivamente y no se borra nunca. Una
+decisión que se revierte no se elimina: se marca como sustituida y la nueva ADR
+la referencia.
+
+## Índice
+
+| ADR | Decisión | Estado |
+|---|---|---|
+| 0001 | Monorepo y arquitectura por capas estricta | Aceptada |
+| 0002 | Gradle multi-módulo para hacer cumplir las capas | Aceptada |
+| 0003 | Autenticación con JWT propio y refresco rotatorio | Aceptada |
+| 0004 | Spring Data JDBC en lugar de JPA | Aceptada |
+| 0005 | Wompi con división de pago | Aceptada con riesgo abierto |
+| 0006 | Angular con renderizado en servidor desde el inicio | Aceptada |
+| 0007 | TanStack Query pese a su estado experimental | Aceptada con condiciones |
+| 0008 | Búsqueda con Typesense | Aceptada, se implementa en Fase 3 |
+| 0009 | Hospedaje escalonado: Vercel primero, GCP después | Aceptada |
+| 0010 | Ocho tomas a 45 grados y proporción 3:4 para el visor | Aceptada |
+| 0011 | El tipo se aplica por rol, no por tamaño | Aceptada |

@@ -1,10 +1,21 @@
-import type { AppConfig } from './app-config';
+import type { AppConfig, LegalVersions } from './app-config';
 
 /** Solo la parte del entorno que nos interesa: asi la funcion es pura y se prueba sin Node. */
 export type EnvironmentVariables = Readonly<Record<string, string | undefined>>;
 
 const FALLBACK_DEFAULT_LOCALE = 'es';
 const FALLBACK_AVAILABLE_LOCALES = 'es,en';
+
+/**
+ * El mismo valor por omision que usa el perfil local del backend.
+ *
+ * No se exige la variable, como si se exige API_BASE_URL, para no romper el
+ * arranque en la maquina de quien programa. El riesgo de olvidarla en un
+ * despliegue esta cubierto por otro lado: el texto que se sirve con esta version
+ * es el borrador, y el borrador dice en su primera linea que no tiene valor
+ * legal. Un despliegue que la olvide no falla en silencio, grita.
+ */
+const VERSION_DE_BORRADOR = 'borrador-local';
 
 /**
  * Lee la configuracion del entorno y falla al arrancar si algo obligatorio no
@@ -38,7 +49,21 @@ export function readAppConfig(env: EnvironmentVariables): AppConfig {
     availableLocales,
     enableDevtools: env['ENABLE_DEVTOOLS']?.trim().toLowerCase() === 'true',
     sentryDsn: sentryDsn && sentryDsn.length > 0 ? sentryDsn : null,
+    legalVersions: leerVersionesLegales(env),
   };
+}
+
+function leerVersionesLegales(env: EnvironmentVariables): LegalVersions {
+  return {
+    terms: conValorPorOmision(env['LEGAL_TERMS_VERSION']),
+    privacy: conValorPorOmision(env['LEGAL_PRIVACY_VERSION']),
+    cookies: conValorPorOmision(env['LEGAL_COOKIES_VERSION']),
+  };
+}
+
+function conValorPorOmision(valor: string | undefined): string {
+  const limpio = valor?.trim();
+  return limpio && limpio.length > 0 ? limpio : VERSION_DE_BORRADOR;
 }
 
 /**
@@ -78,6 +103,11 @@ export function readAppConfigForBootstrap(env: EnvironmentVariables): AppConfig 
       availableLocales: FALLBACK_AVAILABLE_LOCALES.split(','),
       enableDevtools: false,
       sentryDsn: null,
+      legalVersions: {
+        terms: VERSION_DE_BORRADOR,
+        privacy: VERSION_DE_BORRADOR,
+        cookies: VERSION_DE_BORRADOR,
+      },
     };
   }
 }

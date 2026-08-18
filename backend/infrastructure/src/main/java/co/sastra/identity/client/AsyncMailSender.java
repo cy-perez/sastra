@@ -92,6 +92,23 @@ public class AsyncMailSender implements MailSender {
         enDiferido("aviso de sesion revocada", () -> transporte.enviarAvisoDeSesionRevocadaPorSeguridad(titular));
     }
 
+    @Override
+    public void enviarRestablecimientoDeContrasena(User destinatario, String tokenEnClaro) {
+        enDiferido(
+                "restablecimiento de contrasena",
+                () -> transporte.enviarRestablecimientoDeContrasena(destinatario, tokenEnClaro));
+    }
+
+    /**
+     * Criterio 20. En diferido como los demas, y aqui importa el doble: es el
+     * ultimo paso del restablecimiento, dentro de su transaccion, y esperar al
+     * proveedor alargaria una operacion que ya escribio en tres tablas.
+     */
+    @Override
+    public void enviarAvisoDeContrasenaCambiada(User titular) {
+        enDiferido("aviso de contrasena cambiada", () -> transporte.enviarAvisoDeContrasenaCambiada(titular));
+    }
+
     /**
      * Nada de lo que pase aqui puede volver al hilo de la peticion.
      *

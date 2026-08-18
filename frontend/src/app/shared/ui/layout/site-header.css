@@ -43,8 +43,15 @@
   }
 }
 
+/* Sin declarar display. Quien decide cual de los dos logos se ve es marca.css,
+   que los alterna segun el tema, y una regla de aqui le gana aunque parezca
+   menos especifica: la encapsulacion de Angular le anade atributos al selector y
+   lo sube por encima. Con display:block puesto aqui se pintaban LOS DOS logos a
+   la vez, uno al lado del otro.
+
+   Tampoco hace falta: .logo-sitio es inline-flex, y un elemento flex no arrastra
+   el hueco de linea base que display:block venia a quitar. */
 .logo-sitio img {
-  display: block;
   height: 34px;
   width: auto;
 }

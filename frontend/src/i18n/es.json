@@ -20,6 +20,28 @@
     "login": {
       "title": "Entrar",
       "description": "Entra a tu cuenta de Sastra para comprar y vender moda con respaldo."
+    },
+    "legal": {
+      "terms": {
+        "title": "Términos y condiciones",
+        "description": "Condiciones de uso de Sastra."
+      },
+      "privacy": {
+        "title": "Política de tratamiento de datos",
+        "description": "Cómo trata Sastra tus datos personales y qué derechos tienes."
+      },
+      "cookies": {
+        "title": "Política de cookies",
+        "description": "Qué cookies usa Sastra y para qué."
+      }
+    },
+    "forgot": {
+      "title": "Recuperar contraseña",
+      "description": "Pide un enlace para poner una contraseña nueva en Sastra."
+    },
+    "reset": {
+      "title": "Nueva contraseña",
+      "description": "Pon una contraseña nueva para tu cuenta de Sastra."
     }
   },
   "layout": {
@@ -36,7 +58,8 @@
       "en": "English"
     },
     "footer": {
-      "tagline": "Compra y vende moda con respaldo."
+      "tagline": "Compra y vende moda con respaldo.",
+      "legalLabel": "Documentos legales"
     },
     "session": {
       "login": "Entrar",
@@ -68,11 +91,34 @@
       "AUTH_SESSION_INVALID": "Tu sesión terminó. Vuelve a entrar.",
       "COMMON_VALIDATION_FAILED": "Revisa los datos del formulario.",
       "COMMON_TOO_MANY_REQUESTS": "Demasiados intentos seguidos. Espera un momento y vuelve a intentarlo.",
-      "COMMON_UNEXPECTED": "Algo salió mal de nuestro lado. Inténtalo de nuevo."
+      "COMMON_UNEXPECTED": "Algo salió mal de nuestro lado. Inténtalo de nuevo.",
+      "AUTH_RESET_TOKEN_INVALID": "Este enlace ya no sirve. Puede que lo hayas usado antes.",
+      "AUTH_RESET_TOKEN_EXPIRED": "Este enlace venció. Los enlaces para cambiar la contraseña duran 30 minutos."
     }
   },
   "form": {
-    "sending": "Enviando"
+    "sending": "Enviando",
+    "readDocument": "Leer el documento",
+    "opensInNewTab": "(se abre en una pestaña nueva)"
+  },
+  "legal": {
+    "version": "Versión {{version}}",
+    "draft": {
+      "label": "Aviso:",
+      "body": "este texto es un borrador de trabajo y no tiene valor legal. El documento definitivo todavía no se ha publicado."
+    },
+    "missing": {
+      "body": "No pudimos cargar este documento. Si el problema sigue, escríbenos."
+    },
+    "terms": {
+      "title": "Términos y condiciones"
+    },
+    "privacy": {
+      "title": "Política de tratamiento de datos"
+    },
+    "cookies": {
+      "title": "Política de cookies"
+    }
   },
   "auth": {
     "register": {
@@ -107,6 +153,8 @@
         "termsRequired": "Necesitas aceptar los términos y condiciones.",
         "privacyRequired": "Necesitas autorizar el tratamiento de tus datos personales."
       },
+      "readTerms": "Leer los términos y condiciones",
+      "readPrivacy": "Leer la política de tratamiento de datos",
       "sent": {
         "title": "Revisa tu correo",
         "body": "Si ese correo puede usarse, te enviamos un enlace para confirmarlo. El enlace vence en 24 horas.",
@@ -126,7 +174,8 @@
         "password": "Escribe tu contraseña."
       },
       "noAccount": "¿Todavía no tienes cuenta?",
-      "goToRegister": "Créala aquí"
+      "goToRegister": "Créala aquí",
+      "forgotPassword": "¿Olvidaste tu contraseña?"
     },
     "pending": {
       "label": "Verificación de correo pendiente",
@@ -153,6 +202,48 @@
         "body": "Abre el enlace tal como llegó en el correo, sin recortarlo."
       },
       "resent": "Listo, te enviamos un enlace nuevo. Revisa tu correo."
+    },
+    "forgot": {
+      "title": "Recupera tu contraseña",
+      "subtitle": "Escribe tu correo y te enviamos un enlace para poner una nueva.",
+      "submit": "Enviar el enlace",
+      "fields": {
+        "email": "Correo electrónico"
+      },
+      "errors": {
+        "email": "Escribe un correo válido, como nombre@correo.com."
+      },
+      "sent": {
+        "title": "Revisa tu correo",
+        "body": "Si ese correo tiene una cuenta en Sastra, le enviamos un enlace para cambiar la contraseña. El enlace vence en {{minutos}} minutos y sirve una sola vez.",
+        "spam": "Si no lo ves, revisa la carpeta de no deseados."
+      },
+      "remembered": "¿Ya la recordaste?",
+      "goToLogin": "Entra aquí"
+    },
+    "reset": {
+      "title": "Pon una contraseña nueva",
+      "subtitle": "Al cambiarla cerramos todas las sesiones abiertas, en todos tus dispositivos.",
+      "submit": "Cambiar la contraseña",
+      "fields": {
+        "password": "Contraseña nueva"
+      },
+      "hints": {
+        "password": "Diez caracteres como mínimo. Una frase larga es más segura que una palabra con símbolos."
+      },
+      "errors": {
+        "passwordTooShort": "La contraseña necesita al menos 10 caracteres."
+      },
+      "done": {
+        "title": "Listo, ya cambió",
+        "body": "Cerramos todas las sesiones abiertas. Entra de nuevo con tu contraseña nueva.",
+        "goToLogin": "Entrar"
+      },
+      "missing": {
+        "title": "Falta el enlace",
+        "body": "Abre el enlace tal como llegó en el correo, sin recortarlo."
+      },
+      "askAnother": "Pedir un enlace nuevo"
     }
   }
 }

@@ -27,6 +27,12 @@
     [errorKey]="passwordError()"
   />
 
+  <!-- Antes del boton y dentro del formulario: quien no recuerda su contrasena lo
+       descubre justo aqui, no despues de fallar. -->
+  <p class="olvido tipo-secundario">
+    <a routerLink="/recuperar-contrasena">{{ 'auth.login.forgotPassword' | transloco }}</a>
+  </p>
+
   <sastra-submit-button labelKey="auth.login.submit" [loading]="ingreso.isPending()" />
 </form>
 

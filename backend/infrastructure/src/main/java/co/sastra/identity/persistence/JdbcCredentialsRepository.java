@@ -60,6 +60,29 @@ public class JdbcCredentialsRepository implements CredentialsRepository {
                 .update();
     }
 
+    /**
+     * El unico UPDATE que toca {@code password_hash}.
+     *
+     * <p>Escribe tambien la fecha y limpia el contador y el bloqueo, porque los
+     * cuatro son la misma decision: hay contrasena nueva, asi que lo que sabiamos de
+     * la anterior deja de valer.
+     */
+    @Override
+    public void cambiarContrasena(UserCredentials credenciales) {
+        jdbc.sql("""
+                        UPDATE user_credentials
+                        SET password_hash       = :hash,
+                            password_updated_at = :actualizada,
+                            failed_attempts     = 0,
+                            locked_until        = NULL
+                        WHERE user_id = :usuario
+                        """)
+                .param("hash", credenciales.passwordHash().value())
+                .param("actualizada", Timestamp.from(credenciales.passwordUpdatedAt()))
+                .param("usuario", credenciales.userId().value())
+                .update();
+    }
+
     private static UserCredentials mapear(ResultSet fila, int numeroDeFila) throws SQLException {
         Timestamp bloqueo = fila.getTimestamp("locked_until");
 

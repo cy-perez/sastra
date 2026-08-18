@@ -36,7 +36,12 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="/twitter-card.png" />
   </head>
-  <body class="tipo-cuerpo">
+  <!-- Sin clase de rol. La familia y el tamano base los pone tipografia.css
+       sobre el propio elemento. Poner aqui .tipo-cuerpo parecia equivalente y no
+       lo era: esa clase trae max-width de 68 caracteres, y en el body encogia el
+       documento entero, de modo que el ancho maximo de contenido no llegaba a
+       aplicarse nunca. -->
+  <body>
     <sastra-root></sastra-root>
   </body>
 </html>

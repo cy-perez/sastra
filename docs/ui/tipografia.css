@@ -192,12 +192,19 @@
   text-align: right;
 }
 
-/* ---------- 6. Enlaces dentro de texto ----------
+/* ---------- 6. Enlaces ----------
    Subrayados, siempre. Distinguirlos solo por color falla para quien no
    percibe ese color. El desplazamiento evita que la línea corte las letras
-   que bajan (j, g, p). */
-.tipo-cuerpo a,
-.tipo-entradilla a {
+   que bajan (j, g, p).
+
+   Va sobre el elemento y no sobre .tipo-cuerpo a. Antes colgaba de esa clase y
+   alcanzaba a todo el sitio solo porque el <body> la llevaba puesta, lo que
+   ataba la legibilidad de cada enlace a un atributo de index.html. Un enlace de
+   una barra o de un pie no está dentro de un párrafo y merece el mismo trato.
+
+   Quien no quiera subrayado lo declara: los botones que son enlaces ya lo
+   hacen. */
+a {
   color: inherit;
   text-decoration: underline;
   text-underline-offset: 0.18em;
@@ -207,8 +214,20 @@
 /* ---------- 7. Ancho de lectura ---------- */
 .medida { max-width: var(--medida); }
 
-/* ---------- 8. Encabezados por defecto ----------
-   Para que un HTML sin clases ya salga correcto. */
+/* ---------- 8. Base del documento ----------
+   Para que un HTML sin clases ya salga correcto.
+
+   La familia y el tamaño base van aquí, en el elemento, y NO poniéndole una
+   clase de rol al <body>. Ponerle .tipo-cuerpo parece equivalente y no lo es:
+   esa clase incluye max-width: var(--medida), o sea 68 caracteres, y aplicada al
+   body encoge el documento entero. El ancho máximo de contenido nunca llega a
+   aplicarse porque ningún hijo puede pasar de su padre. El ancho de lectura es
+   de los párrafos; el body no es un párrafo. Para ponérselo a un bloque suelto
+   está la clase .medida. */
+body {
+  font: 400 var(--texto-base)/1.55 var(--fuente-texto);
+}
+
 h1 { font: 700 var(--tipo-h1)/1.1 var(--fuente-display); letter-spacing: -0.015em; }
 h2 { font: 700 var(--tipo-h2)/1.15 var(--fuente-display); letter-spacing: -0.01em; }
 h3 { font: 500 var(--tipo-h3)/1.2 var(--fuente-display); }

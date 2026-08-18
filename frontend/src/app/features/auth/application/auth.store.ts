@@ -5,6 +5,7 @@ import { ApiError } from '../../../core/http/api-error';
 import { SessionStore } from '../../../core/session/session.store';
 import { AuthApi } from '../infrastructure/auth.api';
 import type { Credentials } from '../domain/credentials';
+import type { PasswordReset, PasswordResetRequest } from '../domain/password-reset';
 import type { Registration } from '../domain/registration';
 
 /**
@@ -75,6 +76,25 @@ export class AuthStore {
     },
   }));
 
+  /**
+   * Criterio 19. Sin reintentos: el servidor responde igual exista o no el correo,
+   * asi que un reintento automatico solo mandaria dos correos a quien si tiene
+   * cuenta.
+   */
+  readonly passwordResetRequest = injectMutation(() => ({
+    mutationFn: (peticion: PasswordResetRequest) => this.api.requestPasswordReset(peticion),
+    retry: false,
+  }));
+
+  /**
+   * Criterio 20. Al terminar se olvida lo escrito: la contrasena nueva no puede
+   * quedarse en el estado de la mutacion, igual que no se queda la del ingreso.
+   */
+  readonly passwordReset = injectMutation(() => ({
+    mutationFn: (cambio: PasswordReset) => this.api.resetPassword(cambio),
+    retry: false,
+  }));
+
   /** Criterio 13: el reenvio desde dentro, para quien entro sin verificar. */
   readonly emailVerificationRequest = injectMutation(() => ({
     mutationFn: () => this.api.requestEmailVerification(),
@@ -98,6 +118,7 @@ export class AuthStore {
   private olvidarLoEscrito(): void {
     this.login.reset();
     this.registration.reset();
+    this.passwordReset.reset();
   }
 
   /**

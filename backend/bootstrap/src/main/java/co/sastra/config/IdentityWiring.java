@@ -13,6 +13,7 @@ import co.sastra.identity.port.out.RefreshTokenRepository;
 import co.sastra.identity.port.out.TokenGenerator;
 import co.sastra.identity.port.out.UserRepository;
 import co.sastra.identity.port.out.VerificationTokenRepository;
+import co.sastra.identity.usecase.ForgotPasswordUseCase;
 import co.sastra.identity.usecase.IssueSessionUseCase;
 import co.sastra.identity.usecase.LoginUseCase;
 import co.sastra.identity.usecase.LogoutUseCase;
@@ -20,6 +21,7 @@ import co.sastra.identity.usecase.RefreshSessionUseCase;
 import co.sastra.identity.usecase.RegisterUserUseCase;
 import co.sastra.identity.usecase.RequestEmailVerificationUseCase;
 import co.sastra.identity.usecase.ResendVerificationUseCase;
+import co.sastra.identity.usecase.ResetPasswordUseCase;
 import co.sastra.identity.usecase.VerifyEmailUseCase;
 import co.sastra.shared.config.AppProperties;
 import co.sastra.shared.rest.RefreshCookies;
@@ -156,6 +158,31 @@ public class IdentityWiring {
     @Bean
     LogoutUseCase logoutUseCase(RefreshTokenRepository refrescos, TokenGenerator generadorDeTokens, Clock reloj) {
         return new LogoutUseCase(refrescos, generadorDeTokens, reloj);
+    }
+
+    @Bean
+    ForgotPasswordUseCase forgotPasswordUseCase(
+            UserRepository usuarios,
+            VerificationTokenRepository tokens,
+            TokenGenerator generadorDeTokens,
+            MailSender correo,
+            Clock reloj) {
+        return new ForgotPasswordUseCase(usuarios, tokens, generadorDeTokens, correo, reloj);
+    }
+
+    @Bean
+    ResetPasswordUseCase resetPasswordUseCase(
+            UserRepository usuarios,
+            VerificationTokenRepository tokens,
+            CredentialsRepository credenciales,
+            RefreshTokenRepository refrescos,
+            TokenGenerator generadorDeTokens,
+            PasswordHasher hasher,
+            BreachedPasswordChecker filtradas,
+            MailSender correo,
+            Clock reloj) {
+        return new ResetPasswordUseCase(
+                usuarios, tokens, credenciales, refrescos, generadorDeTokens, hasher, filtradas, correo, reloj);
     }
 
     /**

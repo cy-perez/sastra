@@ -7,7 +7,7 @@ import java.nio.charset.StandardCharsets;
 import org.springframework.stereotype.Component;
 
 /**
- * Construye el enlace que activa una cuenta.
+ * Construye los enlaces que llevan un token de un solo uso.
  *
  * <p>Vive en infraestructura porque necesita la direccion publica del sitio, que
  * es configuracion. Por eso el puerto {@code MailSender} recibe el token y no el
@@ -24,7 +24,17 @@ public class VerificationLink {
         this.mail = mail;
     }
 
+    /** El que activa una cuenta. */
     public String para(String tokenEnClaro) {
+        return enLaRuta(mail.verificationPath(), tokenEnClaro);
+    }
+
+    /** El que permite poner una contrasena nueva (criterio 18). */
+    public String paraRestablecer(String tokenEnClaro) {
+        return enLaRuta(mail.passwordResetPath(), tokenEnClaro);
+    }
+
+    private String enLaRuta(String ruta, String tokenEnClaro) {
         String base = app.baseUrl().toString();
         if (base.endsWith("/")) {
             base = base.substring(0, base.length() - 1);
@@ -32,6 +42,6 @@ public class VerificationLink {
 
         // El token va codificado aunque se genere en base64 apto para URL: si
         // manana cambia el alfabeto del generador, el enlace sigue siendo valido.
-        return base + mail.verificationPath() + "?token=" + URLEncoder.encode(tokenEnClaro, StandardCharsets.UTF_8);
+        return base + ruta + "?token=" + URLEncoder.encode(tokenEnClaro, StandardCharsets.UTF_8);
     }
 }

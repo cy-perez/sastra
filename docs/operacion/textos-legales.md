@@ -1,0 +1,38 @@
+# Textos legales
+
+Cada archivo se llama `<documento>.<version>.<idioma>.html`, donde `<documento>`
+es `terms`, `privacy` o `cookies`.
+
+La versión del nombre **tiene que coincidir** con la variable de entorno
+correspondiente: `LEGAL_TERMS_VERSION`, `LEGAL_PRIVACY_VERSION` y
+`LEGAL_COOKIES_VERSION`. Es lo que ata el texto que se muestra al que quedó
+guardado como evidencia del consentimiento. Ver `docs/operacion/datos-personales.md`.
+
+## Publicar un texto nuevo
+
+1. Agrega el archivo con la versión nueva, en español y en inglés. **No edites ni
+   borres el anterior:** hay personas que aceptaron esa versión y su evidencia
+   apunta a ese archivo.
+2. Cambia la variable de entorno a la versión nueva, en el backend y en el
+   frontend, con el mismo valor en los dos.
+
+No hace falta desplegar código.
+
+## Estado actual
+
+Los archivos `borrador-local` son **relleno sin valor legal**, puestos para que
+la estructura funcione. No sirven para lanzar: los textos reales de términos,
+tratamiento de datos y cookies los tiene que redactar y revisar quien
+corresponda, con la razón social y el NIT reales.
+
+Mientras la versión vigente sea `borrador-local`, la página muestra un aviso
+visible diciéndolo.
+
+## Formato
+
+HTML suelto, sin `<html>` ni `<body>`: se inserta dentro de la página, que ya
+pone el título y la versión. Usa `h2`, `h3`, `p`, `ul`, `ol` y `a`; la
+maquetación la aporta `legal-page.css`.
+
+El contenido pasa por el desinfectante de Angular, así que cualquier `script` o
+atributo ejecutable se descarta al mostrarlo.

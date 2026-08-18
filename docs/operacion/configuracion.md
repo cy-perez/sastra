@@ -46,8 +46,10 @@ correo, ningún NIT, ningún porcentaje de comisión.
 | `MAIL_FROM` | `hola@sastra.co` | sí |
 | `MAIL_API_URL` | `https://api.resend.com/emails` | no |
 | `MAIL_VERIFICATION_PATH` | `/verificar-correo` | no |
+| `MAIL_PASSWORD_RESET_PATH` | `/restablecer-contrasena` | no |
 | `LEGAL_TERMS_VERSION` | `2026-08-01` | sí |
 | `LEGAL_PRIVACY_VERSION` | `2026-08-01` | sí |
+| `LEGAL_COOKIES_VERSION` | `2026-08-01` | no, solo frontend |
 | `PASSWORD_BREACH_CHECK_ENABLED` | `true` | no, `true` por omisión |
 | `PASSWORD_BREACH_CHECK_TIMEOUT` | `PT2S` | no |
 | `PASSWORD_BREACH_API_URL` | `https://api.pwnedpasswords.com/range` | no |
@@ -109,6 +111,25 @@ una credencial.
 persona acepta al registrarse. Se guardan con el consentimiento y son la prueba
 de a qué dijo que sí: una versión equivocada invalida esa prueba. Cambian cada
 vez que se publica un texto nuevo.
+
+**Las lee también el frontend, y tienen que valer lo mismo en los dos.** El
+backend las guarda como evidencia y el frontend las usa para elegir qué archivo
+de texto sirve: si no coinciden, se muestra un documento distinto del que quedó
+escrito y la prueba deja de valer. El nombre del archivo lleva la versión
+(`frontend/public/legal/<documento>.<versión>.<idioma>.html`), así que cambiar la
+variable sin subir el texto nuevo da un error visible y no un texto viejo con
+etiqueta nueva. El procedimiento completo está en
+`docs/operacion/textos-legales.md`.
+
+`LEGAL_COOKIES_VERSION` es solo del frontend: nadie consiente cookies en un
+formulario, así que el backend no guarda nada de ella y existe únicamente para
+versionar el archivo de ese texto.
+
+Si no se declaran, las tres caen en `borrador-local`, que es la versión de los
+textos de relleno. No se exigen para no romper el arranque en la máquina de quien
+programa; un despliegue que las olvide sirve el borrador, y el borrador dice en
+su primera línea que no tiene valor legal, además de que la página muestra un
+aviso.
 
 `PASSWORD_BREACH_CHECK_ENABLED` apaga la consulta a Have I Been Pwned
 (ADR-0013). Se apaga en las pruebas de extremo a extremo y en desarrollo sin

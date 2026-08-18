@@ -61,10 +61,14 @@
     />
 
     <!-- Dos casillas separadas: una sola para ambos documentos no es
-         consentimiento valido segun la Ley 1581. -->
+         consentimiento valido segun la Ley 1581. Y cada una con el enlace a lo
+         que acepta: el consentimiento tambien tiene que ser informado, y no lo
+         es si no se puede leer el documento. -->
     <sastra-checkbox-field
       fieldId="terminos"
       labelKey="auth.register.fields.acceptsTerms"
+      linkLabelKey="auth.register.readTerms"
+      [linkTo]="rutaDeTerminos"
       [control]="casilla('acceptsTerms')"
       [errorKey]="termsError()"
     />
@@ -72,6 +76,8 @@
     <sastra-checkbox-field
       fieldId="privacidad"
       labelKey="auth.register.fields.acceptsPrivacy"
+      linkLabelKey="auth.register.readPrivacy"
+      [linkTo]="rutaDePrivacidad"
       [control]="casilla('acceptsPrivacy')"
       [errorKey]="privacyError()"
     />

@@ -59,6 +59,40 @@ describe('readAppConfig', () => {
     expect(readAppConfig({ ...MINIMUM, ENABLE_DEVTOOLS: 'false' }).enableDevtools).toBe(false);
   });
 
+  /**
+   * Sin las variables se cae al borrador, que es la misma version que usa el
+   * perfil local del backend. No se exigen para no romper el arranque en la
+   * maquina de quien programa: un despliegue que las olvide sirve el texto de
+   * borrador, que dice en su primera linea que no tiene valor legal.
+   */
+  it('cae en la version de borrador si no se declaran las versiones legales', () => {
+    const config = readAppConfig(MINIMUM);
+
+    expect(config.legalVersions).toEqual({
+      terms: 'borrador-local',
+      privacy: 'borrador-local',
+      cookies: 'borrador-local',
+    });
+  });
+
+  /**
+   * Las de terminos y tratamiento tienen que valer lo mismo que las del backend,
+   * que es quien las guarda como evidencia: por eso salen de las mismas
+   * variables de entorno (docs/operacion/datos-personales.md).
+   */
+  it('toma cada version legal de su variable', () => {
+    const config = readAppConfig({
+      ...MINIMUM,
+      LEGAL_TERMS_VERSION: '2026-08-01',
+      LEGAL_PRIVACY_VERSION: '2026-09-15',
+      LEGAL_COOKIES_VERSION: '  2026-07-02  ',
+    });
+
+    expect(config.legalVersions.terms).toBe('2026-08-01');
+    expect(config.legalVersions.privacy).toBe('2026-09-15');
+    expect(config.legalVersions.cookies).toBe('2026-07-02');
+  });
+
   it('deja el DSN de Sentry en nulo si viene vacio', () => {
     expect(readAppConfig({ ...MINIMUM, SENTRY_DSN: '  ' }).sentryDsn).toBeNull();
     expect(readAppConfig({ ...MINIMUM, SENTRY_DSN: 'https://dsn' }).sentryDsn).toBe('https://dsn');

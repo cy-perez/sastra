@@ -78,4 +78,27 @@ public class ConsoleMailSender implements MailSender {
                 ===============================================================================
                 """, titular.email().value());
     }
+
+    @Override
+    public void enviarRestablecimientoDeContrasena(User destinatario, String tokenEnClaro) {
+        LOG.info("""
+
+                ================ RESTABLECIMIENTO DE CONTRASENA (consola) =====================
+                Para:   {}
+                Enlace: {}
+                Vence en 30 minutos y sirve una sola vez.
+                ===============================================================================
+                """, destinatario.email().value(), enlaces.paraRestablecer(tokenEnClaro));
+    }
+
+    @Override
+    public void enviarAvisoDeContrasenaCambiada(User titular) {
+        LOG.info("""
+
+                ================ AVISO DE CONTRASENA CAMBIADA (criterio 20) ===================
+                Para: {}
+                Se cambio la contrasena y se cerraron todas las sesiones.
+                ===============================================================================
+                """, titular.email().value());
+    }
 }

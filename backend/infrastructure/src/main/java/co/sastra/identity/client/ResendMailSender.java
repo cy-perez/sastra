@@ -141,6 +141,54 @@ public class ResendMailSender implements MailSender {
                                 + "<p>Sign in again with your password. If this looks wrong, change it.</p>");
     }
 
+    /** Criterio 18: el enlace dura 30 minutos y se dice en el mensaje. */
+    @Override
+    public void enviarRestablecimientoDeContrasena(User destinatario, String tokenEnClaro) {
+        boolean espanol = destinatario.locale() == UserLocale.ES;
+        String enlace = enlaces.paraRestablecer(tokenEnClaro);
+
+        enviar(
+                destinatario.email().value(),
+                espanol ? "Restablece tu contrasena en Sastra" : "Reset your Sastra password",
+                espanol
+                        ? cuerpo(
+                                "Restablece tu contrasena",
+                                "Pediste cambiar tu contrasena. El enlace sirve una sola vez y vence en 30 "
+                                        + "minutos. Si no fuiste tu, ignora este mensaje: tu contrasena no cambia.",
+                                enlace,
+                                "Poner una contrasena nueva")
+                        : cuerpo(
+                                "Reset your password",
+                                "You asked to change your password. The link works once and expires in 30 "
+                                        + "minutes. If this was not you, ignore this message: your password stays "
+                                        + "the same.",
+                                enlace,
+                                "Set a new password"));
+    }
+
+    /**
+     * Criterio 20. Sin enlace y sin boton a proposito: es un aviso, y un correo de
+     * "tu contrasena cambio" con un enlace dentro es exactamente la forma del
+     * fraude que la persona deberia aprender a desconfiar.
+     */
+    @Override
+    public void enviarAvisoDeContrasenaCambiada(User titular) {
+        boolean espanol = titular.locale() == UserLocale.ES;
+
+        enviar(
+                titular.email().value(),
+                espanol ? "Tu contrasena cambio" : "Your password changed",
+                espanol
+                        ? "<p>Tu contrasena de Sastra acaba de cambiar y cerramos todas las sesiones "
+                                + "abiertas. Entra de nuevo con la contrasena nueva.</p>"
+                                + "<p>Si no fuiste tu, alguien tiene acceso a este correo. Escribenos de "
+                                + "inmediato desde la pagina de contacto.</p>"
+                        : "<p>Your Sastra password has just changed and we closed every open session. "
+                                + "Sign in again with the new password.</p>"
+                                + "<p>If this was not you, someone has access to this mailbox. Contact us "
+                                + "right away from the contact page.</p>");
+    }
+
     private static String cuerpo(String titulo, String texto, String enlace, String etiquetaDelBoton) {
         return "<h1>" + titulo + "</h1><p>" + texto + "</p><p><a href=\"" + enlace + "\">" + etiquetaDelBoton
                 + "</a></p>";

@@ -5,5 +5,24 @@
   <div class="contenedor">
     <hr class="regla-puntada" />
     <p class="tipo-entradilla">{{ 'layout.footer.tagline' | transloco }}</p>
+
+    <!-- La politica de tratamiento tiene que ser un enlace visible en el pie: es
+         obligatorio y es lo primero que revisa una autoridad
+         (docs/operacion/datos-personales.md). Los tres van juntos porque se
+         buscan en el mismo sitio. -->
+    <nav class="legal" [attr.aria-label]="'layout.footer.legalLabel' | transloco">
+      <!-- role="list" explicito: WebKit le quita el rol de lista a un ul con
+           list-style:none, y VoiceOver deja de anunciar "lista de 3 elementos",
+           que es lo que hace util agruparlos. -->
+      <ul class="lista-legal" role="list">
+        @for (documento of documentosLegales; track documento) {
+          <li>
+            <a class="tipo-secundario" [routerLink]="rutaDe(documento)">
+              {{ 'legal.' + documento + '.title' | transloco }}
+            </a>
+          </li>
+        }
+      </ul>
+    </nav>
   </div>
 </footer>

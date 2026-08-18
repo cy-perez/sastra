@@ -64,6 +64,19 @@ public enum ErrorCode {
      */
     AUTH_SESSION_INVALID,
 
+    /**
+     * El enlace de restablecimiento no sirve: no existe o ya se uso.
+     *
+     * <p>Codigo propio y no el de la verificacion de correo, aunque el mecanismo
+     * sea el mismo. Lo que cambia es lo que hay que decirle a la persona: aquel
+     * enlace dura 24 horas y este 30 minutos (criterio 18), y un mensaje que dijera
+     * la duracion equivocada la mandaria a buscar un correo que ya no sirve.
+     */
+    AUTH_RESET_TOKEN_INVALID,
+
+    /** El enlace de restablecimiento venció. Criterio 18: dura 30 minutos. */
+    AUTH_RESET_TOKEN_EXPIRED,
+
     /** La peticion no cumple el contrato. El detalle por campo va en {@code errors}. */
     COMMON_VALIDATION_FAILED,
 

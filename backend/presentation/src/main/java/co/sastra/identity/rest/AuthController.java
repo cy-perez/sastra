@@ -1,25 +1,31 @@
 package co.sastra.identity.rest;
 
+import co.sastra.identity.dto.ForgotPasswordCommand;
 import co.sastra.identity.dto.LoginCommand;
 import co.sastra.identity.dto.LogoutCommand;
 import co.sastra.identity.dto.RefreshSessionCommand;
 import co.sastra.identity.dto.RegisterUserCommand;
 import co.sastra.identity.dto.ResendVerificationCommand;
+import co.sastra.identity.dto.ResetPasswordCommand;
 import co.sastra.identity.dto.SessionResult;
 import co.sastra.identity.dto.VerifyEmailCommand;
 import co.sastra.identity.dto.VerifyEmailResult;
+import co.sastra.identity.rest.dto.ForgotPasswordRequest;
 import co.sastra.identity.rest.dto.LoginRequest;
 import co.sastra.identity.rest.dto.RegisterRequest;
 import co.sastra.identity.rest.dto.ResendVerificationRequest;
+import co.sastra.identity.rest.dto.ResetPasswordRequest;
 import co.sastra.identity.rest.dto.SessionResponse;
 import co.sastra.identity.rest.dto.VerifyEmailRequest;
 import co.sastra.identity.rest.dto.VerifyEmailResponse;
 import co.sastra.identity.rest.mapper.SessionResponses;
+import co.sastra.identity.usecase.ForgotPasswordUseCase;
 import co.sastra.identity.usecase.LoginUseCase;
 import co.sastra.identity.usecase.LogoutUseCase;
 import co.sastra.identity.usecase.RefreshSessionUseCase;
 import co.sastra.identity.usecase.RegisterUserUseCase;
 import co.sastra.identity.usecase.ResendVerificationUseCase;
+import co.sastra.identity.usecase.ResetPasswordUseCase;
 import co.sastra.identity.usecase.VerifyEmailUseCase;
 import co.sastra.shared.rest.ClientIpHasher;
 import co.sastra.shared.rest.RefreshCookies;
@@ -62,6 +68,8 @@ public class AuthController {
     private final LoginUseCase casoDeIngreso;
     private final RefreshSessionUseCase casoDeRefresco;
     private final LogoutUseCase casoDeCierre;
+    private final ForgotPasswordUseCase casoDeOlvido;
+    private final ResetPasswordUseCase casoDeRestablecimiento;
     private final SessionResponses respuestas;
     private final RefreshCookies cookies;
     private final ClientIpHasher hasherDeIp;
@@ -73,6 +81,8 @@ public class AuthController {
             LoginUseCase casoDeIngreso,
             RefreshSessionUseCase casoDeRefresco,
             LogoutUseCase casoDeCierre,
+            ForgotPasswordUseCase casoDeOlvido,
+            ResetPasswordUseCase casoDeRestablecimiento,
             SessionResponses respuestas,
             RefreshCookies cookies,
             ClientIpHasher hasherDeIp) {
@@ -82,6 +92,8 @@ public class AuthController {
         this.casoDeIngreso = casoDeIngreso;
         this.casoDeRefresco = casoDeRefresco;
         this.casoDeCierre = casoDeCierre;
+        this.casoDeOlvido = casoDeOlvido;
+        this.casoDeRestablecimiento = casoDeRestablecimiento;
         this.respuestas = respuestas;
         this.cookies = cookies;
         this.hasherDeIp = hasherDeIp;
@@ -128,6 +140,33 @@ public class AuthController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     public void reenviar(@Valid @RequestBody ResendVerificationRequest peticion) {
         casoDeReenvio.execute(new ResendVerificationCommand(peticion.expiredToken()));
+    }
+
+    /**
+     * Criterio 19: <strong>202 siempre</strong>, exista o no el correo.
+     *
+     * <p>Es la misma decision que en el registro y por el mismo motivo: cualquier
+     * diferencia entre los dos caminos, incluido el codigo de estado, convierte
+     * este formulario en una forma de averiguar quien tiene cuenta.
+     */
+    @PostMapping("/forgot-password")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public void pedirRestablecimiento(@Valid @RequestBody ForgotPasswordRequest peticion) {
+        casoDeOlvido.execute(new ForgotPasswordCommand(peticion.email()));
+    }
+
+    /**
+     * Criterio 20: cambia la contrasena y cierra todas las sesiones.
+     *
+     * <p>Responde 204 y no una sesion nueva. Emitirla aqui contradiria el propio
+     * criterio, que acaba de cerrar todo, y le daria la sesion sin un paso mas a
+     * quien hubiera llegado por tener acceso al buzon. Se vuelve a entrar con la
+     * contrasena nueva, que ademas es cuando se recuerda.
+     */
+    @PostMapping("/reset-password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void restablecer(@Valid @RequestBody ResetPasswordRequest peticion) {
+        casoDeRestablecimiento.execute(new ResetPasswordCommand(peticion.token(), peticion.newPassword()));
     }
 
     /** Criterio 10: token de acceso en el cuerpo y token de refresco en la cookie. */

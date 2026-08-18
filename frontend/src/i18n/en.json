@@ -20,6 +20,28 @@
     "login": {
       "title": "Sign in",
       "description": "Sign in to your Sastra account to buy and sell fashion with the platform behind it."
+    },
+    "legal": {
+      "terms": {
+        "title": "Terms and conditions",
+        "description": "Sastra's terms of use."
+      },
+      "privacy": {
+        "title": "Data processing policy",
+        "description": "How Sastra handles your personal data and what rights you have."
+      },
+      "cookies": {
+        "title": "Cookie policy",
+        "description": "Which cookies Sastra uses and what for."
+      }
+    },
+    "forgot": {
+      "title": "Recover password",
+      "description": "Request a link to set a new password on Sastra."
+    },
+    "reset": {
+      "title": "New password",
+      "description": "Set a new password for your Sastra account."
     }
   },
   "layout": {
@@ -36,7 +58,8 @@
       "en": "English"
     },
     "footer": {
-      "tagline": "Buy and sell fashion, with the platform standing behind it."
+      "tagline": "Buy and sell fashion, with the platform standing behind it.",
+      "legalLabel": "Legal documents"
     },
     "session": {
       "login": "Sign in",
@@ -68,11 +91,34 @@
       "AUTH_SESSION_INVALID": "Your session has ended. Please sign in again.",
       "COMMON_VALIDATION_FAILED": "Please check the form.",
       "COMMON_TOO_MANY_REQUESTS": "Too many attempts in a row. Wait a moment and try again.",
-      "COMMON_UNEXPECTED": "Something went wrong on our side. Please try again."
+      "COMMON_UNEXPECTED": "Something went wrong on our side. Please try again.",
+      "AUTH_RESET_TOKEN_INVALID": "This link no longer works. You may have used it already.",
+      "AUTH_RESET_TOKEN_EXPIRED": "This link has expired. Password links last 30 minutes."
     }
   },
   "form": {
-    "sending": "Sending"
+    "sending": "Sending",
+    "readDocument": "Read the document",
+    "opensInNewTab": "(opens in a new tab)"
+  },
+  "legal": {
+    "version": "Version {{version}}",
+    "draft": {
+      "label": "Notice:",
+      "body": "this text is a working draft and has no legal value. The final document has not been published yet."
+    },
+    "missing": {
+      "body": "We could not load this document. If it keeps happening, please write to us."
+    },
+    "terms": {
+      "title": "Terms and conditions"
+    },
+    "privacy": {
+      "title": "Data processing policy"
+    },
+    "cookies": {
+      "title": "Cookie policy"
+    }
   },
   "auth": {
     "register": {
@@ -107,6 +153,8 @@
         "termsRequired": "You need to accept the terms and conditions.",
         "privacyRequired": "You need to authorise the processing of your personal data."
       },
+      "readTerms": "Read the terms and conditions",
+      "readPrivacy": "Read the data processing policy",
       "sent": {
         "title": "Check your email",
         "body": "If that address can be used, we sent a link to confirm it. The link expires in 24 hours.",
@@ -126,7 +174,8 @@
         "password": "Enter your password."
       },
       "noAccount": "Do not have an account yet?",
-      "goToRegister": "Create one here"
+      "goToRegister": "Create one here",
+      "forgotPassword": "Forgot your password?"
     },
     "pending": {
       "label": "Email verification pending",
@@ -153,6 +202,48 @@
         "body": "Open the link exactly as it arrived in the email, without trimming it."
       },
       "resent": "Done, we sent you a new link. Check your email."
+    },
+    "forgot": {
+      "title": "Recover your password",
+      "subtitle": "Enter your email and we will send a link to set a new one.",
+      "submit": "Send the link",
+      "fields": {
+        "email": "Email address"
+      },
+      "errors": {
+        "email": "Enter a valid email, such as name@mail.com."
+      },
+      "sent": {
+        "title": "Check your email",
+        "body": "If that address has a Sastra account, we sent it a link to change the password. The link expires in {{minutos}} minutes and works once.",
+        "spam": "If you cannot see it, check your spam folder."
+      },
+      "remembered": "Remembered it after all?",
+      "goToLogin": "Sign in here"
+    },
+    "reset": {
+      "title": "Set a new password",
+      "subtitle": "Changing it closes every open session, on all your devices.",
+      "submit": "Change the password",
+      "fields": {
+        "password": "New password"
+      },
+      "hints": {
+        "password": "At least ten characters. A long phrase is safer than a word with symbols."
+      },
+      "errors": {
+        "passwordTooShort": "The password needs at least 10 characters."
+      },
+      "done": {
+        "title": "Done, it changed",
+        "body": "We closed every open session. Sign in again with your new password.",
+        "goToLogin": "Sign in"
+      },
+      "missing": {
+        "title": "The link is missing",
+        "body": "Open the link exactly as it arrived in the email, without trimming it."
+      },
+      "askAnother": "Request a new link"
     }
   }
 }

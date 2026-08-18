@@ -13,6 +13,7 @@ import co.sastra.identity.exception.RefreshTokenInvalidException;
 import co.sastra.identity.model.BirthDate;
 import co.sastra.identity.model.DisplayName;
 import co.sastra.identity.model.Email;
+import co.sastra.identity.model.PasswordHash;
 import co.sastra.identity.model.RawPassword;
 import co.sastra.identity.model.RefreshToken;
 import co.sastra.identity.model.User;
@@ -352,6 +353,70 @@ class SessionLifecycleTest {
         RefreshToken duplicado = RefreshToken.abrirSesion(usuario.id(), hash, ahora, RefreshToken.VIGENCIA, null, null);
 
         assertThatThrownBy(() -> refrescos.guardar(duplicado)).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    /**
+     * Criterio 20, contra la base real. Es el caso que ninguna simulacion prueba:
+     * la persona tiene sesiones abiertas en varios dispositivos y el cambio de
+     * contrasena tiene que alcanzarlas a todas, no solo a la del navegador donde
+     * lo pidio. Si sobreviviera una, el token de refresco de quien hubiera
+     * averiguado la contrasena seguiria sirviendo 30 dias mas, y el cambio no
+     * habria servido de nada.
+     */
+    @Test
+    void deberia_cerrar_las_sesiones_de_todos_los_dispositivos_al_cambiar_la_contrasena_criterio_20() {
+        SessionResult enElPortatil = entrar();
+        SessionResult enElMovil = entrar();
+        SessionResult enLaTableta = entrar();
+
+        int cortadas = refrescos.revocarTodasDe(usuario.id(), reloj.instant());
+
+        assertThat(cortadas).isEqualTo(3);
+        for (SessionResult sesion : new SessionResult[] {enElPortatil, enElMovil, enLaTableta}) {
+            assertThat(buscar(sesion.refreshToken()).estaRevocado()).isTrue();
+            assertThatThrownBy(() -> refresco.execute(new RefreshSessionCommand(sesion.refreshToken(), "Chrome", null)))
+                    .isInstanceOf(RefreshTokenInvalidException.class);
+        }
+    }
+
+    /**
+     * Los dos UPDATE de {@code user_credentials} escriben columnas distintas, y
+     * confundirlos no se nota con simulaciones.
+     *
+     * <p>Esta prueba existe porque el fallo ocurrio: el restablecimiento llamaba a
+     * {@code actualizar}, que a proposito deja el hash intacto para que un intento
+     * fallido no pueda reescribir la credencial. La prueba unitaria pasaba —el
+     * simulacro acepta cualquier metodo— y el flujo respondia 204, revocaba las
+     * sesiones y consumia el enlace, pero la contrasena vieja seguia sirviendo.
+     * Solo la base de datos real puede decir que columna se escribio.
+     */
+    @Test
+    void deberia_escribir_el_hash_solo_al_cambiar_la_contrasena() {
+        UserCredentials antes = credenciales.buscarPorUsuario(usuario.id()).orElseThrow();
+
+        // El camino del ingreso: cuenta un fallo y NO toca la credencial.
+        credenciales.actualizar(antes.registrarFallo(reloj.instant()));
+        assertThat(credenciales.buscarPorUsuario(usuario.id()).orElseThrow().passwordHash())
+                .isEqualTo(antes.passwordHash());
+
+        // El camino del restablecimiento: escribe el hash y limpia el contador.
+        PasswordHash nuevo = hasher.hashear(new RawPassword("otra-contrasena-larga"));
+        credenciales.cambiarContrasena(antes.conNuevaContrasena(nuevo, reloj.instant()));
+
+        UserCredentials despues = credenciales.buscarPorUsuario(usuario.id()).orElseThrow();
+        assertThat(despues.passwordHash()).isEqualTo(nuevo).isNotEqualTo(antes.passwordHash());
+        assertThat(despues.failedAttempts()).isZero();
+        assertThat(despues.estaBloqueada(reloj.instant())).isFalse();
+    }
+
+    // Y no toca las de nadie mas: revocar por usuario no puede ser revocar a todos.
+    @Test
+    void no_deberia_tocar_las_sesiones_de_otra_persona_criterio_20() {
+        SessionResult laSuya = entrar();
+
+        refrescos.revocarTodasDe(UserId.nuevo(), reloj.instant());
+
+        assertThat(buscar(laSuya.refreshToken()).esUtilizable(reloj.instant())).isTrue();
     }
 
     private RefreshToken buscar(String tokenEnClaro) {

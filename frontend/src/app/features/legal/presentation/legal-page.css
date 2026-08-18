@@ -1,0 +1,68 @@
+/* Este componente se declara con ViewEncapsulation.None, asi que TODO lo de aqui
+   es global: cada regla cuelga de .documento-legal y ninguna se escribe suelta.
+   El motivo esta en legal-page.ts, y es que el texto entra por innerHTML y no
+   recibe el atributo de encapsulacion, de modo que las reglas normales no lo
+   alcanzarian. */
+
+/* El ancho de lectura del sistema, 68 caracteres. Antes habia un 720px suelto
+   que ademas no hacia lo que decia: .tipo-cuerpo ya trae este mismo max-width,
+   asi que el texto siempre estuvo en 68ch y el numero solo afectaba al titulo. */
+.documento-legal {
+  max-width: var(--medida);
+}
+
+.documento-legal .version-del-documento {
+  color: var(--color-texto-suave);
+  margin-top: var(--esp-8);
+}
+
+/* Se ve antes que el texto: quien llegue aqui desde una casilla de
+   consentimiento tiene que saber que esto todavia no obliga a nada. */
+.documento-legal .aviso-de-borrador {
+  padding: var(--esp-12) var(--esp-16);
+  margin-top: var(--esp-24);
+  border: 1px solid var(--color-aviso);
+  border-left-width: 4px;
+  border-radius: var(--radio-md);
+  color: var(--color-texto);
+  background: var(--color-superficie);
+}
+
+.documento-legal .texto-del-documento {
+  margin-top: var(--esp-32);
+  /* Prosa larga con palabras que a veces no lo son: una direccion web o una
+     referencia sin espacios desborda la columna al 200% de tamano de texto y
+     saca desplazamiento horizontal. */
+  overflow-wrap: break-word;
+}
+
+/* La maquetacion del texto se define aqui y no dentro de cada archivo: los tres
+   documentos se ven igual y publicar un texto nuevo no puede cambiar el aspecto
+   del sitio. Las clases de rol de tipografia.css no sirven aqui porque el
+   archivo no las conoce, asi que se estilan los elementos. */
+.documento-legal .texto-del-documento h2 {
+  margin-top: var(--esp-32);
+}
+
+.documento-legal .texto-del-documento h3 {
+  margin-top: var(--esp-24);
+}
+
+.documento-legal .texto-del-documento p,
+.documento-legal .texto-del-documento ul,
+.documento-legal .texto-del-documento ol {
+  margin-top: var(--esp-16);
+}
+
+.documento-legal .texto-del-documento ul,
+.documento-legal .texto-del-documento ol {
+  padding-left: var(--esp-24);
+}
+
+.documento-legal .texto-del-documento li {
+  margin-top: var(--esp-8);
+}
+
+.documento-legal .texto-del-documento a {
+  color: var(--color-primario);
+}

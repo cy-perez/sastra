@@ -52,6 +52,14 @@ Si alguna no tiene respuesta, el campo no se crea.
   politica de tratamiento de datos. Una sola casilla para las dos cosas no es
   consentimiento valido.
 - La casilla no viene marcada por omision.
+- **Cada casilla enlaza al documento que acepta.** Un consentimiento tambien
+  tiene que ser informado, y no lo es si la persona no puede leer el texto. El
+  enlace va fuera de la etiqueta y abre en pestana nueva: dentro de la etiqueta,
+  pulsarlo marcaria la casilla ademas de abrir el documento, y se aceptaria sin
+  haber leido con un solo gesto.
+- La pagina del documento muestra su version en pantalla. Es lo que permite
+  comprobar, meses despues, que el texto que alguien acepto es el que se le
+  enseño.
 - Se guarda la evidencia: version del documento aceptado, fecha, hora y direccion
   IP.
 - La finalidad de la verificacion de identidad se explica en el momento de

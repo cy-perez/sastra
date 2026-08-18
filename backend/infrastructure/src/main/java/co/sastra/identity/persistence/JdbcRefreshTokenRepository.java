@@ -137,6 +137,25 @@ public class JdbcRefreshTokenRepository implements RefreshTokenRepository {
                 .update();
     }
 
+    /**
+     * Criterio 20: todas las sesiones de la persona, en todos sus dispositivos.
+     *
+     * <p>Por {@code user_id} y no recorriendo familias: una consulta por familia
+     * dejaria viva la que naciera entre la lectura y la escritura, que es justo el
+     * hueco por el que sobreviviria la sesion que se quiere cortar.
+     */
+    @Override
+    public int revocarTodasDe(UserId usuario, Instant ahora) {
+        return jdbc.sql("""
+                        UPDATE refresh_tokens
+                        SET revoked_at = :ahora
+                        WHERE user_id = :usuario AND revoked_at IS NULL
+                        """)
+                .param("ahora", Timestamp.from(ahora))
+                .param("usuario", usuario.value())
+                .update();
+    }
+
     private static RefreshToken mapear(ResultSet fila, int numeroDeFila) throws SQLException {
         Timestamp revocado = fila.getTimestamp("revoked_at");
         UUID reemplazo = fila.getObject("replaced_by", UUID.class);

@@ -8,3 +8,25 @@
 .pie .regla-puntada {
   margin-top: 0;
 }
+
+.legal {
+  margin-top: var(--esp-24);
+}
+
+.lista-legal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-8) var(--esp-24);
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* 44px de alto tambien aqui: son enlaces de lista, no enlaces dentro de un
+   parrafo, asi que la excepcion de texto corrido no aplica. El relleno lateral
+   es cero para que queden alineados con el resto de la columna. */
+.lista-legal a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}

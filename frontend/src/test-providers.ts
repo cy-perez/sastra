@@ -20,6 +20,9 @@ const testConfig: AppConfig = {
   availableLocales: ['es', 'en'],
   enableDevtools: false,
   sentryDsn: null,
+  // La misma version de borrador que trae el perfil local, para que las pruebas
+  // pidan los archivos que de verdad estan en public/legal.
+  legalVersions: { terms: 'borrador-local', privacy: 'borrador-local', cookies: 'borrador-local' },
 };
 
 const providers: (Provider | EnvironmentProviders)[] = [

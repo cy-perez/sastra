@@ -104,6 +104,47 @@ describe('RegisterPage', () => {
     expect(fixture.nativeElement.querySelector('label[for="privacidad"]')).not.toBeNull();
   });
 
+  /**
+   * Un consentimiento tiene que ser informado para ser valido: sin enlace, la
+   * persona acepta un documento que no puede leer, y la evidencia que se guarda
+   * de esa aceptacion no vale (docs/operacion/datos-personales.md).
+   */
+  it('enlaza cada casilla con el documento que acepta', async () => {
+    const fixture = await render();
+    const enlaces = Array.from(
+      fixture.nativeElement.querySelectorAll('a[href]'),
+    ) as HTMLAnchorElement[];
+    const destinos = enlaces.map((enlace) => enlace.getAttribute('href'));
+
+    expect(destinos).toContain('/terminos');
+    expect(destinos).toContain('/tratamiento-de-datos');
+  });
+
+  /**
+   * En pestana nueva para no perder el formulario a medio llenar, y con rel: sin
+   * noopener la pagina abierta puede reescribir esta desde window.opener.
+   */
+  it('abre los documentos sin perder el formulario ni exponer la pestana', async () => {
+    const fixture = await render();
+    const enlace = fixture.nativeElement.querySelector('a[href="/terminos"]') as HTMLAnchorElement;
+
+    expect(enlace.getAttribute('target')).toBe('_blank');
+    expect(enlace.getAttribute('rel')).toContain('noopener');
+    // Que cambia de contexto no puede verse solo: se anuncia.
+    expect(enlace.textContent).toContain('pestaña nueva');
+  });
+
+  /**
+   * El enlace va fuera de la etiqueta. Dentro, pulsarlo marcaria la casilla
+   * ademas de abrir el documento: se aceptaria sin haber leido, con un gesto.
+   */
+  it('no marca la casilla al abrir el documento', async () => {
+    const fixture = await render();
+    const enlace = fixture.nativeElement.querySelector('a[href="/terminos"]') as HTMLAnchorElement;
+
+    expect(enlace.closest('label')).toBeNull();
+  });
+
   it('no muestra errores antes del primer intento de envio', async () => {
     const fixture = await render();
 

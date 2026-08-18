@@ -15,6 +15,18 @@
   background: var(--color-superficie);
 }
 
+/* 44px tambien aqui: es un enlace de formulario, no uno dentro de un parrafo de
+   texto corrido. */
+.olvido {
+  margin: calc(-1 * var(--esp-8)) 0 var(--esp-24);
+}
+
+.olvido a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
 .alternativa {
   max-width: 480px;
   margin-top: var(--esp-24);

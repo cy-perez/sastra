@@ -13,6 +13,7 @@ import { FormControl, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
 import { AuthStore } from '../application/auth.store';
+import { RUTAS_LEGALES } from '../../../core/routes/legal-routes';
 import { esCorreoValido } from '../domain/credentials';
 import { cumpleElLargoMinimo, fuerzaDe } from '../domain/password-policy';
 import { esMayorDeEdad } from '../domain/registration';
@@ -39,6 +40,14 @@ import { TextField } from '../../../shared/ui/form/text-field';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RegisterPage {
+  /**
+   * Salen de core y no se escriben a mano: son las mismas constantes con las que
+   * se declaran las rutas, asi que no puede haber un enlace que apunte a una
+   * direccion que no existe.
+   */
+  protected readonly rutaDeTerminos = RUTAS_LEGALES.terms;
+  protected readonly rutaDePrivacidad = RUTAS_LEGALES.privacy;
+
   private readonly store = inject(AuthStore);
   private readonly transloco = inject(TranslocoService);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);

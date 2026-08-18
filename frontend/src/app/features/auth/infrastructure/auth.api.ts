@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 
 import type { Session } from '../../../core/session/session';
 import type { Credentials } from '../domain/credentials';
+import type { PasswordReset, PasswordResetRequest } from '../domain/password-reset';
 import type { Registration } from '../domain/registration';
 
 /**
@@ -122,6 +123,25 @@ export class AuthApi {
   /** Criterio 13: el reenvio de quien ya entro pero no ha verificado su correo. */
   async requestEmailVerification(): Promise<void> {
     await firstValueFrom(this.http.post<void>('users/me/email-verification', {}));
+  }
+
+  /**
+   * Criterio 19: el servidor responde 202 exista o no el correo, asi que aqui no
+   * hay nada que distinguir. Devolver algo distinto en cada caso seria imposible,
+   * y es justamente el punto.
+   */
+  async requestPasswordReset(peticion: PasswordResetRequest): Promise<void> {
+    await firstValueFrom(this.http.post<void>('auth/forgot-password', { email: peticion.email }));
+  }
+
+  /** Criterio 20: responde 204 y ninguna sesion. Se vuelve a entrar a mano. */
+  async resetPassword(cambio: PasswordReset): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>('auth/reset-password', {
+        token: cambio.token,
+        newPassword: cambio.newPassword,
+      }),
+    );
   }
 }
 

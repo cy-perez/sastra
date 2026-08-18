@@ -117,6 +117,10 @@ PARES = [
     # falso negativo en oscuro, donde el anillo y el CTA son el mismo ocre.
     ("Anillo de foco sobre la franja oscura", "--color-foco-franja",   "--fondo-oscuro-marca",     AA_GRANDE),
     ("Borde de campo de formulario",          "--color-borde-control", "--color-superficie",       AA_GRANDE),
+    # Las cajas de aviso y de error llevan fondo de tarjeta pero se apoyan sobre
+    # el fondo de pagina: su borde linda con los dos y es informacion no textual.
+    ("Borde de aviso sobre el fondo",         "--color-aviso",         "--color-fondo",            AA_GRANDE),
+    ("Borde de error sobre el fondo",         "--color-error",         "--color-fondo",            AA_GRANDE),
     ("Texto sobre la franja oscura",          "--sobre-fondo-oscuro",  "--fondo-oscuro-marca",     AA_TEXTO),
     ("CTA sobre la franja oscura",            "--color-acento",        "--fondo-oscuro-marca",     AA_GRANDE),
     ("Texto del CTA en la franja oscura",     "--color-sobre-cta",     "--color-acento",           AA_TEXTO),

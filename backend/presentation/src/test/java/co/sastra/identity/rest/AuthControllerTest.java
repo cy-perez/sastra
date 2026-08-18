@@ -13,25 +13,31 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import co.sastra.identity.dto.AuthenticatedUser;
+import co.sastra.identity.dto.ForgotPasswordCommand;
 import co.sastra.identity.dto.LoginCommand;
 import co.sastra.identity.dto.LogoutCommand;
 import co.sastra.identity.dto.RefreshSessionCommand;
 import co.sastra.identity.dto.ResendVerificationCommand;
+import co.sastra.identity.dto.ResetPasswordCommand;
 import co.sastra.identity.dto.SessionResult;
 import co.sastra.identity.dto.VerifyEmailCommand;
 import co.sastra.identity.dto.VerifyEmailResult;
 import co.sastra.identity.exception.AccountLockedException;
 import co.sastra.identity.exception.InvalidCredentialsException;
+import co.sastra.identity.exception.PasswordTooShortException;
 import co.sastra.identity.exception.RefreshTokenInvalidException;
 import co.sastra.identity.exception.ResendLimitReachedException;
+import co.sastra.identity.exception.ResetTokenExpiredException;
 import co.sastra.identity.model.Role;
 import co.sastra.identity.model.UserId;
 import co.sastra.identity.rest.mapper.SessionResponses;
+import co.sastra.identity.usecase.ForgotPasswordUseCase;
 import co.sastra.identity.usecase.LoginUseCase;
 import co.sastra.identity.usecase.LogoutUseCase;
 import co.sastra.identity.usecase.RefreshSessionUseCase;
 import co.sastra.identity.usecase.RegisterUserUseCase;
 import co.sastra.identity.usecase.ResendVerificationUseCase;
+import co.sastra.identity.usecase.ResetPasswordUseCase;
 import co.sastra.identity.usecase.VerifyEmailUseCase;
 import co.sastra.shared.rest.ApiExceptionHandler;
 import co.sastra.shared.rest.ClientIpHasher;
@@ -76,6 +82,8 @@ class AuthControllerTest {
     private final LoginUseCase ingreso = mock(LoginUseCase.class);
     private final RefreshSessionUseCase refresco = mock(RefreshSessionUseCase.class);
     private final LogoutUseCase cierre = mock(LogoutUseCase.class);
+    private final ForgotPasswordUseCase olvido = mock(ForgotPasswordUseCase.class);
+    private final ResetPasswordUseCase restablecimiento = mock(ResetPasswordUseCase.class);
 
     private MockMvc mvc;
 
@@ -88,6 +96,8 @@ class AuthControllerTest {
                 ingreso,
                 refresco,
                 cierre,
+                olvido,
+                restablecimiento,
                 new SessionResponses(RELOJ),
                 // Los mismos atributos que arma bootstrap desde la configuracion.
                 new RefreshCookies("sastra_refresh", "/api/v1/auth", true, Duration.ofDays(30)),
@@ -403,6 +413,90 @@ class AuthControllerTest {
         assertThat(resultado.getResponse().getContentAsString()).doesNotContain("nodo 3");
     }
 
+    /**
+     * Criterio 19: el mismo 202 exista o no el correo. El caso de uso ya no
+     * distingue; aqui se fija que el borde tampoco, porque un codigo de estado
+     * distinto delataria lo mismo que un mensaje distinto.
+     */
+    @Test
+    void deberia_responder_202_al_pedir_restablecimiento_criterio_19() throws Exception {
+        MvcResult resultado = mvc.perform(post("/api/v1/auth/forgot-password")
+                        .contentType("application/json")
+                        .content("""
+                                {"email":"ana@correo.co"}
+                                """))
+                .andExpect(status().isAccepted())
+                .andReturn();
+
+        assertThat(resultado.getResponse().getContentAsString()).isEmpty();
+        verify(olvido).execute(new ForgotPasswordCommand("ana@correo.co"));
+    }
+
+    @Test
+    void deberia_rechazar_un_correo_con_formato_invalido_al_pedir_restablecimiento() throws Exception {
+        mvc.perform(post("/api/v1/auth/forgot-password")
+                        .contentType("application/json")
+                        .content("""
+                                {"email":"no-es-un-correo"}
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COMMON_VALIDATION_FAILED"));
+
+        verify(olvido, never()).execute(any());
+    }
+
+    /**
+     * Criterio 20: responde 204 y ninguna sesion. Emitir una aqui contradiria el
+     * propio criterio, que acaba de cerrar todas, y se la daria sin un paso mas a
+     * quien hubiera llegado por tener acceso al buzon.
+     */
+    @Test
+    void no_deberia_abrir_sesion_al_restablecer_criterio_20() throws Exception {
+        MvcResult resultado = mvc.perform(post("/api/v1/auth/reset-password")
+                        .contentType("application/json")
+                        .content("""
+                                {"token":"el-del-correo","newPassword":"una-contrasena-larga"}
+                                """))
+                .andExpect(status().isNoContent())
+                .andExpect(header().doesNotExist("Set-Cookie"))
+                .andReturn();
+
+        assertThat(resultado.getResponse().getContentAsString()).isEmpty();
+        verify(restablecimiento).execute(new ResetPasswordCommand("el-del-correo", "una-contrasena-larga"));
+    }
+
+    /** Criterio 18: el enlace dura 30 minutos y tiene su propio codigo de error. */
+    @Test
+    void deberia_traducir_el_enlace_de_restablecimiento_vencido_criterio_18() throws Exception {
+        doThrow(new ResetTokenExpiredException()).when(restablecimiento).execute(any());
+
+        mvc.perform(post("/api/v1/auth/reset-password")
+                        .contentType("application/json")
+                        .content("""
+                                {"token":"el-vencido","newPassword":"una-contrasena-larga"}
+                                """))
+                .andExpect(status().isUnprocessableContent())
+                .andExpect(jsonPath("$.code").value("AUTH_RESET_TOKEN_EXPIRED"));
+    }
+
+    /**
+     * El borde no aplica el largo minimo: lo hace el dominio, para poder decir cual
+     * de las dos reglas de RN-005 fallo. Con un @Size(min) aqui, este caso daria un
+     * error de validacion generico.
+     */
+    @Test
+    void deberia_dejar_que_el_dominio_juzgue_el_largo_de_la_contrasena_RN_005() throws Exception {
+        doThrow(new PasswordTooShortException()).when(restablecimiento).execute(any());
+
+        mvc.perform(post("/api/v1/auth/reset-password")
+                        .contentType("application/json")
+                        .content("""
+                                {"token":"el-del-correo","newPassword":"corta"}
+                                """))
+                .andExpect(status().isUnprocessableContent())
+                .andExpect(jsonPath("$.code").value("AUTH_PASSWORD_TOO_SHORT"));
+    }
+
     // El limite del borde responde con el mismo ProblemDetail que los demas errores.
     @Test
     void deberia_responder_429_al_pasarse_del_limite_de_peticiones() throws Exception {
@@ -413,6 +507,8 @@ class AuthControllerTest {
                         ingreso,
                         refresco,
                         cierre,
+                        olvido,
+                        restablecimiento,
                         new SessionResponses(RELOJ),
                         new RefreshCookies("sastra_refresh", "/api/v1/auth", true, Duration.ofDays(30)),
                         new ClientIpHasher()))

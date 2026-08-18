@@ -157,7 +157,9 @@ public class ApiExceptionHandler {
                     AUTH_UNDERAGE,
                     AUTH_CONSENT_REQUIRED,
                     AUTH_VERIFICATION_TOKEN_INVALID,
-                    AUTH_VERIFICATION_TOKEN_EXPIRED -> HttpStatus.UNPROCESSABLE_CONTENT;
+                    AUTH_VERIFICATION_TOKEN_EXPIRED,
+                    AUTH_RESET_TOKEN_INVALID,
+                    AUTH_RESET_TOKEN_EXPIRED -> HttpStatus.UNPROCESSABLE_CONTENT;
             case COMMON_VALIDATION_FAILED -> HttpStatus.BAD_REQUEST;
             case COMMON_TOO_MANY_REQUESTS -> HttpStatus.TOO_MANY_REQUESTS;
             case COMMON_UNEXPECTED -> HttpStatus.INTERNAL_SERVER_ERROR;

@@ -82,6 +82,26 @@ public final class UserCredentials {
         return new UserCredentials(userId, passwordHash, passwordUpdatedAt, 0, null);
     }
 
+    /**
+     * Cambia la contrasena y levanta cualquier bloqueo pendiente.
+     *
+     * <p><strong>Levantar el bloqueo de RN-006 es deliberado.</strong> Quien llega
+     * hasta aqui demostro control del buzon, que es una prueba mas fuerte que la
+     * propia contrasena. Mantener los quince minutos castigaria justo a la victima
+     * del ataque que los provoco: cualquiera que conozca un correo puede dejar esa
+     * cuenta bloqueada probando contrasenas, y restablecer es la salida natural del
+     * titular.
+     *
+     * <p>Quien puede llamar a esto ya comprobo el token de un solo uso. Este objeto
+     * no sabe de tokens y no puede comprobarlo por su cuenta.
+     */
+    public UserCredentials conNuevaContrasena(PasswordHash nueva, Instant ahora) {
+        Objects.requireNonNull(nueva, "La contrasena nueva es obligatoria");
+        Objects.requireNonNull(ahora, "El instante es obligatorio");
+
+        return new UserCredentials(userId, nueva, ahora, 0, null);
+    }
+
     public boolean estaBloqueada(Instant ahora) {
         Objects.requireNonNull(ahora, "El instante es obligatorio");
         return lockedUntil != null && ahora.isBefore(lockedUntil);

@@ -98,7 +98,7 @@ describe('SiteFooter', () => {
     const datos = fixture.nativeElement.querySelector('address') as HTMLElement;
 
     expect(datos.textContent).toContain('Sastra S.A.S.');
-    expect(datos.textContent).toContain('1054994043-1');
+    expect(datos.textContent).toContain('000000000-0');
     expect(datos.textContent).toContain('Medellin, Colombia');
   });
 

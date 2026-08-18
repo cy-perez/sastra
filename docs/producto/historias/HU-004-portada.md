@@ -1,7 +1,7 @@
 # HU-004 — Portada
 
-**Fase:** 1 | **Estado:** pendiente
-**Reglas que aplica:** RN-015, RN-026
+**Fase:** 1 | **Estado:** hecha, salvo las pruebas de extremo a extremo
+**Reglas que aplica:** RN-011, RN-015, RN-026, RN-031
 
 ## Objetivo
 
@@ -164,9 +164,10 @@ apunte a una ruta que no está.
 ## Pruebas requeridas
 
 - Componente (Vitest, sin red): existe un solo `h1`; hay exactamente un elemento
-  con el acento ocre; el botón principal apunta a `/registro` sin sesión y a
-  `/mi-cuenta` con sesión; se renderizan tres tarjetas y tres pasos; el enlace a
-  cómo funciona no aparece si la ruta no existe.
+  con el acento ocre; el botón principal apunta siempre a `/registro`; se
+  renderizan tres tarjetas y tres pasos; el enlace a cómo funciona no aparece
+  mientras la ruta no exista; ningún texto dice que Sastra guarde o custodie el
+  dinero (RN-031).
 - Pie: renderiza los datos de empresa que vienen de `AppConfig` y los omite
   cuando faltan; los tres documentos legales están presentes y apuntan a
   `RUTAS_LEGALES`.

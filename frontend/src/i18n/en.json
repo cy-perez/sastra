@@ -83,7 +83,7 @@
   "home": {
     "hero": {
       "title": "Buy and sell fashion, with the platform standing behind it",
-      "body": "We hold the payment until you confirm the item arrived as you saw it.",
+      "body": "The payment is held until you confirm the item arrived as you saw it.",
       "cta": "Create account",
       "note": "Listing is free. We only charge when you sell."
     },
@@ -95,7 +95,7 @@
       },
       "sell": {
         "title": "Someone buys it",
-        "body": "The buyer pays and we hold the money while the item is on its way."
+        "body": "The buyer pays and the payment is held while the item is on its way."
       },
       "charge": {
         "title": "You get paid on delivery",
@@ -110,7 +110,7 @@
       },
       "verified": {
         "title": "Verified sellers",
-        "body": "We validate identity and bank account before the first sale."
+        "body": "We validate identity and bank account before the first listing."
       },
       "moderated": {
         "title": "Reviewed listings",

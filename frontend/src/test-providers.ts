@@ -27,7 +27,7 @@ const testConfig: AppConfig = {
   // comprueba el pie incompleto sobrescribe APP_CONFIG en su propio TestBed.
   company: {
     name: 'Sastra S.A.S.',
-    taxId: '1054994043-1',
+    taxId: '000000000-0',
     address: 'Medellin, Colombia',
     supportEmail: 'hola@sastra.co',
   },

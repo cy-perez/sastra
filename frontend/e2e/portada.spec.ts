@@ -138,7 +138,7 @@ test.describe('portada', () => {
     const pie = page.locator('footer');
 
     await expect(pie).toContainText('Sastra S.A.S.');
-    await expect(pie).toContainText('1054994043-1');
+    await expect(pie).toContainText('000000000-0');
     await expect(pie.getByRole('link', { name: 'hola@sastra.co' })).toHaveAttribute(
       'href',
       'mailto:hola@sastra.co',

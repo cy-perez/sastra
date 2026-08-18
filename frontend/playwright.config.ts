@@ -43,7 +43,7 @@ export default defineConfig({
       // El pie las muestra y ninguna es obligatoria, asi que sin declararlas
       // aqui la prueba no distinguiria "no se pintan" de "no habia que pintar".
       COMPANY_NAME: 'Sastra S.A.S.',
-      COMPANY_TAX_ID: '1054994043-1',
+      COMPANY_TAX_ID: '000000000-0',
       COMPANY_ADDRESS: 'Medellin, Colombia',
       SUPPORT_EMAIL: 'hola@sastra.co',
     },

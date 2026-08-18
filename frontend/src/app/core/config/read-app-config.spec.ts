@@ -107,14 +107,14 @@ describe('readAppConfig', () => {
     const config = readAppConfig({
       ...MINIMUM,
       COMPANY_NAME: 'Sastra S.A.S.',
-      COMPANY_TAX_ID: '1054994043-1',
+      COMPANY_TAX_ID: '000000000-0',
       COMPANY_ADDRESS: '  Medellin, Colombia  ',
       SUPPORT_EMAIL: 'hola@sastra.co',
     });
 
     expect(config.company).toEqual({
       name: 'Sastra S.A.S.',
-      taxId: '1054994043-1',
+      taxId: '000000000-0',
       address: 'Medellin, Colombia',
       supportEmail: 'hola@sastra.co',
     });
@@ -146,7 +146,7 @@ describe('avisosDeConfiguracion', () => {
 
   const COMPLETA = {
     COMPANY_NAME: 'Sastra S.A.S.',
-    COMPANY_TAX_ID: '1054994043-1',
+    COMPANY_TAX_ID: '000000000-0',
     COMPANY_ADDRESS: 'Medellin, Colombia',
     SUPPORT_EMAIL: 'hola@sastra.co',
   };

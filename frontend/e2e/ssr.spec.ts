@@ -39,7 +39,7 @@ test.describe('renderizado en servidor', () => {
     expect(html).toContain('Publicaciones revisadas');
     // Pie
     expect(html).toContain('Sastra S.A.S.');
-    expect(html).toContain('1054994043-1');
+    expect(html).toContain('000000000-0');
     expect(html).toContain('mailto:hola@sastra.co');
   });
 

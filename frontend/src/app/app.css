@@ -7,11 +7,15 @@
 /**
  * Rejilla de carriles en vez de .contenedor.
  *
- * El resultado para una pagina normal es identico al de antes: mismo ancho
- * maximo y misma sangria lateral. Lo que agrega es un carril a sangre completa,
- * que .contenedor no podia dar. El hero de la portada tiene que llegar de borde
- * a borde igual que el pie, y el pie solo lo consigue porque vive fuera de
- * <main>. Con esto no hace falta sacar nada de <main>.
+ * Para una pagina normal el comportamiento es equivalente, con una diferencia
+ * medible: .contenedor limitaba a 1200px la caja CON su relleno, dejando 1168px
+ * de contenido en escritorio; aqui el carril de contenido llega a 1200px. Son
+ * hasta 32px mas de ancho por encima de 1232px de ventana.
+ *
+ * Lo que agrega es un carril a sangre completa, que .contenedor no podia dar. El
+ * hero de la portada tiene que llegar de borde a borde igual que el pie, y el
+ * pie solo lo consigue porque vive fuera de <main>. Con esto no hace falta sacar
+ * nada de <main>.
  *
  * La alternativa habitual, `margin-inline: calc(50% - 50vw)`, se descarto: 100vw
  * incluye la barra de desplazamiento y produce el desbordamiento horizontal que

@@ -52,7 +52,24 @@ describe('HomePage', () => {
     const fixture = await render();
     const hero = fixture.nativeElement.querySelector('.hero') as HTMLElement;
 
-    expect(hero.textContent).toContain('Guardamos el pago hasta que confirmas');
+    expect(hero.textContent).toContain('El pago queda retenido hasta que confirmas');
+  });
+
+  /**
+   * RN-031: el recaudo lo hace la pasarela y Sastra no recibe ni custodia dinero
+   * de terceros. La portada no puede decir lo contrario, ni con un verbo suelto.
+   *
+   * <p>El glosario lo deja escrito en su lista de palabras que no se usan:
+   * escrow, custodia y fideicomiso describen figuras financieras que Sastra no
+   * ejerce, y tienen lectura regulatoria en Colombia. "Guardamos tu pago" y
+   * "nosotros retenemos el dinero" son la misma afirmacion en lenguaje llano, y
+   * es lo que decia esta pantalla antes de la revision.
+   */
+  it('no dice que Sastra guarde ni custodie el dinero', async () => {
+    const fixture = await render();
+    const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
+
+    expect(texto).not.toMatch(/guardamos|custodia|nosotros retenemos|en nuestra cuenta/i);
   });
 
   // Y el titular y su apoyo viven dentro de la franja, que es lo que rescata el

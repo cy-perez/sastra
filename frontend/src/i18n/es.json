@@ -83,7 +83,7 @@
   "home": {
     "hero": {
       "title": "Compra y vende moda con respaldo",
-      "body": "Guardamos el pago hasta que confirmas que la prenda llegó como la viste.",
+      "body": "El pago queda retenido hasta que confirmas que la prenda llegó como la viste.",
       "cta": "Crear cuenta",
       "note": "Publicar es gratis. Solo cobramos cuando vendes."
     },
@@ -95,7 +95,7 @@
       },
       "sell": {
         "title": "Alguien la compra",
-        "body": "El comprador paga y nosotros retenemos el dinero mientras la prenda viaja."
+        "body": "El comprador paga y el pago queda retenido mientras la prenda viaja."
       },
       "charge": {
         "title": "Cobras al confirmarse la entrega",
@@ -110,7 +110,7 @@
       },
       "verified": {
         "title": "Vendedores verificados",
-        "body": "Validamos identidad y cuenta bancaria antes de la primera venta."
+        "body": "Validamos identidad y cuenta bancaria antes de la primera publicación."
       },
       "moderated": {
         "title": "Publicaciones revisadas",

@@ -55,15 +55,25 @@ test.describe('renderizado en servidor', () => {
     expect(elementos).toHaveLength(1);
   });
 
-  /** Criterio 9, tambien en el arbol ingles: alli tampoco se promete lo que no hay. */
+  /**
+   * Criterio 9, tambien en el arbol ingles: alli tampoco se promete lo que no hay.
+   *
+   * <p>Se mira el texto visible, no el HTML crudo. El documento trae los scripts
+   * de Angular y el estado transferido, y ahi la palabra `return` de cualquier
+   * funcion haria fallar la prueba sin que la portada prometa nada.
+   */
   test('la portada no promete devoluciones en ninguno de los dos idiomas', async ({ request }) => {
     for (const idioma of ['es', 'en']) {
       const html = await (
         await request.get('/', { headers: { 'Accept-Language': idioma } })
       ).text();
-      const cuerpo = html.slice(html.indexOf('<body'));
+      const visible = html
+        .slice(html.indexOf('<body'))
+        .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+        .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+        .replace(/<[^>]+>/g, ' ');
 
-      expect(cuerpo, idioma).not.toMatch(/devoluci[oó]n|reembolso|\brefunds?\b|\breturns?\b/i);
+      expect(visible, idioma).not.toMatch(/devoluci[oó]n|reembolso|\brefunds?\b|\breturns?\b/i);
     }
   });
 

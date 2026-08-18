@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 /**
  * HU-004. Lo que se comprueba aqui es lo que no puede verse en una prueba de
@@ -7,8 +7,18 @@ import { expect, test } from '@playwright/test';
  *
  * El idioma se fija por el mismo motivo que en shell.spec.ts: Chromium arranca
  * en ingles y estas pruebas leen textos en espanol.
+ *
+ * Las medidas salen de locators y no de una evaluacion global sobre el arbol de
+ * la pagina: el hook de convenciones prohibe alcanzar las API del navegador
+ * directamente en todo el frontend, y aunque aqui no hay riesgo de renderizado
+ * en servidor, la via del locator dice lo mismo y no obliga a hacerle una
+ * excepcion a la regla.
  */
 test.use({ locale: 'es-CO' });
+
+/** Si el documento es mas ancho que la ventana, hay barra horizontal. */
+const desbordaHorizontalmente = (page: Page): Promise<boolean> =>
+  page.locator('html').evaluate((raiz) => raiz.scrollWidth > raiz.clientWidth);
 
 test.describe('portada', () => {
   test('el boton principal lleva al registro', async ({ page }) => {
@@ -27,11 +37,7 @@ test.describe('portada', () => {
     await page.setViewportSize({ width: 360, height: 740 });
     await page.goto('/');
 
-    const desborda = await page.evaluate(
-      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
-    );
-
-    expect(desborda).toBe(false);
+    expect(await desbordaHorizontalmente(page)).toBe(false);
   });
 
   // Tambien a 320px, que es el minimo que el sistema de diseno contempla.
@@ -39,36 +45,30 @@ test.describe('portada', () => {
     await page.setViewportSize({ width: 320, height: 640 });
     await page.goto('/');
 
-    const desborda = await page.evaluate(
-      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
-    );
-
-    expect(desborda).toBe(false);
+    expect(await desbordaHorizontalmente(page)).toBe(false);
   });
 
   /**
    * El hero tiene que llegar de borde a borde. Es lo que no conseguia el
    * .contenedor anterior y la razon de la rejilla de carriles de app.css: una
    * franja oscura con margenes claros a los lados no es el diseno.
+   *
+   * <p>Es ademas la prueba que habria cazado el fallo del carril: con
+   * `display: contents` en el host pero sin declarar `grid-column` desde el, el
+   * hero se auto-colocaba en la columna de sangria y medi­a 16px.
    */
   test('el hero sangra hasta los dos bordes de la ventana', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('/');
 
+    const caja = await page.locator('.hero').boundingBox();
     // Contra el ancho real del documento y no contra el del viewport: con barra
     // de desplazamiento clasica no son el mismo numero, y la prueba seria
     // inestable segun la maquina.
-    const { heroX, heroAncho, anchoDocumento } = await page.evaluate(() => {
-      const caja = (document.querySelector('.hero') as HTMLElement).getBoundingClientRect();
-      return {
-        heroX: Math.round(caja.x),
-        heroAncho: Math.round(caja.width),
-        anchoDocumento: document.documentElement.clientWidth,
-      };
-    });
+    const anchoDocumento = await page.locator('html').evaluate((raiz) => raiz.clientWidth);
 
-    expect(heroX).toBe(0);
-    expect(heroAncho).toBe(anchoDocumento);
+    expect(Math.round(caja?.x ?? -1)).toBe(0);
+    expect(Math.round(caja?.width ?? -1)).toBe(anchoDocumento);
   });
 
   /**
@@ -95,11 +95,30 @@ test.describe('portada', () => {
     );
   });
 
+  /**
+   * Tabula desde el principio del documento hasta el CTA. Enfocarlo con focus()
+   * demostraria que se puede enfocar, no que se pueda ALCANZAR: si algo del
+   * encabezado atrapara el foco, focus() lo saltaria y la prueba pasaria igual.
+   *
+   * <p>Tabular tiene ademas otra ventaja: `:focus-visible` depende de que la
+   * ultima interaccion haya sido de teclado, asi que un focus() programatico
+   * puede no pintar el anillo y dejar sin sentido la prueba que lo mide.
+   */
+  const tabularHastaElCta = async (page: Page) => {
+    const cta = page.getByRole('link', { name: 'Crear cuenta' });
+    for (let intento = 0; intento < 15; intento += 1) {
+      await page.keyboard.press('Tab');
+      if ((await page.locator(':focus').getAttribute('href')) === '/registro') {
+        return cta;
+      }
+    }
+    throw new Error('El boton principal no se alcanza con el teclado en 15 tabulaciones');
+  };
+
   test('el boton principal se alcanza y se activa con el teclado', async ({ page }) => {
     await page.goto('/');
 
-    const cta = page.getByRole('link', { name: 'Crear cuenta' });
-    await cta.focus();
+    const cta = await tabularHastaElCta(page);
     await expect(cta).toBeFocused();
 
     await page.keyboard.press('Enter');
@@ -117,8 +136,7 @@ test.describe('portada', () => {
    */
   test('el foco del boton principal es visible y mide 3px', async ({ page }) => {
     await page.goto('/');
-    const cta = page.getByRole('link', { name: 'Crear cuenta' });
-    await cta.focus();
+    const cta = await tabularHastaElCta(page);
 
     const { anillo, relleno, grosor } = await cta.evaluate((elemento) => {
       const estilo = getComputedStyle(elemento);
@@ -189,10 +207,6 @@ test.describe('portada en ingles', () => {
 
     await expect(page.getByRole('heading', { level: 1 })).toContainText('Buy and sell fashion');
 
-    const desborda = await page.evaluate(
-      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
-    );
-
-    expect(desborda).toBe(false);
+    expect(await desbordaHorizontalmente(page)).toBe(false);
   });
 });

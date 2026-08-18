@@ -6,11 +6,10 @@
        que la barra no se mueva. -->
   <span class="esqueleto hueco-de-sesion" aria-hidden="true"></span>
 } @else if (sesion.user(); as usuario) {
-  <!-- El nombre no es un control: dice de quien es la sesion. En movil se oculta
-       por completo, tambien para el lector de pantalla, porque en esa barra no
-       cabe sin empujar el resto a otra linea. No se pierde nada necesario para
-       usar el sitio: el boton de al lado dice lo que hace por si mismo. -->
-  <span class="nombre tipo-secundario">{{ usuario.displayName }}</span>
+  <!-- El nombre es el enlace a la propia cuenta: dice de quien es la sesion y
+       lleva a donde se administra. Por eso ya no se oculta en movil, como cuando
+       era solo una etiqueta; se recorta el texto y el control se queda. -->
+  <a class="accion nombre tipo-secundario" routerLink="/mi-cuenta">{{ usuario.displayName }}</a>
 
   <button
     type="button"

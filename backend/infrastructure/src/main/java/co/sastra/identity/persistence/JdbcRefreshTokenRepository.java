@@ -9,6 +9,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -153,6 +154,47 @@ public class JdbcRefreshTokenRepository implements RefreshTokenRepository {
                         """)
                 .param("ahora", Timestamp.from(ahora))
                 .param("usuario", usuario.value())
+                .update();
+    }
+
+    /**
+     * Criterio 17: la cabeza viva de cada familia, de la mas reciente a la mas
+     * antigua.
+     *
+     * <p>{@code replaced_by IS NULL} es lo que deja una sola fila por familia: el
+     * token que todavia no se ha rotado. Sin esa condicion, una sesion de un mes
+     * apareceria una vez por cada refresco.
+     */
+    @Override
+    public List<RefreshToken> listarSesionesActivasDe(UserId usuario, Instant ahora) {
+        return jdbc.sql(SELECT_BASE + """
+                         WHERE user_id = :usuario
+                           AND revoked_at IS NULL
+                           AND replaced_by IS NULL
+                           AND expires_at > :ahora
+                         ORDER BY created_at DESC
+                        """)
+                .param("usuario", usuario.value())
+                .param("ahora", Timestamp.from(ahora))
+                .query(JdbcRefreshTokenRepository::mapear)
+                .list();
+    }
+
+    /**
+     * El {@code user_id} va en el WHERE y no en una comprobacion previa: entre
+     * comprobar y escribir cabe un cambio, y aqui lo que se comprueba es de quien es
+     * la sesion que se esta cerrando.
+     */
+    @Override
+    public int revocarSesionDe(UserId usuario, TokenFamilyId familia, Instant ahora) {
+        return jdbc.sql("""
+                        UPDATE refresh_tokens
+                        SET revoked_at = :ahora
+                        WHERE user_id = :usuario AND family_id = :familia AND revoked_at IS NULL
+                        """)
+                .param("ahora", Timestamp.from(ahora))
+                .param("usuario", usuario.value())
+                .param("familia", familia.value())
                 .update();
     }
 

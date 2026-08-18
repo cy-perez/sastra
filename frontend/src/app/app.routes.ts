@@ -50,6 +50,13 @@ export const routes: Routes = [
       import('./features/auth/presentation/reset-password-page').then((m) => m.ResetPasswordPage),
   },
   {
+    path: 'mi-cuenta',
+    title: 'meta.account.title',
+    data: { descriptionKey: 'meta.account.description' },
+    loadComponent: () =>
+      import('./features/auth/presentation/account-page').then((m) => m.AccountPage),
+  },
+  {
     path: 'verificar-correo',
     title: 'meta.verify.title',
     data: { descriptionKey: 'meta.verify.description' },

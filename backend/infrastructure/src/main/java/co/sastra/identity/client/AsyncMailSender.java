@@ -109,6 +109,11 @@ public class AsyncMailSender implements MailSender {
         enDiferido("aviso de contrasena cambiada", () -> transporte.enviarAvisoDeContrasenaCambiada(titular));
     }
 
+    @Override
+    public void enviarAvisoDeCuentaCerrada(User titular) {
+        enDiferido("aviso de cuenta cerrada", () -> transporte.enviarAvisoDeCuentaCerrada(titular));
+    }
+
     /**
      * Nada de lo que pase aqui puede volver al hilo de la peticion.
      *

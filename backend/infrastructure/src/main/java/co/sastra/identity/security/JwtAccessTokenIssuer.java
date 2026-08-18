@@ -2,6 +2,7 @@ package co.sastra.identity.security;
 
 import co.sastra.identity.config.SessionProperties;
 import co.sastra.identity.model.Role;
+import co.sastra.identity.model.TokenFamilyId;
 import co.sastra.identity.model.User;
 import co.sastra.identity.port.out.AccessTokenIssuer;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
@@ -52,7 +53,7 @@ public class JwtAccessTokenIssuer implements AccessTokenIssuer {
     }
 
     @Override
-    public IssuedAccessToken emitir(User usuario, Instant ahora) {
+    public IssuedAccessToken emitir(User usuario, TokenFamilyId sesionDelToken, Instant ahora) {
         Instant caduca = ahora.plus(sesion.accessTtl());
 
         JwtClaimsSet contenido = JwtClaimsSet.builder()
@@ -62,6 +63,11 @@ public class JwtAccessTokenIssuer implements AccessTokenIssuer {
                 .expiresAt(caduca)
                 .claim("email_verified", usuario.tieneElCorreoVerificado())
                 .claim("roles", rolesDe(usuario))
+                // sid, como en OIDC: a que sesion pertenece este token. Es lo que
+                // permite al criterio 17 senalar cual de las sesiones activas es la
+                // que se esta usando, porque la cookie de refresco no llega a
+                // /users/me. Es un identificador opaco y no un dato personal.
+                .claim("sid", sesionDelToken.toString())
                 .build();
 
         String valor = encoder.encode(JwtEncoderParameters.from(

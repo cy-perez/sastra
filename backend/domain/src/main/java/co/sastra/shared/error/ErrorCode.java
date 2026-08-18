@@ -77,6 +77,14 @@ public enum ErrorCode {
     /** El enlace de restablecimiento venció. Criterio 18: dura 30 minutos. */
     AUTH_RESET_TOKEN_EXPIRED,
 
+    /**
+     * Criterio 23: lo escrito para confirmar el cierre de cuenta no coincide.
+     *
+     * <p>Cerrar no se deshace, y la confirmación es lo único que separa un clic mal
+     * dado de perder el acceso.
+     */
+    AUTH_CLOSE_CONFIRMATION_MISMATCH,
+
     /** La peticion no cumple el contrato. El detalle por campo va en {@code errors}. */
     COMMON_VALIDATION_FAILED,
 

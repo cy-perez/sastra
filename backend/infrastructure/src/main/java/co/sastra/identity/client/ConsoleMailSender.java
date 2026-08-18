@@ -101,4 +101,15 @@ public class ConsoleMailSender implements MailSender {
                 ===============================================================================
                 """, titular.email().value());
     }
+
+    @Override
+    public void enviarAvisoDeCuentaCerrada(User titular) {
+        LOG.info("""
+
+                ================ AVISO DE CUENTA CERRADA (criterio 23) ========================
+                Para: {}
+                La cuenta se cerro y sus datos quedaron anonimizados.
+                ===============================================================================
+                """, titular.email().value());
+    }
 }

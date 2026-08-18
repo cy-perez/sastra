@@ -1,9 +1,10 @@
 import { inject, Injectable } from '@angular/core';
-import { injectMutation } from '@tanstack/angular-query-experimental';
+import { injectMutation, injectQuery, QueryClient } from '@tanstack/angular-query-experimental';
 
 import { ApiError } from '../../../core/http/api-error';
 import { SessionStore } from '../../../core/session/session.store';
 import { AuthApi } from '../infrastructure/auth.api';
+import { queryKeys } from './query-keys';
 import type { Credentials } from '../domain/credentials';
 import type { PasswordReset, PasswordResetRequest } from '../domain/password-reset';
 import type { Registration } from '../domain/registration';
@@ -21,6 +22,7 @@ import type { Registration } from '../domain/registration';
 export class AuthStore {
   private readonly api = inject(AuthApi);
   private readonly sesion = inject(SessionStore);
+  private readonly consultas = inject(QueryClient);
 
   readonly registration = injectMutation(() => ({
     mutationFn: (registro: Registration) => this.api.register(registro),
@@ -93,6 +95,49 @@ export class AuthStore {
   readonly passwordReset = injectMutation(() => ({
     mutationFn: (cambio: PasswordReset) => this.api.resetPassword(cambio),
     retry: false,
+  }));
+
+  /**
+   * Criterio 17. Es una consulta y no una mutacion: se puede volver a pedir sola
+   * y no cambia nada del servidor.
+   *
+   * <p>Sin tiempo de frescura: una sesion cerrada desde otro dispositivo tiene
+   * que desaparecer de la lista en cuanto se mire, no un minuto despues.
+   */
+  readonly sessions = injectQuery(() => ({
+    queryKey: queryKeys.sessions,
+    queryFn: () => this.api.sessions(),
+    staleTime: 0,
+    retry: false,
+  }));
+
+  /** Criterio 17: cerrar una sesion concreta y refrescar la lista. */
+  readonly sessionRevocation = injectMutation(() => ({
+    mutationFn: (id: string) => this.api.revokeSession(id),
+    retry: false,
+    onSuccess: () => {
+      void this.consultas.invalidateQueries({ queryKey: queryKeys.sessions });
+    },
+  }));
+
+  /** Criterio 22. Devuelve el archivo tal cual lo genero el servidor. */
+  readonly dataExport = injectMutation(() => ({
+    mutationFn: () => this.api.exportData(),
+    retry: false,
+  }));
+
+  /**
+   * Criterio 23. No se reintenta nunca: cerrar una cuenta no se deshace, y un
+   * reintento automatico de la libreria seria la peor forma posible de perderla.
+   */
+  readonly accountClosure = injectMutation(() => ({
+    mutationFn: (confirmacion: string) => this.api.closeAccount(confirmacion),
+    retry: false,
+    onSuccess: () => {
+      // La cuenta ya no existe: lo que quede en memoria solo puede confundir.
+      this.sesion.clear();
+      this.olvidarLoEscrito();
+    },
   }));
 
   /** Criterio 13: el reenvio desde dentro, para quien entro sin verificar. */

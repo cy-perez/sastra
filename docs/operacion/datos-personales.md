@@ -76,6 +76,18 @@ la autorizacion. Operativamente:
 - La cuenta admite eliminacion. Eliminar no significa borrar todo: las ordenes y
   facturas se conservan por obligacion contable y tributaria, pero se
   desvinculan del perfil y se anonimizan los datos que no sean necesarios.
+- **En Fase 1 el cierre anonimiza en el acto**, no a los treinta dias. El plazo
+  existe para resolver pedidos en curso y todavia no hay pedidos: no queda nada
+  que la ley obligue a conservar, asi que esperar solo dejaria datos vivos. La
+  fila se vacia en vez de borrarse (identificador, fecha de creacion y estado
+  sobreviven, y ya no apuntan a nadie), el correo se sustituye por uno del
+  dominio reservado `.invalid` para que la persona pueda volver a registrarse, y
+  se borran contrasena, roles y enlaces pendientes. Cuando existan pedidos habra
+  que bifurcar segun RN-009 y revisar si la fecha de nacimiento, que hoy se
+  conserva, vuelve a identificar al cruzarse con un historial de compras.
+- El token de acceso ya emitido sigue siendo valido hasta quince minutos despues
+  del cierre: es un JWT y ADR-0003 acepta esa ventana. Las rutas que devuelven o
+  tocan datos responden 401 en cuanto la cuenta deja de existir.
 - La politica de tratamiento de datos es un enlace visible en el pie de pagina.
   Es obligatorio y es lo primero que revisa una autoridad.
 
@@ -87,7 +99,7 @@ la autorizacion. Operativamente:
 | Documentos de verificacion | Mientras el vendedor este activo y cinco anos mas |
 | Ordenes y facturas | Diez anos, por obligacion contable |
 | Registros tecnicos con IP | Seis meses |
-| Cuenta eliminada | Anonimizada en treinta dias |
+| Cuenta eliminada | Anonimizada en el acto en Fase 1; treinta dias cuando existan pedidos |
 
 ## Pendiente antes del lanzamiento
 

@@ -67,7 +67,7 @@ public class IssueSessionUseCase {
 
         refrescos.guardar(token);
 
-        AccessTokenIssuer.IssuedAccessToken acceso = accesos.emitir(usuario, ahora);
+        AccessTokenIssuer.IssuedAccessToken acceso = accesos.emitir(usuario, token.familyId(), ahora);
 
         return new SessionResult(
                 acceso.value(), acceso.expiresAt(), refresco.valorEnClaro(), token.expiresAt(), resumirA(usuario));

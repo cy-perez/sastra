@@ -13,8 +13,11 @@ import co.sastra.identity.port.out.RefreshTokenRepository;
 import co.sastra.identity.port.out.TokenGenerator;
 import co.sastra.identity.port.out.UserRepository;
 import co.sastra.identity.port.out.VerificationTokenRepository;
+import co.sastra.identity.usecase.CloseAccountUseCase;
+import co.sastra.identity.usecase.ExportUserDataUseCase;
 import co.sastra.identity.usecase.ForgotPasswordUseCase;
 import co.sastra.identity.usecase.IssueSessionUseCase;
+import co.sastra.identity.usecase.ListSessionsUseCase;
 import co.sastra.identity.usecase.LoginUseCase;
 import co.sastra.identity.usecase.LogoutUseCase;
 import co.sastra.identity.usecase.RefreshSessionUseCase;
@@ -22,6 +25,7 @@ import co.sastra.identity.usecase.RegisterUserUseCase;
 import co.sastra.identity.usecase.RequestEmailVerificationUseCase;
 import co.sastra.identity.usecase.ResendVerificationUseCase;
 import co.sastra.identity.usecase.ResetPasswordUseCase;
+import co.sastra.identity.usecase.RevokeSessionUseCase;
 import co.sastra.identity.usecase.VerifyEmailUseCase;
 import co.sastra.shared.config.AppProperties;
 import co.sastra.shared.rest.RefreshCookies;
@@ -183,6 +187,28 @@ public class IdentityWiring {
             Clock reloj) {
         return new ResetPasswordUseCase(
                 usuarios, tokens, credenciales, refrescos, generadorDeTokens, hasher, filtradas, correo, reloj);
+    }
+
+    @Bean
+    ListSessionsUseCase listSessionsUseCase(RefreshTokenRepository refrescos, Clock reloj) {
+        return new ListSessionsUseCase(refrescos, reloj);
+    }
+
+    @Bean
+    RevokeSessionUseCase revokeSessionUseCase(RefreshTokenRepository refrescos, Clock reloj) {
+        return new RevokeSessionUseCase(refrescos, reloj);
+    }
+
+    @Bean
+    ExportUserDataUseCase exportUserDataUseCase(
+            UserRepository usuarios, ConsentRepository consentimientos, RefreshTokenRepository refrescos, Clock reloj) {
+        return new ExportUserDataUseCase(usuarios, consentimientos, refrescos, reloj);
+    }
+
+    @Bean
+    CloseAccountUseCase closeAccountUseCase(
+            UserRepository usuarios, RefreshTokenRepository refrescos, MailSender correo, Clock reloj) {
+        return new CloseAccountUseCase(usuarios, refrescos, correo, reloj);
     }
 
     /**

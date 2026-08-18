@@ -409,6 +409,57 @@ class SessionLifecycleTest {
         assertThat(despues.estaBloqueada(reloj.instant())).isFalse();
     }
 
+    /**
+     * Criterio 23: una cuenta cerrada deja de existir para todo efecto.
+     *
+     * <p>La fila sigue ahi, anonimizada, pero no se encuentra ni por correo ni por
+     * identificador. Es lo que hace que el correo quede libre para volver a
+     * registrarse y que un token de acceso todavia vigente no sirva para nada.
+     */
+    @Test
+    void no_deberia_encontrar_una_cuenta_cerrada_criterio_23() {
+        usuarios.cerrarYAnonimizar(usuario.id(), reloj.instant());
+
+        assertThat(usuarios.buscarPorId(usuario.id())).isEmpty();
+        assertThat(usuarios.buscarPorCorreo(usuario.email())).isEmpty();
+
+        // La fila no se borro: sigue ahi para que lo que manana haya que conservar
+        // tenga a que referirse.
+        long filas = jdbc.sql("SELECT count(*) FROM users WHERE id = :id")
+                .param("id", usuario.id().value())
+                .query(Long.class)
+                .single();
+        assertThat(filas).isEqualTo(1);
+    }
+
+    /** El correo queda libre: cerrar no puede significar quedarse sin poder volver. */
+    @Test
+    void deberia_liberar_el_correo_al_cerrar_la_cuenta_criterio_23() {
+        Email suyo = usuario.email();
+        usuarios.cerrarYAnonimizar(usuario.id(), reloj.instant());
+
+        User devuelta = User.registrar(
+                UserId.nuevo(),
+                suyo,
+                new DisplayName("Ana Maria"),
+                new BirthDate(LocalDate.of(1990, 3, 4)),
+                UserLocale.ES,
+                LocalDate.now(reloj),
+                reloj.instant());
+
+        usuarios.crear(devuelta, hasher.hashear(new RawPassword(CONTRASENA)));
+
+        assertThat(usuarios.buscarPorCorreo(suyo)).isPresent();
+    }
+
+    // La contrasena se borra, no se anonimiza: no hace falta para nada.
+    @Test
+    void deberia_borrar_las_credenciales_al_cerrar_criterio_23() {
+        usuarios.cerrarYAnonimizar(usuario.id(), reloj.instant());
+
+        assertThat(credenciales.buscarPorUsuario(usuario.id())).isEmpty();
+    }
+
     // Y no toca las de nadie mas: revocar por usuario no puede ser revocar a todos.
     @Test
     void no_deberia_tocar_las_sesiones_de_otra_persona_criterio_20() {

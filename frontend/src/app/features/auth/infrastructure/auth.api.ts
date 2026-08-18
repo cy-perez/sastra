@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 
 import type { Session } from '../../../core/session/session';
+import type { ActiveSession } from '../domain/account';
 import type { Credentials } from '../domain/credentials';
 import type { PasswordReset, PasswordResetRequest } from '../domain/password-reset';
 import type { Registration } from '../domain/registration';
@@ -142,6 +143,37 @@ export class AuthApi {
         newPassword: cambio.newPassword,
       }),
     );
+  }
+  /** Criterio 17: las sesiones abiertas, con la actual marcada por el servidor. */
+  async sessions(): Promise<ActiveSession[]> {
+    return firstValueFrom(this.http.get<ActiveSession[]>('users/me/sessions'));
+  }
+
+  /**
+   * Criterio 17. El servidor responde 204 tambien si esa sesion no existe o no es
+   * suya: distinguirlo permitiria averiguar si un identificador pertenece a
+   * alguien probandolo.
+   */
+  async revokeSession(id: string): Promise<void> {
+    await firstValueFrom(this.http.delete<void>(`users/me/sessions/${id}`));
+  }
+
+  /**
+   * Criterio 22. Se pide como texto y no como JSON interpretado: lo que se
+   * descarga es el archivo tal cual lo genero el servidor, sin que el cliente lo
+   * reescriba por el camino.
+   */
+  async exportData(): Promise<string> {
+    return firstValueFrom(this.http.get('users/me/export', { responseType: 'text' }));
+  }
+
+  /**
+   * Criterio 23. Lleva cuerpo, cosa rara en un DELETE, y es a proposito: la
+   * confirmacion no puede ir en la direccion, que acaba en el historial del
+   * navegador y en el registro del servidor.
+   */
+  async closeAccount(confirmation: string): Promise<void> {
+    await firstValueFrom(this.http.delete<void>('users/me', { body: { confirmation } }));
   }
 }
 

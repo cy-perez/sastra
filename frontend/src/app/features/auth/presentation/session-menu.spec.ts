@@ -78,10 +78,18 @@ describe('SessionMenu', () => {
     expect(fixture.nativeElement.querySelector('button')).toBeNull();
   });
 
+  /**
+   * El nombre es ademas el enlace a la propia cuenta, y se ve tambien en movil:
+   * ocultarlo alli dejaria /mi-cuenta inalcanzable desde un telefono.
+   */
   it('muestra a quien pertenece la sesion y ofrece salir', async () => {
     TestBed.inject(SessionStore).set(SESION);
     const fixture = await render();
 
+    const aLaCuenta = fixture.nativeElement.querySelector(
+      'a[href="/mi-cuenta"]',
+    ) as HTMLAnchorElement;
+    expect(aLaCuenta.textContent?.trim()).toBe('Ana Maria');
     expect(fixture.nativeElement.textContent).toContain('Ana Maria');
     expect(
       (fixture.nativeElement.querySelector('button') as HTMLButtonElement).textContent?.trim(),

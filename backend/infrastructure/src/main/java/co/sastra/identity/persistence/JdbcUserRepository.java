@@ -105,7 +105,7 @@ public class JdbcUserRepository implements UserRepository {
         // La comparacion la resuelve citext: "Ana@Correo.co" encuentra la fila de
         // "ana@correo.co" sin funciones alrededor de la columna, que ademas
         // inutilizarian el indice unico (RN-001).
-        return jdbc.sql(SELECT_BASE + " WHERE u.email = :email")
+        return jdbc.sql(SELECT_BASE + " WHERE u.email = :email AND u.status <> 'CLOSED'")
                 .param("email", correo.value())
                 .query(this::mapear)
                 .optional();
@@ -113,7 +113,7 @@ public class JdbcUserRepository implements UserRepository {
 
     @Override
     public Optional<User> buscarPorId(UserId id) {
-        return jdbc.sql(SELECT_BASE + " WHERE u.id = :id")
+        return jdbc.sql(SELECT_BASE + " WHERE u.id = :id AND u.status <> 'CLOSED'")
                 .param("id", id.value())
                 .query(this::mapear)
                 .optional();
@@ -150,5 +150,58 @@ public class JdbcUserRepository implements UserRepository {
 
     private static Instant instanteONulo(Timestamp marca) {
         return marca == null ? null : marca.toInstant();
+    }
+
+    /**
+     * Criterio 23: vacia la fila en vez de borrarla.
+     *
+     * <p>El correo se reemplaza por uno del dominio reservado {@code .invalid}, que
+     * por norma no puede existir, y lleva dentro el identificador para seguir
+     * cumpliendo la unicidad de RN-001. Conservar el original impediria a esa
+     * persona volver a registrarse nunca con su propia direccion, que seria
+     * convertir el derecho de supresion en una expulsion.
+     *
+     * <p>Se borran ademas la contrasena y los tokens pendientes. La fecha de
+     * nacimiento se conserva: separada del correo y del nombre ya no identifica a
+     * nadie. Cuando existan pedidos habra que revisar esa decision, porque un
+     * historial de compras si puede volver a identificar.
+     *
+     * <p>Son cuatro sentencias y no una porque tocan cuatro tablas. La atomicidad la
+     * pone la transaccion del caso de uso: a medias, esto dejaria una cuenta sin
+     * nombre pero con contrasena, o al reves.
+     */
+    @Override
+    public void cerrarYAnonimizar(UserId usuario, Instant ahora) {
+        jdbc.sql("""
+                        UPDATE users
+                        SET email        = 'cerrada-' || id || '@sastra.invalid',
+                            display_name = 'Cuenta cerrada',
+                            city         = NULL,
+                            phone        = NULL,
+                            avatar_url   = NULL,
+                            status       = 'CLOSED',
+                            closed_at    = :ahora,
+                            updated_at   = :ahora
+                        WHERE id = :usuario
+                        """)
+                .param("ahora", Timestamp.from(ahora))
+                .param("usuario", usuario.value())
+                .update();
+
+        // La contrasena no se anonimiza: se borra. Un hash de Argon2id no
+        // identifica a nadie, pero tampoco hace falta para nada.
+        jdbc.sql("DELETE FROM user_credentials WHERE user_id = :usuario")
+                .param("usuario", usuario.value())
+                .update();
+
+        // Enlaces de verificacion y de restablecimiento pendientes: son
+        // credenciales de un solo uso y no pueden sobrevivir a la cuenta.
+        jdbc.sql("DELETE FROM verification_tokens WHERE user_id = :usuario")
+                .param("usuario", usuario.value())
+                .update();
+
+        jdbc.sql("DELETE FROM user_roles WHERE user_id = :usuario")
+                .param("usuario", usuario.value())
+                .update();
     }
 }

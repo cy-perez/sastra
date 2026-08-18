@@ -42,6 +42,10 @@
     "reset": {
       "title": "Nueva contraseña",
       "description": "Pon una contraseña nueva para tu cuenta de Sastra."
+    },
+    "account": {
+      "title": "Mi cuenta",
+      "description": "Tus sesiones abiertas, tus datos y el cierre de tu cuenta en Sastra."
     }
   },
   "layout": {
@@ -63,7 +67,8 @@
     },
     "session": {
       "login": "Entrar",
-      "logout": "Salir"
+      "logout": "Salir",
+      "account": "Mi cuenta"
     }
   },
   "home": {
@@ -93,7 +98,8 @@
       "COMMON_TOO_MANY_REQUESTS": "Demasiados intentos seguidos. Espera un momento y vuelve a intentarlo.",
       "COMMON_UNEXPECTED": "Algo salió mal de nuestro lado. Inténtalo de nuevo.",
       "AUTH_RESET_TOKEN_INVALID": "Este enlace ya no sirve. Puede que lo hayas usado antes.",
-      "AUTH_RESET_TOKEN_EXPIRED": "Este enlace venció. Los enlaces para cambiar la contraseña duran 30 minutos."
+      "AUTH_RESET_TOKEN_EXPIRED": "Este enlace venció. Los enlaces para cambiar la contraseña duran 30 minutos.",
+      "AUTH_CLOSE_CONFIRMATION_MISMATCH": "Lo que escribiste no coincide con tu correo."
     }
   },
   "form": {
@@ -244,6 +250,40 @@
         "body": "Abre el enlace tal como llegó en el correo, sin recortarlo."
       },
       "askAnother": "Pedir un enlace nuevo"
+    },
+    "account": {
+      "title": "Mi cuenta",
+      "sessions": {
+        "title": "Sesiones abiertas",
+        "body": "Estos son los dispositivos donde tu cuenta está abierta. Si no reconoces alguno, ciérralo y cambia tu contraseña.",
+        "loading": "Cargando tus sesiones",
+        "current": "esta sesión",
+        "unknownBrowser": "Navegador desconocido",
+        "startedAt": "Abierta el {{fecha}}",
+        "close": "Cerrar",
+        "closeThis": "Cerrar y salir"
+      },
+      "export": {
+        "title": "Descargar mis datos",
+        "body": "Te damos un archivo con todo lo que guardamos de ti, incluida la evidencia de lo que aceptaste y cuándo.",
+        "download": "Descargar"
+      },
+      "close": {
+        "title": "Cerrar mi cuenta",
+        "body": "Cerramos tu cuenta y borramos los datos que te identifican. No se puede deshacer. Podrás registrarte de nuevo con este mismo correo.",
+        "start": "Quiero cerrar mi cuenta",
+        "confirm": "Cerrar mi cuenta definitivamente",
+        "done": "Tu cuenta quedó cerrada. Gracias por haber estado.",
+        "fields": {
+          "confirmation": "Escribe tu correo para confirmar"
+        },
+        "hints": {
+          "confirmation": "Es la forma de asegurarnos de que no fue un clic por accidente."
+        },
+        "errors": {
+          "confirmation": "Escribe tu correo exactamente como lo tienes registrado."
+        }
+      }
     }
   }
 }

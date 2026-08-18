@@ -40,14 +40,13 @@
   border-radius: var(--radio-md);
 }
 
-/* display:none y no una clase de solo lectores: el nombre tampoco se anuncia en
-   movil. Es deliberado. No es informacion necesaria para usar la barra, y
-   dejarlo audible pero invisible haria que las dos experiencias contaran cosas
-   distintas sin motivo. */
+/* Se ve siempre, tambien en movil. Antes se ocultaba por debajo de 640px, cuando
+   solo era una etiqueta con el nombre; ahora es el enlace a la propia cuenta, y
+   esconderlo dejaria esa pagina inalcanzable desde un telefono.
+
+   Para que quepa se recorta el texto, no el control. */
 .nombre {
-  display: none;
-  color: var(--color-texto-suave);
-  max-width: 16ch;
+  max-width: 12ch;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -55,6 +54,6 @@
 
 @media (min-width: 640px) {
   .nombre {
-    display: inline-block;
+    max-width: 20ch;
   }
 }

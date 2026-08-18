@@ -1,6 +1,8 @@
 package co.sastra.identity.usecase;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -11,6 +13,7 @@ import co.sastra.identity.model.DisplayName;
 import co.sastra.identity.model.Email;
 import co.sastra.identity.model.RefreshToken;
 import co.sastra.identity.model.Role;
+import co.sastra.identity.model.TokenFamilyId;
 import co.sastra.identity.model.User;
 import co.sastra.identity.model.UserId;
 import co.sastra.identity.model.UserLocale;
@@ -64,7 +67,7 @@ class IssueSessionUseCaseTest {
     private void conTokensGenerados() {
         when(generadorDeTokens.generar())
                 .thenReturn(new TokenGenerator.GeneratedToken("refresco-en-claro", "hash-del-refresco"));
-        when(accesos.emitir(usuario, AHORA))
+        when(accesos.emitir(eq(usuario), any(TokenFamilyId.class), eq(AHORA)))
                 .thenReturn(
                         new AccessTokenIssuer.IssuedAccessToken("token-de-acceso", AHORA.plus(Duration.ofMinutes(15))));
     }
@@ -143,7 +146,7 @@ class IssueSessionUseCaseTest {
         User verificado = usuario.conCorreoVerificado(AHORA.minus(Duration.ofDays(1)));
         when(generadorDeTokens.generar())
                 .thenReturn(new TokenGenerator.GeneratedToken("refresco-en-claro", "hash-del-refresco"));
-        when(accesos.emitir(verificado, AHORA))
+        when(accesos.emitir(eq(verificado), any(TokenFamilyId.class), eq(AHORA)))
                 .thenReturn(
                         new AccessTokenIssuer.IssuedAccessToken("token-de-acceso", AHORA.plus(Duration.ofMinutes(15))));
 

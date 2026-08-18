@@ -160,7 +160,9 @@ public class ApiExceptionHandler {
                     AUTH_VERIFICATION_TOKEN_EXPIRED,
                     AUTH_RESET_TOKEN_INVALID,
                     AUTH_RESET_TOKEN_EXPIRED -> HttpStatus.UNPROCESSABLE_CONTENT;
-            case COMMON_VALIDATION_FAILED -> HttpStatus.BAD_REQUEST;
+            // 400 y no 422: lo que se escribio no coincide con lo que se pedia
+            // escribir, que es un problema de la peticion y no del negocio.
+            case AUTH_CLOSE_CONFIRMATION_MISMATCH, COMMON_VALIDATION_FAILED -> HttpStatus.BAD_REQUEST;
             case COMMON_TOO_MANY_REQUESTS -> HttpStatus.TOO_MANY_REQUESTS;
             case COMMON_UNEXPECTED -> HttpStatus.INTERNAL_SERVER_ERROR;
         };

@@ -1,0 +1,103 @@
+<h1 class="tipo-h1">{{ 'auth.account.title' | transloco }}</h1>
+
+<!-- Criterio 17 -->
+<section class="bloque">
+  <h2 class="tipo-h2">{{ 'auth.account.sessions.title' | transloco }}</h2>
+  <p class="tipo-cuerpo">{{ 'auth.account.sessions.body' | transloco }}</p>
+
+  @if (sesiones.isPending()) {
+    <p class="esqueleto barra" aria-hidden="true"></p>
+    <p class="solo-lectores" role="status">{{ 'auth.account.sessions.loading' | transloco }}</p>
+  } @else if (errorDeLista(); as error) {
+    <p class="error tipo-cuerpo" role="alert">{{ error | transloco }}</p>
+  } @else if (sesiones.data(); as lista) {
+    <ul class="sesiones" role="list">
+      @for (sesion of lista; track sesion.id) {
+        <li class="sesion">
+          <div>
+            <p class="tipo-cuerpo">
+              {{ sesion.userAgent ?? ('auth.account.sessions.unknownBrowser' | transloco) }}
+              @if (sesion.current) {
+                <span class="actual tipo-leyenda">{{
+                  'auth.account.sessions.current' | transloco
+                }}</span>
+              }
+            </p>
+            <p class="tipo-secundario">
+              {{
+                'auth.account.sessions.startedAt'
+                  | transloco: { fecha: sesion.startedAt | date: 'medium' }
+              }}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            class="accion tipo-secundario"
+            [attr.aria-busy]="cierreDeSesion.isPending() ? 'true' : null"
+            (click)="cerrarSesion(sesion.id)"
+          >
+            {{
+              (sesion.current ? 'auth.account.sessions.closeThis' : 'auth.account.sessions.close')
+                | transloco
+            }}
+          </button>
+        </li>
+      }
+    </ul>
+  }
+</section>
+
+<!-- Criterio 22 -->
+<section class="bloque">
+  <h2 class="tipo-h2">{{ 'auth.account.export.title' | transloco }}</h2>
+  <p class="tipo-cuerpo">{{ 'auth.account.export.body' | transloco }}</p>
+
+  <button
+    type="button"
+    class="accion tipo-secundario"
+    [attr.aria-busy]="descarga.isPending() ? 'true' : null"
+    (click)="descargar()"
+  >
+    {{ 'auth.account.export.download' | transloco }}
+  </button>
+</section>
+
+<!-- Criterio 23. Va al final y detras de una confirmacion escrita, no porque
+     estorbe sino porque no se deshace. -->
+<section class="bloque peligro">
+  <h2 class="tipo-h2">{{ 'auth.account.close.title' | transloco }}</h2>
+  <p class="tipo-cuerpo">{{ 'auth.account.close.body' | transloco }}</p>
+
+  @if (cierreDeCuenta.isSuccess()) {
+    <p class="tipo-entradilla" role="status">{{ 'auth.account.close.done' | transloco }}</p>
+  } @else if (!cerrando()) {
+    <button type="button" class="accion tipo-secundario" (click)="cerrando.set(true)">
+      {{ 'auth.account.close.start' | transloco }}
+    </button>
+  } @else {
+    <form class="formulario" [formGroup]="form" (ngSubmit)="cerrarCuenta()" novalidate>
+      @if (errorDeCierre(); as error) {
+        <p class="error tipo-cuerpo" role="alert">{{ error | transloco }}</p>
+      }
+
+      <sastra-text-field
+        fieldId="confirmacion"
+        type="email"
+        autocomplete="off"
+        labelKey="auth.account.close.fields.confirmation"
+        hintKey="auth.account.close.hints.confirmation"
+        [control]="control()"
+        [errorKey]="errorDeConfirmacion()"
+      />
+
+      <!-- Sin deshabilitar. Un boton deshabilitado no dice por que lo esta, y
+           quien usa lector de pantalla se queda sin saberlo; se valida al enviar,
+           como en el resto de los formularios del sitio. -->
+      <sastra-submit-button
+        labelKey="auth.account.close.confirm"
+        [loading]="cierreDeCuenta.isPending()"
+      />
+    </form>
+  }
+</section>

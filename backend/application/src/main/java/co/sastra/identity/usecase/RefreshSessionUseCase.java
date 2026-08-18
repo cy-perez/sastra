@@ -117,7 +117,10 @@ public class RefreshSessionUseCase {
 
         refrescos.rotar(rotacion.consumido(), rotacion.emitido());
 
-        AccessTokenIssuer.IssuedAccessToken acceso = accesos.emitir(usuario, ahora);
+        // La familia no cambia al rotar: el token de acceso nuevo sigue apuntando
+        // a la misma sesion, que es lo que el criterio 17 necesita para
+        // reconocerla en la lista.
+        AccessTokenIssuer.IssuedAccessToken acceso = accesos.emitir(usuario, presentado.familyId(), ahora);
 
         return new SessionResult(
                 acceso.value(),

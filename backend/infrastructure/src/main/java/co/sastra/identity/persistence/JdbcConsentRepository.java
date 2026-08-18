@@ -1,9 +1,15 @@
 package co.sastra.identity.persistence;
 
 import co.sastra.identity.model.Consent;
+import co.sastra.identity.model.ConsentDocument;
+import co.sastra.identity.model.ConsentId;
+import co.sastra.identity.model.UserId;
 import co.sastra.identity.port.out.ConsentRepository;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -32,5 +38,35 @@ public class JdbcConsentRepository implements ConsentRepository {
                     .param("ipHash", consentimiento.ipHash())
                     .update();
         }
+    }
+
+    /**
+     * Criterio 22: la evidencia de a que documentos dijo que si, con su version.
+     *
+     * <p>La IP hasheada se lee igual porque el modelo la tiene, pero no sale de
+     * aqui: el caso de uso la descarta al armar el archivo. Un hash no le dice nada
+     * a quien recibe sus datos (docs/operacion/datos-personales.md).
+     */
+    @Override
+    public List<Consent> listarDe(UserId usuario) {
+        return jdbc.sql("""
+                        SELECT id, user_id, document, version, accepted_at, ip_hash
+                        FROM consents
+                        WHERE user_id = :usuario
+                        ORDER BY accepted_at DESC
+                        """)
+                .param("usuario", usuario.value())
+                .query(JdbcConsentRepository::mapear)
+                .list();
+    }
+
+    private static Consent mapear(ResultSet fila, int numeroDeFila) throws SQLException {
+        return new Consent(
+                new ConsentId(fila.getObject("id", UUID.class)),
+                new UserId(fila.getObject("user_id", UUID.class)),
+                ConsentDocument.valueOf(fila.getString("document")),
+                fila.getString("version"),
+                fila.getTimestamp("accepted_at").toInstant(),
+                fila.getString("ip_hash"));
     }
 }

@@ -19,6 +19,7 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'registro', renderMode: RenderMode.Server },
   { path: 'ingresar', renderMode: RenderMode.Server },
   { path: 'verificar-correo', renderMode: RenderMode.Server },
+  { path: 'mi-cuenta', renderMode: RenderMode.Server },
   { path: 'recuperar-contrasena', renderMode: RenderMode.Server },
   { path: 'restablecer-contrasena', renderMode: RenderMode.Server },
   // Los legales importan aqui mas que ninguna: son las que una autoridad revisa

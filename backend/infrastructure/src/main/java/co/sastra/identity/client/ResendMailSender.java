@@ -189,6 +189,25 @@ public class ResendMailSender implements MailSender {
                                 + "right away from the contact page.</p>");
     }
 
+    /** Criterio 23. Sin enlace: es el ultimo mensaje y no hay nada que abrir. */
+    @Override
+    public void enviarAvisoDeCuentaCerrada(User titular) {
+        boolean espanol = titular.locale() == UserLocale.ES;
+
+        enviar(
+                titular.email().value(),
+                espanol ? "Tu cuenta de Sastra quedo cerrada" : "Your Sastra account is closed",
+                espanol
+                        ? "<p>Cerramos tu cuenta y borramos los datos que te identificaban. "
+                                + "Este es el ultimo mensaje que te enviamos.</p>"
+                                + "<p>Si quieres volver, puedes registrarte de nuevo con este mismo correo.</p>"
+                                + "<p>Si no fuiste tu quien lo pidio, escribenos de inmediato.</p>"
+                        : "<p>We closed your account and deleted the data that identified you. "
+                                + "This is the last message we will send you.</p>"
+                                + "<p>If you want to come back, you can register again with this same address.</p>"
+                                + "<p>If you did not ask for this, contact us right away.</p>");
+    }
+
     private static String cuerpo(String titulo, String texto, String enlace, String etiquetaDelBoton) {
         return "<h1>" + titulo + "</h1><p>" + texto + "</p><p><a href=\"" + enlace + "\">" + etiquetaDelBoton
                 + "</a></p>";

@@ -20,7 +20,7 @@ export class SiteFooter {
   protected readonly documentosLegales = DOCUMENTOS_LEGALES;
 
   /**
-   * Criterio 12: quien responde por el sitio, siempre desde la configuracion.
+   * Criterio 11: quien responde por el sitio, siempre desde la configuracion.
    *
    * <p>Cada campo puede faltar y la plantilla lo omite uno por uno. No se pinta
    * un pie a medias con huecos: se pinta con lo que hay.

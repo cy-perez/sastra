@@ -1,26 +1,26 @@
 /* Generado por kit_ui.py. Los estados son derivados: no los edites a mano,
    cambia el color base y vuelve a generar. */
 :root {
-  --color-primario: #16192A;
+  --color-primario: #16192a;
   --color-primario-hover: #131625;
   --color-primario-pressed: #111421;
-  --color-primario-suave: #E8E8EA;
-  --color-sobre-primario: #FFFFFF;
-  --color-acento: #D69A3C;
+  --color-primario-suave: #e8e8ea;
+  --color-sobre-primario: #ffffff;
+  --color-acento: #d69a3c;
   --color-sobre-acento: #111111;
-  --color-fondo: #F7F5F1;
-  --color-superficie: #FFFFFF;
-  --color-texto: #16192A;
-  --color-texto-suave: #5B6072;
-  --color-borde: #E3DFD7;
-  --color-exito: #1F7A55;
-  --color-aviso: #8A5A12;
-  --color-error: #B3402A;
-  --color-deshabilitado: #B1B2B8;
-  --color-foco: #16192A;
-  --color-borde-control: #95938E;
-  --fuente-texto: "Instrument Sans", system-ui, sans-serif;
-  --fuente-display: "Archivo", var(--fuente-texto);
+  --color-fondo: #f7f5f1;
+  --color-superficie: #ffffff;
+  --color-texto: #16192a;
+  --color-texto-suave: #5b6072;
+  --color-borde: #e3dfd7;
+  --color-exito: #1f7a55;
+  --color-aviso: #8a5a12;
+  --color-error: #b3402a;
+  --color-deshabilitado: #b1b2b8;
+  --color-foco: #16192a;
+  --color-borde-control: #95938e;
+  --fuente-texto: 'Instrument Sans', system-ui, sans-serif;
+  --fuente-display: 'Archivo', var(--fuente-texto);
   --texto-xs: 12px;
   --texto-sm: 14px;
   --texto-base: 16px;
@@ -42,23 +42,26 @@
   --radio-md: 8px;
   --radio-lg: 14px;
   --radio-completo: 9999px;
-  --sombra-sm: 0 1px 2px rgba(0,0,0,.06);
-  --sombra-md: 0 4px 12px rgba(0,0,0,.08);
-  --sombra-lg: 0 12px 32px rgba(0,0,0,.12);
+  --sombra-sm: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --sombra-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --sombra-lg: 0 12px 32px rgba(0, 0, 0, 0.12);
   --ancho-max: 1140px;
 }
 
-[data-tema="oscuro"] {
-  --color-fondo: #0E101B;
-  --color-superficie: #2D303F;
-  --color-texto: #F9F8F5;
-  --color-texto-suave: #A19F9D;
-  --color-borde: #494C59;
-  --color-primario: #85868E;
+[data-tema='oscuro'] {
+  --color-fondo: #0e101b;
+  --color-superficie: #2d303f;
+  --color-texto: #f9f8f5;
+  --color-texto-suave: #a19f9d;
+  --color-borde: #494c59;
+  --color-primario: #85868e;
   --color-sobre-primario: #111111;
 }
 
 /* Respeta a quien pide menos movimiento */
 @media (prefers-reduced-motion: reduce) {
-  * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }

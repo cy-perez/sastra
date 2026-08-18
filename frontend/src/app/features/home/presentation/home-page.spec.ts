@@ -15,23 +15,62 @@ describe('HomePage', () => {
     TestBed.configureTestingModule({ providers: [provideRouter([])] });
   });
 
-  /** Criterio 1 y criterio 20: un solo h1, y es la propuesta de valor. */
   /** Texto de cada elemento que case, en orden de documento. */
   const textos = (raiz: HTMLElement, selector: string): string[] =>
     Array.from(raiz.querySelectorAll(selector) as NodeListOf<HTMLElement>).map(
       (elemento) => elemento.textContent?.trim() ?? '',
     );
 
+  /** El enlace por su nombre accesible, que es como lo encuentra quien lo usa. */
+  const enlace = (raiz: HTMLElement, nombre: string): HTMLAnchorElement | undefined =>
+    Array.from(raiz.querySelectorAll('a') as NodeListOf<HTMLAnchorElement>).find(
+      (candidato) => candidato.textContent?.trim() === nombre,
+    );
+
+  /** La region cuyo encabezado dice `titulo`. */
+  const region = (raiz: HTMLElement, titulo: string): HTMLElement => {
+    const encabezado = Array.from(raiz.querySelectorAll('h2') as NodeListOf<HTMLElement>).find(
+      (candidato) => candidato.textContent?.trim() === titulo,
+    );
+
+    const seccion = encabezado?.closest('section');
+    if (!seccion) {
+      throw new Error(`No hay ninguna region titulada "${titulo}"`);
+    }
+    return seccion;
+  };
+
+  /** Criterio 1: un solo h1 y es la propuesta de valor. */
   it('tiene un unico h1 con la propuesta de valor', async () => {
     const fixture = await render();
 
     expect(textos(fixture.nativeElement, 'h1')).toEqual(['Compra y vende moda con respaldo']);
   });
 
+  // La otra mitad del criterio 1: el texto de apoyo explica el respaldo del pago.
+  it('acompana el titular con el texto que explica el respaldo', async () => {
+    const fixture = await render();
+    const hero = fixture.nativeElement.querySelector('.hero') as HTMLElement;
+
+    expect(hero.textContent).toContain('Guardamos el pago hasta que confirmas');
+  });
+
+  // Y el titular y su apoyo viven dentro de la franja, que es lo que rescata el
+  // anillo de foco: sobre tinta, sin ella, seria invisible.
+  it('pone el titular dentro de la franja oscura', async () => {
+    const fixture = await render();
+    const titulo = fixture.nativeElement.querySelector('h1') as HTMLElement;
+
+    expect(titulo.closest('.franja-oscura')).not.toBeNull();
+  });
+
   /**
    * Criterio 2. El acento ocre aparece una sola vez por pantalla, siempre como
-   * relleno. Se cuenta en el DOM porque es la unica forma de que la regla no se
-   * erosione: el segundo boton ocre siempre parece justificado por si solo.
+   * relleno. Se cuenta por clase porque el criterio nombra la clase: lo que se
+   * cuenta es una decision de marca, no un rol.
+   *
+   * <p>Aqui se cuenta dentro de la portada; que tampoco haya otro en la cabecera
+   * ni en el pie se comprueba sobre la pagina completa en e2e/portada.spec.ts.
    */
   it('pinta exactamente un elemento con el acento ocre', async () => {
     const fixture = await render();
@@ -45,62 +84,104 @@ describe('HomePage', () => {
    *
    * <p>Lleva siempre a /registro, tambien con sesion abierta: el servidor no
    * puede saber si la hay, y un destino condicional dejaria el hero sin boton en
-   * el HTML servido (criterio 18) o lo cambiaria al hidratar.
+   * el HTML servido (criterio 15) o lo cambiaria al hidratar.
    */
   it('el boton principal es un enlace al registro', async () => {
     const fixture = await render();
-    const cta = fixture.nativeElement.querySelector('.btn-cta') as HTMLAnchorElement;
+    const cta = enlace(fixture.nativeElement, 'Crear cuenta');
 
-    expect(cta.tagName).toBe('A');
-    expect(cta.getAttribute('href')).toBe('/registro');
-    expect(cta.textContent?.trim()).toBe('Crear cuenta');
+    expect(cta?.tagName).toBe('A');
+    expect(cta?.getAttribute('href')).toBe('/registro');
   });
 
-  /** Criterio 4: publicar es gratis y solo se cobra al vender, sin cifra. */
-  it('dice que publicar es gratis sin escribir el porcentaje', async () => {
+  it('el boton principal es el que lleva el acento', async () => {
     const fixture = await render();
-    const nota = fixture.nativeElement.querySelector('.hero-nota') as HTMLElement;
 
-    expect(nota.textContent).toContain('Publicar es gratis');
-    expect(nota.textContent).not.toContain('%');
+    expect(enlace(fixture.nativeElement, 'Crear cuenta')?.classList).toContain('btn-cta');
   });
 
-  /** Criterio 6: publicar, vender y cobrar, en ese orden. */
-  it('muestra los tres pasos en orden dentro de una lista ordenada', async () => {
+  /** Criterio 4: publicar es gratis y solo se cobra al vender. */
+  it('dice que publicar es gratis y que solo se cobra al vender', async () => {
     const fixture = await render();
+    const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
 
-    expect(textos(fixture.nativeElement, 'ol.pasos li h3')).toEqual([
+    expect(texto).toContain('Publicar es gratis');
+    expect(texto).toContain('Solo cobramos cuando vendes');
+  });
+
+  /**
+   * RN-026: el porcentaje no se escribe en la plantilla. Se mira la portada
+   * entera y no solo la nota, porque la cifra puede colarse en cualquier texto.
+   */
+  it('no escribe el porcentaje de la comision en ninguna parte', async () => {
+    const fixture = await render();
+    const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
+
+    expect(texto).not.toMatch(/%|\bcinco por ciento\b/i);
+  });
+
+  /** Criterio 5: publicar, vender y cobrar, en ese orden. */
+  it('muestra los tres pasos en orden', async () => {
+    const fixture = await render();
+    const pasos = region(fixture.nativeElement, 'Cómo funciona');
+
+    expect(textos(pasos, 'h3')).toEqual([
       'Publicas tu prenda',
       'Alguien la compra',
       'Cobras al confirmarse la entrega',
     ]);
   });
 
+  // Lista ordenada y no una cualquiera: el orden es parte del mensaje y asi se
+  // lo anuncia un lector de pantalla.
+  it('presenta los pasos como lista ordenada', async () => {
+    const fixture = await render();
+    const pasos = region(fixture.nativeElement, 'Cómo funciona');
+
+    expect(pasos.querySelector('ol')).not.toBeNull();
+  });
+
   /**
-   * Criterio 7. La ruta /como-funciona llega con HU-005; hasta entonces no se
-   * pinta el enlace. Un enlace roto en portada es peor que no tenerlo.
+   * Criterio 6. La ruta /como-funciona llega con HU-005; hasta entonces no se
+   * pinta el enlace.
+   *
+   * <p>Se afirma solo eso, y no el conjunto entero de enlaces de la portada: con
+   * la lista completa congelada, cualquier enlace legitimo que se agregue
+   * despues rompe la prueba sin que nada este roto.
+   *
+   * <p>Ojo: hoy no hay mecanismo que consulte las rutas existentes, solo la
+   * ausencia del enlace. El mecanismo entra con HU-005 y esta prueba se
+   * convertira entonces en la que compruebe que si aparece.
    */
-  it('no enlaza paginas informativas que todavia no existen', async () => {
+  it('no enlaza la pagina de como funciona mientras no exista', async () => {
     const fixture = await render();
     const destinos = Array.from(
       fixture.nativeElement.querySelectorAll('a[href]') as NodeListOf<HTMLAnchorElement>,
-    ).map((enlace) => enlace.getAttribute('href'));
+    ).map((candidato) => candidato.getAttribute('href'));
 
-    expect(destinos).toEqual(['/registro']);
+    expect(destinos).not.toContain('/como-funciona');
   });
 
-  /** Criterio 8: el unico elemento decorativo del sistema, y no una linea continua. */
-  it('separa los bloques con la regla de puntada', async () => {
+  /** Criterio 7: el unico elemento decorativo del sistema, entre los dos bloques. */
+  it('separa los pasos de las tarjetas con la regla de puntada', async () => {
     const fixture = await render();
+    const regla = fixture.nativeElement.querySelector('hr.regla-puntada') as HTMLElement;
+    const pasos = region(fixture.nativeElement, 'Cómo funciona');
+    const confianza = region(fixture.nativeElement, 'Por qué es seguro');
 
-    expect(fixture.nativeElement.querySelector('hr.regla-puntada')).not.toBeNull();
+    // Va detras del bloque de pasos y delante del de confianza.
+    expect(regla.compareDocumentPosition(pasos) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
+    expect(
+      regla.compareDocumentPosition(confianza) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
-  /** Criterio 9: retencion del pago, vendedores verificados y publicaciones moderadas. */
+  /** Criterio 8: retencion del pago, vendedores verificados y publicaciones moderadas. */
   it('muestra las tres tarjetas de confianza', async () => {
     const fixture = await render();
+    const confianza = region(fixture.nativeElement, 'Por qué es seguro');
 
-    expect(textos(fixture.nativeElement, 'ul.tarjetas li h3')).toEqual([
+    expect(textos(confianza, 'h3')).toEqual([
       'El pago queda retenido',
       'Vendedores verificados',
       'Publicaciones revisadas',
@@ -108,18 +189,20 @@ describe('HomePage', () => {
   });
 
   /**
-   * Criterio 10. La maqueta original prometia "Devolucion en 3 dias" y esa
+   * Criterio 9. La maqueta original prometia "Devolucion en 3 dias" y esa
    * politica no existe: devoluciones es Fase 4 y no hay documento legal que la
-   * respalde. La prueba existe para que no vuelva por la puerta de atras.
+   * respalde. Se prohiben tambien los tiempos de entrega, que tampoco estan
+   * decididos. La prueba existe para que no vuelvan por la puerta de atras.
    */
   it('no promete devoluciones, reembolsos ni plazos', async () => {
     const fixture = await render();
     const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
 
-    expect(texto).not.toMatch(/devoluci[oó]n|reembolso|d[ií]as h[aá]biles/i);
+    expect(texto).not.toMatch(/devoluci[oó]n|reembolso/i);
+    expect(texto).not.toMatch(/\b\d+\s*(d[ií]as?|horas?|h)\b/i);
   });
 
-  /** Criterio 20: sin saltos de nivel. Del h1 se pasa a h2 y de ahi a h3. */
+  /** Criterio 17: sin saltos de nivel. Del h1 se pasa a h2 y de ahi a h3. */
   it('no salta ningun nivel de encabezado', async () => {
     const fixture = await render();
     const niveles = Array.from(
@@ -134,12 +217,15 @@ describe('HomePage', () => {
     expect(saltos.every((salto) => salto <= 1)).toBe(true);
   });
 
-  /** El hero pide el carril a sangre y trae la franja que rescata el foco. */
-  it('el hero sangra a ancho completo dentro de la franja oscura', async () => {
+  // Cada bloque anuncia su nombre, para quien navega por regiones.
+  it('da nombre accesible a las dos regiones de contenido', async () => {
     const fixture = await render();
-    const hero = fixture.nativeElement.querySelector('.hero') as HTMLElement;
 
-    expect(hero.classList).toContain('a-sangre');
-    expect(hero.classList).toContain('franja-oscura');
+    expect(region(fixture.nativeElement, 'Cómo funciona').getAttribute('aria-labelledby')).toBe(
+      'pasos-titulo',
+    );
+    expect(region(fixture.nativeElement, 'Por qué es seguro').getAttribute('aria-labelledby')).toBe(
+      'confianza-titulo',
+    );
   });
 });

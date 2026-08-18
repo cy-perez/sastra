@@ -42,6 +42,13 @@
   grid-column: content;
 }
 
+/* El componente de la ruta se inserta como HERMANO de <router-outlet>, no
+   dentro. El propio outlet no pinta nada, pero es hijo directo de la rejilla y
+   consumiria una fila. */
+router-outlet {
+  display: contents;
+}
+
 .contenido > .a-sangre {
   grid-column: full;
 }

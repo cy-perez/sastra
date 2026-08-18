@@ -42,8 +42,11 @@
            obligatorio y es lo primero que revisa una autoridad
            (docs/operacion/datos-personales.md). Los tres van juntos porque se
            buscan en el mismo sitio. -->
-      <nav class="columna" [attr.aria-label]="'layout.footer.legalLabel' | transloco">
-        <h2 class="tipo-titulo-tarjeta titulo-columna">
+      <!-- El nombre de la region sale del encabezado que ya se ve. Con un
+           aria-label que repite ese mismo texto, el lector lo anuncia dos veces
+           seguidas. -->
+      <nav class="columna" aria-labelledby="pie-legal">
+        <h2 class="tipo-titulo-tarjeta titulo-columna" id="pie-legal">
           {{ 'layout.footer.legalLabel' | transloco }}
         </h2>
         <!-- role="list" explicito: WebKit le quita el rol de lista a un ul con
@@ -60,13 +63,16 @@
         </ul>
       </nav>
 
-      <!-- Criterio 14. El canal de contacto es hoy el correo, no una pagina: la
+      <!-- Criterio 13. El canal de contacto es hoy el correo, no una pagina: la
            de /contacto llega con HU-005 y un enlace a una ruta que no existe es
            peor que no tenerlo. Por aqui se ejercen ademas los derechos del
            titular de los datos, asi que sin el se incumple la Ley 1581. -->
       @if (empresa.supportEmail; as correo) {
-        <section class="columna" [attr.aria-label]="'layout.footer.contactLabel' | transloco">
-          <h2 class="tipo-titulo-tarjeta titulo-columna">
+        <!-- <nav> y no <section>, igual que la columna legal: son dos listas de
+             enlaces con la misma forma y no tiene sentido que una sea landmark
+             de navegacion y la otra una region. -->
+        <nav class="columna" aria-labelledby="pie-contacto">
+          <h2 class="tipo-titulo-tarjeta titulo-columna" id="pie-contacto">
             {{ 'layout.footer.contactLabel' | transloco }}
           </h2>
           <ul class="lista-enlaces" role="list">
@@ -74,7 +80,7 @@
               <a class="tipo-secundario" [href]="'mailto:' + correo">{{ correo }}</a>
             </li>
           </ul>
-        </section>
+        </nav>
       }
     </div>
   </div>

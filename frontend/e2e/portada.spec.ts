@@ -55,11 +55,44 @@ test.describe('portada', () => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('/');
 
-    const hero = page.locator('.hero');
-    const caja = await hero.boundingBox();
+    // Contra el ancho real del documento y no contra el del viewport: con barra
+    // de desplazamiento clasica no son el mismo numero, y la prueba seria
+    // inestable segun la maquina.
+    const { heroX, heroAncho, anchoDocumento } = await page.evaluate(() => {
+      const caja = (document.querySelector('.hero') as HTMLElement).getBoundingClientRect();
+      return {
+        heroX: Math.round(caja.x),
+        heroAncho: Math.round(caja.width),
+        anchoDocumento: document.documentElement.clientWidth,
+      };
+    });
 
-    expect(caja?.x).toBe(0);
-    expect(caja?.width).toBe(1280);
+    expect(heroX).toBe(0);
+    expect(heroAncho).toBe(anchoDocumento);
+  });
+
+  /**
+   * Criterio 10: las tres tarjetas se apilan en una columna. Sin esto, una
+   * rejilla de tres columnas comprimidas a 100px pasaria la prueba de
+   * desplazamiento horizontal y el diseno estaria roto igual.
+   */
+  test('las tarjetas de confianza se apilan en una columna en movil', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 740 });
+    await page.goto('/');
+
+    const cajas = await page.locator('ul.tarjetas li').evaluateAll((tarjetas) =>
+      tarjetas.map((tarjeta) => {
+        const caja = tarjeta.getBoundingClientRect();
+        return { x: Math.round(caja.x), y: Math.round(caja.y) };
+      }),
+    );
+
+    expect(cajas).toHaveLength(3);
+    // Misma coordenada horizontal y cada una debajo de la anterior.
+    expect(new Set(cajas.map((caja) => caja.x)).size).toBe(1);
+    expect(cajas.map((caja) => caja.y)).toEqual(
+      [...cajas.map((caja) => caja.y)].sort((a, b) => a - b),
+    );
   });
 
   test('el boton principal se alcanza y se activa con el teclado', async ({ page }) => {
@@ -74,21 +107,30 @@ test.describe('portada', () => {
   });
 
   /**
-   * El anillo de foco sobre la franja oscura es tinta sobre tinta si falta
-   * .franja-oscura, que lo redefine. Se comprueba que el color efectivo del
-   * anillo no sea el mismo que el fondo.
+   * El anillo de foco se dibuja alrededor del boton, que esta relleno de ocre.
+   * Lo que tiene que contrastar es anillo contra ocre, no anillo contra la
+   * franja: un anillo ocre sobre boton ocre es el fallo real, y comparandolo
+   * con el fondo del hero pasaria desapercibido.
+   *
+   * <p>Sin .franja-oscura, que redefine --color-foco, el anillo es tinta y el
+   * boton esta sobre tinta. El criterio 17 pide ademas 3px.
    */
-  test('el foco del boton principal es visible sobre la franja', async ({ page }) => {
+  test('el foco del boton principal es visible y mide 3px', async ({ page }) => {
     await page.goto('/');
     const cta = page.getByRole('link', { name: 'Crear cuenta' });
     await cta.focus();
 
-    const { anillo, fondo } = await cta.evaluate((elemento) => ({
-      anillo: getComputedStyle(elemento).outlineColor,
-      fondo: getComputedStyle(elemento.closest('.hero') as HTMLElement).backgroundColor,
-    }));
+    const { anillo, relleno, grosor } = await cta.evaluate((elemento) => {
+      const estilo = getComputedStyle(elemento);
+      return {
+        anillo: estilo.outlineColor,
+        relleno: estilo.backgroundColor,
+        grosor: estilo.outlineWidth,
+      };
+    });
 
-    expect(anillo).not.toBe(fondo);
+    expect(anillo).not.toBe(relleno);
+    expect(grosor).toBe('3px');
   });
 
   test('el pie muestra los datos de la empresa y el canal de contacto', async ({ page }) => {
@@ -127,5 +169,30 @@ test.describe('portada', () => {
     for (const destino of destinos) {
       expect((await request.get(destino)).status(), `enlace roto: ${destino}`).toBe(200);
     }
+  });
+});
+
+/**
+ * Caso borde de la historia: el titular en ingles es bastante mas largo que el
+ * espanol y 320px es el ancho mas estrecho que el sistema contempla. Es la
+ * combinacion la que rompe, no cada una por separado.
+ *
+ * <p>Va en su propio bloque porque el idioma se negocia con la cabecera que
+ * manda el navegador, y `test.use` solo se puede fijar por bloque.
+ */
+test.describe('portada en ingles', () => {
+  test.use({ locale: 'en-US' });
+
+  test('no desborda a 320px con el titular largo en ingles', async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 640 });
+    await page.goto('/');
+
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Buy and sell fashion');
+
+    const desborda = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    );
+
+    expect(desborda).toBe(false);
   });
 });

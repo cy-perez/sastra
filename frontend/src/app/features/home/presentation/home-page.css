@@ -1,8 +1,22 @@
-/* El host desaparece de la caja para que las secciones sean hijas directas de
-   la rejilla de <main>. Sin esto, .a-sangre no llegaria al carril completo: una
-   rejilla solo coloca a sus hijos directos. */
+/* El host desaparece de la caja para que las secciones sean items de la rejilla
+   de <main>. Sin esto, .a-sangre no llegaria al carril completo: una rejilla
+   solo coloca a sus hijos directos. */
 :host {
   display: contents;
+}
+
+/* Y el carril hay que asignarlo desde aqui.
+   `display: contents` cambia el arbol de CAJAS, no el del DOM: los selectores
+   `.contenido > *` de app.css siguen exigiendo que el padre en el DOM sea
+   .contenido, y el padre real de estas secciones es <sastra-home-page>. Sin
+   estas dos reglas las secciones caen en `grid-column: auto`, la rejilla las
+   auto-coloca en los carriles de sangria y el hero acaba midiendo 16px. */
+:host > * {
+  grid-column: content;
+}
+
+:host > .a-sangre {
+  grid-column: full;
 }
 
 /* ---------- Hero ---------- */
@@ -28,6 +42,20 @@
   margin: var(--esp-16) auto 0;
 }
 
+/**
+ * El color del texto se repite aqui a proposito, y no sobra.
+ *
+ * marca.css recolorea TODOS los enlaces de la franja con
+ * `.franja-oscura a { color: var(--sobre-fondo-oscuro) }` (0,1,1), que gana por
+ * especificidad a `.btn-cta { color: var(--color-sobre-cta) }` (0,1,0). El
+ * resultado es hueso claro sobre ocre: 2.18:1, muy por debajo del minimo. Este
+ * es el primer CTA del sitio que cae dentro de una franja oscura, por eso no
+ * habia salido antes.
+ *
+ * La regla correcta vive en el kit (`.franja-oscura a.btn-cta`) y hay que
+ * subirla a docs/ui/generador/fuentes/marca.css y republicar; mientras tanto se
+ * corrige aqui, donde la encapsulacion de Angular da (0,2,0) y gana.
+ */
 .cta {
   display: inline-flex;
   align-items: center;
@@ -37,6 +65,7 @@
   padding: 0 var(--esp-32);
   border: 1px solid transparent;
   border-radius: var(--radio-md);
+  color: var(--color-sobre-cta);
   text-decoration: none;
   cursor: pointer;
 }

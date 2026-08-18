@@ -7,7 +7,11 @@ import {
 import express from 'express';
 import { join } from 'node:path';
 
-import { assertRenderingEnvironment, readAppConfig } from './app/core/config/read-app-config';
+import {
+  assertRenderingEnvironment,
+  avisosDeConfiguracion,
+  readAppConfig,
+} from './app/core/config/read-app-config';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
@@ -53,8 +57,14 @@ app.use((request, response, next) => {
 if (isMainModule(import.meta.url) || process.env['pm_id']) {
   // Arranque real: aqui si se valida el entorno completo y se cae si falta algo.
   // Es preferible no levantar el servidor a descubrirlo con un visitante dentro.
-  readAppConfig(process.env);
+  const config = readAppConfig(process.env);
   assertRenderingEnvironment(process.env);
+
+  // Lo que falta pero no impide servir. Se dice al arrancar: un despliegue a
+  // medias no debe descubrirse mirando el pie de la pagina en produccion.
+  for (const aviso of avisosDeConfiguracion(config)) {
+    console.warn(`[configuracion] ${aviso}`);
+  }
 
   const port = process.env['PORT'] ?? 4000;
   app.listen(port, (error) => {

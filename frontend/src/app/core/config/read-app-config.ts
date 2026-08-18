@@ -75,6 +75,48 @@ function opcional(valor: string | undefined): string | null {
   return limpio && limpio.length > 0 ? limpio : null;
 }
 
+/**
+ * Lo que falta y no impide arrancar, para que quede dicho en el registro.
+ *
+ * <p>Ninguno de estos datos tumba el servidor: el pie los omite y el sitio
+ * funciona. Pero un despliegue sin ellos es un despliegue a medias y no debe
+ * pasar en silencio, que es justo como se llega a produccion sin NIT en el pie.
+ *
+ * <p>{@code SUPPORT_EMAIL} es el que mas pesa: sin el no hay canal visible para
+ * ejercer los derechos del titular de los datos y se incumple la Ley 1581
+ * (docs/operacion/datos-personales.md).
+ *
+ * <p>Devuelve los avisos en vez de escribirlos para que la funcion siga siendo
+ * pura y se pueda probar sin capturar la consola. Quien los escribe es
+ * src/server.ts, al arrancar.
+ */
+export function avisosDeConfiguracion(config: AppConfig): string[] {
+  const faltantes: string[] = [];
+  const { company } = config;
+
+  if (company.name === null) faltantes.push('COMPANY_NAME');
+  if (company.taxId === null) faltantes.push('COMPANY_TAX_ID');
+  if (company.address === null) faltantes.push('COMPANY_ADDRESS');
+  if (company.supportEmail === null) faltantes.push('SUPPORT_EMAIL');
+
+  if (faltantes.length === 0) {
+    return [];
+  }
+
+  const aviso =
+    `Faltan variables de empresa: ${faltantes.join(', ')}. El pie omitira esos datos. ` +
+    'Ver docs/operacion/configuracion.md.';
+
+  return company.supportEmail === null
+    ? [
+        aviso,
+        'Sin SUPPORT_EMAIL el pie no ofrece canal de contacto, y ese canal es ' +
+          'obligatorio para ejercer los derechos del titular de los datos ' +
+          '(Ley 1581 de 2012, docs/operacion/datos-personales.md).',
+      ]
+    : [aviso];
+}
+
 function leerVersionesLegales(env: EnvironmentVariables): LegalVersions {
   return {
     terms: conValorPorOmision(env['LEGAL_TERMS_VERSION']),

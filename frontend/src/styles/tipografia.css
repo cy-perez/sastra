@@ -30,13 +30,13 @@
    El CUERPO NO ES FLUIDO. Se queda en 16px fijos: por debajo, el navegador
    móvil hace zoom solo al enfocar un campo y descuadra la maqueta. */
 :root {
-  --tipo-display:    clamp(2.125rem, 1.44rem + 3.04vw, 3.875rem);  /* 34 → 62 */
-  --tipo-h1:         clamp(1.875rem, 1.48rem + 1.74vw, 2.875rem);  /* 30 → 46 */
-  --tipo-h2:         clamp(1.625rem, 1.43rem + 0.87vw, 2.125rem);  /* 26 → 34 */
-  --tipo-h3:         clamp(1.375rem, 1.28rem + 0.43vw, 1.625rem);  /* 22 → 26 */
-  --tipo-entradilla: clamp(1.125rem, 1.08rem + 0.22vw, 1.25rem);   /* 18 → 20 */
+  --tipo-display: clamp(2.125rem, 1.44rem + 3.04vw, 3.875rem); /* 34 → 62 */
+  --tipo-h1: clamp(1.875rem, 1.48rem + 1.74vw, 2.875rem); /* 30 → 46 */
+  --tipo-h2: clamp(1.625rem, 1.43rem + 0.87vw, 2.125rem); /* 26 → 34 */
+  --tipo-h3: clamp(1.375rem, 1.28rem + 0.43vw, 1.625rem); /* 22 → 26 */
+  --tipo-entradilla: clamp(1.125rem, 1.08rem + 0.22vw, 1.25rem); /* 18 → 20 */
 
-  --medida: 68ch;   /* ancho de lectura: 60–75 caracteres */
+  --medida: 68ch; /* ancho de lectura: 60–75 caracteres */
 }
 
 /* ---------- 2. Respaldo mientras cargan las fuentes ----------
@@ -50,24 +50,24 @@
    fuente descargada; si no se van a medir, es preferible borrar este bloque
    y dejar el respaldo sin ajustar: un ajuste inventado empeora el salto. */
 @font-face {
-  font-family: "Archivo respaldo";
-  src: local("Arial Narrow"), local("Helvetica Neue Condensed"), local("Arial");
+  font-family: 'Archivo respaldo';
+  src: local('Arial Narrow'), local('Helvetica Neue Condensed'), local('Arial');
   size-adjust: 96%;
   ascent-override: 92%;
   descent-override: 24%;
 }
 @font-face {
-  font-family: "Instrument respaldo";
-  src: local("Helvetica Neue"), local("Arial");
+  font-family: 'Instrument respaldo';
+  src: local('Helvetica Neue'), local('Arial');
   size-adjust: 100%;
 }
 
 /* ---------- 3. Familias ----------
    Sobrescriben las de tokens.css para insertar el respaldo ajustado. */
 :root {
-  --fuente-display: "Archivo", "Archivo respaldo", system-ui, sans-serif;
-  --fuente-texto:   "Instrument Sans", "Instrument respaldo", system-ui, sans-serif;
-  --fuente-mono:    "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  --fuente-display: 'Archivo', 'Archivo respaldo', system-ui, sans-serif;
+  --fuente-texto: 'Instrument Sans', 'Instrument respaldo', system-ui, sans-serif;
+  --fuente-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;
 }
 
 /* ---------- 4. Roles ----------
@@ -81,8 +81,8 @@
   font-size: var(--tipo-display);
   font-weight: 700;
   line-height: 1.05;
-  letter-spacing: -0.02em;   /* en tamaños grandes el espaciado sobra */
-  text-wrap: balance;        /* reparte las líneas del titular */
+  letter-spacing: -0.02em; /* en tamaños grandes el espaciado sobra */
+  text-wrap: balance; /* reparte las líneas del titular */
   /* Con el texto al 200% el mínimo de clamp() también se duplica y una palabra
      larga se sale de la caja. El guion la parte antes de que eso pase. */
   hyphens: auto;
@@ -131,7 +131,7 @@
 }
 .tipo-cuerpo {
   font-family: var(--fuente-texto);
-  font-size: var(--texto-base);   /* 16px, nunca menos */
+  font-size: var(--texto-base); /* 16px, nunca menos */
   font-weight: 400;
   line-height: 1.55;
   max-width: var(--medida);
@@ -146,7 +146,7 @@
   font-family: var(--fuente-texto);
   font-size: var(--texto-xs);
   line-height: 1.45;
-  letter-spacing: 0.01em;   /* en tamaños chicos el espaciado ayuda */
+  letter-spacing: 0.01em; /* en tamaños chicos el espaciado ayuda */
   color: var(--color-texto-suave);
 }
 .tipo-etiqueta-boton {
@@ -168,7 +168,7 @@
   line-height: 1.2;
   letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;      /* el signo no se separa de la cifra al ajustar */
+  white-space: nowrap; /* el signo no se separa de la cifra al ajustar */
 }
 .precio-antes {
   font-family: var(--fuente-mono);
@@ -212,7 +212,9 @@ a {
 }
 
 /* ---------- 7. Ancho de lectura ---------- */
-.medida { max-width: var(--medida); }
+.medida {
+  max-width: var(--medida);
+}
 
 /* ---------- 8. Base del documento ----------
    Para que un HTML sin clases ya salga correcto.
@@ -228,8 +230,21 @@ body {
   font: 400 var(--texto-base)/1.55 var(--fuente-texto);
 }
 
-h1 { font: 700 var(--tipo-h1)/1.1 var(--fuente-display); letter-spacing: -0.015em; }
-h2 { font: 700 var(--tipo-h2)/1.15 var(--fuente-display); letter-spacing: -0.01em; }
-h3 { font: 500 var(--tipo-h3)/1.2 var(--fuente-display); }
-h4 { font: 500 var(--texto-base)/1.35 var(--fuente-texto); }
-p  { font-size: var(--texto-base); line-height: 1.55; }
+h1 {
+  font: 700 var(--tipo-h1)/1.1 var(--fuente-display);
+  letter-spacing: -0.015em;
+}
+h2 {
+  font: 700 var(--tipo-h2)/1.15 var(--fuente-display);
+  letter-spacing: -0.01em;
+}
+h3 {
+  font: 500 var(--tipo-h3)/1.2 var(--fuente-display);
+}
+h4 {
+  font: 500 var(--texto-base)/1.35 var(--fuente-texto);
+}
+p {
+  font-size: var(--texto-base);
+  line-height: 1.55;
+}

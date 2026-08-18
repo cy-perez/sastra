@@ -46,15 +46,53 @@ describe('SiteFooter', () => {
 
   // Van en una lista dentro de su propia region, para que quien navegue por
   // landmarks los encuentre sin recorrer el pie entero.
-  it('agrupa los enlaces en una region con nombre', async () => {
-    const fixture = await render();
-    const nav = fixture.nativeElement.querySelector('nav') as HTMLElement;
+  /** El nombre accesible de una region, venga de aria-label o de aria-labelledby. */
+  const nombreDe = (raiz: HTMLElement, region: HTMLElement): string => {
+    const etiqueta = region.getAttribute('aria-label');
+    if (etiqueta !== null) {
+      return etiqueta;
+    }
+    const id = region.getAttribute('aria-labelledby');
+    return id === null ? '' : (raiz.querySelector(`#${id}`)?.textContent?.trim() ?? '');
+  };
 
-    expect(nav.getAttribute('aria-label')).toBe('Documentos legales');
-    expect(nav.querySelectorAll('li')).toHaveLength(3);
+  const regionLlamada = (raiz: HTMLElement, nombre: string): HTMLElement | undefined =>
+    Array.from(raiz.querySelectorAll('nav') as NodeListOf<HTMLElement>).find(
+      (candidata) => nombreDe(raiz, candidata) === nombre,
+    );
+
+  it('agrupa los enlaces legales en una region con nombre', async () => {
+    const fixture = await render();
+    const legal = regionLlamada(fixture.nativeElement, 'Documentos legales');
+
+    expect(legal).toBeDefined();
+    expect(legal?.querySelectorAll('a')).toHaveLength(3);
   });
 
-  /** Criterio 12: salen de la configuracion, nunca escritos en la plantilla. */
+  it('agrupa el contacto en su propia region con nombre', async () => {
+    const fixture = await render();
+
+    expect(regionLlamada(fixture.nativeElement, 'Contacto')).toBeDefined();
+  });
+
+  // Criterio 12: visibles, no solo presentes. Un enlace sin texto esta ahi y no
+  // lo ve nadie.
+  it('cada documento legal se enuncia con su nombre', async () => {
+    const fixture = await render();
+    const nombres = Array.from(
+      fixture.nativeElement.querySelectorAll('.lista-enlaces a') as NodeListOf<HTMLAnchorElement>,
+    ).map((enlace) => enlace.textContent?.trim());
+
+    expect(nombres).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/\S/),
+        expect.stringMatching(/\S/),
+        expect.stringMatching(/\S/),
+      ]),
+    );
+  });
+
+  /** Criterio 11: salen de la configuracion, nunca escritos en la plantilla. */
   it('muestra razon social, NIT y direccion de la configuracion', async () => {
     const fixture = await render();
     const datos = fixture.nativeElement.querySelector('address') as HTMLElement;
@@ -83,8 +121,17 @@ describe('SiteFooter', () => {
     expect(datos.textContent).not.toContain('null');
   });
 
+  // Con la configuracion entera vacia no queda un bloque de datos huerfano.
+  it('no deja un bloque de datos vacio si no hay ninguno', async () => {
+    conEmpresa({ name: null, taxId: null, address: null, supportEmail: null });
+    const fixture = await render();
+    const datos = fixture.nativeElement.querySelector('address') as HTMLElement | null;
+
+    expect(datos?.textContent?.trim() ?? '').toBe('');
+  });
+
   /**
-   * Criterio 14. Es ademas la via por la que se ejercen los derechos del titular
+   * Criterio 13. Es ademas la via por la que se ejercen los derechos del titular
    * de los datos, asi que un pie sin el incumple la Ley 1581
    * (docs/operacion/datos-personales.md).
    */
@@ -107,16 +154,39 @@ describe('SiteFooter', () => {
   });
 
   /**
-   * Criterio 15: el logo en tinta sobre la franja oscura desaparece, y la franja
-   * es tinta en los dos modos. Va siempre la version monocroma negativa.
+   * Criterio 14: la franja es tinta en los DOS modos, asi que el logo en tinta
+   * desaparece en ambos y va siempre la version monocroma negativa. Se renderiza
+   * en claro y en oscuro y se comprueba que no cambia nada: es justo lo que el
+   * criterio pide comparar, y lo que una sola pasada no puede demostrar.
    */
-  it('usa el logo monocromo negativo dentro de la franja oscura', async () => {
-    const fixture = await render();
-    const pie = fixture.nativeElement.querySelector('footer') as HTMLElement;
-    const logo = pie.querySelector('img') as HTMLImageElement;
+  it('conserva la franja y el logo negativo en los dos modos', async () => {
+    const enModo = async (tema: 'claro' | 'oscuro') => {
+      document.documentElement.setAttribute('data-tema', tema);
+      const fixture = await render();
+      const pie = fixture.nativeElement.querySelector('footer') as HTMLElement;
+      const logo = pie.querySelector('img') as HTMLImageElement;
+      return {
+        franja: pie.classList.contains('franja-oscura'),
+        logo: logo.getAttribute('src'),
+      };
+    };
 
-    expect(pie.classList).toContain('franja-oscura');
-    expect(logo.getAttribute('src')).toBe('/logo-mono-negativo.svg');
+    const claro = await enModo('claro');
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ providers: [provideRouter([])] });
+    const oscuro = await enModo('oscuro');
+    document.documentElement.removeAttribute('data-tema');
+
+    expect(claro).toEqual({ franja: true, logo: '/logo-mono-negativo.svg' });
+    expect(oscuro).toEqual(claro);
+  });
+
+  // El nombre accesible lo lleva la imagen: en el pie no hay enlace que lo dé,
+  // al contrario que en la cabecera.
+  it('el logo del pie tiene nombre accesible', async () => {
+    const fixture = await render();
+    const logo = fixture.nativeElement.querySelector('footer img') as HTMLImageElement;
+
     expect(logo.getAttribute('alt')).toBe('Sastra');
   });
 });

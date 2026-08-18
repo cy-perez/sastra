@@ -3,7 +3,7 @@
      sobre tinta seria invisible: sin ella el foco del boton principal seria
      tinta sobre tinta. -->
 <section class="hero a-sangre franja-oscura">
-  <div class="contenedor hero-caja">
+  <div class="contenedor">
     <h1 class="tipo-display">{{ 'home.hero.title' | transloco }}</h1>
     <p class="tipo-entradilla hero-cuerpo">{{ 'home.hero.body' | transloco }}</p>
 
@@ -16,13 +16,15 @@
          navegador), asi que cualquier destino condicional dejaria el hero sin
          boton en el HTML servido o lo cambiaria al hidratar. Quien ya entro
          tiene su cuenta en la cabecera, que es donde el sitio la muestra. -->
-    <a class="btn-cta cta" routerLink="/registro">{{ 'home.hero.cta' | transloco }}</a>
+    <a class="btn-cta cta tipo-etiqueta-boton" routerLink="/registro">{{
+      'home.hero.cta' | transloco
+    }}</a>
 
     <p class="tipo-secundario hero-nota">{{ 'home.hero.note' | transloco }}</p>
   </div>
 </section>
 
-<!-- Criterios 6 a 8. Ocupa el sitio donde ira la rejilla de producto en Fase 2:
+<!-- Criterios 5 a 7. Ocupa el sitio donde ira la rejilla de producto en Fase 2:
      esta seccion se retira o se baja entonces, sin rehacer el resto. -->
 <section class="bloque" aria-labelledby="pasos-titulo">
   <h2 class="tipo-h2" id="pasos-titulo">{{ 'home.steps.title' | transloco }}</h2>
@@ -41,16 +43,16 @@
     }
   </ol>
 
-  <!-- Criterio 7: el enlace a /como-funciona llega con HU-005. Mientras esa
+  <!-- Criterio 6: el enlace a /como-funciona llega con HU-005. Mientras esa
        ruta no exista no se pinta nada aqui: un enlace roto en portada es peor
        que no tenerlo. -->
 </section>
 
 <!-- La regla de puntada es el unico elemento decorativo del sistema y no se
-     sustituye por una linea continua (criterio 8). -->
+     sustituye por una linea continua (criterio 7). -->
 <hr class="regla-puntada" />
 
-<!-- Criterios 9 a 11 -->
+<!-- Criterios 8 a 10 -->
 <section class="bloque" aria-labelledby="confianza-titulo">
   <h2 class="tipo-h2" id="confianza-titulo">{{ 'home.trust.title' | transloco }}</h2>
 

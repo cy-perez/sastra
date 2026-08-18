@@ -27,12 +27,23 @@ export default defineConfig({
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 
   webServer: {
-    command: 'npm run build && node dist/sastra/server/server.mjs',
+    /**
+     * En integracion continua no se vuelve a construir: el flujo ya lo hizo en
+     * su propio paso, y repetirlo aqui pagaba el doble y ademas lo hacia contra
+     * el reloj de este `timeout`. Es lo que agotaba los 180 segundos y ponia en
+     * rojo las pruebas de extremo a extremo de main sin que fallara ninguna.
+     *
+     * En local si se construye, porque nadie quiere acordarse de compilar antes
+     * de lanzar las pruebas.
+     */
+    command: process.env['CI']
+      ? 'node dist/sastra/server/server.mjs'
+      : 'npm run build && node dist/sastra/server/server.mjs',
     url: BASE_URL,
     reuseExistingServer: !process.env['CI'],
-    // El comando construye antes de servir, y una construccion en frio pasa de
-    // los tres minutos. Con el margen anterior fallaba por tiempo justo cuando
-    // mas falta hace: la primera ejecucion en una maquina limpia.
+    // Una construccion en frio pasa de los tres minutos, y el primer renderizado
+    // del servidor tarda lo suyo. Con el margen anterior fallaba por tiempo justo
+    // cuando mas falta hace: la primera ejecucion en una maquina limpia.
     timeout: 420_000,
     env: {
       PORT: String(PORT),

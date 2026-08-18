@@ -67,7 +67,12 @@
     },
     "footer": {
       "tagline": "Buy and sell fashion, with the platform standing behind it.",
-      "legalLabel": "Legal documents"
+      "legalLabel": "Legal documents",
+      "logoAlt": "Sastra",
+      "contactLabel": "Contact",
+      "company": {
+        "taxId": "Tax ID"
+      }
     },
     "session": {
       "login": "Sign in",

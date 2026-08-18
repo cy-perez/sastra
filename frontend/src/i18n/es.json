@@ -67,7 +67,12 @@
     },
     "footer": {
       "tagline": "Compra y vende moda con respaldo.",
-      "legalLabel": "Documentos legales"
+      "legalLabel": "Documentos legales",
+      "logoAlt": "Sastra",
+      "contactLabel": "Contacto",
+      "company": {
+        "taxId": "NIT"
+      }
     },
     "session": {
       "login": "Entrar",

@@ -48,9 +48,21 @@ export default defineConfig({
     env: {
       PORT: String(PORT),
       NG_ALLOWED_HOSTS: 'localhost',
-      // Ninguna prueba de esta carpeta llama a la API. La variable existe
-      // porque el servidor no arranca sin ella, que es justo lo que se quiere.
-      API_BASE_URL: process.env['API_BASE_URL'] ?? `${BASE_URL}/api/v1`,
+      /**
+       * Ninguna prueba de esta carpeta llama a la API. La variable existe porque
+       * el servidor no arranca sin ella, que es justo lo que se quiere.
+       *
+       * <strong>Lo que no puede hacer es apuntar a este mismo servidor.</strong>
+       * Antes valia `${BASE_URL}/api/v1`, y entonces cada renderizado pedia a su
+       * propia direccion: la peticion volvia a entrar al mismo proceso, que
+       * renderizaba otra vez, y el primer render pasaba de dos minutos sin
+       * responder. Medido: 0,45s contra mas de 120s. Es la causa de que las
+       * pruebas de extremo a extremo llevaran cayendo por tiempo desde siempre.
+       *
+       * El puerto 9 es el de descarte: no hay nada escuchando, asi que cualquier
+       * llamada falla en el acto en vez de colgarse.
+       */
+      API_BASE_URL: process.env['API_BASE_URL'] ?? 'http://127.0.0.1:9/api/v1',
       // El pie las muestra y ninguna es obligatoria, asi que sin declararlas
       // aqui la prueba no distinguiria "no se pintan" de "no habia que pintar".
       COMPANY_NAME: 'Sastra S.A.S.',

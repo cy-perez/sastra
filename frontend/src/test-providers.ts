@@ -23,6 +23,14 @@ const testConfig: AppConfig = {
   // La misma version de borrador que trae el perfil local, para que las pruebas
   // pidan los archivos que de verdad estan en public/legal.
   legalVersions: { terms: 'borrador-local', privacy: 'borrador-local', cookies: 'borrador-local' },
+  // Datos de empresa completos por omision, que es el caso normal. La prueba que
+  // comprueba el pie incompleto sobrescribe APP_CONFIG en su propio TestBed.
+  company: {
+    name: 'Sastra S.A.S.',
+    taxId: '1054994043-1',
+    address: 'Medellin, Colombia',
+    supportEmail: 'hola@sastra.co',
+  },
 };
 
 const providers: (Provider | EnvironmentProviders)[] = [

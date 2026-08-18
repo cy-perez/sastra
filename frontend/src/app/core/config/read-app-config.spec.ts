@@ -97,6 +97,42 @@ describe('readAppConfig', () => {
     expect(readAppConfig({ ...MINIMUM, SENTRY_DSN: '  ' }).sentryDsn).toBeNull();
     expect(readAppConfig({ ...MINIMUM, SENTRY_DSN: 'https://dsn' }).sentryDsn).toBe('https://dsn');
   });
+
+  /**
+   * HU-004, criterio 12: el pie los muestra tomados de aqui, nunca escritos en
+   * la plantilla.
+   */
+  it('lee los datos de la empresa para el pie', () => {
+    const config = readAppConfig({
+      ...MINIMUM,
+      COMPANY_NAME: 'Sastra S.A.S.',
+      COMPANY_TAX_ID: '1054994043-1',
+      COMPANY_ADDRESS: '  Medellin, Colombia  ',
+      SUPPORT_EMAIL: 'hola@sastra.co',
+    });
+
+    expect(config.company).toEqual({
+      name: 'Sastra S.A.S.',
+      taxId: '1054994043-1',
+      address: 'Medellin, Colombia',
+      supportEmail: 'hola@sastra.co',
+    });
+  });
+
+  /**
+   * Caso borde de HU-004: el frontend solo los pinta. Quien los exige es el
+   * backend, que los necesita para los correos. Tumbar el renderizado por una
+   * direccion que falta cambiaria un pie incompleto por un sitio caido.
+   */
+  it('no exige ningun dato de la empresa y trata el blanco como ausente', () => {
+    expect(readAppConfig(MINIMUM).company).toEqual({
+      name: null,
+      taxId: null,
+      address: null,
+      supportEmail: null,
+    });
+    expect(readAppConfig({ ...MINIMUM, COMPANY_NAME: '   ' }).company.name).toBeNull();
+  });
 });
 
 describe('readAppConfigForBootstrap', () => {

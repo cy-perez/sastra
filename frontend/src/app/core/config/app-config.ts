@@ -23,6 +23,26 @@ export interface LegalVersions {
   readonly cookies: string;
 }
 
+/**
+ * Quien responde por el sitio: razon social, NIT, direccion y canal de contacto.
+ *
+ * <p>En Colombia estos datos en el pie son una senal de que la empresa existe, y
+ * el canal de contacto es ademas la via por la que se ejercen los derechos del
+ * titular de los datos (docs/operacion/datos-personales.md). Son datos publicos
+ * de la empresa: aqui no viaja nada personal de nadie.
+ *
+ * <p><strong>Todos pueden faltar.</strong> El backend si los exige, porque los
+ * necesita para los correos y para la evidencia del consentimiento; el frontend
+ * solo los pinta. Tumbar el renderizado entero porque falta una direccion seria
+ * cambiar un pie incompleto por un sitio caido.
+ */
+export interface CompanyInfo {
+  readonly name: string | null;
+  readonly taxId: string | null;
+  readonly address: string | null;
+  readonly supportEmail: string | null;
+}
+
 export interface AppConfig {
   /** Base de la API, incluida la version. Ejemplo: https://api.sastra.co/api/v1 */
   readonly apiBaseUrl: string;
@@ -31,6 +51,7 @@ export interface AppConfig {
   readonly enableDevtools: boolean;
   readonly sentryDsn: string | null;
   readonly legalVersions: LegalVersions;
+  readonly company: CompanyInfo;
 }
 
 export const APP_CONFIG = new InjectionToken<AppConfig>('sastra.app-config');

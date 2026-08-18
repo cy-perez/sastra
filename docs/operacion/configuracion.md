@@ -173,6 +173,19 @@ para `dev` y para `prod`.
 | `PORT` | `4000` | no, 4000 por omisión |
 | `SENTRY_DSN` | opcional | no |
 | `ENABLE_DEVTOOLS` | `false` en producción | no |
+| `COMPANY_NAME` | `Sastra S.A.S.` | no, el pie lo omite si falta |
+| `COMPANY_TAX_ID` | `1054994043-1` | no, el pie lo omite si falta |
+| `COMPANY_ADDRESS` | `Medellín, Colombia` | no, el pie lo omite si falta |
+| `SUPPORT_EMAIL` | `hola@sastra.co` | no, el pie lo omite si falta |
+
+Las cuatro últimas son **las mismas variables que lee el backend**, no unas
+paralelas: es la misma empresa y no tendría sentido que el pie del sitio dijera
+un NIT y los correos otro. Arriba figuran como obligatorias porque el backend no
+arranca sin ellas; aquí no lo son porque el frontend solo las pinta, y tumbar el
+renderizado entero por una dirección que falta cambiaría un pie incompleto por un
+sitio caído. `SUPPORT_EMAIL` merece atención especial: es el canal por el que se
+ejercen los derechos del titular de los datos, así que un pie sin él incumple
+`docs/operacion/datos-personales.md`.
 
 `NG_ALLOWED_HOSTS` es la lista de dominios a los que el servidor acepta
 responder y protege contra falsificación de peticiones del lado del servidor. La

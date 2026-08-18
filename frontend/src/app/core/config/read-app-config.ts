@@ -1,4 +1,4 @@
-import type { AppConfig, LegalVersions } from './app-config';
+import type { AppConfig, CompanyInfo, LegalVersions } from './app-config';
 
 /** Solo la parte del entorno que nos interesa: asi la funcion es pura y se prueba sin Node. */
 export type EnvironmentVariables = Readonly<Record<string, string | undefined>>;
@@ -50,7 +50,29 @@ export function readAppConfig(env: EnvironmentVariables): AppConfig {
     enableDevtools: env['ENABLE_DEVTOOLS']?.trim().toLowerCase() === 'true',
     sentryDsn: sentryDsn && sentryDsn.length > 0 ? sentryDsn : null,
     legalVersions: leerVersionesLegales(env),
+    company: leerEmpresa(env),
   };
+}
+
+/**
+ * Los datos de la empresa para el pie. Ninguno es obligatorio aqui.
+ *
+ * <p>Comparten nombre con las variables del backend a proposito: es la misma
+ * empresa y no tendria sentido que el pie dijera un NIT y los correos otro.
+ */
+function leerEmpresa(env: EnvironmentVariables): CompanyInfo {
+  return {
+    name: opcional(env['COMPANY_NAME']),
+    taxId: opcional(env['COMPANY_TAX_ID']),
+    address: opcional(env['COMPANY_ADDRESS']),
+    supportEmail: opcional(env['SUPPORT_EMAIL']),
+  };
+}
+
+/** Una variable en blanco es una variable ausente, igual que en el resto del archivo. */
+function opcional(valor: string | undefined): string | null {
+  const limpio = valor?.trim();
+  return limpio && limpio.length > 0 ? limpio : null;
 }
 
 function leerVersionesLegales(env: EnvironmentVariables): LegalVersions {
@@ -108,6 +130,7 @@ export function readAppConfigForBootstrap(env: EnvironmentVariables): AppConfig 
         privacy: VERSION_DE_BORRADOR,
         cookies: VERSION_DE_BORRADOR,
       },
+      company: { name: null, taxId: null, address: null, supportEmail: null },
     };
   }
 }

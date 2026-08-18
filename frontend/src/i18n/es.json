@@ -81,8 +81,42 @@
     }
   },
   "home": {
-    "title": "Compra y vende moda con respaldo",
-    "underConstruction": "Esta portada todavía no está construida. El andamiaje ya funciona: idioma, tema y renderizado en servidor."
+    "hero": {
+      "title": "Compra y vende moda con respaldo",
+      "body": "Guardamos el pago hasta que confirmas que la prenda llegó como la viste.",
+      "cta": "Crear cuenta",
+      "note": "Publicar es gratis. Solo cobramos cuando vendes."
+    },
+    "steps": {
+      "title": "Cómo funciona",
+      "publish": {
+        "title": "Publicas tu prenda",
+        "body": "Fotos, talla y medidas reales. Revisamos cada publicación antes de que aparezca."
+      },
+      "sell": {
+        "title": "Alguien la compra",
+        "body": "El comprador paga y nosotros retenemos el dinero mientras la prenda viaja."
+      },
+      "charge": {
+        "title": "Cobras al confirmarse la entrega",
+        "body": "Cuando el comprador confirma que recibió la prenda, se libera tu pago."
+      }
+    },
+    "trust": {
+      "title": "Por qué es seguro",
+      "hold": {
+        "title": "El pago queda retenido",
+        "body": "El dinero no llega al vendedor hasta que confirmas que recibiste la prenda."
+      },
+      "verified": {
+        "title": "Vendedores verificados",
+        "body": "Validamos identidad y cuenta bancaria antes de la primera venta."
+      },
+      "moderated": {
+        "title": "Publicaciones revisadas",
+        "body": "Cada publicación pasa por revisión antes de aparecer. Sin excepciones."
+      }
+    }
   },
   "notFound": {
     "title": "Esta página no existe",

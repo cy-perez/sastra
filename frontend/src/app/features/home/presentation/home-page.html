@@ -1,2 +1,67 @@
-<h1 class="tipo-h1">{{ 'home.title' | transloco }}</h1>
-<p class="tipo-entradilla">{{ 'home.underConstruction' | transloco }}</p>
+<!-- Criterios 1 a 4. .a-sangre pide el carril completo de la rejilla de <main>;
+     .franja-oscura es tinta en los dos modos y redefine el anillo de foco, que
+     sobre tinta seria invisible: sin ella el foco del boton principal seria
+     tinta sobre tinta. -->
+<section class="hero a-sangre franja-oscura">
+  <div class="contenedor hero-caja">
+    <h1 class="tipo-display">{{ 'home.hero.title' | transloco }}</h1>
+    <p class="tipo-entradilla hero-cuerpo">{{ 'home.hero.body' | transloco }}</p>
+
+    <!-- El unico acento ocre de la pantalla (criterio 2). Es un enlace y no un
+         boton porque lo que hace es navegar: asi funciona sin JavaScript, se
+         puede abrir en otra pestana y el HTML del servidor ya lo trae entero.
+
+         Lleva siempre a /registro, tambien con sesion abierta. El servidor no
+         puede saber si hay sesion (el token vive en memoria y se recupera en el
+         navegador), asi que cualquier destino condicional dejaria el hero sin
+         boton en el HTML servido o lo cambiaria al hidratar. Quien ya entro
+         tiene su cuenta en la cabecera, que es donde el sitio la muestra. -->
+    <a class="btn-cta cta" routerLink="/registro">{{ 'home.hero.cta' | transloco }}</a>
+
+    <p class="tipo-secundario hero-nota">{{ 'home.hero.note' | transloco }}</p>
+  </div>
+</section>
+
+<!-- Criterios 6 a 8. Ocupa el sitio donde ira la rejilla de producto en Fase 2:
+     esta seccion se retira o se baja entonces, sin rehacer el resto. -->
+<section class="bloque" aria-labelledby="pasos-titulo">
+  <h2 class="tipo-h2" id="pasos-titulo">{{ 'home.steps.title' | transloco }}</h2>
+
+  <ol class="pasos" role="list">
+    @for (paso of pasos; track paso.id; let indice = $index) {
+      <li class="paso">
+        <!-- El numero es decorativo: el orden ya lo da <ol> y anunciarlo dos
+             veces sobra. -->
+        <span class="numero tipo-h3" aria-hidden="true">{{ indice + 1 }}</span>
+        <h3 class="tipo-titulo-tarjeta">
+          {{ 'home.steps.' + paso.id + '.title' | transloco }}
+        </h3>
+        <p class="tipo-cuerpo">{{ 'home.steps.' + paso.id + '.body' | transloco }}</p>
+      </li>
+    }
+  </ol>
+
+  <!-- Criterio 7: el enlace a /como-funciona llega con HU-005. Mientras esa
+       ruta no exista no se pinta nada aqui: un enlace roto en portada es peor
+       que no tenerlo. -->
+</section>
+
+<!-- La regla de puntada es el unico elemento decorativo del sistema y no se
+     sustituye por una linea continua (criterio 8). -->
+<hr class="regla-puntada" />
+
+<!-- Criterios 9 a 11 -->
+<section class="bloque" aria-labelledby="confianza-titulo">
+  <h2 class="tipo-h2" id="confianza-titulo">{{ 'home.trust.title' | transloco }}</h2>
+
+  <ul class="tarjetas" role="list">
+    @for (tarjeta of confianza; track tarjeta.id) {
+      <li class="tarjeta">
+        <h3 class="tipo-titulo-tarjeta">
+          {{ 'home.trust.' + tarjeta.id + '.title' | transloco }}
+        </h3>
+        <p class="tipo-cuerpo">{{ 'home.trust.' + tarjeta.id + '.body' | transloco }}</p>
+      </li>
+    }
+  </ul>
+</section>

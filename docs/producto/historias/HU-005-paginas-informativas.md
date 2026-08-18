@@ -13,7 +13,13 @@ se pregunta todo el mundo y cómo comunicarse con la empresa.
 
 Entra: cuatro páginas nuevas —cómo funciona (con las dos caras, comprador y
 vendedor), sobre Sastra, preguntas frecuentes y contacto— con su ruta, su título
-y descripción de buscador, y su texto en español e inglés.
+y descripción de buscador, y su texto en español e inglés. Entra también la
+**navegación principal del encabezado y su menú móvil**, que vienen de HU-004:
+allí no se podían construir porque no había ninguna página a la que llevar, y un
+menú vacío no se puede probar. Con esa navegación llegan dos criterios: que lleve
+a las páginas informativas y no a catálogo ni búsqueda, y que por debajo de 640px
+se sustituya por el menú móvil, operable por teclado y con el foco atrapado
+mientras está abierto.
 
 No entra: formulario de contacto, chat, centro de ayuda con búsqueda, blog,
 página de comisiones detallada. El contacto de esta historia son canales

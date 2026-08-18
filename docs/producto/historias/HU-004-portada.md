@@ -36,67 +36,68 @@ esta historia debe poder recibir la rejilla debajo del hero sin rehacerse.
    existe hasta Fase 2 y un botón nombra lo que ocurre al pulsarlo.
 4. Dado el hero, cuando se lee el texto bajo el botón, entonces dice que
    publicar es gratis y que solo se cobra cuando se vende. El porcentaje de la
-   comisión no se escribe en la plantilla: sale de la configuración (RN-026).
-5. Dado un visitante con sesión iniciada, cuando abre `/`, entonces el botón
-   principal lleva a `/mi-cuenta` en vez de a `/registro`, y su etiqueta cambia
-   en consecuencia. Ofrecer crear cuenta a quien ya la tiene es un callejón.
+   comisión no se escribe en la plantilla (RN-026).
 
 **Cómo funciona en tres pasos**
 
-6. Dado el bloque bajo el hero, cuando se renderiza, entonces muestra tres pasos
+5. Dado el bloque bajo el hero, cuando se renderiza, entonces muestra tres pasos
    numerados que describen publicar, vender y cobrar al confirmarse la entrega,
    en ese orden.
-7. Dado el bloque de tres pasos, cuando el visitante pulsa su enlace de cierre,
+6. Dado el bloque de tres pasos, cuando el visitante pulsa su enlace de cierre,
    entonces navega a la página de cómo funciona (HU-005). Si esa ruta todavía no
    existe, el enlace no se renderiza: no se deja un enlace roto en portada.
-8. Dado el bloque, cuando se separa visualmente del siguiente, entonces la
+7. Dado el bloque, cuando se separa visualmente del siguiente, entonces la
    separación usa `.regla-puntada` y no una línea continua.
 
 **Tarjetas de confianza**
 
-9. Dada la portada, cuando se renderiza el bloque de confianza, entonces muestra
+8. Dada la portada, cuando se renderiza el bloque de confianza, entonces muestra
    exactamente tres tarjetas: el pago queda retenido hasta que el comprador
    confirma, los vendedores están verificados, y toda publicación pasa por
    moderación antes de aparecer (RN-015).
-10. Dadas las tres tarjetas, cuando se leen sus textos, entonces ninguno promete
-    devoluciones, plazos de reembolso ni tiempos de entrega. No hay regla de
-    negocio que los respalde y la política de devoluciones no existe.
-11. Dadas las tres tarjetas en una ventana de 360px de ancho, cuando se
+9. Dadas las tres tarjetas, cuando se leen sus textos, entonces ninguno promete
+   devoluciones, plazos de reembolso ni tiempos de entrega. No hay regla de
+   negocio que los respalde y la política de devoluciones no existe.
+10. Dadas las tres tarjetas en una ventana de 360px de ancho, cuando se
     renderizan, entonces se apilan en una columna sin desplazamiento
     horizontal.
 
 **Pie de página**
 
-12. Dado el pie, cuando se renderiza, entonces muestra razón social, NIT y
+11. Dado el pie, cuando se renderiza, entonces muestra razón social, NIT y
     dirección de la empresa, tomados de la configuración y nunca escritos en la
     plantilla.
-13. Dado el pie, cuando se renderiza, entonces incluye el enlace visible a la
+12. Dado el pie, cuando se renderiza, entonces incluye el enlace visible a la
     política de tratamiento de datos, junto a términos y política de cookies.
-14. Dado el pie, cuando se renderiza, entonces incluye un enlace al canal de
+13. Dado el pie, cuando se renderiza, entonces incluye un enlace al canal de
     contacto y a las páginas informativas de HU-005 que ya existan.
-15. Dado el pie en modo oscuro, cuando se compara con el modo claro, entonces
+14. Dado el pie en modo oscuro, cuando se compara con el modo claro, entonces
     conserva la franja oscura y el logo monocromo negativo en ambos.
-
-**Encabezado**
-
-16. Dado el encabezado en escritorio, cuando se renderiza, entonces la
-    navegación principal lleva a las páginas informativas que existan y no a
-    catálogo, categorías ni búsqueda.
-17. Dado el encabezado por debajo de 640px, cuando se renderiza, entonces la
-    navegación se sustituye por el menú móvil, operable por teclado y con el
-    foco atrapado mientras está abierto.
 
 **Transversales**
 
-18. Dada la portada, cuando se solicita el HTML al servidor sin ejecutar
+15. Dada la portada, cuando se solicita el HTML al servidor sin ejecutar
     JavaScript, entonces el titular, los tres pasos, las tres tarjetas y el pie
     ya vienen dentro del documento. De esto vive el posicionamiento.
-19. Dada la portada en español y en inglés, cuando se cambia de idioma, entonces
+16. Dada la portada en español y en inglés, cuando se cambia de idioma, entonces
     cambia el texto y no la dirección, y ningún texto queda sin traducir.
-20. Dada la portada, cuando se audita con un verificador de accesibilidad,
+17. Dada la portada, cuando se audita con un verificador de accesibilidad,
     entonces hay un solo `h1`, ningún salto de nivel de encabezado, contraste
     mínimo de 4.5:1 en texto normal y foco visible de 3px en todo lo
     interactivo.
+
+### Criterios retirados durante la implementación
+
+- **El botón principal según la sesión.** Decía que con sesión abierta llevara a
+  `/mi-cuenta`. Es incompatible con el criterio 15: el servidor no puede saber si
+  hay sesión, porque el token vive en memoria del cliente y se recupera con la
+  cookie de refresco ya en el navegador. Cualquier destino condicional deja el
+  hero sin botón en el HTML servido o lo cambia al hidratar, que es el parpadeo
+  que los casos borde prohíben. El CTA lleva siempre a `/registro`; quien ya
+  entró tiene su cuenta en la cabecera, que es donde el sitio la muestra.
+- **Navegación del encabezado y menú móvil.** Pasan a HU-005. Deben llevar a las
+  páginas informativas, y hasta que esas páginas existan sería un componente
+  vacío que no se puede probar.
 
 ## Casos borde
 

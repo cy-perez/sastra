@@ -30,13 +30,22 @@ export default defineConfig({
     command: 'npm run build && node dist/sastra/server/server.mjs',
     url: BASE_URL,
     reuseExistingServer: !process.env['CI'],
-    timeout: 180_000,
+    // El comando construye antes de servir, y una construccion en frio pasa de
+    // los tres minutos. Con el margen anterior fallaba por tiempo justo cuando
+    // mas falta hace: la primera ejecucion en una maquina limpia.
+    timeout: 420_000,
     env: {
       PORT: String(PORT),
       NG_ALLOWED_HOSTS: 'localhost',
       // Ninguna prueba de esta carpeta llama a la API. La variable existe
       // porque el servidor no arranca sin ella, que es justo lo que se quiere.
       API_BASE_URL: process.env['API_BASE_URL'] ?? `${BASE_URL}/api/v1`,
+      // El pie las muestra y ninguna es obligatoria, asi que sin declararlas
+      // aqui la prueba no distinguiria "no se pintan" de "no habia que pintar".
+      COMPANY_NAME: 'Sastra S.A.S.',
+      COMPANY_TAX_ID: '1054994043-1',
+      COMPANY_ADDRESS: 'Medellin, Colombia',
+      SUPPORT_EMAIL: 'hola@sastra.co',
     },
   },
 });

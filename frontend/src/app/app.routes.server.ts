@@ -22,6 +22,7 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'mi-cuenta', renderMode: RenderMode.Server },
   { path: 'recuperar-contrasena', renderMode: RenderMode.Server },
   { path: 'restablecer-contrasena', renderMode: RenderMode.Server },
+  { path: 'confirmar-correo-nuevo', renderMode: RenderMode.Server },
   // Los legales importan aqui mas que ninguna: son las que una autoridad revisa
   // y las que un buscador tiene que poder indexar.
   { path: 'terminos', renderMode: RenderMode.Server },

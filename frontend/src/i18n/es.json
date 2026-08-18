@@ -46,6 +46,10 @@
     "account": {
       "title": "Mi cuenta",
       "description": "Tus sesiones abiertas, tus datos y el cierre de tu cuenta en Sastra."
+    },
+    "confirmEmail": {
+      "title": "Confirmar correo nuevo",
+      "description": "Termina el cambio de correo de tu cuenta de Sastra."
     }
   },
   "layout": {
@@ -99,7 +103,8 @@
       "COMMON_UNEXPECTED": "Algo salió mal de nuestro lado. Inténtalo de nuevo.",
       "AUTH_RESET_TOKEN_INVALID": "Este enlace ya no sirve. Puede que lo hayas usado antes.",
       "AUTH_RESET_TOKEN_EXPIRED": "Este enlace venció. Los enlaces para cambiar la contraseña duran 30 minutos.",
-      "AUTH_CLOSE_CONFIRMATION_MISMATCH": "Lo que escribiste no coincide con tu correo."
+      "AUTH_CLOSE_CONFIRMATION_MISMATCH": "Lo que escribiste no coincide con tu correo.",
+      "AUTH_EMAIL_TAKEN": "Esa dirección ya tiene una cuenta en Sastra. Pide el cambio con otra."
     }
   },
   "form": {
@@ -253,6 +258,44 @@
     },
     "account": {
       "title": "Mi cuenta",
+      "profile": {
+        "title": "Tus datos",
+        "body": "Solo el nombre se ve en Sastra. La ciudad y el teléfono son opcionales y puedes quitarlos cuando quieras.",
+        "loading": "Cargando tus datos",
+        "done": "Guardado.",
+        "submit": "Guardar cambios",
+        "fields": {
+          "displayName": "Nombre visible",
+          "city": "Ciudad",
+          "phone": "Teléfono"
+        },
+        "hints": {
+          "optional": "Opcional. Déjalo vacío para no tenerlo.",
+          "phone": "Opcional. Con indicativo si es de otro país, por ejemplo +57 300 123 4567."
+        },
+        "errors": {
+          "displayName": "Escribe un nombre de entre 2 y 80 caracteres.",
+          "city": "La ciudad no puede pasar de 80 caracteres.",
+          "phone": "Escribe un teléfono de 7 a 15 dígitos, o déjalo vacío."
+        }
+      },
+      "email": {
+        "title": "Cambiar mi correo",
+        "body": "Te enviamos un enlace al correo nuevo. Tu correo actual sigue siendo el de tu cuenta hasta que lo abras.",
+        "current": "Tu correo actual es {{correo}}.",
+        "sent": "Si esa dirección está disponible, enviamos un enlace a {{correo}}. Ábrelo para terminar el cambio.",
+        "submit": "Enviar el enlace",
+        "fields": {
+          "newEmail": "Correo nuevo"
+        },
+        "hints": {
+          "newEmail": "Tiene que ser un buzón al que puedas entrar: el enlace llega ahí."
+        },
+        "errors": {
+          "format": "Escribe un correo válido, por ejemplo nombre@correo.com.",
+          "same": "Ese ya es tu correo actual."
+        }
+      },
       "sessions": {
         "title": "Sesiones abiertas",
         "body": "Estos son los dispositivos donde tu cuenta está abierta. Si no reconoces alguno, ciérralo y cambia tu contraseña.",
@@ -283,6 +326,21 @@
         "errors": {
           "confirmation": "Escribe tu correo exactamente como lo tienes registrado."
         }
+      }
+    },
+    "confirmEmail": {
+      "title": "Confirma tu correo nuevo",
+      "subtitle": "Pulsa el botón para terminar el cambio. Desde ese momento entrarás a Sastra con esta dirección.",
+      "submit": "Confirmar el cambio",
+      "goToAccount": "Ir a mi cuenta",
+      "missing": {
+        "title": "Falta el enlace",
+        "body": "Esta página se abre desde el enlace que te enviamos al correo nuevo. Ábrelo desde ahí."
+      },
+      "done": {
+        "title": "Listo, cambiamos tu correo",
+        "body": "Ya puedes entrar con tu correo nuevo. Le avisamos al anterior por si no fuiste tú.",
+        "goToLogin": "Iniciar sesión"
       }
     }
   }

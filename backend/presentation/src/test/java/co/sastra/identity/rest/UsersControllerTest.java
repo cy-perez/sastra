@@ -9,21 +9,35 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import co.sastra.identity.dto.ActiveSession;
 import co.sastra.identity.dto.CloseAccountCommand;
+import co.sastra.identity.dto.RequestEmailChangeCommand;
+import co.sastra.identity.dto.UpdateProfileCommand;
 import co.sastra.identity.dto.UserDataExport;
 import co.sastra.identity.exception.CloseConfirmationMismatchException;
+import co.sastra.identity.model.BirthDate;
+import co.sastra.identity.model.City;
+import co.sastra.identity.model.DisplayName;
+import co.sastra.identity.model.Email;
+import co.sastra.identity.model.Phone;
 import co.sastra.identity.model.TokenFamilyId;
+import co.sastra.identity.model.User;
 import co.sastra.identity.model.UserId;
+import co.sastra.identity.model.UserLocale;
 import co.sastra.identity.usecase.CloseAccountUseCase;
 import co.sastra.identity.usecase.ExportUserDataUseCase;
 import co.sastra.identity.usecase.ListSessionsUseCase;
+import co.sastra.identity.usecase.ReadProfileUseCase;
+import co.sastra.identity.usecase.RequestEmailChangeUseCase;
 import co.sastra.identity.usecase.RequestEmailVerificationUseCase;
 import co.sastra.identity.usecase.RevokeSessionUseCase;
+import co.sastra.identity.usecase.UpdateProfileUseCase;
 import co.sastra.shared.rest.ApiExceptionHandler;
 import co.sastra.shared.rest.RefreshCookies;
 import java.time.Duration;
@@ -31,6 +45,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -61,6 +76,9 @@ class UsersControllerTest {
     private final RevokeSessionUseCase revocacion = mock(RevokeSessionUseCase.class);
     private final ExportUserDataUseCase exportacion = mock(ExportUserDataUseCase.class);
     private final CloseAccountUseCase cierre = mock(CloseAccountUseCase.class);
+    private final ReadProfileUseCase lectura = mock(ReadProfileUseCase.class);
+    private final UpdateProfileUseCase perfil = mock(UpdateProfileUseCase.class);
+    private final RequestEmailChangeUseCase cambioDeCorreo = mock(RequestEmailChangeUseCase.class);
 
     private MockMvc mvc;
 
@@ -97,6 +115,9 @@ class UsersControllerTest {
                 revocacion,
                 exportacion,
                 cierre,
+                lectura,
+                perfil,
+                cambioDeCorreo,
                 new RefreshCookies("sastra_refresh", "/api/v1/auth", true, Duration.ofDays(30)));
 
         mvc = MockMvcBuilders.standaloneSetup(controlador)
@@ -242,10 +263,128 @@ class UsersControllerTest {
 
     @Test
     void deberia_aceptar_el_reenvio_de_verificacion_con_202_criterio_13() throws Exception {
-        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post(
-                        "/api/v1/users/me/email-verification"))
-                .andExpect(status().isAccepted());
+        mvc.perform(post("/api/v1/users/me/email-verification")).andExpect(status().isAccepted());
 
         verify(reenvio).execute(any());
+    }
+
+    /** Una cuenta con el perfil ya puesto, para las pruebas del criterio 21. */
+    private static User conPerfil(@Nullable String ciudad, @Nullable String telefono) {
+        return User.registrar(
+                        USUARIO,
+                        new Email("ana@correo.co"),
+                        new DisplayName("Ana Maria"),
+                        new BirthDate(LocalDate.of(1990, 3, 4)),
+                        UserLocale.ES,
+                        LocalDate.of(2026, 8, 18),
+                        AHORA)
+                .conPerfil(
+                        new DisplayName("Ana Maria"),
+                        ciudad == null ? null : new City(ciudad),
+                        telefono == null ? null : new Phone(telefono));
+    }
+
+    @Test
+    void deberia_devolver_el_perfil_criterio_21() throws Exception {
+        when(lectura.execute(USUARIO)).thenReturn(conPerfil("Medellin", "3001234567"));
+
+        mvc.perform(get("/api/v1/users/me"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.displayName").value("Ana Maria"))
+                .andExpect(jsonPath("$.city").value("Medellin"))
+                .andExpect(jsonPath("$.phone").value("3001234567"))
+                .andExpect(jsonPath("$.email").value("ana@correo.co"))
+                .andExpect(jsonPath("$.emailVerified").value(false));
+    }
+
+    /**
+     * Devuelve como quedo, no un 204: el telefono entra con separadores y sale
+     * normalizado, y el cliente no tiene por que reproducir esa regla.
+     */
+    @Test
+    void deberia_guardar_el_perfil_y_devolver_lo_normalizado_criterio_21() throws Exception {
+        when(perfil.execute(any())).thenReturn(conPerfil("Medellin", "+573001234567"));
+
+        mvc.perform(put("/api/v1/users/me").contentType("application/json").content("""
+                        {"displayName":"Ana Maria","city":"Medellin","phone":"+57 300 123 4567"}
+                        """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.phone").value("+573001234567"));
+
+        ArgumentCaptor<UpdateProfileCommand> comando = ArgumentCaptor.forClass(UpdateProfileCommand.class);
+        verify(perfil).execute(comando.capture());
+        // El usuario sale del token, nunca del cuerpo.
+        assertThat(comando.getValue().usuario()).isEqualTo(USUARIO);
+        assertThat(comando.getValue().city()).isEqualTo("Medellin");
+    }
+
+    @Test
+    void deberia_dejar_quitar_la_ciudad_y_el_telefono_criterio_21() throws Exception {
+        when(perfil.execute(any())).thenReturn(conPerfil(null, null));
+
+        mvc.perform(put("/api/v1/users/me").contentType("application/json").content("""
+                        {"displayName":"Ana Maria","city":null,"phone":null}
+                        """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.city").doesNotExist())
+                .andExpect(jsonPath("$.phone").doesNotExist());
+    }
+
+    @Test
+    void deberia_rechazar_un_perfil_sin_nombre_criterio_21() throws Exception {
+        mvc.perform(put("/api/v1/users/me").contentType("application/json").content("""
+                        {"displayName":"  ","city":null,"phone":null}
+                        """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COMMON_VALIDATION_FAILED"));
+
+        verify(perfil, never()).execute(any());
+    }
+
+    /**
+     * Lo que el dominio rechaza tiene que salir como 400 y no como 500: un
+     * telefono con letras es un error de quien escribe, no del servidor.
+     */
+    @Test
+    void deberia_traducir_a_400_lo_que_el_dominio_rechaza_criterio_21() throws Exception {
+        when(perfil.execute(any())).thenThrow(new IllegalArgumentException("El telefono no es valido"));
+
+        mvc.perform(put("/api/v1/users/me").contentType("application/json").content("""
+                        {"displayName":"Ana Maria","city":null,"phone":"no-es-numero"}
+                        """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COMMON_VALIDATION_FAILED"));
+    }
+
+    /**
+     * Criterio 21: pedir el cambio responde 202 y no cambia nada todavia. El
+     * correo nuevo se verifica antes de reemplazar al anterior.
+     */
+    @Test
+    void deberia_aceptar_la_peticion_de_cambio_de_correo_con_202_criterio_21() throws Exception {
+        mvc.perform(post("/api/v1/users/me/email")
+                        .contentType("application/json")
+                        .content("""
+                        {"newEmail":"nueva@correo.co"}
+                        """))
+                .andExpect(status().isAccepted());
+
+        ArgumentCaptor<RequestEmailChangeCommand> comando = ArgumentCaptor.forClass(RequestEmailChangeCommand.class);
+        verify(cambioDeCorreo).execute(comando.capture());
+        assertThat(comando.getValue().usuario()).isEqualTo(USUARIO);
+        assertThat(comando.getValue().newEmail()).isEqualTo("nueva@correo.co");
+    }
+
+    @Test
+    void deberia_rechazar_un_correo_con_formato_invalido_criterio_21() throws Exception {
+        mvc.perform(post("/api/v1/users/me/email")
+                        .contentType("application/json")
+                        .content("""
+                        {"newEmail":"no-es-un-correo"}
+                        """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COMMON_VALIDATION_FAILED"));
+
+        verify(cambioDeCorreo, never()).execute(any());
     }
 }

@@ -34,6 +34,11 @@ public class VerificationLink {
         return enLaRuta(mail.passwordResetPath(), tokenEnClaro);
     }
 
+    /** El que confirma un correo nuevo (criterio 21). */
+    public String paraCambioDeCorreo(String tokenEnClaro) {
+        return enLaRuta(mail.emailChangePath(), tokenEnClaro);
+    }
+
     private String enLaRuta(String ruta, String tokenEnClaro) {
         String base = app.baseUrl().toString();
         if (base.endsWith("/")) {

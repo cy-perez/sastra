@@ -31,6 +31,7 @@ import co.sastra.identity.exception.ResetTokenExpiredException;
 import co.sastra.identity.model.Role;
 import co.sastra.identity.model.UserId;
 import co.sastra.identity.rest.mapper.SessionResponses;
+import co.sastra.identity.usecase.ConfirmEmailChangeUseCase;
 import co.sastra.identity.usecase.ForgotPasswordUseCase;
 import co.sastra.identity.usecase.LoginUseCase;
 import co.sastra.identity.usecase.LogoutUseCase;
@@ -84,6 +85,7 @@ class AuthControllerTest {
     private final LogoutUseCase cierre = mock(LogoutUseCase.class);
     private final ForgotPasswordUseCase olvido = mock(ForgotPasswordUseCase.class);
     private final ResetPasswordUseCase restablecimiento = mock(ResetPasswordUseCase.class);
+    private final ConfirmEmailChangeUseCase confirmacionDeCorreo = mock(ConfirmEmailChangeUseCase.class);
 
     private MockMvc mvc;
 
@@ -98,6 +100,7 @@ class AuthControllerTest {
                 cierre,
                 olvido,
                 restablecimiento,
+                confirmacionDeCorreo,
                 new SessionResponses(RELOJ),
                 // Los mismos atributos que arma bootstrap desde la configuracion.
                 new RefreshCookies("sastra_refresh", "/api/v1/auth", true, Duration.ofDays(30)),
@@ -509,6 +512,7 @@ class AuthControllerTest {
                         cierre,
                         olvido,
                         restablecimiento,
+                        confirmacionDeCorreo,
                         new SessionResponses(RELOJ),
                         new RefreshCookies("sastra_refresh", "/api/v1/auth", true, Duration.ofDays(30)),
                         new ClientIpHasher()))

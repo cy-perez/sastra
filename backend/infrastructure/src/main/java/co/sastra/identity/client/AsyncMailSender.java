@@ -1,5 +1,6 @@
 package co.sastra.identity.client;
 
+import co.sastra.identity.model.Email;
 import co.sastra.identity.model.User;
 import co.sastra.identity.port.out.MailSender;
 import jakarta.annotation.PreDestroy;
@@ -112,6 +113,23 @@ public class AsyncMailSender implements MailSender {
     @Override
     public void enviarAvisoDeCuentaCerrada(User titular) {
         enDiferido("aviso de cuenta cerrada", () -> transporte.enviarAvisoDeCuentaCerrada(titular));
+    }
+
+    @Override
+    public void enviarConfirmacionDeCorreoNuevo(User titular, Email destino, String tokenEnClaro) {
+        enDiferido(
+                "confirmacion de correo nuevo",
+                () -> transporte.enviarConfirmacionDeCorreoNuevo(titular, destino, tokenEnClaro));
+    }
+
+    @Override
+    public void enviarAvisoDeIntentoDeCambioAEsteCorreo(User titular) {
+        enDiferido("aviso de intento de cambio", () -> transporte.enviarAvisoDeIntentoDeCambioAEsteCorreo(titular));
+    }
+
+    @Override
+    public void enviarAvisoDeCorreoCambiado(User titular, Email anterior) {
+        enDiferido("aviso de correo cambiado", () -> transporte.enviarAvisoDeCorreoCambiado(titular, anterior));
     }
 
     /**

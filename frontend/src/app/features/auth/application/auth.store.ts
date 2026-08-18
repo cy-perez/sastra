@@ -7,6 +7,7 @@ import { AuthApi } from '../infrastructure/auth.api';
 import { queryKeys } from './query-keys';
 import type { Credentials } from '../domain/credentials';
 import type { PasswordReset, PasswordResetRequest } from '../domain/password-reset';
+import type { ProfileEdit } from '../domain/profile';
 import type { Registration } from '../domain/registration';
 
 /**
@@ -117,6 +118,58 @@ export class AuthStore {
     retry: false,
     onSuccess: () => {
       void this.consultas.invalidateQueries({ queryKey: queryKeys.sessions });
+    },
+  }));
+
+  /**
+   * Criterio 21. El perfil es una consulta: no cambia nada y se puede volver a
+   * pedir sola.
+   *
+   * <p>Sin tiempo de frescura, como las sesiones: un correo confirmado desde otro
+   * dispositivo tiene que aparecer al mirar, no un minuto despues.
+   */
+  readonly profile = injectQuery(() => ({
+    queryKey: queryKeys.profile,
+    queryFn: () => this.api.profile(),
+    staleTime: 0,
+    retry: false,
+  }));
+
+  /**
+   * Criterio 21. Al guardar se refresca la consulta con lo que devolvio el
+   * servidor, sin pedirlo otra vez: es exactamente lo que hay en la base.
+   *
+   * <p>Tambien se actualiza el nombre de la sesion en memoria. Es lo que ve la
+   * cabecera, y dejarlo con el nombre viejo haria dudar de si se guardo.
+   */
+  readonly profileUpdate = injectMutation(() => ({
+    mutationFn: (cambio: ProfileEdit) => this.api.updateProfile(cambio),
+    retry: false,
+    onSuccess: (guardado) => {
+      this.consultas.setQueryData(queryKeys.profile, guardado);
+      this.sesion.renombrar(guardado.displayName);
+    },
+  }));
+
+  /**
+   * Criterio 21. Sin reintentos: el servidor responde igual este la direccion
+   * libre u ocupada, asi que un reintento automatico solo mandaria dos correos a
+   * quien si esta esperando el enlace.
+   */
+  readonly emailChangeRequest = injectMutation(() => ({
+    mutationFn: (nuevoCorreo: string) => this.api.requestEmailChange(nuevoCorreo),
+    retry: false,
+  }));
+
+  /** Criterio 21: consume el enlace del correo nuevo. De un solo uso. */
+  readonly emailChangeConfirmation = injectMutation(() => ({
+    mutationFn: (token: string) => this.api.confirmEmailChange(token),
+    retry: false,
+    onSuccess: () => {
+      // El correo de la cuenta acaba de cambiar: lo que este en cache ya no es
+      // cierto. Se invalida en vez de escribirlo porque esta pantalla no sabe
+      // como quedo el resto del perfil.
+      void this.consultas.invalidateQueries({ queryKey: queryKeys.profile });
     },
   }));
 

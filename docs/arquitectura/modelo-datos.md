@@ -29,8 +29,8 @@ PostgreSQL 17. Migraciones con Flyway en
 | email_verified_at | timestamptz | nulo mientras no verifique |
 | display_name | text | |
 | birth_date | date | RN-008: solo mayores de 18. Se guarda la fecha, no el resultado |
-| city | text | |
-| phone | text | opcional |
+| city | text | opcional. Dato público: sale junto a las publicaciones |
+| phone | text | opcional. Dato interno: nunca en un perfil público |
 | avatar_url | text | opcional |
 | locale | text | `es` o `en` |
 | status | text | `ACTIVE`, `BLOCKED`, `CLOSING`, `CLOSED` |
@@ -48,8 +48,16 @@ El `family_id` permite revocar toda una cadena al detectar reutilización.
 
 **verification_tokens**: `id`, `user_id`, `purpose` (`EMAIL_VERIFICATION`,
 `PASSWORD_RESET`, `EMAIL_CHANGE`), `token_hash`, `expires_at`, `used_at`,
-`created_at`. La fecha de creación es la que permite contar los reenvíos de la
-última hora: HU-001 limita a tres y sin ella no hay con qué contarlos.
+`created_at`, `new_email`. La fecha de creación es la que permite contar los
+reenvíos de la última hora: HU-001 limita a tres y sin ella no hay con qué
+contarlos.
+
+`new_email` es la dirección pendiente de confirmar y solo existe en los tokens de
+cambio de correo; una restricción `CHECK` obliga a que esté exactamente cuando el
+propósito es `EMAIL_CHANGE`. Vive aquí y no en `users` porque el token **es** el
+cambio pendiente: caduca con él, se consume con él y desaparece con él. En
+`users` habría que limpiarlo cuando el enlace venciera, y nadie limpia lo que
+vence solo.
 
 **login_attempts**: `id`, `email_hash`, `ip_hash`, `succeeded`, `created_at`.
 Se conserva 90 días.

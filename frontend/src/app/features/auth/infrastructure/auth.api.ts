@@ -6,6 +6,7 @@ import type { Session } from '../../../core/session/session';
 import type { ActiveSession } from '../domain/account';
 import type { Credentials } from '../domain/credentials';
 import type { PasswordReset, PasswordResetRequest } from '../domain/password-reset';
+import type { Profile, ProfileEdit } from '../domain/profile';
 import type { Registration } from '../domain/registration';
 
 /**
@@ -165,6 +166,39 @@ export class AuthApi {
    */
   async exportData(): Promise<string> {
     return firstValueFrom(this.http.get('users/me/export', { responseType: 'text' }));
+  }
+
+  /** Criterio 21: el perfil tal como esta ahora. */
+  async profile(): Promise<Profile> {
+    return firstValueFrom(this.http.get<Profile>('users/me'));
+  }
+
+  /**
+   * Criterio 21. Devuelve el perfil ya guardado, no un vacio: el telefono entra
+   * con separadores y sale normalizado, y esa regla la decide el servidor.
+   */
+  async updateProfile(cambio: ProfileEdit): Promise<Profile> {
+    return firstValueFrom(this.http.put<Profile>('users/me', cambio));
+  }
+
+  /**
+   * Criterio 21. Pedirlo no lo cambia: el servidor manda un enlace al correo
+   * nuevo y no reemplaza nada hasta que alguien lo abre.
+   *
+   * <p>Responde 202 este la direccion libre u ocupada, igual que el registro. No
+   * hay nada que distinguir aqui, y es justamente el punto.
+   */
+  async requestEmailChange(newEmail: string): Promise<void> {
+    await firstValueFrom(this.http.post<void>('users/me/email', { newEmail }));
+  }
+
+  /**
+   * Criterio 21. Va por {@code auth} y no por {@code users/me} porque se llega
+   * abriendo el enlace del correo, y quien lo abre puede no tener sesion en ese
+   * navegador: la credencial es el token del enlace.
+   */
+  async confirmEmailChange(token: string): Promise<void> {
+    await firstValueFrom(this.http.post<void>('auth/confirm-email-change', { token }));
   }
 
   /**

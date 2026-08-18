@@ -20,6 +20,7 @@ import org.springframework.validation.annotation.Validated;
  * @param passwordResetPath lo mismo para el enlace de restablecimiento. Es otra
  *     ruta y no la misma con un parametro: son dos pantallas distintas y dos
  *     tokens con vigencias distintas, 24 horas y 30 minutos
+ * @param emailChangePath la pantalla que confirma un correo nuevo (criterio 21)
  */
 @Validated
 @ConfigurationProperties(prefix = "sastra.mail")
@@ -28,4 +29,5 @@ public record MailProperties(
         @NotBlank String providerApiKey,
         URI apiUrl,
         @NotBlank String verificationPath,
-        @NotBlank String passwordResetPath) {}
+        @NotBlank String passwordResetPath,
+        @NotBlank String emailChangePath) {}

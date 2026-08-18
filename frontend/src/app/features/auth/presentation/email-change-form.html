@@ -1,0 +1,29 @@
+<p class="tipo-cuerpo">
+  {{ 'auth.account.email.current' | transloco: { correo: perfil.data()?.email ?? '' } }}
+</p>
+
+@if (peticion.isSuccess()) {
+  <!-- Mismo aviso este la direccion libre u ocupada: el servidor responde igual
+       en los dos casos y aqui no hay nada que distinguir. -->
+  <p class="enviado tipo-cuerpo" role="status">
+    {{ 'auth.account.email.sent' | transloco: { correo: enviadoA() } }}
+  </p>
+} @else {
+  <form class="formulario" [formGroup]="form" (ngSubmit)="enviar()" novalidate>
+    @if (errorDelServidor(); as error) {
+      <p class="error tipo-cuerpo" role="alert">{{ error | transloco }}</p>
+    }
+
+    <sastra-text-field
+      fieldId="correo-nuevo"
+      type="email"
+      autocomplete="email"
+      labelKey="auth.account.email.fields.newEmail"
+      hintKey="auth.account.email.hints.newEmail"
+      [control]="control()"
+      [errorKey]="correoError()"
+    />
+
+    <sastra-submit-button labelKey="auth.account.email.submit" [loading]="peticion.isPending()" />
+  </form>
+}

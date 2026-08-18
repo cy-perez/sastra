@@ -24,6 +24,15 @@ public final class User {
     private final Email email;
     private final DisplayName displayName;
     private final BirthDate birthDate;
+
+    /**
+     * Perfil opcional. Nulos mientras la persona no los ponga: no se piden al
+     * registrarse porque no hacen falta para tener cuenta, y un campo que no tiene
+     * uso concreto no se crea (docs/operacion/datos-personales.md).
+     */
+    private final @Nullable City city;
+
+    private final @Nullable Phone phone;
     private final UserLocale locale;
     private final UserStatus status;
 
@@ -38,6 +47,8 @@ public final class User {
             Email email,
             DisplayName displayName,
             BirthDate birthDate,
+            @Nullable City city,
+            @Nullable Phone phone,
             UserLocale locale,
             UserStatus status,
             @Nullable Instant emailVerifiedAt,
@@ -47,6 +58,8 @@ public final class User {
         this.email = Objects.requireNonNull(email);
         this.displayName = Objects.requireNonNull(displayName);
         this.birthDate = Objects.requireNonNull(birthDate);
+        this.city = city;
+        this.phone = phone;
         this.locale = Objects.requireNonNull(locale);
         this.status = Objects.requireNonNull(status);
         this.emailVerifiedAt = emailVerifiedAt;
@@ -76,7 +89,17 @@ public final class User {
         }
 
         return new User(
-                id, email, displayName, birthDate, locale, UserStatus.ACTIVE, null, EnumSet.of(Role.BUYER), ahora);
+                id,
+                email,
+                displayName,
+                birthDate,
+                null,
+                null,
+                locale,
+                UserStatus.ACTIVE,
+                null,
+                EnumSet.of(Role.BUYER),
+                ahora);
     }
 
     /** Reconstruccion desde la base de datos. No revalida: el dato ya se acepto una vez. */
@@ -85,12 +108,40 @@ public final class User {
             Email email,
             DisplayName displayName,
             BirthDate birthDate,
+            @Nullable City city,
+            @Nullable Phone phone,
             UserLocale locale,
             UserStatus status,
             @Nullable Instant emailVerifiedAt,
             Set<Role> roles,
             Instant createdAt) {
-        return new User(id, email, displayName, birthDate, locale, status, emailVerifiedAt, roles, createdAt);
+        return new User(
+                id, email, displayName, birthDate, city, phone, locale, status, emailVerifiedAt, roles, createdAt);
+    }
+
+    /**
+     * Criterio 21: cambia lo que la persona puede editar de su perfil.
+     *
+     * <p>El correo no esta aqui y no es un olvido: cambiarlo exige verificar el
+     * nuevo antes de reemplazar el anterior, asi que es otra operacion con otro
+     * ritmo. La ciudad y el telefono se quitan poniendolos a nulo.
+     */
+    public User conPerfil(DisplayName nombre, @Nullable City ciudad, @Nullable Phone telefono) {
+        Objects.requireNonNull(nombre, "El nombre es obligatorio");
+        return new User(
+                id, email, nombre, birthDate, ciudad, telefono, locale, status, emailVerifiedAt, roles, createdAt);
+    }
+
+    /**
+     * Criterio 21: reemplaza el correo por el que se acaba de verificar.
+     *
+     * <p>Queda verificado en el mismo movimiento, y tiene que ser asi: la persona
+     * acaba de demostrar que ese buzon es suyo abriendo el enlace. Dejarlo sin
+     * verificar la obligaria a repetir el paso que acaba de dar.
+     */
+    public User conCorreoCambiado(Email nuevo, Instant ahora) {
+        Objects.requireNonNull(nuevo, "El correo nuevo es obligatorio");
+        return new User(id, nuevo, displayName, birthDate, city, phone, locale, status, ahora, roles, createdAt);
     }
 
     public boolean tieneElCorreoVerificado() {
@@ -106,7 +157,7 @@ public final class User {
         if (tieneElCorreoVerificado()) {
             return this;
         }
-        return new User(id, email, displayName, birthDate, locale, status, ahora, roles, createdAt);
+        return new User(id, email, displayName, birthDate, city, phone, locale, status, ahora, roles, createdAt);
     }
 
     public UserId id() {
@@ -119,6 +170,14 @@ public final class User {
 
     public DisplayName displayName() {
         return displayName;
+    }
+
+    public @Nullable City city() {
+        return city;
+    }
+
+    public @Nullable Phone phone() {
+        return phone;
     }
 
     public BirthDate birthDate() {

@@ -1,5 +1,6 @@
 package co.sastra.identity.client;
 
+import co.sastra.identity.model.Email;
 import co.sastra.identity.model.User;
 import co.sastra.identity.port.out.MailSender;
 import java.time.Instant;
@@ -111,5 +112,39 @@ public class ConsoleMailSender implements MailSender {
                 La cuenta se cerro y sus datos quedaron anonimizados.
                 ===============================================================================
                 """, titular.email().value());
+    }
+
+    @Override
+    public void enviarConfirmacionDeCorreoNuevo(User titular, Email destino, String tokenEnClaro) {
+        LOG.info("""
+
+                ================ CONFIRMACION DE CORREO NUEVO (criterio 21) ===================
+                Para:   {}
+                Enlace: {}
+                Hasta que se abra, la cuenta conserva su correo anterior.
+                ===============================================================================
+                """, destino.value(), enlaces.paraCambioDeCorreo(tokenEnClaro));
+    }
+
+    @Override
+    public void enviarAvisoDeIntentoDeCambioAEsteCorreo(User titular) {
+        LOG.info("""
+
+                ================ INTENTO DE CAMBIO A ESTE CORREO (criterio 21) ================
+                Para: {}
+                Alguien intento mudar su cuenta a este correo, que ya tiene una.
+                ===============================================================================
+                """, titular.email().value());
+    }
+
+    @Override
+    public void enviarAvisoDeCorreoCambiado(User titular, Email anterior) {
+        LOG.info("""
+
+                ================ AVISO DE CORREO CAMBIADO (criterio 21) =======================
+                Para: {}
+                La cuenta ahora usa otro correo.
+                ===============================================================================
+                """, anterior.value());
     }
 }

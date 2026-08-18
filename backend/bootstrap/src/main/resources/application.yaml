@@ -116,6 +116,8 @@ sastra:
     # Criterio 18. Ruta distinta de la verificacion: son dos pantallas y dos
     # tokens con vigencias distintas, 24 horas y 30 minutos.
     password-reset-path: ${MAIL_PASSWORD_RESET_PATH:/restablecer-contrasena}
+    # Criterio 21: confirma el correo nuevo antes de reemplazar el anterior.
+    email-change-path: ${MAIL_EMAIL_CHANGE_PATH:/confirmar-correo-nuevo}
   legal:
     # Version del texto que la persona acepta. Sin ella el consentimiento no se
     # puede demostrar (docs/operacion/datos-personales.md).

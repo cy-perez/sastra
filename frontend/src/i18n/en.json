@@ -46,6 +46,10 @@
     "account": {
       "title": "My account",
       "description": "Your open sessions, your data and closing your Sastra account."
+    },
+    "confirmEmail": {
+      "title": "Confirm new email",
+      "description": "Finish changing the email on your Sastra account."
     }
   },
   "layout": {
@@ -99,7 +103,8 @@
       "COMMON_UNEXPECTED": "Something went wrong on our side. Please try again.",
       "AUTH_RESET_TOKEN_INVALID": "This link no longer works. You may have used it already.",
       "AUTH_RESET_TOKEN_EXPIRED": "This link has expired. Password links last 30 minutes.",
-      "AUTH_CLOSE_CONFIRMATION_MISMATCH": "What you typed does not match your email."
+      "AUTH_CLOSE_CONFIRMATION_MISMATCH": "What you typed does not match your email.",
+      "AUTH_EMAIL_TAKEN": "That address already has a Sastra account. Request the change with a different one."
     }
   },
   "form": {
@@ -253,6 +258,44 @@
     },
     "account": {
       "title": "My account",
+      "profile": {
+        "title": "Your details",
+        "body": "Only your name is shown on Sastra. City and phone are optional and you can remove them at any time.",
+        "loading": "Loading your details",
+        "done": "Saved.",
+        "submit": "Save changes",
+        "fields": {
+          "displayName": "Display name",
+          "city": "City",
+          "phone": "Phone"
+        },
+        "hints": {
+          "optional": "Optional. Leave it empty to remove it.",
+          "phone": "Optional. Include the country code if it is not Colombian, for example +57 300 123 4567."
+        },
+        "errors": {
+          "displayName": "Enter a name between 2 and 80 characters.",
+          "city": "City cannot be longer than 80 characters.",
+          "phone": "Enter a phone number with 7 to 15 digits, or leave it empty."
+        }
+      },
+      "email": {
+        "title": "Change my email",
+        "body": "We send a link to the new address. Your current email stays on the account until you open it.",
+        "current": "Your current email is {{correo}}.",
+        "sent": "If that address is available, we sent a link to {{correo}}. Open it to finish the change.",
+        "submit": "Send the link",
+        "fields": {
+          "newEmail": "New email"
+        },
+        "hints": {
+          "newEmail": "It must be a mailbox you can open: the link goes there."
+        },
+        "errors": {
+          "format": "Enter a valid email, for example name@email.com.",
+          "same": "That is already your current email."
+        }
+      },
       "sessions": {
         "title": "Open sessions",
         "body": "These are the devices where your account is open. If you do not recognise one, close it and change your password.",
@@ -283,6 +326,21 @@
         "errors": {
           "confirmation": "Type your email exactly as you registered it."
         }
+      }
+    },
+    "confirmEmail": {
+      "title": "Confirm your new email",
+      "subtitle": "Press the button to finish the change. From then on you sign in to Sastra with this address.",
+      "submit": "Confirm the change",
+      "goToAccount": "Go to my account",
+      "missing": {
+        "title": "The link is missing",
+        "body": "This page opens from the link we sent to your new address. Open it from there."
+      },
+      "done": {
+        "title": "Done, we changed your email",
+        "body": "You can now sign in with your new address. We let the previous one know, in case it was not you.",
+        "goToLogin": "Sign in"
       }
     }
   }

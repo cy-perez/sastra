@@ -149,6 +149,9 @@ public class ApiExceptionHandler {
             // cliente no sabria que lo que toca es volver a pedir la contrasena
             // (docs/arquitectura/contrato-api.md).
             case AUTH_INVALID_CREDENTIALS, AUTH_SESSION_INVALID -> HttpStatus.UNAUTHORIZED;
+            // 409: la peticion es correcta y choca con el estado actual del
+            // sistema, que es lo que significa un conflicto.
+            case AUTH_EMAIL_TAKEN -> HttpStatus.CONFLICT;
             // 422: se entiende lo que se envio, pero el negocio lo rechaza.
             // Se llama UNPROCESSABLE_CONTENT desde la RFC 9110; el nombre
             // anterior, UNPROCESSABLE_ENTITY, esta obsoleto en Spring 7.

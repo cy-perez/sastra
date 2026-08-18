@@ -47,6 +47,7 @@ correo, ningún NIT, ningún porcentaje de comisión.
 | `MAIL_API_URL` | `https://api.resend.com/emails` | no |
 | `MAIL_VERIFICATION_PATH` | `/verificar-correo` | no |
 | `MAIL_PASSWORD_RESET_PATH` | `/restablecer-contrasena` | no |
+| `MAIL_EMAIL_CHANGE_PATH` | `/confirmar-correo-nuevo` | no |
 | `LEGAL_TERMS_VERSION` | `2026-08-01` | sí |
 | `LEGAL_PRIVACY_VERSION` | `2026-08-01` | sí |
 | `LEGAL_COOKIES_VERSION` | `2026-08-01` | no, solo frontend |

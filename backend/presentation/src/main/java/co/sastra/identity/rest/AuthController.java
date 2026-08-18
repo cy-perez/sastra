@@ -19,6 +19,7 @@ import co.sastra.identity.rest.dto.SessionResponse;
 import co.sastra.identity.rest.dto.VerifyEmailRequest;
 import co.sastra.identity.rest.dto.VerifyEmailResponse;
 import co.sastra.identity.rest.mapper.SessionResponses;
+import co.sastra.identity.usecase.ConfirmEmailChangeUseCase;
 import co.sastra.identity.usecase.ForgotPasswordUseCase;
 import co.sastra.identity.usecase.LoginUseCase;
 import co.sastra.identity.usecase.LogoutUseCase;
@@ -70,6 +71,7 @@ public class AuthController {
     private final LogoutUseCase casoDeCierre;
     private final ForgotPasswordUseCase casoDeOlvido;
     private final ResetPasswordUseCase casoDeRestablecimiento;
+    private final ConfirmEmailChangeUseCase casoDeConfirmacionDeCorreo;
     private final SessionResponses respuestas;
     private final RefreshCookies cookies;
     private final ClientIpHasher hasherDeIp;
@@ -83,6 +85,7 @@ public class AuthController {
             LogoutUseCase casoDeCierre,
             ForgotPasswordUseCase casoDeOlvido,
             ResetPasswordUseCase casoDeRestablecimiento,
+            ConfirmEmailChangeUseCase casoDeConfirmacionDeCorreo,
             SessionResponses respuestas,
             RefreshCookies cookies,
             ClientIpHasher hasherDeIp) {
@@ -94,6 +97,7 @@ public class AuthController {
         this.casoDeCierre = casoDeCierre;
         this.casoDeOlvido = casoDeOlvido;
         this.casoDeRestablecimiento = casoDeRestablecimiento;
+        this.casoDeConfirmacionDeCorreo = casoDeConfirmacionDeCorreo;
         this.respuestas = respuestas;
         this.cookies = cookies;
         this.hasherDeIp = hasherDeIp;
@@ -167,6 +171,20 @@ public class AuthController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void restablecer(@Valid @RequestBody ResetPasswordRequest peticion) {
         casoDeRestablecimiento.execute(new ResetPasswordCommand(peticion.token(), peticion.newPassword()));
+    }
+
+    /**
+     * Criterio 21: confirma el correo nuevo y lo reemplaza.
+     *
+     * <p>Va en las rutas publicas y no en {@code /users/me} porque se llega
+     * abriendo un enlace del correo, y quien lo abre puede no tener sesion en ese
+     * navegador: es otro dispositivo la mitad de las veces. La credencial es el
+     * token del enlace.
+     */
+    @PostMapping("/confirm-email-change")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void confirmarCambioDeCorreo(@Valid @RequestBody VerifyEmailRequest peticion) {
+        casoDeConfirmacionDeCorreo.execute(peticion.token());
     }
 
     /** Criterio 10: token de acceso en el cuerpo y token de refresco en la cookie. */

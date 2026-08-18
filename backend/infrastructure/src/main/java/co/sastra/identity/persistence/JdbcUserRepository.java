@@ -1,9 +1,11 @@
 package co.sastra.identity.persistence;
 
 import co.sastra.identity.model.BirthDate;
+import co.sastra.identity.model.City;
 import co.sastra.identity.model.DisplayName;
 import co.sastra.identity.model.Email;
 import co.sastra.identity.model.PasswordHash;
+import co.sastra.identity.model.Phone;
 import co.sastra.identity.model.Role;
 import co.sastra.identity.model.User;
 import co.sastra.identity.model.UserId;
@@ -19,6 +21,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -36,7 +39,7 @@ public class JdbcUserRepository implements UserRepository {
 
     private static final String SELECT_BASE = """
             SELECT u.id, u.email, u.email_verified_at, u.display_name, u.birth_date,
-                   u.locale, u.status, u.created_at
+                   u.city, u.phone, u.locale, u.status, u.created_at
             FROM users u
             """;
 
@@ -85,6 +88,8 @@ public class JdbcUserRepository implements UserRepository {
                         UPDATE users
                         SET email_verified_at = :verificado,
                             display_name      = :displayName,
+                            city              = :city,
+                            phone             = :phone,
                             locale            = :locale,
                             status            = :status,
                             updated_at        = now()
@@ -94,8 +99,34 @@ public class JdbcUserRepository implements UserRepository {
                         "verificado",
                         usuario.emailVerifiedAt() == null ? null : Timestamp.from(usuario.emailVerifiedAt()))
                 .param("displayName", usuario.displayName().value())
+                .param("city", usuario.city() == null ? null : usuario.city().value())
+                .param("phone", usuario.phone() == null ? null : usuario.phone().value())
                 .param("locale", usuario.locale().etiqueta())
                 .param("status", usuario.status().name())
+                .param("id", usuario.id().value())
+                .update();
+    }
+
+    /**
+     * El unico UPDATE que toca la columna del correo. Criterio 21.
+     *
+     * <p>Aparte de {@code actualizar} por lo mismo que el hash de la contrasena
+     * esta fuera del suyo: guardar el perfil no puede cambiar el correo, porque
+     * cambiarlo exige antes verificar el nuevo.
+     */
+    @Override
+    public void actualizarCorreo(User usuario) {
+        jdbc.sql("""
+                        UPDATE users
+                        SET email             = :email,
+                            email_verified_at = :verificado,
+                            updated_at        = now()
+                        WHERE id = :id
+                        """)
+                .param("email", usuario.email().value())
+                .param(
+                        "verificado",
+                        usuario.emailVerifiedAt() == null ? null : Timestamp.from(usuario.emailVerifiedAt()))
                 .param("id", usuario.id().value())
                 .update();
     }
@@ -127,11 +158,18 @@ public class JdbcUserRepository implements UserRepository {
                 new Email(fila.getString("email")),
                 new DisplayName(fila.getString("display_name")),
                 new BirthDate(fila.getObject("birth_date", java.time.LocalDate.class)),
+                // Nulos mientras la persona no los ponga: son opcionales.
+                valorONulo(fila.getString("city"), City::new),
+                valorONulo(fila.getString("phone"), Phone::new),
                 UserLocale.de(fila.getString("locale")),
                 UserStatus.valueOf(fila.getString("status").toUpperCase(Locale.ROOT)),
                 instanteONulo(fila.getTimestamp("email_verified_at")),
                 rolesDe(id),
                 fila.getTimestamp("created_at").toInstant());
+    }
+
+    private static <T> @Nullable T valorONulo(@Nullable String columna, java.util.function.Function<String, T> como) {
+        return columna == null || columna.isBlank() ? null : como.apply(columna);
     }
 
     /**

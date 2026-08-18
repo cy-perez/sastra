@@ -67,6 +67,21 @@ export class SessionStore {
   }
 
   /**
+   * Cambia el nombre visible sin tocar el token. Criterio 21.
+   *
+   * <p>Lo que se ve en la cabecera sale de aqui. Al guardar el perfil, dejarlo
+   * con el nombre anterior hasta la siguiente recarga haria dudar de si se
+   * guardo, y esa duda lleva a guardar otra vez.
+   *
+   * <p>No abre sesion: si no habia ninguna, no hay nada que renombrar.
+   */
+  renombrar(displayName: string): void {
+    this.sesion.update((actual) =>
+      actual === null ? null : { ...actual, user: { ...actual.user, displayName } },
+    );
+  }
+
+  /**
    * Sin sesion, y ya se sabe.
    *
    * <p>Sirve para las dos cosas que acaban igual: cerrar sesion y descubrir que

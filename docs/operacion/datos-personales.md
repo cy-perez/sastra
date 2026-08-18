@@ -45,6 +45,10 @@ Si alguna no tiene respuesta, el campo no se crea.
   verificacion: basta el estado y la fecha.
 - Los entornos de desarrollo nunca reciben datos reales de personas. Si hace
   falta volumen, se generan datos sinteticos.
+- **Ningun dato personal se pide sin uso concreto.** La ciudad y el telefono del
+  perfil son opcionales, nacen vacios y se quitan dejando el campo en blanco: no
+  hacen falta para tener cuenta. La foto de perfil no existe todavia porque
+  necesita almacenamiento de archivos, y hasta entonces no se pide.
 
 ## Consentimiento
 
@@ -85,6 +89,17 @@ la autorizacion. Operativamente:
   se borran contrasena, roles y enlaces pendientes. Cuando existan pedidos habra
   que bifurcar segun RN-009 y revisar si la fecha de nacimiento, que hoy se
   conserva, vuelve a identificar al cruzarse con un historial de compras.
+- **Actualizar y rectificar se hace desde la propia cuenta**, sin pedirselo a
+  nadie: nombre, ciudad y telefono se editan y se guardan en el acto.
+- **El correo se cambia con verificacion previa.** Pedir el cambio no reemplaza
+  nada: se manda un enlace al correo nuevo y la direccion de la cuenta solo
+  cambia cuando alguien lo abre. Sin ese paso, un error de una letra dejaria a la
+  persona fuera de su cuenta sin forma de volver.
+- **Al cambiar el correo se avisa al anterior.** Es lo que evita el peor caso:
+  quien robe una sesion cambia la direccion y saca al titular de su cuenta en
+  silencio. Si la direccion pedida ya tiene cuenta, se avisa a su titular y a
+  quien lo pidio se le responde exactamente igual que si estuviera libre: lo
+  contrario convertiria el formulario en un detector de cuentas.
 - El token de acceso ya emitido sigue siendo valido hasta quince minutos despues
   del cierre: es un JWT y ADR-0003 acepta esa ventana. Las rutas que devuelven o
   tocan datos responden 401 en cuanto la cuenta deja de existir.

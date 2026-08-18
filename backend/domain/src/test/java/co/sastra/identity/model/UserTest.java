@@ -95,6 +95,8 @@ class UserTest {
                 new Email("ana@correo.co"),
                 new DisplayName("Ana"),
                 new BirthDate(LocalDate.of(1990, 3, 4)),
+                null,
+                null,
                 UserLocale.ES,
                 UserStatus.ACTIVE,
                 null,
@@ -105,6 +107,8 @@ class UserTest {
                 new Email("otra@correo.co"),
                 new DisplayName("Otra"),
                 new BirthDate(LocalDate.of(1991, 3, 4)),
+                null,
+                null,
                 UserLocale.EN,
                 UserStatus.BLOCKED,
                 AHORA,
@@ -123,6 +127,8 @@ class UserTest {
                 new Email("ana@correo.co"),
                 new DisplayName("Ana"),
                 new BirthDate(HOY.minusYears(10)),
+                null,
+                null,
                 UserLocale.ES,
                 UserStatus.ACTIVE,
                 null,
@@ -138,5 +144,90 @@ class UserTest {
         User usuario = registrarConNacimiento(LocalDate.of(1990, 3, 4));
 
         assertThat(usuario.toString()).doesNotContain("ana@correo.co").doesNotContain("Ana Maria");
+    }
+    // Criterio 21: el perfil se edita sin tocar nada de lo que identifica la cuenta.
+    @Test
+    void deberia_guardar_ciudad_y_telefono_en_el_perfil_criterio_21() {
+        User usuario = registrarConNacimiento(LocalDate.of(1990, 3, 4))
+                .conPerfil(new DisplayName("Ana"), new City("Medellin"), new Phone("3001234567"));
+
+        assertThat(usuario.displayName()).isEqualTo(new DisplayName("Ana"));
+        assertThat(usuario.city()).isEqualTo(new City("Medellin"));
+        assertThat(usuario.phone()).isEqualTo(new Phone("3001234567"));
+    }
+
+    @Test
+    void deberia_nacer_sin_ciudad_ni_telefono() {
+        User usuario = registrarConNacimiento(LocalDate.of(1990, 3, 4));
+
+        assertThat(usuario.city()).isNull();
+        assertThat(usuario.phone()).isNull();
+    }
+
+    // Poner a nulo es como se quita un dato opcional: sin esto no habria forma de
+    // borrar la ciudad una vez puesta.
+    @Test
+    void deberia_dejar_quitar_la_ciudad_y_el_telefono_criterio_21() {
+        User usuario = registrarConNacimiento(LocalDate.of(1990, 3, 4))
+                .conPerfil(new DisplayName("Ana"), new City("Medellin"), new Phone("3001234567"))
+                .conPerfil(new DisplayName("Ana"), null, null);
+
+        assertThat(usuario.city()).isNull();
+        assertThat(usuario.phone()).isNull();
+    }
+
+    /**
+     * El correo no se edita con el resto del perfil: cambiarlo exige verificar el
+     * nuevo antes de reemplazar el anterior.
+     */
+    @Test
+    void el_perfil_no_deberia_poder_cambiar_el_correo_criterio_21() {
+        User usuario = registrarConNacimiento(LocalDate.of(1990, 3, 4)).conPerfil(new DisplayName("Ana"), null, null);
+
+        assertThat(usuario.email()).isEqualTo(new Email("ana@correo.co"));
+    }
+
+    @Test
+    void el_perfil_deberia_exigir_un_nombre() {
+        User usuario = registrarConNacimiento(LocalDate.of(1990, 3, 4));
+
+        assertThatThrownBy(() -> usuario.conPerfil(null, null, null)).isInstanceOf(NullPointerException.class);
+    }
+
+    /**
+     * Criterio 21: el correo nuevo queda verificado en el mismo movimiento. La
+     * persona acaba de demostrar que ese buzon es suyo abriendo el enlace; pedirle
+     * que lo verifique otra vez seria repetir el paso que acaba de dar.
+     */
+    @Test
+    void deberia_dejar_verificado_el_correo_nuevo_criterio_21() {
+        User usuario =
+                registrarConNacimiento(LocalDate.of(1990, 3, 4)).conCorreoCambiado(new Email("nueva@correo.co"), AHORA);
+
+        assertThat(usuario.email()).isEqualTo(new Email("nueva@correo.co"));
+        assertThat(usuario.tieneElCorreoVerificado()).isTrue();
+        assertThat(usuario.emailVerifiedAt()).isEqualTo(AHORA);
+    }
+
+    // Cambiar de correo no cambia de cuenta: es la misma persona, el mismo id y el
+    // mismo perfil.
+    @Test
+    void el_cambio_de_correo_deberia_conservar_el_resto_de_la_cuenta_criterio_21() {
+        User antes = registrarConNacimiento(LocalDate.of(1990, 3, 4))
+                .conPerfil(new DisplayName("Ana"), new City("Medellin"), new Phone("3001234567"));
+        User despues = antes.conCorreoCambiado(new Email("nueva@correo.co"), AHORA);
+
+        assertThat(despues.id()).isEqualTo(antes.id());
+        assertThat(despues.city()).isEqualTo(new City("Medellin"));
+        assertThat(despues.phone()).isEqualTo(new Phone("3001234567"));
+        assertThat(despues.roles()).isEqualTo(antes.roles());
+        assertThat(despues.createdAt()).isEqualTo(antes.createdAt());
+    }
+
+    @Test
+    void el_cambio_de_correo_deberia_exigir_el_correo_nuevo() {
+        User usuario = registrarConNacimiento(LocalDate.of(1990, 3, 4));
+
+        assertThatThrownBy(() -> usuario.conCorreoCambiado(null, AHORA)).isInstanceOf(NullPointerException.class);
     }
 }

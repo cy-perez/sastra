@@ -50,6 +50,17 @@ export const routes: Routes = [
       import('./features/auth/presentation/reset-password-page').then((m) => m.ResetPasswordPage),
   },
   {
+    // Tambien la conoce el backend, que la monta en el enlace del correo:
+    // MAIL_EMAIL_CHANGE_PATH. Si cambia aqui, cambia alli.
+    path: 'confirmar-correo-nuevo',
+    title: 'meta.confirmEmail.title',
+    data: { descriptionKey: 'meta.confirmEmail.description' },
+    loadComponent: () =>
+      import('./features/auth/presentation/confirm-email-change-page').then(
+        (m) => m.ConfirmEmailChangePage,
+      ),
+  },
+  {
     path: 'mi-cuenta',
     title: 'meta.account.title',
     data: { descriptionKey: 'meta.account.description' },

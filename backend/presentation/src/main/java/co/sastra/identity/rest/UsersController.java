@@ -2,23 +2,33 @@ package co.sastra.identity.rest;
 
 import co.sastra.identity.dto.ActiveSession;
 import co.sastra.identity.dto.CloseAccountCommand;
+import co.sastra.identity.dto.RequestEmailChangeCommand;
 import co.sastra.identity.dto.RequestEmailVerificationCommand;
+import co.sastra.identity.dto.UpdateProfileCommand;
 import co.sastra.identity.dto.UserDataExport;
 import co.sastra.identity.model.TokenFamilyId;
+import co.sastra.identity.model.User;
 import co.sastra.identity.model.UserId;
 import co.sastra.identity.rest.dto.ActiveSessionResponse;
+import co.sastra.identity.rest.dto.ChangeEmailRequest;
 import co.sastra.identity.rest.dto.CloseAccountRequest;
+import co.sastra.identity.rest.dto.ProfileResponse;
+import co.sastra.identity.rest.dto.UpdateProfileRequest;
 import co.sastra.identity.usecase.CloseAccountUseCase;
 import co.sastra.identity.usecase.ExportUserDataUseCase;
 import co.sastra.identity.usecase.ListSessionsUseCase;
+import co.sastra.identity.usecase.ReadProfileUseCase;
+import co.sastra.identity.usecase.RequestEmailChangeUseCase;
 import co.sastra.identity.usecase.RequestEmailVerificationUseCase;
 import co.sastra.identity.usecase.RevokeSessionUseCase;
+import co.sastra.identity.usecase.UpdateProfileUseCase;
 import co.sastra.shared.rest.RefreshCookies;
 import jakarta.validation.Valid;
 import java.util.List;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -27,8 +37,10 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -39,8 +51,8 @@ import org.springframework.web.bind.annotation.RestController;
  * quien le digan (backend/CLAUDE.md). Por eso ninguna de estas rutas lleva el
  * identificador del usuario en la direccion.
  *
- * <p>Falta el perfil editable del criterio 21, que llega con la rebanada
- * siguiente.
+ * <p>Falta la foto del criterio 21, que es la unica parte que necesita
+ * almacenamiento de archivos y va en su propia rebanada.
  */
 @RestController
 @RequestMapping("/api/v1/users/me")
@@ -51,6 +63,9 @@ public class UsersController {
     private final RevokeSessionUseCase casoDeRevocacion;
     private final ExportUserDataUseCase casoDeExportacion;
     private final CloseAccountUseCase casoDeCierre;
+    private final ReadProfileUseCase casoDeLectura;
+    private final UpdateProfileUseCase casoDePerfil;
+    private final RequestEmailChangeUseCase casoDeCambioDeCorreo;
     private final RefreshCookies cookies;
 
     public UsersController(
@@ -59,12 +74,18 @@ public class UsersController {
             RevokeSessionUseCase casoDeRevocacion,
             ExportUserDataUseCase casoDeExportacion,
             CloseAccountUseCase casoDeCierre,
+            ReadProfileUseCase casoDeLectura,
+            UpdateProfileUseCase casoDePerfil,
+            RequestEmailChangeUseCase casoDeCambioDeCorreo,
             RefreshCookies cookies) {
         this.casoDeReenvio = casoDeReenvio;
         this.casoDeListado = casoDeListado;
         this.casoDeRevocacion = casoDeRevocacion;
         this.casoDeExportacion = casoDeExportacion;
         this.casoDeCierre = casoDeCierre;
+        this.casoDeLectura = casoDeLectura;
+        this.casoDePerfil = casoDePerfil;
+        this.casoDeCambioDeCorreo = casoDeCambioDeCorreo;
         this.cookies = cookies;
     }
 
@@ -76,6 +97,42 @@ public class UsersController {
     public ResponseEntity<Void> pedirVerificacionDeCorreo(@AuthenticationPrincipal Jwt token) {
         casoDeReenvio.execute(new RequestEmailVerificationCommand(usuarioDe(token)));
         return ResponseEntity.accepted().build();
+    }
+
+    /** Criterio 21: el perfil tal como esta ahora. */
+    @GetMapping
+    public ProfileResponse perfil(@AuthenticationPrincipal Jwt token) {
+        return comoPerfil(casoDeLectura.execute(usuarioDe(token)));
+    }
+
+    /**
+     * Criterio 21: guarda el perfil y devuelve como quedo.
+     *
+     * <p>Devolver el resultado y no un 204 evita que el cliente tenga que adivinar
+     * como quedaron los datos tras la normalizacion: el telefono, por ejemplo,
+     * entra con separadores y se guarda solo con digitos.
+     */
+    @PutMapping
+    public ProfileResponse guardarPerfil(
+            @AuthenticationPrincipal Jwt token, @Valid @RequestBody UpdateProfileRequest peticion) {
+        User guardado = casoDePerfil.execute(
+                new UpdateProfileCommand(usuarioDe(token), peticion.displayName(), peticion.city(), peticion.phone()));
+
+        return comoPerfil(guardado);
+    }
+
+    /**
+     * Criterio 21: pide cambiar el correo. <strong>No lo cambia.</strong>
+     *
+     * <p>202 siempre, este la direccion libre u ocupada. Cualquier diferencia,
+     * incluido el codigo de estado, convertiria este formulario en una forma de
+     * averiguar quien tiene cuenta, que es justo lo que el registro evita.
+     */
+    @PostMapping("/email")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public void pedirCambioDeCorreo(
+            @AuthenticationPrincipal Jwt token, @Valid @RequestBody ChangeEmailRequest peticion) {
+        casoDeCambioDeCorreo.execute(new RequestEmailChangeCommand(usuarioDe(token), peticion.newEmail()));
     }
 
     /** Criterio 17: las sesiones abiertas, con la actual marcada. */
@@ -140,6 +197,15 @@ public class UsersController {
         return ResponseEntity.noContent()
                 .header(HttpHeaders.SET_COOKIE, cookies.vacia().toString())
                 .build();
+    }
+
+    private static ProfileResponse comoPerfil(User usuario) {
+        return new ProfileResponse(
+                usuario.email().value(),
+                usuario.tieneElCorreoVerificado(),
+                usuario.displayName().value(),
+                usuario.city() == null ? null : usuario.city().value(),
+                usuario.phone() == null ? null : usuario.phone().value());
     }
 
     private static UserId usuarioDe(Jwt token) {

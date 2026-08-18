@@ -78,6 +78,17 @@ public enum ErrorCode {
     AUTH_RESET_TOKEN_EXPIRED,
 
     /**
+     * Criterio 21: el correo al que se quiere cambiar ya tiene cuenta.
+     *
+     * <p>Solo se responde al <strong>confirmar</strong> el cambio, nunca al
+     * pedirlo. Al pedirlo se responde igual este libre u ocupado, como en el
+     * registro, para que el formulario no sirva de detector de cuentas. Al
+     * confirmar ya no hay nada que revelar: quien abre el enlace demostro que ese
+     * buzon es suyo.
+     */
+    AUTH_EMAIL_TAKEN,
+
+    /**
      * Criterio 23: lo escrito para confirmar el cierre de cuenta no coincide.
      *
      * <p>Cerrar no se deshace, y la confirmación es lo único que separa un clic mal

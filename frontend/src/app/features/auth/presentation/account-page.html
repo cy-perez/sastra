@@ -1,5 +1,23 @@
 <h1 class="tipo-h1">{{ 'auth.account.title' | transloco }}</h1>
 
+<!-- Criterio 21. Va primero: es lo que la persona viene a mirar; las sesiones y
+     el cierre son lo que viene a revisar de vez en cuando. -->
+<section class="bloque">
+  <h2 class="tipo-h2">{{ 'auth.account.profile.title' | transloco }}</h2>
+  <p class="tipo-cuerpo">{{ 'auth.account.profile.body' | transloco }}</p>
+
+  <sastra-profile-form />
+</section>
+
+<!-- Criterio 21. Aparte del perfil porque no termina al guardar: termina cuando
+     alguien abre el enlace que llega al correo nuevo. -->
+<section class="bloque">
+  <h2 class="tipo-h2">{{ 'auth.account.email.title' | transloco }}</h2>
+  <p class="tipo-cuerpo">{{ 'auth.account.email.body' | transloco }}</p>
+
+  <sastra-email-change-form />
+</section>
+
 <!-- Criterio 17 -->
 <section class="bloque">
   <h2 class="tipo-h2">{{ 'auth.account.sessions.title' | transloco }}</h2>

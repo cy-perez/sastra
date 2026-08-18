@@ -79,7 +79,8 @@ dejar el modelo abierto a varios métodos de autenticación.
 **Perfil y cierre**
 
 21. La persona edita nombre, ciudad, teléfono y foto. Cambiar el correo exige
-    verificar el nuevo antes de reemplazar el anterior.
+    verificar el nuevo antes de reemplazar el anterior. La foto va en su propia
+    rebanada: necesita almacenamiento de archivos y una ADR.
 22. Puede descargar sus datos en un archivo legible.
 23. Puede cerrar su cuenta previa confirmación escrita.
 
@@ -105,16 +106,32 @@ dejar el modelo abierto a varios métodos de autenticación.
 ## Notas técnicas
 
 Endpoints: `POST /api/v1/auth/register`, `POST /api/v1/auth/verify-email`,
-`POST /api/v1/auth/login`, `POST /api/v1/auth/refresh`,
-`POST /api/v1/auth/logout`, `POST /api/v1/auth/forgot-password`,
-`POST /api/v1/auth/reset-password`, `GET|PATCH /api/v1/users/me`,
+`POST /api/v1/auth/resend-verification`, `POST /api/v1/auth/login`,
+`POST /api/v1/auth/refresh`, `POST /api/v1/auth/logout`,
+`POST /api/v1/auth/forgot-password`, `POST /api/v1/auth/reset-password`,
+`POST /api/v1/auth/confirm-email-change`, `GET|PUT /api/v1/users/me`,
+`POST /api/v1/users/me/email`, `POST /api/v1/users/me/email-verification`,
+`GET|DELETE /api/v1/users/me/sessions`, `GET /api/v1/users/me/export`,
 `DELETE /api/v1/users/me`.
+
+El perfil se guarda con **PUT y no con PATCH**. Con PATCH habría que distinguir
+"no mandé este campo" de "lo dejé vacío", y esa distinción es justo donde se
+pierde el borrado de un dato opcional: la ciudad vaciada llegaría como ausencia
+y el servidor la dejaría como estaba. Con PUT se manda el perfil entero y se
+guarda entero.
+
+La confirmación del correo nuevo cuelga de `auth` y no de `users/me` porque se
+llega abriendo un enlace del correo, y ese correo se abre la mitad de las veces
+en otro dispositivo, sin sesión. La credencial es el token del enlace.
 
 Tablas: `users`, `user_credentials`, `refresh_tokens`, `verification_tokens`,
 `login_attempts`, `consents`.
 
 Correos transaccionales: verificación, restablecimiento, aviso de bloqueo, aviso
-de cambio de contraseña, aviso de intento de registro con correo existente.
+de cambio de contraseña, aviso de intento de registro con correo existente,
+confirmación del correo nuevo, aviso al correo anterior de que el correo cambió,
+aviso a quien ya tenía cuenta de que alguien intentó mover la suya a esa
+dirección, aviso de cuenta cerrada.
 
 Dependencias externas, ambas detrás de un puerto en `application`: el envío de
 correo con Resend (ADR-0012) y la comprobación de contraseñas filtradas con Have

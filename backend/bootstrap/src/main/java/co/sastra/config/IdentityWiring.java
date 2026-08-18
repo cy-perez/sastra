@@ -14,18 +14,22 @@ import co.sastra.identity.port.out.TokenGenerator;
 import co.sastra.identity.port.out.UserRepository;
 import co.sastra.identity.port.out.VerificationTokenRepository;
 import co.sastra.identity.usecase.CloseAccountUseCase;
+import co.sastra.identity.usecase.ConfirmEmailChangeUseCase;
 import co.sastra.identity.usecase.ExportUserDataUseCase;
 import co.sastra.identity.usecase.ForgotPasswordUseCase;
 import co.sastra.identity.usecase.IssueSessionUseCase;
 import co.sastra.identity.usecase.ListSessionsUseCase;
 import co.sastra.identity.usecase.LoginUseCase;
 import co.sastra.identity.usecase.LogoutUseCase;
+import co.sastra.identity.usecase.ReadProfileUseCase;
 import co.sastra.identity.usecase.RefreshSessionUseCase;
 import co.sastra.identity.usecase.RegisterUserUseCase;
+import co.sastra.identity.usecase.RequestEmailChangeUseCase;
 import co.sastra.identity.usecase.RequestEmailVerificationUseCase;
 import co.sastra.identity.usecase.ResendVerificationUseCase;
 import co.sastra.identity.usecase.ResetPasswordUseCase;
 import co.sastra.identity.usecase.RevokeSessionUseCase;
+import co.sastra.identity.usecase.UpdateProfileUseCase;
 import co.sastra.identity.usecase.VerifyEmailUseCase;
 import co.sastra.shared.config.AppProperties;
 import co.sastra.shared.rest.RefreshCookies;
@@ -209,6 +213,36 @@ public class IdentityWiring {
     CloseAccountUseCase closeAccountUseCase(
             UserRepository usuarios, RefreshTokenRepository refrescos, MailSender correo, Clock reloj) {
         return new CloseAccountUseCase(usuarios, refrescos, correo, reloj);
+    }
+
+    @Bean
+    ReadProfileUseCase readProfileUseCase(UserRepository usuarios) {
+        return new ReadProfileUseCase(usuarios);
+    }
+
+    @Bean
+    UpdateProfileUseCase updateProfileUseCase(UserRepository usuarios) {
+        return new UpdateProfileUseCase(usuarios);
+    }
+
+    @Bean
+    RequestEmailChangeUseCase requestEmailChangeUseCase(
+            UserRepository usuarios,
+            VerificationTokenRepository tokens,
+            TokenGenerator generadorDeTokens,
+            MailSender correo,
+            Clock reloj) {
+        return new RequestEmailChangeUseCase(usuarios, tokens, generadorDeTokens, correo, reloj);
+    }
+
+    @Bean
+    ConfirmEmailChangeUseCase confirmEmailChangeUseCase(
+            UserRepository usuarios,
+            VerificationTokenRepository tokens,
+            TokenGenerator generadorDeTokens,
+            MailSender correo,
+            Clock reloj) {
+        return new ConfirmEmailChangeUseCase(usuarios, tokens, generadorDeTokens, correo, reloj);
     }
 
     /**

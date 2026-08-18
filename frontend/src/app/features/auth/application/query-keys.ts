@@ -7,4 +7,5 @@
  */
 export const queryKeys = {
   sessions: ['auth', 'sessions'] as const,
+  profile: ['auth', 'profile'] as const,
 } as const;

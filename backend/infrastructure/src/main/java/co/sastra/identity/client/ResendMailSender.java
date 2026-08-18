@@ -1,6 +1,7 @@
 package co.sastra.identity.client;
 
 import co.sastra.identity.config.MailProperties;
+import co.sastra.identity.model.Email;
 import co.sastra.identity.model.User;
 import co.sastra.identity.model.UserLocale;
 import co.sastra.identity.port.out.MailSender;
@@ -206,6 +207,68 @@ public class ResendMailSender implements MailSender {
                                 + "This is the last message we will send you.</p>"
                                 + "<p>If you want to come back, you can register again with this same address.</p>"
                                 + "<p>If you did not ask for this, contact us right away.</p>");
+    }
+
+    /** Criterio 21: va a la direccion NUEVA. Solo quien la abra completa el cambio. */
+    @Override
+    public void enviarConfirmacionDeCorreoNuevo(User titular, Email destino, String tokenEnClaro) {
+        boolean espanol = titular.locale() == UserLocale.ES;
+        String enlace = enlaces.paraCambioDeCorreo(tokenEnClaro);
+
+        enviar(
+                destino.value(),
+                espanol ? "Confirma tu correo nuevo en Sastra" : "Confirm your new Sastra email",
+                espanol
+                        ? cuerpo(
+                                "Confirma tu correo nuevo",
+                                "Pediste usar esta direccion en tu cuenta de Sastra. Hasta que abras el "
+                                        + "enlace, tu cuenta conserva la anterior.",
+                                enlace,
+                                "Confirmar este correo")
+                        : cuerpo(
+                                "Confirm your new email",
+                                "You asked to use this address on your Sastra account. Until you open the "
+                                        + "link, your account keeps the previous one.",
+                                enlace,
+                                "Confirm this email"));
+    }
+
+    /** Criterio 21: alguien intento mudar una cuenta a un correo que ya tiene otra. */
+    @Override
+    public void enviarAvisoDeIntentoDeCambioAEsteCorreo(User titular) {
+        boolean espanol = titular.locale() == UserLocale.ES;
+
+        enviar(
+                titular.email().value(),
+                espanol ? "Alguien intento usar tu correo" : "Someone tried to use your email",
+                espanol
+                        ? "<p>Alguien intento cambiar el correo de otra cuenta de Sastra a esta direccion. "
+                                + "No cambiamos nada y tu cuenta sigue igual.</p>"
+                                + "<p>Si fuiste tu desde otra cuenta, recuerda que un correo solo puede "
+                                + "tener una cuenta.</p>"
+                        : "<p>Someone tried to move another Sastra account to this address. We changed "
+                                + "nothing and your account is untouched.</p>"
+                                + "<p>If that was you from another account, remember one address can only "
+                                + "have one account.</p>");
+    }
+
+    /** Criterio 21: al correo ANTERIOR, que es quien tiene que enterarse. */
+    @Override
+    public void enviarAvisoDeCorreoCambiado(User titular, Email anterior) {
+        boolean espanol = titular.locale() == UserLocale.ES;
+
+        enviar(
+                anterior.value(),
+                espanol ? "El correo de tu cuenta cambio" : "Your account email changed",
+                espanol
+                        ? "<p>La cuenta de Sastra que usaba esta direccion ahora usa otra. Este es el "
+                                + "ultimo mensaje que enviamos aqui.</p>"
+                                + "<p>Si no fuiste tu, alguien tiene acceso a tu cuenta. Escribenos de "
+                                + "inmediato desde la pagina de contacto.</p>"
+                        : "<p>The Sastra account that used this address now uses another one. This is the "
+                                + "last message we send here.</p>"
+                                + "<p>If this was not you, someone has access to your account. Contact us "
+                                + "right away from the contact page.</p>");
     }
 
     private static String cuerpo(String titulo, String texto, String enlace, String etiquetaDelBoton) {

@@ -30,6 +30,16 @@ public final class VerificationToken {
     private final @Nullable Instant usedAt;
     private final Instant createdAt;
 
+    /**
+     * El correo pendiente de confirmar. Solo en tokens de cambio de correo.
+     *
+     * <p>Vive aqui y no en la fila del usuario porque el token <em>es</em> el
+     * cambio pendiente: caduca con el, se consume con el y desaparece con el. En
+     * {@code users} habria que limpiarlo cuando el enlace venciera, y nadie limpia
+     * lo que vence solo (criterio 21).
+     */
+    private final @Nullable Email newEmail;
+
     private VerificationToken(
             VerificationTokenId id,
             UserId userId,
@@ -37,7 +47,8 @@ public final class VerificationToken {
             String tokenHash,
             Instant expiresAt,
             @Nullable Instant usedAt,
-            Instant createdAt) {
+            Instant createdAt,
+            @Nullable Email newEmail) {
         this.id = Objects.requireNonNull(id);
         this.userId = Objects.requireNonNull(userId);
         this.purpose = Objects.requireNonNull(purpose);
@@ -45,9 +56,16 @@ public final class VerificationToken {
         this.expiresAt = Objects.requireNonNull(expiresAt);
         this.usedAt = usedAt;
         this.createdAt = Objects.requireNonNull(createdAt);
+        this.newEmail = newEmail;
 
         if (tokenHash.isBlank()) {
             throw new IllegalArgumentException("El hash del token no puede estar vacio");
+        }
+        // Un cambio de correo sin correo nuevo no significa nada, y cualquier otro
+        // proposito con correo nuevo tampoco. La misma restriccion que la base.
+        if ((purpose == TokenPurpose.EMAIL_CHANGE) != (newEmail != null)) {
+            throw new IllegalArgumentException(
+                    "Solo un token de cambio de correo lleva correo nuevo, y lo lleva siempre");
         }
     }
 
@@ -57,7 +75,44 @@ public final class VerificationToken {
         Objects.requireNonNull(vigencia, "La vigencia es obligatoria");
 
         return new VerificationToken(
-                VerificationTokenId.nuevo(), userId, purpose, tokenHash, ahora.plus(vigencia), null, ahora);
+                VerificationTokenId.nuevo(), userId, purpose, tokenHash, ahora.plus(vigencia), null, ahora, null);
+    }
+
+    /**
+     * Criterio 21: el enlace que confirma un correo nuevo antes de reemplazar el
+     * anterior.
+     *
+     * <p>Es una factoria aparte y no un parametro mas de {@link #emitir} porque el
+     * correo nuevo solo tiene sentido con este proposito, y con este proposito es
+     * obligatorio. Con un metodo unico se podria emitir un cambio sin destino, que
+     * es un token que no significa nada.
+     */
+    public static VerificationToken paraCambioDeCorreo(
+            UserId userId, Email nuevo, String tokenHash, Instant ahora, Duration vigencia) {
+        Objects.requireNonNull(nuevo, "El correo nuevo es obligatorio");
+        Objects.requireNonNull(ahora, "El instante de emision es obligatorio");
+        Objects.requireNonNull(vigencia, "La vigencia es obligatoria");
+
+        return new VerificationToken(
+                VerificationTokenId.nuevo(),
+                userId,
+                TokenPurpose.EMAIL_CHANGE,
+                tokenHash,
+                ahora.plus(vigencia),
+                null,
+                ahora,
+                nuevo);
+    }
+
+    /**
+     * El correo pendiente de confirmar.
+     *
+     * <p>Nunca es nulo en un token de cambio: el constructor no deja construir uno
+     * sin el. En cualquier otro proposito, pedirlo es un error de programacion y
+     * por eso falla en vez de devolver nulo.
+     */
+    public Email newEmail() {
+        return Objects.requireNonNull(newEmail, "Este token no es de cambio de correo");
     }
 
     public static VerificationToken rehidratar(
@@ -67,8 +122,9 @@ public final class VerificationToken {
             String tokenHash,
             Instant expiresAt,
             @Nullable Instant usedAt,
-            Instant createdAt) {
-        return new VerificationToken(id, userId, purpose, tokenHash, expiresAt, usedAt, createdAt);
+            Instant createdAt,
+            @Nullable Email newEmail) {
+        return new VerificationToken(id, userId, purpose, tokenHash, expiresAt, usedAt, createdAt, newEmail);
     }
 
     /**
@@ -102,7 +158,7 @@ public final class VerificationToken {
     }
 
     public VerificationToken marcarUsado(Instant ahora) {
-        return new VerificationToken(id, userId, purpose, tokenHash, expiresAt, ahora, createdAt);
+        return new VerificationToken(id, userId, purpose, tokenHash, expiresAt, ahora, createdAt, newEmail);
     }
 
     public VerificationTokenId id() {

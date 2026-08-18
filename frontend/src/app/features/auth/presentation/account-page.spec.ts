@@ -14,7 +14,7 @@ import type { Session } from '../../../core/session/session';
 import { SessionStore } from '../../../core/session/session.store';
 import { AccountPage } from './account-page';
 
-/** Criterios 17, 22 y 23 de HU-001. */
+/** Criterios 17, 21, 22 y 23 de HU-001. */
 describe('AccountPage', () => {
   const API = 'https://api.pruebas.sastra.co/api/v1';
 
@@ -40,10 +40,32 @@ describe('AccountPage', () => {
     },
   ];
 
+  const PERFIL = {
+    email: 'ana@correo.co',
+    emailVerified: true,
+    displayName: 'Ana Maria',
+    city: 'Medellin',
+    phone: '3001234567',
+  };
+
   const render = async () => {
     const fixture = TestBed.createComponent(AccountPage);
     await fixture.whenStable();
     return fixture;
+  };
+
+  /**
+   * La pantalla pide dos cosas al abrirse: el perfil (criterio 21) y las sesiones
+   * (criterio 17). Las dos se responden aqui para que cada prueba hable solo de
+   * lo suyo.
+   */
+  const responderLaCarga = (sesiones: object[] = []) => {
+    const backend = TestBed.inject(HttpTestingController);
+    backend
+      .expectOne((peticion) => peticion.method === 'GET' && peticion.url === `${API}/users/me`)
+      .flush(PERFIL);
+    backend.expectOne(`${API}/users/me/sessions`).flush(sesiones);
+    return backend;
   };
 
   /**
@@ -90,7 +112,7 @@ describe('AccountPage', () => {
   it('lista las sesiones y senala la actual criterio_17', async () => {
     const fixture = await render();
 
-    TestBed.inject(HttpTestingController).expectOne(`${API}/users/me/sessions`).flush(LISTA);
+    responderLaCarga(LISTA);
     await asentar(fixture);
 
     const filas = fixture.nativeElement.querySelectorAll('.sesion');
@@ -104,7 +126,7 @@ describe('AccountPage', () => {
   it('distingue cerrar la propia de cerrar otra criterio_17', async () => {
     const fixture = await render();
 
-    TestBed.inject(HttpTestingController).expectOne(`${API}/users/me/sessions`).flush(LISTA);
+    responderLaCarga(LISTA);
     await asentar(fixture);
 
     const botones = fixture.nativeElement.querySelectorAll('.sesion button');
@@ -114,9 +136,7 @@ describe('AccountPage', () => {
 
   it('cierra la sesion elegida y recarga la lista criterio_17', async () => {
     const fixture = await render();
-    const backend = TestBed.inject(HttpTestingController);
-
-    backend.expectOne(`${API}/users/me/sessions`).flush(LISTA);
+    const backend = responderLaCarga(LISTA);
     await asentar(fixture);
 
     (fixture.nativeElement.querySelectorAll('.sesion button')[1] as HTMLButtonElement).click();
@@ -133,8 +153,7 @@ describe('AccountPage', () => {
 
   it('pide el archivo de datos al descargarlo criterio_22', async () => {
     const fixture = await render();
-    const backend = TestBed.inject(HttpTestingController);
-    backend.expectOne(`${API}/users/me/sessions`).flush([]);
+    const backend = responderLaCarga();
     await asentar(fixture);
 
     const boton = Array.from(fixture.nativeElement.querySelectorAll('button')).find((b) =>
@@ -152,7 +171,7 @@ describe('AccountPage', () => {
    */
   it('no muestra el formulario de cierre hasta que se pide criterio_23', async () => {
     const fixture = await render();
-    TestBed.inject(HttpTestingController).expectOne(`${API}/users/me/sessions`).flush([]);
+    responderLaCarga();
     await asentar(fixture);
 
     expect(fixture.nativeElement.querySelector('#confirmacion')).toBeNull();
@@ -160,8 +179,7 @@ describe('AccountPage', () => {
 
   it('no cierra la cuenta si lo escrito no es el propio correo criterio_23', async () => {
     const fixture = await render();
-    const backend = TestBed.inject(HttpTestingController);
-    backend.expectOne(`${API}/users/me/sessions`).flush([]);
+    const backend = responderLaCarga();
     await asentar(fixture);
 
     (
@@ -172,18 +190,17 @@ describe('AccountPage', () => {
     await asentar(fixture);
 
     escribir(fixture, 'otra@correo.co');
-    (fixture.nativeElement.querySelector('form') as HTMLFormElement).requestSubmit();
+    (fixture.nativeElement.querySelector('.peligro form') as HTMLFormElement).requestSubmit();
     await asentar(fixture);
 
-    backend.expectNone(`${API}/users/me`);
-    expect(fixture.nativeElement.querySelector('[aria-invalid="true"]')).not.toBeNull();
+    backend.expectNone((peticion) => peticion.method === 'DELETE');
+    expect(fixture.nativeElement.querySelector('.peligro [aria-invalid="true"]')).not.toBeNull();
   });
 
   it('cierra la cuenta con la confirmacion correcta criterio_23', async () => {
     const fixture = await render();
-    const backend = TestBed.inject(HttpTestingController);
     const navegar = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
-    backend.expectOne(`${API}/users/me/sessions`).flush([]);
+    const backend = responderLaCarga();
     await asentar(fixture);
 
     (
@@ -194,11 +211,12 @@ describe('AccountPage', () => {
     await asentar(fixture);
 
     escribir(fixture, 'ana@correo.co');
-    (fixture.nativeElement.querySelector('form') as HTMLFormElement).requestSubmit();
+    (fixture.nativeElement.querySelector('.peligro form') as HTMLFormElement).requestSubmit();
     await fixture.whenStable();
 
-    const peticion = backend.expectOne(`${API}/users/me`);
-    expect(peticion.request.method).toBe('DELETE');
+    const peticion = backend.expectOne(
+      (enviada) => enviada.method === 'DELETE' && enviada.url === `${API}/users/me`,
+    );
     expect(peticion.request.body).toEqual({ confirmation: 'ana@correo.co' });
 
     peticion.flush(null, { status: 204, statusText: 'No Content' });

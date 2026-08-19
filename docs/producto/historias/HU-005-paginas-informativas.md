@@ -1,7 +1,9 @@
 # HU-005 — Páginas informativas
 
 **Fase:** 1 | **Estado:** pendiente
-**Reglas que aplica:** RN-011, RN-015, RN-026, RN-027, RN-032, RN-034
+**Reglas que aplica:** RN-011, RN-015, RN-026, RN-027, RN-032, RN-034, RN-038,
+RN-050 a RN-058
+**Textos:** `docs/producto/textos-web.md`
 
 ## Objetivo
 
@@ -24,7 +26,9 @@ mientras está abierto.
 No entra: formulario de contacto, chat, centro de ayuda con búsqueda, blog,
 página de comisiones detallada. El contacto de esta historia son canales
 directos; un formulario implica endpoint, antispam y aviso de privacidad propio,
-y se decide aparte si hace falta.
+y se decide aparte si hace falta. `docs/producto/textos-web.md` incluye el texto
+de ese formulario y su casilla de autorización: queda escrito para cuando se
+decida, y hasta entonces marcado como fuera de alcance.
 
 ## Criterios de aceptación
 
@@ -47,8 +51,13 @@ y se decide aparte si hace falta.
    separados y claramente rotulados, el del comprador y el del vendedor, y
    ninguno queda oculto tras una interacción que un buscador no pueda seguir.
 6. Dado el recorrido del comprador, cuando se lee, entonces explica que paga
-   producto más envío y que la comisión no se le suma (RN-027), y que el pago
-   queda retenido hasta que confirma la entrega (RN-034).
+   producto más envío y que la comisión no se le suma (RN-027), que el pago
+   queda retenido hasta que **él** confirma la entrega (RN-034), y que tiene 3
+   días hábiles desde la entrega para reportar si lo recibido no corresponde a
+   lo publicado (RN-051). Dice también qué **no** cubre el reporte —que la talla
+   no siente o que el color se vea distinto en pantalla no son producto no
+   conforme (RN-050)—: una garantía que suena ilimitada no se la cree nadie y
+   genera reclamos que no se pueden atender.
 7. Dado el recorrido del vendedor, cuando se lee, entonces explica que publicar
    es gratis, que la comisión es del 5% sobre el valor del producto y a su
    cargo, que el envío no entra en la base de cálculo (RN-026), y que hay que
@@ -57,7 +66,10 @@ y se decide aparte si hace falta.
    cifra sale de la configuración y no está escrita en la plantilla.
 9. Dada la página, cuando describe funcionalidad que aún no existe —publicar,
    comprar, pagar—, entonces lo hace en presente descriptivo del producto sin
-   prometer fechas. Ninguna página informativa anuncia un calendario.
+   prometer fechas. Ninguna página informativa anuncia un calendario. Y cuando
+   menciona el envío, presenta la cotización como valor **aproximado** y
+   rotulado como tal (RN-038), sin anunciar plazos de entrega: no hay regla que
+   los respalde y en Colombia lo anunciado es exigible.
 
 **Sobre Sastra**
 
@@ -83,14 +95,18 @@ y se decide aparte si hace falta.
     afirmación sobre comisión, pago, moderación, verificación o medios de pago
     corresponde a una regla de negocio existente. Ninguna respuesta inventa
     política.
-16. Dada la pregunta sobre qué pasa si la prenda llega distinta a la foto,
-    cuando se lee la respuesta, entonces explica que el pago queda retenido
-    hasta que el comprador confirma la entrega, y que ante una diferencia se
-    escribe a soporte **antes** de confirmar. No menciona devoluciones,
-    reembolsos ni plazos para pedirlos: esa política no existe todavía.
+16. Dada la pregunta sobre qué pasa si la prenda llega distinta a la publicación,
+    cuando se lee la respuesta, entonces explica los cuatro hechos y en este
+    orden: el pago sigue retenido porque él no ha confirmado (RN-034); tiene 3
+    días hábiles desde la entrega para reportarlo (RN-051); el reintegro sale de
+    ese dinero retenido y no depende de que el vendedor colabore (RN-054); y
+    confirmar la entrega cierra la ventana. Ninguna cifra de plazo se escribe en
+    la plantilla: sale de configuración, igual que la comisión.
 17. Dada la pregunta sobre cuándo recibe su dinero el vendedor, cuando se lee la
-    respuesta, entonces dice que el pago se libera al confirmarse la entrega
-    (RN-034) y no da un número de días. El plazo se decide en Fase 3.
+    respuesta, entonces dice que el pago se libera cuando el comprador confirma
+    la entrega o cuando vence la ventana de reclamo sin que confirme ni reporte
+    (RN-034, RN-052), y **no da un número de días hábiles de desembolso**. Ese
+    plazo se decide en Fase 3 y hasta entonces no se escribe en ninguna parte.
 18. Dadas las respuestas, cuando se leen sin JavaScript, entonces el texto
     completo está en el documento aunque las preguntas se muestren plegadas.
 
@@ -193,9 +209,17 @@ HU-004, que no renderiza el enlace si la ruta no existe.
   deja visible y enfocada la pregunta correcta; el texto está en el DOM aunque
   esté plegado.
 - Preguntas frecuentes, criterios 16 y 17: una prueba sobre el árbol de
-  traducción que falle si alguna respuesta contiene «devolución», «reembolso» o
-  un plazo en días. Es una guarda contra la corrección bienintencionada de
-  dentro de seis meses, cuando nadie recuerde por qué esas palabras no estaban.
+  traducción que falle si alguna respuesta contiene un plazo escrito en cifras
+  —días hábiles de desembolso, de entrega o de la propia ventana de reclamo—.
+  La ventana existe y se cuenta, pero su número sale de configuración; los otros
+  dos no existen todavía. Es una guarda contra la corrección bienintencionada de
+  dentro de seis meses, cuando nadie recuerde por qué esa cifra no estaba.
+- Vocabulario: una prueba sobre los dos árboles de traducción que falle si
+  aparece alguna de las palabras prohibidas del glosario —custodia, escrow,
+  garantía, seguro, compra protegida, plata, ganga— o si un texto dice que
+  Sastra guarda el dinero. Es la misma guarda que HU-004 pide para la portada,
+  extendida al sitio informativo, y cubre el error más repetido al redactar
+  estas páginas (RN-031).
 - Rutas: las cuatro resuelven, declaran título y descripción, y ninguna cae en
   la ruta comodín.
 - Traducción: toda clave usada existe en `es.json` y en `en.json`, comparando
@@ -210,9 +234,18 @@ HU-004, que no renderiza el enlace si la ruta no existe.
 
 No lo agrego todavía; queda para decidir contigo.
 
-**Reglas de negocio.** Ninguna nueva. Las dos preguntas que no tenían regla
-detrás quedan resueltas por redacción, no por política nueva, y así se escriben
-en los criterios 16 y 17.
+**Reglas de negocio.** Ya agregadas: RN-050 a RN-058 definen producto no
+conforme, la ventana de reclamo de 3 días hábiles, la confirmación automática al
+vencerla y de dónde sale el reintegro. Antes existían solo como redacción
+evasiva en los criterios 16 y 17; ahora son política, porque el sitio las
+anuncia y en Colombia lo anunciado es exigible.
+
+Queda un punto para abogado, no para producto: **qué responsabilidad tiene
+Sastra frente al comprador si el reintegro falla**. RN-054 lo mitiga —el dinero
+todavía está retenido en la pasarela, así que no depende de que el vendedor
+colabore—, pero el Estatuto del Consumidor impone deberes propios a quien opera
+una plataforma de comercio electrónico y esa frase la tiene que revisar quien
+corresponda antes de publicarse.
 
 **Modelo de datos.** Nada. Ninguna de las cuatro páginas guarda información de
 nadie.
@@ -226,5 +259,5 @@ tienen que decirse igual en todo el sitio.
 mostrar. Y confirmar si `COMMISSION_RATE` se expone al frontend o si el texto se
 redacta sin cifra, que es la misma decisión pendiente de HU-004.
 
-**Documentación.** `docs/producto/alcance.md:26-32` describe el sitio informativo
-en cinco viñetas; conviene que apunten a HU-004 y HU-005 ahora que existen.
+**Documentación.** Resuelto: `docs/producto/alcance.md` ya apunta a HU-004 y
+HU-005, y el texto de las páginas vive en `docs/producto/textos-web.md`.

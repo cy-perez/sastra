@@ -41,6 +41,7 @@ correo, ningún NIT, ningún porcentaje de comisión.
 | `APP_TIME_ZONE` | `America/Bogota` | no, `America/Bogota` por omisión |
 | `CORS_ALLOWED_ORIGINS` | lista separada por comas | sí |
 | `COMMISSION_RATE` | `0.05` | sí |
+| `CLAIM_WINDOW_DAYS` | `3` | no, `3` por omisión |
 | `MAIL_PROVIDER` | `resend` o `console` | no, `resend` por omisión |
 | `MAIL_PROVIDER_API_KEY` | clave de Resend, ver ADR-0012 | sí |
 | `MAIL_FROM` | `hola@sastra.co` | sí |
@@ -69,6 +70,17 @@ correo, ningún NIT, ningún porcentaje de comisión.
 | `COMPANY_TAX_ID` | `1054994043-1` | sí |
 | `COMPANY_ADDRESS` | | sí |
 | `SUPPORT_EMAIL` | | sí |
+
+`COMMISSION_RATE` y `CLAIM_WINDOW_DAYS` son valores de negocio que el sitio
+informativo **anuncia** (RN-026, RN-051). En Colombia lo anunciado es exigible,
+así que la cifra no puede vivir en dos sitios: ni en una plantilla de Angular, ni
+en un archivo de traducción. El texto lleva el marcador y el valor lo interpola
+la aplicación. Eso obliga a exponer las dos al frontend, que hoy no las recibe;
+queda decidirlo al implementar HU-005, junto con los cuatro campos de empresa.
+
+`CLAIM_WINDOW_DAYS` se cuenta en días **hábiles** desde la entrega y gobierna dos
+cosas a la vez: hasta cuándo puede reportar el comprador y cuándo se da la
+entrega por confirmada si no hace nada (RN-051, RN-052). Cambiarla mueve las dos.
 
 `APP_TIME_ZONE` no es cosmética: RN-008 compara fechas de calendario, no
 instantes. Con UTC, alguien en Colombia cumpliría 18 años cinco horas antes de

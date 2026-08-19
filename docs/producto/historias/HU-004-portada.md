@@ -1,7 +1,8 @@
 # HU-004 — Portada
 
 **Fase:** 1 | **Estado:** hecha, salvo las pruebas de extremo a extremo
-**Reglas que aplica:** RN-011, RN-015, RN-026, RN-031
+**Reglas que aplica:** RN-011, RN-015, RN-026, RN-031, RN-034
+**Textos:** `docs/producto/textos-web.md`, sección Portada
 
 ## Objetivo
 
@@ -53,11 +54,15 @@ esta historia debe poder recibir la rejilla debajo del hero sin rehacerse.
 
 8. Dada la portada, cuando se renderiza el bloque de confianza, entonces muestra
    exactamente tres tarjetas: el pago queda retenido hasta que el comprador
-   confirma, los vendedores están verificados, y toda publicación pasa por
-   moderación antes de aparecer (RN-015).
-9. Dadas las tres tarjetas, cuando se leen sus textos, entonces ninguno promete
-   devoluciones, plazos de reembolso ni tiempos de entrega. No hay regla de
-   negocio que los respalde y la política de devoluciones no existe.
+   confirma la entrega (RN-034), los vendedores están verificados (RN-011), y
+   toda publicación pasa por moderación antes de aparecer (RN-015).
+9. Dadas las tres tarjetas, cuando se leen sus textos, entonces ninguno enuncia
+   plazos: ni los 3 días hábiles de la ventana de reclamo, ni tiempos de entrega,
+   ni días de desembolso. La política de devoluciones ya existe (RN-050 a
+   RN-058) pero su lugar es `/como-funciona` y los términos, no una tarjeta de
+   tres líneas: un plazo suelto en portada se lee como promesa y se vuelve
+   exigible sin el contexto que lo condiciona. Los tiempos de entrega y de
+   desembolso siguen sin definirse y no se escriben en ninguna parte.
 10. Dadas las tres tarjetas en una ventana de 360px de ancho, cuando se
     renderizan, entonces se apilan en una columna sin desplazamiento
     horizontal.

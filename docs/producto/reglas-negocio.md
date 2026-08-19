@@ -89,8 +89,12 @@ Cada regla tiene identificador. Úsalo en el código y en las pruebas:
   Bancolombia a la mano y Addi. El pago contraentrega no está habilitado.
 - **RN-033** La división del pago separa el valor del vendedor y la comisión de
   Sastra en la propia pasarela.
-- **RN-034** El pago se libera al vendedor cuando la entrega se confirma. Los
-  días exactos de retención se definen en Fase 3.
+- **RN-034** El pago se libera al vendedor cuando **el comprador confirma la
+  entrega**, o cuando vence la ventana de reclamo sin que confirme ni reporte
+  (RN-051, RN-052). Quien confirma es el comprador, no la transportadora: la
+  guía prueba que el paquete llegó, no que dentro venga lo que se publicó. Los
+  días exactos que tarda el desembolso en llegar a la cuenta del vendedor se
+  definen en Fase 3.
 - **RN-035** La publicación se marca vendida cuando el pago queda aprobado, no
   cuando se inicia el intento.
 - **RN-036** El estado del pago se confirma siempre contra la pasarela, nunca
@@ -132,3 +136,42 @@ Cada regla tiene identificador. Úsalo en el código y en las pruebas:
 - **RN-049** El usuario puede solicitar la eliminación de sus datos. Se conserva
   lo que la ley obligue a conservar por razones contables y fiscales, y se
   documenta qué es y por cuánto tiempo.
+
+## Producto no conforme y reintegro
+
+Estas reglas existen desde Fase 1 porque el sitio informativo las anuncia, y en
+Colombia lo que se anuncia es exigible. El flujo operativo que las ejecuta
+—bandeja de disputas, resolución y panel de moderación— llega en Fase 4; los
+estados y las pantallas de ese flujo se definen allí y no aquí.
+
+- **RN-050** Producto no conforme es el que no corresponde a lo publicado
+  —modelo, talla declarada, medidas, condición o marca distintos— o el que llega
+  con un daño que no se declaró (RN-021, RN-024). **No** son producto no
+  conforme: que la talla no siente como se esperaba, que el color se vea distinto
+  en pantalla, ni el simple arrepentimiento. Para eso está el derecho de retracto
+  (RN-057), que es otra cosa.
+- **RN-051** El comprador tiene **3 días hábiles** contados desde la entrega para
+  reportar un producto no conforme. Es la ventana de reclamo. Confirmar la
+  entrega la cierra: quien confirma da por buena la prenda.
+- **RN-052** Si al vencer la ventana el comprador no ha confirmado ni reportado,
+  la entrega se da por confirmada y el pago se libera. Sin esta regla un
+  comprador inactivo dejaría al vendedor sin cobrar de forma indefinida.
+- **RN-053** Un reporte abierto suspende la liberación del pago. La transición
+  del pedido a `RELEASED` no ocurre mientras el reporte esté sin resolver, y el
+  reporte no puede abrirse una vez liberado el pago.
+- **RN-054** El reintegro sale de la retención, nunca del bolsillo del vendedor:
+  como el pago no se ha liberado, el dinero que se le devuelve al comprador es el
+  que la pasarela todavía retiene. Es lo que hace que el respaldo no dependa de
+  que el vendedor colabore.
+- **RN-055** Si el reporte se acepta, se le reintegra al comprador el valor del
+  producto y el envío que pagó, y el flete de regreso lo asume el vendedor. La
+  comisión de Sastra no se cobra sobre un pedido reintegrado.
+- **RN-056** El reporte se abre desde el pedido, en la cuenta del comprador, y
+  exige fotos de lo recibido. Es el único canal: un reclamo por correo o por
+  redes se responde indicando dónde abrirlo, para que quede registro.
+- **RN-057** El derecho de retracto que fija la ley colombiana para las compras
+  por internet existe **además** de estas reglas y no lo sustituyen. Sus plazos,
+  excepciones y quién asume el transporte se rigen por los términos y
+  condiciones, y solo se publican con redacción revisada por abogado.
+- **RN-058** Un mismo pedido admite un solo reporte. Reabrirlo tras una decisión
+  exige revisión manual.

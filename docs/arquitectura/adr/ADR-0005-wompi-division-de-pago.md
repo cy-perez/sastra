@@ -33,6 +33,12 @@ llega a cada destinatario directamente y la plataforma solo recibe su comisión.
 3. Si un comercio operado por persona natural puede acceder a ese esquema.
 4. Cuál es el flujo de retención y liberación disponible, para poder cumplir la
    promesa de "el pago queda retenido" que ya está en la interfaz.
+5. Si se puede **reintegrar al comprador desde el dinero todavía retenido**, sin
+   que haya pasado por el vendedor, y si el reintegro puede revertir también la
+   comisión. RN-054 y RN-055 dependen de ello: son las reglas que hacen que el
+   respaldo no dependa de que el vendedor colabore. Si la pasarela solo permite
+   reversar una transacción ya dispersada, la promesa del sitio informativo se
+   cae y hay que reescribirla antes de publicarla, no después.
 
 Si la respuesta a la primera o la tercera es negativa, las alternativas son
 Mercado Pago con su modelo de marketplace, o un esquema de dispersión posterior

@@ -61,6 +61,25 @@ describe('VerificationNotice', () => {
     expect(fixture.nativeElement.textContent.trim()).toBe('');
   });
 
+  /**
+   * Este componente vive en la raiz del sitio, asi que su AuthStore se construye
+   * en **todas** las paginas, tambien durante el renderizado en servidor, donde
+   * no hay sesion nunca (session.store.ts).
+   *
+   * <p>Las consultas de perfil y de sesiones son rutas autenticadas: sin token
+   * solo pueden responder 401. Cuando salian igual, cada renderizado gastaba dos
+   * peticiones para descubrir lo que ya se sabia, y con la configuracion de
+   * relleno (apiBaseUrl vacia) el interceptor lanzaba dentro del render, la
+   * consulta no se resolvia y la pagina se quedaba colgada sin un solo error en
+   * el registro. Medido: 2,95s por pagina con las dos peticiones, 0,27s sin
+   * ellas.
+   */
+  it('no pide perfil ni sesiones mientras no haya sesion', async () => {
+    await render();
+
+    TestBed.inject(HttpTestingController).expectNone(() => true);
+  });
+
   it('no aparece cuando el correo ya esta verificado', async () => {
     TestBed.inject(SessionStore).set(sesionCon(true));
     const fixture = await render();

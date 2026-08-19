@@ -209,8 +209,20 @@ ADR-0006 existe para impedir. Por eso `src/server.ts` la exige al arrancar y no
 levanta el servidor sin ella.
 
 En local, `npm start` y `npm run build` leen el `.env` de la raíz del repositorio
-con `--env-file-if-exists`. Si no existe, el frontend arranca igual y falla al
-llamar a la API con un mensaje explícito.
+con `--env-file-if-exists`. **Ese archivo no se versiona: hay que crearlo copiando
+`.env.example` antes del primer arranque** (`README.md`).
+
+Si falta, `npm start` levanta el servidor igual —el `if-exists` hace lo que
+promete— y cada página responde **500 con el motivo escrito**, no un error al
+llamar a la API. La diferencia importa porque durante un tiempo no fue así: la
+aplicación arrancaba con la configuración de relleno de
+`readAppConfigForBootstrap`, con `apiBaseUrl` vacía, el interceptor lanzaba
+dentro del renderizado y la petición se quedaba colgada para siempre sin una
+línea en el registro. La validación estricta existía en `src/server.ts` pero solo
+corría bajo `isMainModule`, y bajo `ng serve` ese bloque no se ejecuta nunca: el
+CLI importa `reqHandler`. Es decir, el único entorno donde alguien programa era
+justo el que no validaba nada. Ahora hay una guarda propia en el manejador, antes
+del renderizado, que cubre los dos casos.
 
 ## Banderas de funcionalidad
 

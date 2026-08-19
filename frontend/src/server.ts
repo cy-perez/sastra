@@ -46,6 +46,69 @@ app.use(
   }),
 );
 
+/**
+ * Comprobacion del entorno, una sola vez y sin lanzar.
+ *
+ * <p>No puede lanzar aqui: este modulo tambien se carga al construir, y ahi no
+ * hay ni debe haber configuracion de ejecucion. Devuelve el motivo en vez de
+ * tumbar el proceso, y quien lo consume decide que hacer con el.
+ */
+function errorDeEntorno(): string | null {
+  try {
+    readAppConfig(process.env);
+    return null;
+  } catch (fallo) {
+    return fallo instanceof Error ? fallo.message : String(fallo);
+  }
+}
+
+const entornoInvalido = errorDeEntorno();
+let yaAvisado = false;
+
+/**
+ * Sin configuracion valida no se renderiza: se responde 500 diciendo que falta.
+ *
+ * <p>El arranque de mas abajo ya se cae por esto, pero **solo cuando este archivo
+ * es el modulo principal**. Bajo `ng serve` no lo es: el CLI importa reqHandler y
+ * ese bloque no se ejecuta nunca. La aplicacion arrancaba entonces con la
+ * configuracion de relleno de readAppConfigForBootstrap, con apiBaseUrl vacia;
+ * la primera peticion a la API lanzaba dentro del renderizado, la consulta no
+ * llegaba a resolverse y la respuesta se quedaba colgada para siempre, sin una
+ * sola linea en el registro.
+ *
+ * <p>Colgarse en silencio es la peor forma de fallar que hay: parece que compila,
+ * el navegador gira y no hay nada que leer. La guarda existe para que el unico
+ * entorno donde alguien programa no sea justo el que no valida nada.
+ *
+ * <p>Solo comprueba lo que impide renderizar, que es lo que exige readAppConfig.
+ * NG_ALLOWED_HOSTS no entra: sin ella la pagina sale sin renderizar pero sale, y
+ * el servidor de desarrollo del CLI funciona sin declararla. Exigirla aqui
+ * romperia el caso que hoy va bien; el arranque real si la exige, que es donde
+ * importa.
+ */
+app.use((_request, response, next) => {
+  if (entornoInvalido === null) {
+    next();
+    return;
+  }
+
+  // Se avisa en la consola la primera vez: quien arranco el servidor mira ahi,
+  // no el cuerpo de la respuesta.
+  if (!yaAvisado) {
+    yaAvisado = true;
+    console.error(`[configuracion] ${entornoInvalido}`);
+  }
+
+  response
+    .status(500)
+    .type('text/plain; charset=utf-8')
+    .send(
+      `No se puede renderizar: la configuracion del servidor esta incompleta.\n\n${entornoInvalido}\n\n` +
+        'En local suele ser que falta el archivo .env de la raiz del repositorio.\n' +
+        'Se crea copiando .env.example y completando los valores (ver README.md).\n',
+    );
+});
+
 /** El resto lo renderiza Angular. */
 app.use((request, response, next) => {
   angularApp
@@ -55,8 +118,11 @@ app.use((request, response, next) => {
 });
 
 if (isMainModule(import.meta.url) || process.env['pm_id']) {
-  // Arranque real: aqui si se valida el entorno completo y se cae si falta algo.
-  // Es preferible no levantar el servidor a descubrirlo con un visitante dentro.
+  // Arranque real: aqui se vuelve a validar, pero ahora si se lanza. La guarda de
+  // mas arriba responde 500 a cada peticion, que es lo mejor que se puede hacer
+  // cuando el proceso lo gobierna el CLI; cuando el proceso es nuestro, lo
+  // correcto es no levantarlo. Es preferible no arrancar a descubrirlo con un
+  // visitante dentro.
   const config = readAppConfig(process.env);
   assertRenderingEnvironment(process.env);
 

@@ -67,7 +67,12 @@
     },
     "footer": {
       "tagline": "Buy and sell fashion, with the platform standing behind it.",
-      "legalLabel": "Legal documents"
+      "legalLabel": "Legal documents",
+      "logoAlt": "Sastra",
+      "contactLabel": "Contact",
+      "company": {
+        "taxId": "Tax ID"
+      }
     },
     "session": {
       "login": "Sign in",
@@ -76,8 +81,42 @@
     }
   },
   "home": {
-    "title": "Buy and sell fashion, with the platform standing behind it",
-    "underConstruction": "This home page is not built yet. The scaffolding already works: language, theme and server-side rendering."
+    "hero": {
+      "title": "Buy and sell fashion, with the platform standing behind it",
+      "body": "The payment is held until you confirm the item arrived as you saw it.",
+      "cta": "Create account",
+      "note": "Listing is free. We only charge when you sell."
+    },
+    "steps": {
+      "title": "How it works",
+      "publish": {
+        "title": "You list your item",
+        "body": "Photos, size and real measurements. We review every listing before it appears."
+      },
+      "sell": {
+        "title": "Someone buys it",
+        "body": "The buyer pays and the payment is held while the item is on its way."
+      },
+      "charge": {
+        "title": "You get paid on delivery",
+        "body": "Once the buyer confirms the item arrived, your payment is released."
+      }
+    },
+    "trust": {
+      "title": "Why it is safe",
+      "hold": {
+        "title": "The payment is held",
+        "body": "The money does not reach the seller until you confirm you received the item."
+      },
+      "verified": {
+        "title": "Verified sellers",
+        "body": "We validate identity and bank account before the first listing."
+      },
+      "moderated": {
+        "title": "Reviewed listings",
+        "body": "Every listing goes through review before it appears. No exceptions."
+      }
+    }
   },
   "notFound": {
     "title": "This page does not exist",

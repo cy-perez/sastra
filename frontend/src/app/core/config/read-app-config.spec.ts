@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   assertRenderingEnvironment,
+  avisosDeConfiguracion,
   readAppConfig,
   readAppConfigForBootstrap,
 } from './read-app-config';
@@ -96,6 +97,90 @@ describe('readAppConfig', () => {
   it('deja el DSN de Sentry en nulo si viene vacio', () => {
     expect(readAppConfig({ ...MINIMUM, SENTRY_DSN: '  ' }).sentryDsn).toBeNull();
     expect(readAppConfig({ ...MINIMUM, SENTRY_DSN: 'https://dsn' }).sentryDsn).toBe('https://dsn');
+  });
+
+  /**
+   * HU-004, criterio 11: el pie los muestra tomados de aqui, nunca escritos en
+   * la plantilla.
+   */
+  it('lee los datos de la empresa para el pie', () => {
+    const config = readAppConfig({
+      ...MINIMUM,
+      COMPANY_NAME: 'Sastra S.A.S.',
+      COMPANY_TAX_ID: '000000000-0',
+      COMPANY_ADDRESS: '  Medellin, Colombia  ',
+      SUPPORT_EMAIL: 'hola@sastra.co',
+    });
+
+    expect(config.company).toEqual({
+      name: 'Sastra S.A.S.',
+      taxId: '000000000-0',
+      address: 'Medellin, Colombia',
+      supportEmail: 'hola@sastra.co',
+    });
+  });
+
+  /**
+   * Caso borde de HU-004: el frontend solo los pinta. Quien los exige es el
+   * backend, que los necesita para los correos. Tumbar el renderizado por una
+   * direccion que falta cambiaria un pie incompleto por un sitio caido.
+   */
+  it('no exige ningun dato de la empresa y trata el blanco como ausente', () => {
+    expect(readAppConfig(MINIMUM).company).toEqual({
+      name: null,
+      taxId: null,
+      address: null,
+      supportEmail: null,
+    });
+    expect(readAppConfig({ ...MINIMUM, COMPANY_NAME: '   ' }).company.name).toBeNull();
+  });
+});
+
+/**
+ * Caso borde de HU-004: un despliegue con la configuracion de empresa a medias
+ * arranca igual, pero lo dice. Descubrirlo mirando el pie en produccion es tarde.
+ */
+describe('avisosDeConfiguracion', () => {
+  const conEmpresa = (variables: Record<string, string>) =>
+    avisosDeConfiguracion(readAppConfig({ ...MINIMUM, ...variables }));
+
+  const COMPLETA = {
+    COMPANY_NAME: 'Sastra S.A.S.',
+    COMPANY_TAX_ID: '000000000-0',
+    COMPANY_ADDRESS: 'Medellin, Colombia',
+    SUPPORT_EMAIL: 'hola@sastra.co',
+  };
+
+  it('no avisa de nada cuando la configuracion esta completa', () => {
+    expect(conEmpresa(COMPLETA)).toEqual([]);
+  });
+
+  it('nombra cada variable que falta', () => {
+    const avisos = conEmpresa({ ...COMPLETA, COMPANY_TAX_ID: '', COMPANY_ADDRESS: '' }).join(' ');
+
+    expect(avisos).toContain('COMPANY_TAX_ID');
+    expect(avisos).toContain('COMPANY_ADDRESS');
+    expect(avisos).not.toContain('COMPANY_NAME');
+  });
+
+  /**
+   * Este no es un dato mas: sin el no hay canal visible para ejercer los
+   * derechos del titular y se incumple la Ley 1581, asi que se avisa aparte y
+   * diciendo por que.
+   */
+  it('avisa del correo de soporte por separado, citando la obligacion legal', () => {
+    const avisos = conEmpresa({ ...COMPLETA, SUPPORT_EMAIL: '' });
+
+    expect(avisos).toHaveLength(2);
+    expect(avisos.join(' ')).toContain('Ley 1581');
+  });
+
+  it('avisa de las cuatro cuando no hay ninguna', () => {
+    const avisos = conEmpresa({}).join(' ');
+
+    for (const variable of Object.keys(COMPLETA)) {
+      expect(avisos).toContain(variable);
+    }
   });
 });
 

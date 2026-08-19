@@ -32,8 +32,10 @@ Sastra no toca el dinero: la pasarela recauda y divide el pago. Ver `ADR-0005`.
 
 ## Qué lo diferencia
 
-1. **Respaldo de la transacción.** El pago no llega al vendedor hasta que la
-   entrega se confirma.
+1. **Respaldo de la transacción.** El pago no llega al vendedor hasta que el
+   comprador confirma la entrega, y si lo recibido no es lo publicado hay 3 días
+   hábiles para reportarlo con el dinero todavía retenido (RN-050 a RN-058).
+   Sastra no custodia ese dinero: lo retiene la pasarela (RN-031).
 2. **Publicaciones moderadas.** Toda publicación se revisa antes de aparecer. Un
    catálogo limpio es el activo del sitio.
 3. **Fotos consistentes y vista 360º.** El asistente de captura fuerza encuadre
@@ -62,6 +64,14 @@ En orden de importancia para las primeras fases:
 El sitio no arranca sin inventario, así que la acción principal de la portada es
 **publicar una prenda**, y por eso lleva el único acento ocre de la pantalla.
 Cuando la oferta supere a la demanda, se revisa esa decisión.
+
+Esa decisión se ha cuestionado una vez, con el argumento de que la portada
+debería hablarle solo al comprador y llevar al catálogo. Se mantiene: un
+catálogo vacío quema la primera visita, que es la más cara de conseguir. El
+comprador tiene su recorrido completo en `/como-funciona`, y la portada lo
+convence con las tres tarjetas de confianza, no con una rejilla sin productos.
+Mientras publicar no exista (Fase 2), el botón de la portada dice crear cuenta,
+porque un botón nombra lo que ocurre al pulsarlo (HU-004).
 
 ## Alcance geográfico
 

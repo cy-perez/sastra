@@ -1,0 +1,128 @@
+/* El host desaparece de la caja para que las secciones sean items de la rejilla
+   de <main>. Sin esto, .a-sangre no llegaria al carril completo: una rejilla
+   solo coloca a sus hijos directos. */
+:host {
+  display: contents;
+}
+
+/* Y el carril hay que asignarlo desde aqui.
+   `display: contents` cambia el arbol de CAJAS, no el del DOM: los selectores
+   `.contenido > *` de app.css siguen exigiendo que el padre en el DOM sea
+   .contenido, y el padre real de estas secciones es <sastra-home-page>. Sin
+   estas dos reglas las secciones caen en `grid-column: auto`, la rejilla las
+   auto-coloca en los carriles de sangria y el hero acaba midiendo 16px. */
+:host > * {
+  grid-column: content;
+}
+
+:host > .a-sangre {
+  grid-column: full;
+}
+
+/* ---------- Hero ---------- */
+
+/* El margen negativo cancela el padding superior de .contenido: la franja se
+   pega a la cabecera, como en la guia visual. */
+.hero {
+  margin-top: calc(var(--esp-32) * -1);
+  padding: var(--esp-48) 0;
+  text-align: center;
+}
+
+@media (min-width: 640px) {
+  .hero {
+    padding: var(--esp-64) 0;
+  }
+}
+
+/* 52ch: por encima de eso la linea se vuelve incomoda de leer, y el hero es
+   justo donde mas gente lee de verdad. */
+.hero-cuerpo {
+  max-width: 52ch;
+  margin: var(--esp-16) auto 0;
+}
+
+/**
+ * El color del texto se repite aqui a proposito, y no sobra.
+ *
+ * marca.css recolorea TODOS los enlaces de la franja con
+ * `.franja-oscura a { color: var(--sobre-fondo-oscuro) }` (0,1,1), que gana por
+ * especificidad a `.btn-cta { color: var(--color-sobre-cta) }` (0,1,0). El
+ * resultado es hueso claro sobre ocre: 2.18:1, muy por debajo del minimo. Este
+ * es el primer CTA del sitio que cae dentro de una franja oscura, por eso no
+ * habia salido antes.
+ *
+ * La regla correcta vive en el kit (`.franja-oscura a.btn-cta`) y hay que
+ * subirla a docs/ui/generador/fuentes/marca.css y republicar; mientras tanto se
+ * corrige aqui, donde la encapsulacion de Angular da (0,2,0) y gana.
+ */
+.cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin-top: var(--esp-24);
+  padding: 0 var(--esp-32);
+  border: 1px solid transparent;
+  border-radius: var(--radio-md);
+  color: var(--color-sobre-cta);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* .tipo-secundario fija --color-texto-suave, que sobre la franja oscura no
+   pasa el contraste minimo. Aqui se hereda el color de la franja y el matiz de
+   nota lo da la opacidad, que si lo conserva. Los enlaces no necesitan esto:
+   marca.css ya los recolorea con `.franja-oscura a`. */
+.hero-nota {
+  color: inherit;
+  opacity: 0.85;
+  margin: var(--esp-16) 0 0;
+}
+
+/* ---------- Bloques de contenido ---------- */
+
+.bloque {
+  margin-top: var(--esp-48);
+}
+
+.pasos,
+.tarjetas {
+  display: grid;
+  gap: var(--esp-24);
+  margin: var(--esp-24) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Una columna en movil; las tres caben a partir de 640px. minmax con 0 como
+   minimo evita que un titulo largo en ingles ensanche la columna. */
+@media (min-width: 640px) {
+  .pasos,
+  .tarjetas {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.paso h3,
+.tarjeta h3 {
+  margin: 0 0 var(--esp-8);
+}
+
+.paso p,
+.tarjeta p {
+  margin: 0;
+}
+
+.numero {
+  display: block;
+  color: var(--color-primario);
+  margin-bottom: var(--esp-8);
+}
+
+.tarjeta {
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  padding: var(--esp-24);
+}

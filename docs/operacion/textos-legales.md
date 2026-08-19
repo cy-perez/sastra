@@ -18,6 +18,22 @@ guardado como evidencia del consentimiento. Ver `docs/operacion/datos-personales
 
 No hace falta desplegar código.
 
+## Dónde va la política de devoluciones
+
+Dentro de `terms`, no en un documento propio. Un documento nuevo exige su
+variable de versión, su ruta y su entrada en `RUTAS_LEGALES`, y hoy no hay nada
+que lo justifique: el derecho de retracto y el reintegro por producto no conforme
+(RN-050 a RN-058) son dos secciones de los términos.
+
+Si más adelante se separa, se agrega `returns` con su `LEGAL_RETURNS_VERSION`
+siguiendo el mismo mecanismo. La decisión está anotada en
+`docs/producto/alcance.md`.
+
+Lo que sí es obligatorio: **la redacción del retracto la revisa un abogado antes
+de publicarse**, y ninguna página informativa enuncia sus plazos por su cuenta.
+Los plazos concretos viven aquí, en un solo sitio versionado, y las páginas
+enlazan (RN-057).
+
 ## Estado actual
 
 Los archivos `borrador-local` son **relleno sin valor legal**, puestos para que

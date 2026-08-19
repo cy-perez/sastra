@@ -1,4 +1,4 @@
-import type { AppConfig, LegalVersions } from './app-config';
+import type { AppConfig, CompanyInfo, LegalVersions } from './app-config';
 
 /** Solo la parte del entorno que nos interesa: asi la funcion es pura y se prueba sin Node. */
 export type EnvironmentVariables = Readonly<Record<string, string | undefined>>;
@@ -50,7 +50,71 @@ export function readAppConfig(env: EnvironmentVariables): AppConfig {
     enableDevtools: env['ENABLE_DEVTOOLS']?.trim().toLowerCase() === 'true',
     sentryDsn: sentryDsn && sentryDsn.length > 0 ? sentryDsn : null,
     legalVersions: leerVersionesLegales(env),
+    company: leerEmpresa(env),
   };
+}
+
+/**
+ * Los datos de la empresa para el pie. Ninguno es obligatorio aqui.
+ *
+ * <p>Comparten nombre con las variables del backend a proposito: es la misma
+ * empresa y no tendria sentido que el pie dijera un NIT y los correos otro.
+ */
+function leerEmpresa(env: EnvironmentVariables): CompanyInfo {
+  return {
+    name: opcional(env['COMPANY_NAME']),
+    taxId: opcional(env['COMPANY_TAX_ID']),
+    address: opcional(env['COMPANY_ADDRESS']),
+    supportEmail: opcional(env['SUPPORT_EMAIL']),
+  };
+}
+
+/** Una variable en blanco es una variable ausente, igual que en el resto del archivo. */
+function opcional(valor: string | undefined): string | null {
+  const limpio = valor?.trim();
+  return limpio && limpio.length > 0 ? limpio : null;
+}
+
+/**
+ * Lo que falta y no impide arrancar, para que quede dicho en el registro.
+ *
+ * <p>Ninguno de estos datos tumba el servidor: el pie los omite y el sitio
+ * funciona. Pero un despliegue sin ellos es un despliegue a medias y no debe
+ * pasar en silencio, que es justo como se llega a produccion sin NIT en el pie.
+ *
+ * <p>{@code SUPPORT_EMAIL} es el que mas pesa: sin el no hay canal visible para
+ * ejercer los derechos del titular de los datos y se incumple la Ley 1581
+ * (docs/operacion/datos-personales.md).
+ *
+ * <p>Devuelve los avisos en vez de escribirlos para que la funcion siga siendo
+ * pura y se pueda probar sin capturar la consola. Quien los escribe es
+ * src/server.ts, al arrancar.
+ */
+export function avisosDeConfiguracion(config: AppConfig): string[] {
+  const faltantes: string[] = [];
+  const { company } = config;
+
+  if (company.name === null) faltantes.push('COMPANY_NAME');
+  if (company.taxId === null) faltantes.push('COMPANY_TAX_ID');
+  if (company.address === null) faltantes.push('COMPANY_ADDRESS');
+  if (company.supportEmail === null) faltantes.push('SUPPORT_EMAIL');
+
+  if (faltantes.length === 0) {
+    return [];
+  }
+
+  const aviso =
+    `Faltan variables de empresa: ${faltantes.join(', ')}. El pie omitira esos datos. ` +
+    'Ver docs/operacion/configuracion.md.';
+
+  return company.supportEmail === null
+    ? [
+        aviso,
+        'Sin SUPPORT_EMAIL el pie no ofrece canal de contacto, y ese canal es ' +
+          'obligatorio para ejercer los derechos del titular de los datos ' +
+          '(Ley 1581 de 2012, docs/operacion/datos-personales.md).',
+      ]
+    : [aviso];
 }
 
 function leerVersionesLegales(env: EnvironmentVariables): LegalVersions {
@@ -108,6 +172,7 @@ export function readAppConfigForBootstrap(env: EnvironmentVariables): AppConfig 
         privacy: VERSION_DE_BORRADOR,
         cookies: VERSION_DE_BORRADOR,
       },
+      company: { name: null, taxId: null, address: null, supportEmail: null },
     };
   }
 }

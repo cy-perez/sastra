@@ -41,6 +41,7 @@ correo, ningún NIT, ningún porcentaje de comisión.
 | `APP_TIME_ZONE` | `America/Bogota` | no, `America/Bogota` por omisión |
 | `CORS_ALLOWED_ORIGINS` | lista separada por comas | sí |
 | `COMMISSION_RATE` | `0.05` | sí |
+| `CLAIM_WINDOW_DAYS` | `3` | no, `3` por omisión |
 | `MAIL_PROVIDER` | `resend` o `console` | no, `resend` por omisión |
 | `MAIL_PROVIDER_API_KEY` | clave de Resend, ver ADR-0012 | sí |
 | `MAIL_FROM` | `hola@sastra.co` | sí |
@@ -69,6 +70,17 @@ correo, ningún NIT, ningún porcentaje de comisión.
 | `COMPANY_TAX_ID` | `1054994043-1` | sí |
 | `COMPANY_ADDRESS` | | sí |
 | `SUPPORT_EMAIL` | | sí |
+
+`COMMISSION_RATE` y `CLAIM_WINDOW_DAYS` son valores de negocio que el sitio
+informativo **anuncia** (RN-026, RN-051). En Colombia lo anunciado es exigible,
+así que la cifra no puede vivir en dos sitios: ni en una plantilla de Angular, ni
+en un archivo de traducción. El texto lleva el marcador y el valor lo interpola
+la aplicación. Eso obliga a exponer las dos al frontend, que hoy no las recibe;
+queda decidirlo al implementar HU-005, junto con los cuatro campos de empresa.
+
+`CLAIM_WINDOW_DAYS` se cuenta en días **hábiles** desde la entrega y gobierna dos
+cosas a la vez: hasta cuándo puede reportar el comprador y cuándo se da la
+entrega por confirmada si no hace nada (RN-051, RN-052). Cambiarla mueve las dos.
 
 `APP_TIME_ZONE` no es cosmética: RN-008 compara fechas de calendario, no
 instantes. Con UTC, alguien en Colombia cumpliría 18 años cinco horas antes de
@@ -173,6 +185,19 @@ para `dev` y para `prod`.
 | `PORT` | `4000` | no, 4000 por omisión |
 | `SENTRY_DSN` | opcional | no |
 | `ENABLE_DEVTOOLS` | `false` en producción | no |
+| `COMPANY_NAME` | `Sastra S.A.S.` | no, el pie lo omite si falta |
+| `COMPANY_TAX_ID` | `1054994043-1` | no, el pie lo omite si falta |
+| `COMPANY_ADDRESS` | `Medellín, Colombia` | no, el pie lo omite si falta |
+| `SUPPORT_EMAIL` | `hola@sastra.co` | no, el pie lo omite si falta |
+
+Las cuatro últimas son **las mismas variables que lee el backend**, no unas
+paralelas: es la misma empresa y no tendría sentido que el pie del sitio dijera
+un NIT y los correos otro. Arriba figuran como obligatorias porque el backend no
+arranca sin ellas; aquí no lo son porque el frontend solo las pinta, y tumbar el
+renderizado entero por una dirección que falta cambiaría un pie incompleto por un
+sitio caído. `SUPPORT_EMAIL` merece atención especial: es el canal por el que se
+ejercen los derechos del titular de los datos, así que un pie sin él incumple
+`docs/operacion/datos-personales.md`.
 
 `NG_ALLOWED_HOSTS` es la lista de dominios a los que el servidor acepta
 responder y protege contra falsificación de peticiones del lado del servidor. La

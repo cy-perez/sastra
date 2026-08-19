@@ -24,15 +24,22 @@ Es la fase en curso.
 - Cierre de cuenta y descarga de datos personales.
 
 **Sitio informativo**
-- Portada con la propuesta de valor y las tres tarjetas de confianza.
-- Cómo funciona, para comprador y para vendedor.
-- Sobre Sastra.
-- Preguntas frecuentes.
-- Contacto.
+- Portada con la propuesta de valor y las tres tarjetas de confianza (HU-004).
+- Cómo funciona, para comprador y para vendedor (HU-005).
+- Sobre Sastra (HU-005).
+- Preguntas frecuentes (HU-005).
+- Contacto (HU-005).
 - Términos y condiciones, política de tratamiento de datos, política de cookies.
+  La política de devoluciones y retracto va dentro de los términos mientras no
+  se decida separarla en documento propio (`docs/operacion/textos-legales.md`).
+
+El texto de las cinco páginas vive en `docs/producto/textos-web.md`, que es la
+fuente de la que salen las claves de Transloco.
 
 **Fuera de esta fase:** publicar productos, catálogo, búsqueda, carrito, pagos,
-envíos, verificación de identidad.
+envíos, verificación de identidad. El sitio informativo **describe** todo eso en
+presente, porque es lo que convence a alguien de registrarse, pero no anuncia
+fechas ni deja enlaces a rutas que no existen.
 
 ## Fase 2 — publicación y catálogo
 
@@ -51,13 +58,16 @@ envíos, verificación de identidad.
 - Pago con Wompi: PSE, Nequi, tarjetas, Bancolombia a la mano y Addi.
 - División del pago y retención de la comisión del 5%.
 - Cotizador de envíos con Envía, Coordinadora e Interrapidísimo.
-- Estados del pedido, confirmación de entrega y liberación del pago.
+- Estados del pedido, confirmación de entrega por el comprador, ventana de
+  reclamo de 3 días hábiles y liberación del pago (RN-034, RN-051, RN-052).
 - Correos transaccionales de cada cambio de estado.
 - Reseñas del vendedor.
 
 ## Fase 4 — operación y crecimiento
 
-- Disputas y devoluciones.
+- Disputas y devoluciones: bandeja de reportes, resolución y reintegro. Las
+  reglas que gobiernan el reporte existen desde Fase 1 porque el sitio las
+  anuncia (RN-050 a RN-058); lo que llega aquí es el flujo que las ejecuta.
 - Mensajería entre comprador y vendedor.
 - Panel administrativo completo y reportes.
 - Aplicación móvil.
@@ -69,7 +79,9 @@ Se documentan aquí para no reabrirlas por accidente:
 
 | Tema | Estado |
 |---|---|
-| Tiempos legales de retención y desembolso | Se define en Fase 3 con asesoría |
+| Días hábiles que tarda el desembolso en llegar a la cuenta del vendedor | Se define en Fase 3 con asesoría. La retención sí está definida: hasta que el comprador confirma o vence la ventana (RN-034) |
+| Separar la política de devoluciones de los términos y condiciones | Sin decidir. Requiere variable de versión propia |
+| Árbol de categorías del catálogo | Sin definir. "Dama" y "Caballero" no son categorías del proyecto: nadie las ha decidido |
 | Facturación electrónica de la comisión ante la DIAN | Se define en Fase 3 |
 | Vendedores con figura de empresa | Fuera de alcance por ahora |
 | Pago contraentrega | Descartado por ahora |

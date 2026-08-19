@@ -110,6 +110,11 @@ export class AuthStore {
     queryFn: () => this.api.sessions(),
     staleTime: 0,
     retry: false,
+    // Sin sesion no se pregunta. Es una ruta autenticada: sin token la respuesta
+    // solo puede ser 401, y pedirla igual gasta una peticion para descubrir algo
+    // que ya se sabia. En el renderizado del servidor no hay sesion nunca
+    // (session.store.ts), asi que alli esta consulta no llega a salir.
+    enabled: () => this.sesion.isAuthenticated(),
   }));
 
   /** Criterio 17: cerrar una sesion concreta y refrescar la lista. */
@@ -133,6 +138,8 @@ export class AuthStore {
     queryFn: () => this.api.profile(),
     staleTime: 0,
     retry: false,
+    // Igual que las sesiones: ruta autenticada, sin token no hay nada que pedir.
+    enabled: () => this.sesion.isAuthenticated(),
   }));
 
   /**

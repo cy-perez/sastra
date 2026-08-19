@@ -56,6 +56,17 @@ public class ResendMailSender implements MailSender {
     private final ZoneId zona;
 
     public ResendMailSender(MailProperties propiedades, VerificationLink enlaces, AppProperties app) {
+        // La clave se exige aqui y no en MailProperties porque aqui es donde se
+        // usa: con el proveedor de consola no hace falta ninguna, y validarla
+        // para todos obligaba a inventarse una para arrancar en local. Sigue
+        // siendo un fallo de arranque, que es lo que importa: este bean se
+        // construye antes de que el servidor atienda la primera peticion.
+        if (propiedades.providerApiKey() == null || propiedades.providerApiKey().isBlank()) {
+            throw new IllegalStateException("Falta MAIL_PROVIDER_API_KEY y el proveedor de correo es Resend. "
+                    + "Define la clave, o pon MAIL_PROVIDER=console para imprimir el enlace "
+                    + "en el registro en vez de enviarlo (docs/operacion/configuracion.md).");
+        }
+
         this.propiedades = propiedades;
         this.enlaces = enlaces;
         this.zona = app.timeZone();

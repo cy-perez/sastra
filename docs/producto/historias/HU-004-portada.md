@@ -1,6 +1,6 @@
 # HU-004 — Portada
 
-**Fase:** 1 | **Estado:** hecha, salvo la accesibilidad automatizada
+**Fase:** 1 | **Estado:** hecha
 **Reglas que aplica:** RN-011, RN-015, RN-026, RN-031, RN-034
 **Textos:** `docs/producto/textos-web.md`, sección Portada
 
@@ -188,9 +188,11 @@ apunte a una ruta que no está.
   navegación del encabezado y el menú móvil, porque la navegación se construyó en
   HU-005: aquí no había todavía ninguna página a la que llevar.
 - Accesibilidad automatizada sobre la portada en los dos modos, claro y oscuro.
-  **Pendiente**, igual que en HU-005: el proyecto no tiene todavía un motor de
-  auditoría (`@axe-core/playwright` o equivalente) y agregar una dependencia
-  exige ADR.
+  **Hecho.** En `e2e/accesibilidad.spec.ts`, con axe-core sobre WCAG 2.2 AA y
+  sin ninguna regla desactivada. El motor se decidió en ADR-0016. Conviene
+  recordar lo que esa ADR deja escrito: un motor automático no dice si el orden
+  de lectura tiene sentido ni si la página se puede usar con un lector de
+  pantalla, así que la revisión a mano sigue haciendo falta.
 
 ## Qué habría que agregar antes de implementar
 

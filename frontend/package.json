@@ -14,6 +14,7 @@
     "serve:ssr": "node --env-file-if-exists=../.env dist/sastra/server/server.mjs",
     "test": "ng test",
     "e2e": "playwright test",
+    "e2e:completo": "playwright test --config playwright.completo.config.ts",
     "lint": "ng lint && prettier --check .",
     "format": "prettier --write .",
     "verify": "npm run lint && npm test && npm run build"
@@ -37,6 +38,7 @@
     "@angular/build": "^21.2.21",
     "@angular/cli": "^21.2.21",
     "@angular/compiler-cli": "^21.2.0",
+    "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.62.1",
     "@types/express": "^5.0.1",

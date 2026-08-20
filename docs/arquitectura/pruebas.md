@@ -46,15 +46,63 @@ que por selector CSS. Nunca se prueban métodos privados.
 
 **HTTP.** Siempre simulado. Ninguna prueba unitaria sale a la red.
 
-**Extremo a extremo.** Playwright sobre los caminos críticos: registro,
-verificación, ingreso, publicación, compra. Se ejecutan contra el entorno de
-desarrollo en cada integración a la rama principal.
+**Extremo a extremo.** Dos suites de Playwright, y la diferencia importa:
 
-**Accesibilidad.** Verificación automática con axe en las páginas principales,
-más revisión manual de teclado en cada componente nuevo. Un fallo de contraste o
-de foco rompe la construcción igual que un error de compilación.
+- `frontend/e2e/` con `playwright.config.ts`. Comprueba el HTML que sale del
+  servidor de renderizado **sin llamar a la API**: es la única forma de demostrar
+  lo que promete ADR-0006. No necesita base de datos ni backend.
+- `frontend/e2e-completo/` con `playwright.completo.config.ts`. Levanta el backend
+  empaquetado, PostgreSQL y el servidor de renderizado, y recorre los caminos
+  críticos de cuentas por la interfaz: registro, verificación, ingreso, cierre de
+  sesión, recuperación de contraseña, descarga de datos y cierre de cuenta.
+
+La segunda existe porque la primera no puede ver un contrato roto entre las dos
+mitades (ADR-0017). Los caminos de cuentas estaban probados por mitades —MockMvc en
+`presentation`, Testcontainers en `bootstrap`, componentes con HTTP simulado en el
+frontend— y un nombre de campo cambiado en un DTO, un código de error que el
+frontend no traduce o una cookie con un atributo que el navegador rechaza pasaban
+las tres suites y fallaban en la pantalla. La primera cosa que encontró al
+escribirla fue exactamente eso: el perfil y la lista de sesiones no se cargaban
+**nunca** en `/mi-cuenta`, y ninguna prueba de componente podía verlo porque todas
+ponen la sesión antes de crear el componente.
+
+El correo se recupera leyendo el registro del backend, que con
+`MAIL_PROVIDER=console` imprime el enlace entero (ADR-0012). No hay ningún
+endpoint de pruebas que entregue tokens: sería código de producción que regala
+credenciales, y ninguna comodidad paga eso.
+
+Publicación y compra llegan con sus fases. Las dos suites corren en cada pull
+request y en cada integración a `main`, en trabajos separados para que un fallo
+diga cuál de las dos cosas se rompió.
+
+**Accesibilidad.** Verificación automática con axe sobre WCAG 2.2 AA en todas
+las páginas públicas y en los dos modos, claro y oscuro:
+`frontend/e2e/accesibilidad.spec.ts`, decidido en ADR-0016. Más revisión manual
+de teclado en cada componente nuevo. Un fallo de contraste o de foco rompe la
+construcción igual que un error de compilación.
+
+Ninguna regla de axe se desactiva para que la suite pase: una violación se
+corrige en el código. Y una página pública nueva entra a la lista de rutas
+auditadas, porque lo que no está en esa lista no se audita y nadie se entera.
+Conviene recordar que un motor automático encuentra una parte de los problemas,
+no todos: la suite en verde no significa que el sitio sea accesible.
 
 **Cobertura.** Mínimo 80% global y 90% en `domain` y `application`.
+
+El 80% global se mide **sobre los cinco módulos juntos**, con
+`gradlew.bat verificarCoberturaAgregada`, y no módulo a módulo. La razón es un
+punto ciego que la medición por módulo tenía: JaCoCo escribe un archivo de
+ejecución por módulo y cada informe solo mira las clases del suyo, así que los
+adaptadores JDBC de `infrastructure` —que se ejercitan desde las pruebas de
+integración de `bootstrap`, porque el esquema lo define Flyway y las migraciones
+viven allí— contaban como no cubiertos. Y mientras `infrastructure` no tuvo
+ninguna prueba propia, no tenía datos de ejecución y su verificación **se saltaba
+entera**: el mínimo no se aplicaba a la capa que hashea las contraseñas y firma
+los tokens, con el build en verde. Un mínimo que se salta solo es peor que no
+tenerlo, porque se lee como cumplido.
+
+Las reglas por módulo siguen puestas y son más exigentes en `domain`. La agregada
+no las reemplaza: manda la que primero se incumpla.
 
 ## Qué no se prueba
 

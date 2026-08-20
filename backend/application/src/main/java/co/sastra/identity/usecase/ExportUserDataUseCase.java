@@ -51,6 +51,8 @@ public class ExportUserDataUseCase {
                         cuenta.email().value(),
                         cuenta.displayName().value(),
                         cuenta.birthDate().value(),
+                        cuenta.city() == null ? null : cuenta.city().value(),
+                        cuenta.phone() == null ? null : cuenta.phone().value(),
                         cuenta.locale().name().toLowerCase(java.util.Locale.ROOT),
                         cuenta.status().name(),
                         cuenta.tieneElCorreoVerificado(),

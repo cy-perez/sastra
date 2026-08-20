@@ -73,10 +73,14 @@ test.describe('registro', () => {
     await page.goto('/registro');
     await page.getByRole('button', { name: 'Crear cuenta' }).click();
 
-    const correo = page.getByLabel('Correo electrónico');
-    const descrito = await correo.getAttribute('aria-describedby');
-
-    expect(descrito).toContain('correo-error');
+    // Con `getAttribute` y un `expect` normal esto era una foto sin reintento: se
+    // leia el atributo una sola vez, y si la deteccion de cambios todavia no
+    // habia pintado el error, la prueba caia por milisegundos. Fallaba solo con
+    // la maquina cargada, que es justo cuando corre la integracion continua.
+    await expect(page.getByLabel('Correo electrónico')).toHaveAttribute(
+      'aria-describedby',
+      /correo-error/,
+    );
     await expect(page.locator('#correo-error')).toHaveAttribute('role', 'alert');
   });
 

@@ -68,6 +68,35 @@ describe('VerifyEmailPage', () => {
    * sesion con el resultado y aqui se guarda, asi que la persona no vuelve a
    * escribir su contrasena.
    */
+  /**
+   * Asienta la pantalla respondiendo por el camino las peticiones de la propia
+   * cuenta.
+   *
+   * <p>Al abrirse la sesion, el almacen de raiz pide el perfil y la lista de
+   * sesiones: sus consultas se habilitan en cuanto hay sesion (auth.store.ts) y
+   * este almacen lo instancia la cabecera en cada carga. No son de lo que esta
+   * prueba comprueba, pero hay que contestarlas: una peticion pendiente mantiene
+   * la aplicacion inestable, asi que responderlas **despues** de esperar a que se
+   * estabilice no funciona —se espera para siempre—. Por eso se contestan dentro
+   * del mismo bucle que asienta.
+   */
+  const asentarRespondiendoLaCuenta = async (fixture: {
+    whenStable: () => Promise<unknown>;
+    detectChanges: () => void;
+  }) => {
+    const backend = TestBed.inject(HttpTestingController);
+    for (let vuelta = 0; vuelta < 8; vuelta++) {
+      await new Promise((listo) => setTimeout(listo, 0));
+      fixture.detectChanges();
+      backend
+        .match((peticion) => peticion.url.startsWith(`${API}/users/me`))
+        .forEach((peticion) => {
+          peticion.flush(peticion.request.url.endsWith('/sessions') ? [] : null);
+        });
+    }
+    await fixture.whenStable();
+  };
+
   it('deja la sesion abierta al verificar el correo', async () => {
     const fixture = await render('un-token-del-correo');
 
@@ -75,7 +104,7 @@ describe('VerifyEmailPage', () => {
     expect(peticion.request.body).toEqual({ token: 'un-token-del-correo' });
 
     peticion.flush({ session: SESION, alreadyVerified: false });
-    await asentar(fixture);
+    await asentarRespondiendoLaCuenta(fixture);
 
     const sesion = TestBed.inject(SessionStore);
     expect(sesion.isAuthenticated()).toBe(true);
@@ -91,7 +120,7 @@ describe('VerifyEmailPage', () => {
     TestBed.inject(HttpTestingController)
       .expectOne(`${API}/auth/verify-email`)
       .flush({ session: SESION, alreadyVerified: true });
-    await asentar(fixture);
+    await asentarRespondiendoLaCuenta(fixture);
 
     expect(TestBed.inject(SessionStore).isAuthenticated()).toBe(true);
   });

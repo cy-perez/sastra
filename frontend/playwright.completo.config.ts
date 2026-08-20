@@ -1,0 +1,161 @@
+import { defineConfig, devices } from '@playwright/test';
+
+/**
+ * Pruebas de extremo a extremo que cruzan las dos mitades.
+ *
+ * <p>`playwright.config.ts` prueba el HTML que sale del servidor de renderizado y
+ * ninguna de sus pruebas llama a la API: eso esta bien y sigue igual. Lo que
+ * faltaba es esto. `docs/arquitectura/pruebas.md` y las pruebas requeridas de
+ * HU-001 piden extremo a extremo sobre registro, verificacion, ingreso, cierre y
+ * recuperacion, y hasta ahora esos caminos estaban probados **por mitades**: con
+ * MockMvc en `presentation` y con Testcontainers en `bootstrap`, pero nunca
+ * unidos. Un contrato roto entre las dos mitades —un nombre de campo cambiado en
+ * un DTO, una cookie con un atributo distinto— pasaba las dos suites y fallaba en
+ * el navegador.
+ *
+ * <p>Config aparte y no un proyecto mas dentro de la otra, por dos razones: esta
+ * necesita PostgreSQL, Java y el jar del backend, y no debe convertir la suite
+ * rapida en una que exija todo eso; y en integracion continua son dos trabajos
+ * distintos, porque cuando falla importa muchisimo saber si se rompio el
+ * renderizado o el contrato.
+ *
+ * <p>Antes de correrlas:
+ *
+ * <pre>
+ *   docker compose up -d postgres
+ *   cd backend && ./gradlew :bootstrap:bootJar
+ *   cd frontend && npm run e2e:completo
+ * </pre>
+ */
+const PUERTO_WEB = 4174;
+const PUERTO_API = 8081;
+
+/**
+ * Los dos en `localhost` y no uno en `localhost` y otro en `127.0.0.1`.
+ *
+ * <p>No es cosmetico. Para el navegador son dos anfitriones distintos, asi que la
+ * cookie de refresco —`SameSite=Strict` por ADR-0003— se considera de otro sitio y
+ * no se manda. El efecto es que todo funciona hasta que se recarga la pagina: el
+ * token de acceso vive en memoria y sobrevive a la navegacion del enrutador, pero
+ * una carga completa necesita la cookie para recuperar la sesion, y sin ella
+ * `/mi-cuenta` se queda cargando para siempre.
+ *
+ * <p>En produccion son el mismo sitio (sastra.co y su subdominio de API), asi que
+ * lo que habia que arreglar era el entorno de la prueba, no el producto. El puerto
+ * no cuenta para decidir si dos direcciones son del mismo sitio; el anfitrion, si.
+ */
+const BASE_URL = `http://localhost:${PUERTO_WEB}`;
+const API_URL = `http://localhost:${PUERTO_API}`;
+
+/**
+ * La base de datos. Los valores por omision son los de `docker-compose.yml`, que
+ * es lo que hay levantado en local; en integracion continua llegan del servicio
+ * de PostgreSQL del trabajo.
+ */
+const DB_URL = process.env['DB_URL'] ?? 'jdbc:postgresql://127.0.0.1:5432/sastra';
+const DB_USERNAME = process.env['DB_USERNAME'] ?? 'sastra';
+const DB_PASSWORD = process.env['DB_PASSWORD'] ?? 'sastra';
+
+export default defineConfig({
+  testDir: './e2e-completo',
+  // A proposito en serie. Las pruebas comparten una base de datos y el limitador
+  // de tasa cuenta por origen: en paralelo se estorban entre ellas y el fallo que
+  // producen no es el fallo que buscan.
+  fullyParallel: false,
+  workers: 1,
+  forbidOnly: Boolean(process.env['CI']),
+  retries: process.env['CI'] ? 1 : 0,
+  reporter: process.env['CI'] ? 'github' : 'list',
+
+  use: {
+    baseURL: BASE_URL,
+    trace: 'on-first-retry',
+  },
+
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+
+  webServer: [
+    {
+      // El backend de verdad, con Flyway migrando al arrancar.
+      command: 'node e2e-completo/arrancar-backend.mjs',
+      // El chequeo de estado de actuator: responde cuando la base ya migro, que es
+      // lo que de verdad hay que esperar.
+      url: `${API_URL}/actuator/health`,
+      reuseExistingServer: !process.env['CI'],
+      timeout: 180_000,
+      env: {
+        SPRING_PROFILES_ACTIVE: 'local',
+        SERVER_PORT: String(PUERTO_API),
+
+        DB_URL,
+        DB_USERNAME,
+        DB_PASSWORD,
+
+        JWT_ISSUER: BASE_URL,
+        JWT_SECRET: 'secreto-de-pruebas-de-extremo-a-extremo-largo',
+        // Cortos a proposito: el refresco y su rotacion son parte de lo que se
+        // prueba, y con quince minutos no se llega a observar nada.
+        JWT_ACCESS_TTL: 'PT2M',
+        JWT_REFRESH_TTL: 'PT30M',
+        JWT_REFRESH_GRACE: 'PT10S',
+
+        // Sin TLS en local: es lo unico que se relaja, y solo aqui.
+        SESSION_COOKIE_SECURE: 'false',
+
+        APP_BASE_URL: BASE_URL,
+        APP_API_BASE_URL: `${API_URL}/api/v1`,
+        CORS_ALLOWED_ORIGINS: BASE_URL,
+        SUPPORT_EMAIL: 'soporte@example.test',
+        APP_TIME_ZONE: 'America/Bogota',
+
+        // El limitador se sube, no se apaga: apagarlo dejaria sin ejercitar el
+        // interceptor, que es codigo de produccion que corre en cada peticion.
+        // Subido, la suite entera cabe dentro de la ventana.
+        RATE_LIMIT_CREDENTIALS_MAX: '500',
+        RATE_LIMIT_SESSION_MAX: '500',
+
+        // Imprime el enlace en el registro en vez de enviarlo. Es como la prueba
+        // recupera el token: ver e2e-completo/arrancar-backend.mjs.
+        MAIL_PROVIDER: 'console',
+        MAIL_FROM: 'no-responder@example.test',
+        MAIL_PROVIDER_API_KEY: '',
+
+        // La comprobacion de contrasenas filtradas sale a la red y falla abierto
+        // (ADR-0013). Apagada aqui: no se prueba a Have I Been Pwned, y dejarla
+        // encendida mete una llamada externa y dos segundos de espera en cada
+        // registro.
+        PASSWORD_BREACH_CHECK_ENABLED: 'false',
+
+        LEGAL_TERMS_VERSION: 'borrador-local',
+        LEGAL_PRIVACY_VERSION: 'borrador-local',
+
+        COMPANY_NAME: 'Sastra S.A.S.',
+        COMPANY_TAX_ID: '000000000-0',
+        COMPANY_ADDRESS: 'Medellin, Colombia',
+        COMMISSION_RATE: '0.05',
+      },
+    },
+    {
+      command: process.env['CI']
+        ? 'node dist/sastra/server/server.mjs'
+        : 'npm run build && node dist/sastra/server/server.mjs',
+      url: BASE_URL,
+      reuseExistingServer: !process.env['CI'],
+      timeout: 420_000,
+      env: {
+        PORT: String(PUERTO_WEB),
+        NG_ALLOWED_HOSTS: 'localhost',
+        // Aqui si apunta al backend de verdad. Es toda la diferencia con la otra
+        // configuracion.
+        API_BASE_URL: `${API_URL}/api/v1`,
+        COMPANY_NAME: 'Sastra S.A.S.',
+        COMPANY_TAX_ID: '000000000-0',
+        COMPANY_ADDRESS: 'Medellin, Colombia',
+        SUPPORT_EMAIL: 'soporte@example.test',
+        LEGAL_TERMS_VERSION: 'borrador-local',
+        LEGAL_PRIVACY_VERSION: 'borrador-local',
+        LEGAL_COOKIES_VERSION: 'borrador-local',
+      },
+    },
+  ],
+});

@@ -23,18 +23,15 @@ import org.junit.jupiter.api.Test;
  * para que la aplicacion no arrancara, porque una variable definida vacia esta
  * presente y el valor por omision del YAML no llega a aplicarse.
  *
- * <p><strong>Por que vive en bootstrap y no junto a la clase que prueba.</strong>
- * {@code infrastructure} no tiene ninguna prueba, y sin datos de cobertura su
- * {@code jacocoTestCoverageVerification} se salta entero: el minimo del 80% que
- * anuncia {@code backend/CLAUDE.md} nunca se ha evaluado en ese modulo. Esta
- * prueba, al ser la primera, encendia el gate y lo hacia fallar con un 4% que no
- * tiene nada que ver con lo que aqui se comprueba. Puesta aqui sigue corriendo en
- * cada build y sigue guardando el comportamiento, sin fingir que el modulo esta
- * cubierto.
- *
- * <p>No es el sitio natural y no debe normalizarse. Cuando {@code infrastructure}
- * tenga pruebas de verdad, esta se muda con ellas. Mientras tanto, moverla sin
- * mas deja el build en rojo.
+ * <p><strong>Estuvo en bootstrap y ya no.</strong> Vivio ahi porque
+ * {@code infrastructure} no tenia ninguna prueba: sin datos de cobertura, su
+ * {@code jacocoTestCoverageVerification} se saltaba entero, y esta prueba, al ser
+ * la primera, encendia el gate y lo hacia fallar por un porcentaje que no tenia
+ * nada que ver con lo que aqui se comprueba. Aquel comentario dejo dicho que se
+ * mudaria cuando el modulo tuviera pruebas de verdad, y es lo que ha pasado. El
+ * minimo se evalua ahora sobre los cinco modulos juntos
+ * ({@code verificarCoberturaAgregada} en backend/build.gradle.kts), que es lo que
+ * permite medir tambien los adaptadores JDBC sin duplicar el esquema de Flyway.
  */
 class ResendMailSenderTest {
 

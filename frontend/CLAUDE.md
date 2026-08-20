@@ -140,8 +140,16 @@ Es requisito de aceptación, no un extra. Cada componente entra con:
 - Componentes: se prueba comportamiento observable por el usuario, no métodos
   internos. Consultas por rol y por texto accesible antes que por selector CSS.
 - HTTP siempre simulado. Ninguna prueba sale a la red.
-- Extremo a extremo con Playwright para los caminos críticos: registro, inicio de
-  sesión, publicación y compra.
+- Extremo a extremo con Playwright, en **dos suites** que no se mezclan:
+  `e2e/` comprueba el HTML que sale del servidor sin llamar a la API (ADR-0006), y
+  `e2e-completo/` levanta el backend y PostgreSQL de verdad y recorre los caminos
+  de cuentas por la interfaz. La segunda existe porque la primera no puede ver un
+  contrato roto entre las dos mitades. Publicación y compra llegan con sus fases.
+- **Una prueba de componente que pone la sesión antes de crear el componente no
+  prueba la carga real.** En una carga de página el componente nace primero y la
+  sesión llega después, por la cookie de refresco. Es la diferencia que dejó el
+  perfil de `/mi-cuenta` sin cargarse nunca sin que ninguna prueba lo viera; la
+  regresión está fijada en `account-page.spec.ts`.
 - Cobertura mínima: 80% global, 90% en `domain` y `application`.
 
 ## Rendimiento

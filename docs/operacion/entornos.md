@@ -49,11 +49,17 @@ un requisito de residencia de datos, se revisa.
 
 Todo por integración continua. Nadie despliega desde su máquina.
 
-> **Estado a agosto de 2026.** De este flujo solo existe la verificación:
+> **Estado a agosto de 2026.** El flujo está escrito completo:
 > `.github/workflows/verificacion.yml` compila, prueba y analiza en cada pull
-> request y en cada integración a `main`. Los pasos de despliegue se añaden
-> cuando existan la cuenta de Vercel, el proyecto de Cloud Run y la base
-> gestionada. Hoy no hay nada desplegado.
+> request y en cada integración a `main`, y `despliegue.yml` publica en `dev` con
+> cada integración a `main` y en `prod` con etiqueta de versión y aprobación
+> manual. El despliegue **llama** a la verificación en lugar de repetir sus pasos,
+> así que nada se publica sin pasarla entera.
+>
+> Lo que falta no es código: son las cuentas. Hacen falta el proyecto de Google
+> Cloud, la base gestionada, el proyecto de Vercel y los secretos en Secret
+> Manager. El procedimiento, en orden y una sola vez, está en `despliegue.md`.
+> Hasta que eso exista, no hay nada desplegado.
 
 ```
 rama de trabajo -> pull request -> verificación -> main -> dev automático

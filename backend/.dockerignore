@@ -1,0 +1,12 @@
+# Lo que no debe entrar en el contexto de construccion de la imagen.
+#
+# No es solo por tamano: `build/` puede traer clases compiladas con otra version
+# de Java y un `.env` copiado dentro de una imagen es un secreto publicado.
+build/
+*/build/
+buildSrc/build/
+.gradle/
+*/.gradle/
+.env
+*.env
+*.log

@@ -1,4 +1,4 @@
-import type { AppConfig, CompanyInfo, LegalVersions } from './app-config';
+import type { AppConfig, BusinessFigures, CompanyInfo, LegalVersions } from './app-config';
 
 /** Solo la parte del entorno que nos interesa: asi la funcion es pura y se prueba sin Node. */
 export type EnvironmentVariables = Readonly<Record<string, string | undefined>>;
@@ -16,6 +16,28 @@ const FALLBACK_AVAILABLE_LOCALES = 'es,en';
  * legal. Un despliegue que la olvide no falla en silencio, grita.
  */
 const VERSION_DE_BORRADOR = 'borrador-local';
+
+/**
+ * Los mismos valores por omision que usa el perfil local del backend
+ * (`application-local.yaml`). No se exigen por la misma razon que la version de
+ * los legales: que a nadie se le caiga el arranque en su maquina por una cifra
+ * que ya esta decidida en las reglas de negocio (RN-026, RN-051).
+ *
+ * <p>Un despliegue que las olvide no falla en silencio: se sirve el valor de las
+ * reglas, que es el correcto, y lo unico que se pierde es poder cambiarlo sin
+ * desplegar.
+ */
+const COMISION_POR_OMISION = 0.05;
+const VENTANA_DE_RECLAMO_POR_OMISION = 3;
+
+/**
+ * Techos de cordura, no reglas de negocio. Existen para que un valor
+ * disparatado no llegue a pantalla: la comision de la plataforma es del 5%
+ * (RN-026) y la ventana, de 3 dias habiles (RN-051). Cualquier cosa por encima
+ * de estos dos numeros es un error de configuracion, no una decision.
+ */
+const COMISION_MAXIMA = 0.5;
+const VENTANA_DE_RECLAMO_MAXIMA = 30;
 
 /**
  * Lee la configuracion del entorno y falla al arrancar si algo obligatorio no
@@ -51,7 +73,65 @@ export function readAppConfig(env: EnvironmentVariables): AppConfig {
     sentryDsn: sentryDsn && sentryDsn.length > 0 ? sentryDsn : null,
     legalVersions: leerVersionesLegales(env),
     company: leerEmpresa(env),
+    business: leerCifrasDeNegocio(env),
   };
+}
+
+/**
+ * Las cifras que el sitio informativo anuncia.
+ *
+ * <p>Se validan aqui y no al pintarlas: una comision negativa o una ventana de
+ * cero dias no son un problema de maquetacion, son una promesa incorrecta
+ * publicada. Vale mas no levantar el servidor que anunciar que se cobra el -5%.
+ */
+function leerCifrasDeNegocio(env: EnvironmentVariables): BusinessFigures {
+  const commissionRate = numeroOpcional(env, 'COMMISSION_RATE', COMISION_POR_OMISION);
+  const claimWindowDays = numeroOpcional(env, 'CLAIM_WINDOW_DAYS', VENTANA_DE_RECLAMO_POR_OMISION);
+
+  /*
+   * Los dos bordes estan cerrados a proposito. El cero entraba por abajo, y un
+   * COMMISSION_RATE=0 —un dedo, o un despliegue a medias que deja la variable
+   * vacia en cero— publica "no cobramos comision" en /como-funciona y en las
+   * preguntas. En Colombia lo anunciado es exigible, asi que eso no es un cero
+   * de mas: es una tarifa distinta de la de RN-026 anunciada al pais.
+   */
+  if (commissionRate <= 0 || commissionRate > COMISION_MAXIMA) {
+    throw new Error(
+      `COMMISSION_RATE es "${commissionRate}" y tiene que ser una fraccion mayor que 0 y ` +
+        `hasta ${COMISION_MAXIMA}: 0.05 es el 5%. Un 5 se anunciaria como 500% y un 0, ` +
+        'como que no se cobra nada (RN-026).',
+    );
+  }
+  if (
+    !Number.isInteger(claimWindowDays) ||
+    claimWindowDays < 1 ||
+    claimWindowDays > VENTANA_DE_RECLAMO_MAXIMA
+  ) {
+    throw new Error(
+      `CLAIM_WINDOW_DAYS es "${claimWindowDays}" y tiene que ser un entero de dias habiles ` +
+        `entre 1 y ${VENTANA_DE_RECLAMO_MAXIMA} (RN-051). Una ventana de meses no es una ` +
+        'ventana, y el dinero del comprador queda retenido todo ese tiempo.',
+    );
+  }
+
+  return { commissionRate, claimWindowDays };
+}
+
+/** Una variable ausente o en blanco toma el valor por omision; una con basura, no. */
+function numeroOpcional(env: EnvironmentVariables, name: string, porOmision: number): number {
+  const bruto = env[name]?.trim();
+  if (bruto === undefined || bruto.length === 0) {
+    return porOmision;
+  }
+
+  const valor = Number(bruto);
+  if (!Number.isFinite(valor)) {
+    throw new Error(
+      `${name} vale "${bruto}", que no es un numero. Las claves del frontend estan en ` +
+        'docs/operacion/configuracion.md y en .env.example.',
+    );
+  }
+  return valor;
 }
 
 /**
@@ -173,6 +253,10 @@ export function readAppConfigForBootstrap(env: EnvironmentVariables): AppConfig 
         cookies: VERSION_DE_BORRADOR,
       },
       company: { name: null, taxId: null, address: null, supportEmail: null },
+      business: {
+        commissionRate: COMISION_POR_OMISION,
+        claimWindowDays: VENTANA_DE_RECLAMO_POR_OMISION,
+      },
     };
   }
 }

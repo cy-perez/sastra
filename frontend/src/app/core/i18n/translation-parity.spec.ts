@@ -53,4 +53,37 @@ describe('paridad de traducciones', () => {
     expect(vacias(es)).toEqual([]);
     expect(vacias(en)).toEqual([]);
   });
+
+  /**
+   * Las claves pueden coincidir y los marcadores no. Borrar `{{comision}}` de la
+   * version inglesa deja la pagina anunciando "commission" sin cifra: la clave
+   * existe, el texto no esta vacio, y las tres comprobaciones de arriba pasan.
+   * Es el mismo agujero que la paridad viene a tapar, un nivel mas abajo.
+   */
+  it('cada clave usa los mismos marcadores en los dos idiomas', () => {
+    const marcadores = (arbol: unknown, prefijo = ''): [string, string[]][] => {
+      if (typeof arbol === 'string') {
+        const encontrados = [...arbol.matchAll(/\{\{\s*([\w.]+)\s*\}\}/g)]
+          .map((coincidencia) => coincidencia[1] ?? '')
+          .sort();
+        return encontrados.length > 0 ? [[prefijo, encontrados]] : [];
+      }
+      if (typeof arbol !== 'object' || arbol === null) {
+        return [];
+      }
+      return Object.entries(arbol).flatMap(([nombre, valor]) =>
+        marcadores(valor, prefijo === '' ? nombre : `${prefijo}.${nombre}`),
+      );
+    };
+
+    const deIngles = new Map(marcadores(en));
+    const discrepancias = marcadores(es)
+      .filter(([clave, propios]) => (deIngles.get(clave) ?? []).join(',') !== propios.join(','))
+      .map(([clave, propios]) => `${clave}: es=[${propios}] en=[${deIngles.get(clave) ?? []}]`);
+
+    // La lista tiene que estar viendo algo: hay claves con marcadores en el
+    // arbol. Si sale vacia es que la expresion se rompio.
+    expect(marcadores(es).length).toBeGreaterThan(0);
+    expect(discrepancias).toEqual([]);
+  });
 });

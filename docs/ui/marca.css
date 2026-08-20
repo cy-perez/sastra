@@ -43,6 +43,16 @@
      franja tambien es tinta: sobre ella el foco desaparecia, justo en el CTA
      principal del sitio. El hueso da 15.4:1 contra la franja. */
   --color-foco-franja: #F2F1EE;
+
+  /* Destino tactil minimo. Es una medida del sistema y estaba copiada como
+     44px suelto en la cabecera, el pie y las paginas informativas. */
+  --destino-tactil: 44px;
+
+  /* Impresion. El papel no es una pantalla: no tiene modo claro ni oscuro,
+     tiene tinta. Estos dos NO se redefinen en oscuro, y ese es el punto: con
+     --color-texto el problema volveria invertido. Tinta sobre papel da 15.1:1. */
+  --color-papel: #FFFFFF;
+  --color-tinta-papel: #16192A;
 }
 
 /* ---------- Modo oscuro: lo que el generador dejo sin cubrir ---------- */
@@ -78,6 +88,22 @@
   --color-foco: var(--color-foco-franja);
 }
 .franja-oscura a { color: var(--sobre-fondo-oscuro); }
+
+/* ---------- Impresion de la franja oscura ----------
+   Los navegadores no imprimen el fondo, asi que sobre papel la franja se queda
+   sin su tinta y el texto casi blanco desaparece. Con el se va el correo de
+   soporte y los tres documentos legales que el pie repite, que es justo lo que
+   alguien conserva cuando imprime /contacto (HU-005, caso borde).
+
+   Va aqui y no en la hoja de una funcionalidad porque la franja es de marca y
+   la usan el hero y el pie de todo el sitio. */
+@media print {
+  .franja-oscura,
+  .franja-oscura a {
+    background: var(--color-papel);
+    color: var(--color-tinta-papel);
+  }
+}
 
 /* ---------- Logo adaptable ----------
    El logo va en tinta y sobre fondo oscuro desaparece. Se montan las dos

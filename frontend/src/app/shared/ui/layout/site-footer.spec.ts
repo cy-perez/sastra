@@ -111,7 +111,7 @@ describe('SiteFooter', () => {
       name: 'Sastra S.A.S.',
       taxId: null,
       address: null,
-      supportEmail: 'hola@sastra.co',
+      supportEmail: 'soporte@example.test',
     });
     const fixture = await render();
     const datos = fixture.nativeElement.querySelector('address') as HTMLElement;
@@ -141,8 +141,8 @@ describe('SiteFooter', () => {
       'a[href^="mailto:"]',
     ) as HTMLAnchorElement | null;
 
-    expect(correo?.getAttribute('href')).toBe('mailto:hola@sastra.co');
-    expect(correo?.textContent?.trim()).toBe('hola@sastra.co');
+    expect(correo?.getAttribute('href')).toBe('mailto:soporte@example.test');
+    expect(correo?.textContent?.trim()).toBe('soporte@example.test');
   });
 
   // Sin correo configurado no se pinta una columna de contacto vacia: se calla.

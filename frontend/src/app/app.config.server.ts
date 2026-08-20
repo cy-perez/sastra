@@ -13,7 +13,7 @@ import { provideAppConfig } from './core/config/app-config.providers';
 import { readAppConfigForBootstrap } from './core/config/read-app-config';
 import { ACTIVE_LOCALE, provideI18n } from './core/i18n/i18n.providers';
 import { resolveLocale } from './core/i18n/locale';
-import { BundledTranslationLoader } from './core/i18n/translation-loaders';
+import { BundledTranslationLoader } from './core/i18n/bundled-translation-loader';
 import { resolveTheme, themeAttribute } from './core/theme/theme';
 
 /**

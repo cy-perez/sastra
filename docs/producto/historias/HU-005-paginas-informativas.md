@@ -1,6 +1,6 @@
 # HU-005 — Páginas informativas
 
-**Fase:** 1 | **Estado:** pendiente
+**Fase:** 1 | **Estado:** hecha, salvo la accesibilidad automatizada
 **Reglas que aplica:** RN-011, RN-015, RN-026, RN-027, RN-032, RN-034, RN-038,
 RN-050 a RN-058
 **Textos:** `docs/producto/textos-web.md`
@@ -229,6 +229,13 @@ HU-004, que no renderiza el enlace si la ruta no existe.
   un recorrido que verifique que ningún enlace de las cuatro páginas devuelve
   404.
 - Accesibilidad automatizada sobre las cuatro páginas, en modo claro y oscuro.
+  **Pendiente**, igual que en HU-004: el proyecto no tiene todavía un motor de
+  auditoría (`@axe-core/playwright` o equivalente) y agregar una dependencia
+  pide proponerla antes. Lo que sí está cubierto sin ella, en
+  `frontend/e2e/contenido.spec.ts` y en las pruebas de componente: un solo `h1`
+  y sin saltos de nivel, ausencia de desplazamiento horizontal a 360px,
+  destinos táctiles de 44px, recorrido completo por teclado del menú y de las
+  preguntas, y el estado expuesto por `details`/`summary` nativos.
 
 ## Qué habría que agregar antes de implementar
 

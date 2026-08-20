@@ -368,12 +368,17 @@ confirmas ni reportas nada dentro de la ventana de reclamo, se da por confirmada
 y el pago se libera. (RN-034, RN-052)
 
 **¿Y si me llega algo distinto a lo publicado?** (`.claim`)
-Lo reportas desde tu pedido, con fotos, dentro de los `{{claimWindowDays}}` días
-hábiles siguientes a la entrega. Mientras el reporte esté abierto el pago sigue
-retenido, así que el reintegro sale de ahí. Si se acepta, recibes el valor de la
-prenda y el envío que pagaste, y el flete de regreso lo asume el vendedor.
+Mientras no confirmes la entrega el pago sigue retenido. Tienes
+`{{claimWindowDays}}` días hábiles desde la entrega para reportarlo desde tu
+pedido, con fotos de lo que recibiste. El reintegro sale de ese dinero y no
+depende de que el vendedor colabore: si el reporte se acepta, recibes el valor
+de la prenda y el envío que pagaste, y el flete de regreso lo asume el vendedor.
 Confirmar la entrega cierra la ventana: si algo no cuadra, repórtalo antes de
 confirmar. (RN-050 a RN-056)
+
+El orden de los cuatro hechos es el que fija el criterio 16 de HU-005 y no se
+reordena al corregir la redacción: primero que el dinero no se ha ido a ninguna
+parte, después el plazo. Hay una prueba que falla si se altera.
 
 **¿La talla no me quedó, puedo devolverla?** (`.fit`)
 Que la talla no siente o que el color se vea distinto en pantalla no es un
@@ -463,11 +468,17 @@ criterio 19 y casos borde).
 los cambias tú desde [Mi cuenta](/mi-cuenta), sin escribirnos.
 
 **Tus datos personales** (`contact.rights`):
-Por este mismo canal ejerces tus derechos a conocer, actualizar, rectificar y
-suprimir tus datos, y a revocar la autorización que nos diste. Respondemos una
-consulta en diez días hábiles y un reclamo en quince, prorrogables una vez.
+`.channel`: Por este mismo canal ejerces tus derechos a conocer, actualizar,
+rectificar y suprimir tus datos, y a revocar la autorización que nos diste.
+`.deadlines`: Respondemos una consulta en diez días hábiles y un reclamo en
+quince, prorrogables una vez.
 Los detalles están en la
 [política de tratamiento de datos](/politica-de-tratamiento-de-datos).
+
+Van en dos claves y no en una porque la primera frase afirma que hay un canal.
+Sin `SUPPORT_EMAIL` configurado esa sección no se pinta, y la frase quedaba
+señalando a un canal inexistente: se omite. Los plazos y el enlace a la política
+se enuncian siempre.
 
 Fuente: `docs/operacion/datos-personales.md`, sección Derechos del titular.
 

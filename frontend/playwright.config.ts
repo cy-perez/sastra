@@ -68,7 +68,7 @@ export default defineConfig({
       COMPANY_NAME: 'Sastra S.A.S.',
       COMPANY_TAX_ID: '000000000-0',
       COMPANY_ADDRESS: 'Medellin, Colombia',
-      SUPPORT_EMAIL: 'hola@sastra.co',
+      SUPPORT_EMAIL: 'soporte@example.test',
     },
   },
 });

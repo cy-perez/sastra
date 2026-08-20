@@ -5,7 +5,7 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { APP_CONFIG, type AppConfig } from './app/core/config/app-config';
 import { provideActiveLocaleFromDocument, provideI18n } from './app/core/i18n/i18n.providers';
 import { provideQuery } from './app/core/query/query.providers';
-import { BundledTranslationLoader } from './app/core/i18n/translation-loaders';
+import { BundledTranslationLoader } from './app/core/i18n/bundled-translation-loader';
 
 /**
  * Entorno comun de las pruebas de componente. Se usan las traducciones reales,
@@ -29,8 +29,13 @@ const testConfig: AppConfig = {
     name: 'Sastra S.A.S.',
     taxId: '000000000-0',
     address: 'Medellin, Colombia',
-    supportEmail: 'hola@sastra.co',
+    supportEmail: 'soporte@example.test',
   },
+  // Las mismas cifras que las reglas de negocio (RN-026, RN-051) y no unas
+  // inventadas: una prueba que pase con el 8% no demuestra que la pagina diga lo
+  // que el negocio cobra. La que compruebe que la cifra sale de configuracion y
+  // no de la plantilla sobrescribe APP_CONFIG en su propio TestBed.
+  business: { commissionRate: 0.05, claimWindowDays: 3 },
 };
 
 const providers: (Provider | EnvironmentProviders)[] = [

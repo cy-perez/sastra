@@ -5,6 +5,15 @@ que se usa en el código; el término en español es el que se usa al hablar, en
 documentación y en la interfaz. Si un concepto no está aquí, no existe todavía:
 se agrega antes de escribirlo en código.
 
+**La columna de código no es la traducción de la interfaz.** El sitio también se
+sirve en inglés, y ahí manda que se entienda, no que coincida con el
+identificador. `NonConformingProduct` es el nombre de la clase; a la persona se
+le dice *not grounds for a report*, porque "non-conforming product" en inglés
+comercial suena a norma industrial. Igual con `SpinViewer`, que en pantalla es
+*360° view*. Lo que **no** cambia entre idiomas es lo que se promete: las dos
+versiones se sirven en la misma dirección y en Colombia lo anunciado es exigible,
+se anuncie en el idioma que se anuncie.
+
 ## Personas
 
 | Español | Código | Definición |

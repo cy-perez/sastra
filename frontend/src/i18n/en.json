@@ -50,6 +50,22 @@
     "confirmEmail": {
       "title": "Confirm new email",
       "description": "Finish changing the email on your Sastra account."
+    },
+    "howItWorks": {
+      "title": "How it works",
+      "description": "How buying and selling work on Sastra: verified sellers, reviewed listings and payment held until the buyer confirms delivery."
+    },
+    "about": {
+      "title": "What Sastra is",
+      "description": "Sastra gathers the new and second-hand fashion that today is sold scattered across social media, with verified sellers and payment held until delivery."
+    },
+    "faq": {
+      "title": "Frequently asked questions",
+      "description": "How to buy and sell on Sastra: seller verification, reviewed listings, held payment, commission and payment methods."
+    },
+    "contact": {
+      "title": "Contact",
+      "description": "How to reach Sastra and how to exercise your rights over your personal data."
     }
   },
   "layout": {
@@ -72,12 +88,24 @@
       "contactLabel": "Contact",
       "company": {
         "taxId": "Tax ID"
-      }
+      },
+      "contentLabel": "The site"
     },
     "session": {
       "login": "Sign in",
       "logout": "Sign out",
       "account": "My account"
+    },
+    "nav": {
+      "label": "Main",
+      "open": "Open the menu",
+      "close": "Close the menu",
+      "pages": {
+        "howItWorks": "How it works",
+        "about": "About Sastra",
+        "faq": "FAQ",
+        "contact": "Contact"
+      }
     }
   },
   "home": {
@@ -98,7 +126,7 @@
         "body": "The buyer pays and the payment is held while the item is on its way."
       },
       "charge": {
-        "title": "You get paid on delivery",
+        "title": "You get paid once delivery is confirmed",
         "body": "Once the buyer confirms the item arrived, your payment is released."
       }
     },
@@ -381,6 +409,202 @@
         "body": "You can now sign in with your new address. We let the previous one know, in case it was not you.",
         "goToLogin": "Sign in"
       }
+    }
+  },
+  "howItWorks": {
+    "title": "How Sastra works",
+    "intro": "Buying or selling fashion online in Colombia usually means transferring money to a stranger and waiting, or shipping and waiting. Sastra stands in the middle with the same rules for both sides.",
+    "buyer": {
+      "title": "If you are buying",
+      "steps": {
+        "browse": {
+          "title": "You pick an item",
+          "body": "Every listing was reviewed before it appeared, and it shows the item from eight angles, with its size, its real measurements in centimetres and its declared condition. One item, one listing: what you see is the exact piece you receive."
+        },
+        "pay": {
+          "title": "You pay for the item plus shipping",
+          "body": "Shipping is quoted with the carriers and the amount is approximate; you see it before you confirm. The Sastra commission is not added to your total: the seller covers it."
+        },
+        "hold": {
+          "title": "The payment is held",
+          "body": "Your payment is collected and held by the payment gateway. It does not reach the seller while the item is on its way."
+        },
+        "confirm": {
+          "title": "You confirm and it is released",
+          "body": "Once you receive the item and confirm it matches the listing, the payment is released. If you neither confirm nor report anything within the claim window, it counts as confirmed."
+        }
+      },
+      "claim": {
+        "title": "If what arrives is not what was listed",
+        "body": "You have {{dias}} business days from delivery to report it from your order, with photos of what you received. While the report is open the payment stays held, so the refund comes out of that money and does not depend on the seller cooperating. If the report is accepted, you get back the price of the item and the shipping you paid, and the seller covers the return freight.",
+        "warning": "Confirming delivery closes the window. If something is off, report it before you confirm."
+      },
+      "notCovered": {
+        "title": "What the report does not cover",
+        "body": "A size that does not fit the way you expected, or a colour that looks different on screen, is not grounds for a report, as long as the item matches the listing. That is why every listing carries real measurements in centimetres: measure a garment that fits you well and compare before you buy.",
+        "retracto": "Separately from this, Colombian law grants a right of withdrawal, with its own deadlines and exceptions. It is set out in the terms and conditions."
+      }
+    },
+    "seller": {
+      "title": "If you are selling",
+      "steps": {
+        "verify": {
+          "title": "You get verified",
+          "body": "You validate your identity document, send a selfie and register a bank account in your name. It is free and done once. Only individuals of legal age can sell."
+        },
+        "publish": {
+          "title": "You list",
+          "body": "The capture assistant guides you to shoot the item from eight angles and crops everything to the same ratio, so your photos look like the rest of the catalogue. You declare size, measurements in centimetres and condition. Listing costs nothing."
+        },
+        "review": {
+          "title": "We review",
+          "body": "Every listing goes through review before it appears. If something is missing, we tell you what to fix and you send it back."
+        },
+        "ship": {
+          "title": "You ship",
+          "body": "When someone buys, the payment is already held. You ship with the carrier and register the tracking code."
+        },
+        "charge": {
+          "title": "You get paid",
+          "body": "You receive the price of the item minus the {{comision}} commission, into the bank account you verified. It is released when the buyer confirms delivery, or when the claim window closes."
+        }
+      },
+      "duties": {
+        "title": "What you take on",
+        "describe": "Describing the real condition, including stains, wear and loose seams. Measurements in centimetres are required: they are the number one cause of claims in second-hand fashion.",
+        "refund": "If the item does not match the listing, or arrives with damage you did not declare, you cover the return freight and the buyer gets their refund.",
+        "forbidden": "No replicas or counterfeits, no used underwear, nothing outside fashion and accessories, and no items with undeclared damage."
+      },
+      "why": {
+        "title": "Why here and not in a Facebook group",
+        "alreadyPaid": {
+          "title": "The buyer has already paid.",
+          "body": "You are not shipping against a promised transfer."
+        },
+        "free": {
+          "title": "Listing costs nothing.",
+          "body": "You can have items listed without selling and pay nothing. You are only charged when you sell."
+        },
+        "photos": {
+          "title": "Your photos look right.",
+          "body": "The capture assistant enforces the framing and the ratio, and the same shots build the 360° view."
+        },
+        "payout": {
+          "title": "You get paid to your account.",
+          "body": "The payout goes to the bank account you verified."
+        }
+      }
+    },
+    "cta": {
+      "title": "Ready to start?",
+      "body": "Creating an account is free and takes a minute. To buy you need nothing else; to sell, get verified.",
+      "action": "Create account"
+    }
+  },
+  "about": {
+    "title": "Why Sastra exists",
+    "intro": "A great deal of second-hand clothing is bought and sold in Colombia, but it happens in Facebook groups, Instagram stories and WhatsApp chats. The buyer transfers and waits. The seller ships and waits. Both take on a risk nobody is covering.",
+    "gathers": "Sastra gathers that scattered supply into a single catalogue and adds four things a chat does not have: sellers verified with an identity document, every listing reviewed before it appears, photos that show the item from eight angles, and a payment that does not reach the seller until the buyer confirms they received what was listed.",
+    "notUs": "We do not make clothing and we do not resell it, and we do not touch the money: the payment gateway collects and holds it. We are the place where one person buys from another under rules that are clear to both.",
+    "company": {
+      "title": "Who stands behind Sastra",
+      "taxId": "Tax ID"
+    }
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "intro": "What people ask most before buying, or before listing something for the first time.",
+    "buyer": {
+      "title": "If you are buying",
+      "real": {
+        "q": "How do I know the seller is real?",
+        "a": "Every seller validates their identity document, a selfie and a bank account in their name before they can list. Selling anonymously is not possible."
+      },
+      "whoGetsPaid": {
+        "q": "Who am I paying?",
+        "a": "The payment is collected and held by the gateway, not by Sastra. The seller does not receive it while the item is on its way."
+      },
+      "release": {
+        "q": "When does the seller get paid?",
+        "a": "When you confirm you received the item and it matches the listing. If you neither confirm nor report anything within the claim window, it counts as confirmed and the payment is released."
+      },
+      "claim": {
+        "q": "What if what arrives is not what was listed?",
+        "a": "Until you confirm delivery the payment stays held. You have {{dias}} business days from delivery to report it from your order, with photos of what you received. The refund comes out of that money and does not depend on the seller cooperating: if the report is accepted, you get back the price of the item and the shipping you paid, and the seller covers the return freight. Confirming delivery closes the window: if something is off, report it before you confirm."
+      },
+      "fit": {
+        "q": "It does not fit. Can I return it?",
+        "a": "A size that does not fit, or a colour that looks different on screen, is not grounds for a report. That is why every listing carries real measurements in centimetres. Separately, Colombian law grants a right of withdrawal, with its own deadlines and conditions, set out in the terms and conditions."
+      },
+      "shippingCost": {
+        "q": "How much does shipping cost?",
+        "a": "It depends on the destination, the weight and the size. It is quoted with the carriers and you see it before you pay. The amount is approximate. Shipping is paid by the buyer, and the Sastra commission is not added to your total."
+      },
+      "payment": {
+        "q": "How can I pay?",
+        "a": "With PSE, Nequi, Bancolombia a la mano and debit or credit card through Wompi, or in instalments with Addi. Cash on delivery is not available."
+      },
+      "multiSeller": {
+        "q": "Can I buy from two sellers at once?",
+        "a": "Yes, but it creates two orders, one per seller, each with its own shipping and its own progress."
+      }
+    },
+    "seller": {
+      "title": "If you are selling",
+      "commission": {
+        "q": "What do you charge?",
+        "a": "{{comision}} of the item price, paid by the seller and only when you sell. Shipping is not part of the calculation. Listing is free."
+      },
+      "payout": {
+        "q": "When do I get paid?",
+        "a": "The payment is released when the buyer confirms delivery, or when the claim window closes without them confirming or reporting. It is paid out to the bank account you verified, not to a balance inside the platform."
+      },
+      "requirements": {
+        "q": "What do I need in order to sell?",
+        "a": "Your identity document, a selfie and a bank account in your name. Only individuals of legal age, and the account has to belong to the holder of the document."
+      },
+      "photos": {
+        "q": "What photos are required?",
+        "a": "Eight shots of the item at 45 degrees, which the capture assistant guides you to take and crops to the same ratio. From those come the four required views — front, both sides and back — and the 360° view."
+      },
+      "new": {
+        "q": "Can I sell new items?",
+        "a": "Yes. Sastra has a catalogue of both new and second-hand, and every listing states its condition."
+      },
+      "forbidden": {
+        "q": "What can I not list?",
+        "a": "Replicas or counterfeits, used underwear, anything outside fashion and accessories, and items with damage you do not declare."
+      },
+      "moderation": {
+        "q": "Why is my listing reviewed?",
+        "a": "Because a clean catalogue is what makes it worth buying here. Every listing goes through review, no exceptions. If it is rejected, you are told why and what to fix, and you can send it back."
+      },
+      "stock": {
+        "q": "Can I list two identical items in one listing?",
+        "a": "No. One item, one listing. If you have two of the same, they are two listings."
+      },
+      "dispute": {
+        "q": "What happens if the buyer files a report?",
+        "a": "If the item does not match the listing, or arrived with damage you did not declare, you cover the return freight and the buyer gets their refund. Describing the real condition well is the best way to keep it from happening."
+      }
+    }
+  },
+  "contact": {
+    "title": "Write to us",
+    "intro": "If you have a problem with an order, write to us from the email you bought with and have your order number at hand. That way we answer faster.",
+    "email": {
+      "title": "Our email"
+    },
+    "account": {
+      "title": "If you already have an account",
+      "body": "Your name, city, phone and email are yours to change, without writing to us.",
+      "link": "Go to my account"
+    },
+    "rights": {
+      "title": "Your personal data",
+      "channel": "Through this same channel you exercise your rights to know, update, correct and delete your data, and to withdraw the authorisation you gave us.",
+      "deadlines": "We answer an enquiry within ten business days and a complaint within fifteen, which can be extended once.",
+      "link": "Read the data processing policy"
     }
   }
 }

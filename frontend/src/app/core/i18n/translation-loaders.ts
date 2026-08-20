@@ -4,8 +4,6 @@ import type { Translation, TranslocoLoader } from '@jsverse/transloco';
 import type { Observable } from 'rxjs';
 import { of } from 'rxjs';
 
-import es from '../../../i18n/es.json';
-import en from '../../../i18n/en.json';
 import { translationStateKey } from './translation-state';
 
 /**
@@ -13,6 +11,11 @@ import { translationStateKey } from './translation-state';
  * ahi se pide por HTTP. El caso habitual, la primera carga, no gasta ninguna
  * peticion; cambiar de idioma en caliente si baja el archivo del otro idioma,
  * que es exactamente cuando hace falta.
+ *
+ * <p>Aqui no se importa ningun JSON a proposito: el que hace falta ya viene en
+ * el estado transferido, y el otro se descarga solo si se cambia de idioma.
+ * Incrustarlos seria mandar dos veces lo mismo. El del servidor, que si los
+ * lleva dentro, vive en `bundled-translation-loader.ts`.
  */
 @Injectable({ providedIn: 'root' })
 export class HttpTranslationLoader implements TranslocoLoader {
@@ -25,32 +28,5 @@ export class HttpTranslationLoader implements TranslocoLoader {
       return of(transferred);
     }
     return this.http.get<Translation>(`/i18n/${language}.json`);
-  }
-}
-
-/**
- * En el servidor van incrustadas en el paquete. Se evita asi que el renderizado
- * dependa de una peticion HTTP contra si mismo, que es fragil y ademas obligaria
- * a conocer la URL publica del sitio antes de poder pintar la primera pagina.
- */
-@Injectable()
-export class BundledTranslationLoader implements TranslocoLoader {
-  private readonly transferState = inject(TransferState);
-
-  private readonly translations: Readonly<Record<string, Translation>> = {
-    es: es as Translation,
-    en: en as Translation,
-  };
-
-  getTranslation(language: string): Observable<Translation> {
-    const translation = this.translations[language];
-    if (translation === undefined) {
-      throw new Error(
-        `No hay traducciones incrustadas para "${language}". Agrega src/i18n/${language}.json ` +
-          'y registralo en BundledTranslationLoader.',
-      );
-    }
-    this.transferState.set(translationStateKey(language), translation);
-    return of(translation);
   }
 }

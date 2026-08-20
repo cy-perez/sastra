@@ -1,5 +1,11 @@
+import type { Type } from '@angular/core';
 import type { Route, Routes } from '@angular/router';
 
+import {
+  PAGINAS_DE_CONTENIDO,
+  RUTAS_CONTENIDO,
+  type ContentPageId,
+} from './core/routes/content-routes';
 import { DOCUMENTOS_LEGALES, RUTAS_LEGALES } from './core/routes/legal-routes';
 import { legalContentResolver } from './features/legal/application/legal-content.resolver';
 
@@ -74,6 +80,10 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/auth/presentation/verify-email-page').then((m) => m.VerifyEmailPage),
   },
+  // Las cuatro paginas informativas de HU-005. Al contrario que las legales, no
+  // comparten componente: cada una dice algo distinto y tiene su propia forma.
+  // Lo que si comparten es de donde sale su direccion.
+  ...paginasDeContenido(),
   // Los tres documentos legales comparten componente y resolutor: lo unico que
   // cambia es cual es y como se llama. El resolutor trae el texto antes de
   // renderizar, asi que viaja dentro del HTML que sirve el servidor.
@@ -86,6 +96,48 @@ export const routes: Routes = [
       import('./features/not-found/presentation/not-found-page').then((m) => m.NotFoundPage),
   },
 ];
+
+/**
+ * Una ruta por pagina informativa.
+ *
+ * <p>Se generan desde {@link RUTAS_CONTENIDO} por el mismo motivo que las
+ * legales: las direcciones las comparten la tabla de rutas, la navegacion de la
+ * cabecera y el pie, y saliendo todas de un sitio no puede existir un enlace que
+ * apunte a una ruta que no esta (criterio 25).
+ *
+ * <p>El componente si es propio de cada una, asi que el `loadComponent` se
+ * resuelve con un `switch` y no con una plantilla de ruta: son cuatro paginas
+ * distintas, no cuatro instancias de la misma.
+ */
+function paginasDeContenido(): Routes {
+  return PAGINAS_DE_CONTENIDO.map((id): Route => ({
+    // Sin la barra inicial: RUTAS_CONTENIDO la lleva porque sirven para routerLink.
+    path: RUTAS_CONTENIDO[id].slice(1),
+    title: `meta.${id}.title`,
+    data: { descriptionKey: `meta.${id}.description` },
+    loadComponent: () => cargarPaginaDeContenido(id),
+  }));
+}
+
+/**
+ * El `switch` es a proposito: un `import()` con una ruta calculada no lo puede
+ * analizar el empaquetador, y las cuatro paginas acabarian en el paquete inicial
+ * en vez de en su propio fragmento diferido.
+ */
+function cargarPaginaDeContenido(id: ContentPageId): Promise<Type<unknown>> {
+  switch (id) {
+    case 'howItWorks':
+      return import('./features/content/presentation/how-it-works-page').then(
+        (m) => m.HowItWorksPage,
+      );
+    case 'about':
+      return import('./features/content/presentation/about-page').then((m) => m.AboutPage);
+    case 'faq':
+      return import('./features/content/presentation/faq-page').then((m) => m.FaqPage);
+    case 'contact':
+      return import('./features/content/presentation/contact-page').then((m) => m.ContactPage);
+  }
+}
 
 /**
  * Una ruta por documento legal, todas iguales salvo el nombre.

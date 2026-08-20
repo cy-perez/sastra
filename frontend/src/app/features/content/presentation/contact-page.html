@@ -1,0 +1,49 @@
+<h1 class="tipo-h1">{{ 'contact.title' | transloco }}</h1>
+<p class="tipo-entradilla">{{ 'contact.intro' | transloco }}</p>
+
+<!-- Sin correo configurado la seccion no se pinta vacia: se omite y el servidor
+     ya lo registro como aviso al arrancar. Sin este canal no hay forma de
+     ejercer los derechos del titular y se incumple la Ley 1581. -->
+@if (correoDeSoporte; as correo) {
+  <section class="seccion" aria-labelledby="canal">
+    <h2 class="tipo-h2" id="canal">{{ 'contact.email.title' | transloco }}</h2>
+    <!-- Enlace mailto y ademas texto legible: quien imprima la pagina o la lea
+         sin poder pulsar tiene que poder copiarlo. -->
+    <p class="tipo-cuerpo">
+      <a [href]="'mailto:' + correo">{{ correo }}</a>
+    </p>
+  </section>
+}
+
+@if (tieneSesion()) {
+  <section class="seccion" aria-labelledby="mis-datos">
+    <h2 class="tipo-h2" id="mis-datos">{{ 'contact.account.title' | transloco }}</h2>
+    <!-- Escribir un correo para cambiar un dato que se cambia solo es hacerle
+         perder el tiempo a dos personas. -->
+    <p class="tipo-cuerpo">
+      {{ 'contact.account.body' | transloco }}
+      <a routerLink="/mi-cuenta">{{ 'contact.account.link' | transloco }}</a>
+    </p>
+  </section>
+}
+
+<section class="seccion" aria-labelledby="tus-datos">
+  <h2 class="tipo-h2" id="tus-datos">{{ 'contact.rights.title' | transloco }}</h2>
+  <!-- "Por este mismo canal" solo se afirma si hay canal. Sin SUPPORT_EMAIL la
+       frase quedaba senalando a una seccion que no se pinta, es decir la pagina
+       aseguraba que existe una via para ejercer los derechos y no ensenaba
+       ninguna. El correo no puede volverse obligatorio: esa decision esta tomada
+       en docs/operacion/configuracion.md, y tumbar el renderizado entero por una
+       variable que falta cambiaria un dato incompleto por un sitio caido.
+
+       Los plazos se enuncian siempre, con canal o sin el: la Ley 1581 obliga a
+       que el titular sepa en cuanto se le responde, y el documento enlazado
+       abajo es el canal de registro. -->
+  @if (correoDeSoporte) {
+    <p class="tipo-cuerpo">{{ 'contact.rights.channel' | transloco }}</p>
+  }
+  <p class="tipo-cuerpo">{{ 'contact.rights.deadlines' | transloco }}</p>
+  <p class="tipo-cuerpo">
+    <a [routerLink]="rutaDeTratamiento">{{ 'contact.rights.link' | transloco }}</a>
+  </p>
+</section>

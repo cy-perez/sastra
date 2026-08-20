@@ -157,9 +157,9 @@ test.describe('portada', () => {
 
     await expect(pie).toContainText('Sastra S.A.S.');
     await expect(pie).toContainText('000000000-0');
-    await expect(pie.getByRole('link', { name: 'hola@sastra.co' })).toHaveAttribute(
+    await expect(pie.getByRole('link', { name: 'soporte@example.test' })).toHaveAttribute(
       'href',
-      'mailto:hola@sastra.co',
+      'mailto:soporte@example.test',
     );
   });
 

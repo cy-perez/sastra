@@ -24,6 +24,12 @@ Base: `/api/v1`. JSON en UTF-8. Fechas en ISO 8601 con zona UTC.
 | Eliminar | DELETE | 204 |
 | Acción sin cuerpo de respuesta | POST | 202 o 204 |
 
+Excepción a la fila de creación: un endpoint que no puede revelar si el recurso
+ya existía responde **202 sin cuerpo y sin `Location`**. La cabecera apuntando al
+recurso creado diría que no existía, y su ausencia diría lo contrario, así que los
+dos caminos tienen que responder igual. Es el caso de `POST /auth/register`
+(criterio 2 de HU-001) y de `POST /auth/forgot-password`.
+
 Errores: 400 formato inválido, 401 sin autenticar, 403 sin permiso, 404 no
 existe, 409 conflicto de estado, 422 regla de negocio incumplida, 429 demasiadas
 peticiones, 500 error inesperado.
@@ -38,18 +44,41 @@ application/problem+json`:
 
 ```json
 {
-  "type": "https://sastra.co/errors/email-already-registered",
-  "title": "email-already-registered",
+  "type": "/errors/auth_email_taken",
+  "title": "AUTH_EMAIL_TAKEN",
   "status": 409,
-  "detail": "Codigo interno para trazabilidad, no para mostrar al usuario",
-  "instance": "/api/v1/auth/register",
+  "instance": "/api/v1/auth/confirm-email-change",
   "code": "AUTH_EMAIL_TAKEN",
+  "traceId": "0af7651916cd43dd8448eb211c80319c"
+}
+```
+
+El `instance` de ese ejemplo no es casual: `AUTH_EMAIL_TAKEN` solo se emite al
+**confirmar** un cambio de correo, nunca al registrarse ni al pedir el cambio.
+Quien abre el enlace ya demostró que el buzón es suyo, así que no queda nada por
+revelar; en el registro, en cambio, ese mismo código convertiría el formulario en
+un detector de cuentas y por eso no existe (`ErrorCode`, HU-001 criterio 2).
+
+En un error de validación se agrega `errors`, con una entrada por campo:
+
+```json
+{
+  "type": "/errors/common_validation_failed",
+  "title": "COMMON_VALIDATION_FAILED",
+  "status": 400,
+  "instance": "/api/v1/auth/register",
+  "code": "COMMON_VALIDATION_FAILED",
   "traceId": "0af7651916cd43dd8448eb211c80319c",
   "errors": [
-    { "field": "email", "code": "VALIDATION_ALREADY_EXISTS" }
+    { "field": "email", "code": "VALIDATION_EMAIL" }
   ]
 }
 ```
+
+El código de cada campo es `VALIDATION_` más el nombre de la restricción que
+falló, en mayúsculas: `VALIDATION_EMAIL`, `VALIDATION_NOTBLANK`,
+`VALIDATION_SIZE`. Se deriva de la restricción y no se escribe a mano, así que
+agregar una anotación de validación agrega su código sin tocar el manejador.
 
 Reglas:
 
@@ -137,7 +166,26 @@ el resto.
 
 ## Documentación
 
-OpenAPI generado desde el código, disponible en `/v3/api-docs` y
-`/swagger-ui.html`. El archivo generado se versiona en
-`docs/arquitectura/openapi.json` y de él se derivan los tipos del frontend. Si el
-contrato cambia y el archivo no se regenera, la verificación continua falla.
+OpenAPI generado desde el código con springdoc, servido en `/v3/api-docs` y
+`/swagger-ui.html`. En `prod` los dos están apagados
+(`application-prod.yaml`): describen la superficie completa del sistema y no
+aportan nada a quien compra.
+
+**Estado a agosto de 2026.** La especificación solo existe en tiempo de
+ejecución. No se versiona ningún `openapi.json`, los tipos del frontend están
+escritos a mano —`features/auth/infrastructure/auth.api.ts`— y la verificación
+continua no comprueba el contrato.
+
+Las tres piezas que faltan, si se decide cerrarlas:
+
+1. Una tarea de Gradle que exporte la especificación a
+   `docs/arquitectura/openapi.json`.
+2. Un paso en `verificacion.yml` que la regenere y falle si el archivo
+   versionado no coincide.
+3. Generación de los tipos del frontend a partir de ese archivo, que es lo que
+   convertiría un cambio de contrato en un error de compilación y no en un fallo
+   en tiempo de ejecución.
+
+Mientras no existan, quien cambie un DTO del backend tiene que cambiar a mano su
+pareja en el frontend. Es la fuente de desincronización más probable de las dos
+mitades, y conviene tenerlo presente antes de que la superficie crezca.

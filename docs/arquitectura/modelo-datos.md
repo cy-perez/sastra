@@ -34,7 +34,13 @@ PostgreSQL 17. Migraciones con Flyway en
 | avatar_url | text | opcional |
 | locale | text | `es` o `en` |
 | status | text | `ACTIVE`, `BLOCKED`, `CLOSING`, `CLOSED` |
+| closed_at | timestamptz | nulo mientras la cuenta siga abierta (V4, criterio 23) |
 | created_at, updated_at | timestamptz | |
+
+Una cuenta cerrada conserva la fila anonimizada en vez de borrarse: quedan el
+identificador, la fecha de creación y el estado, y el correo se sustituye por uno
+del dominio reservado `.invalid` para que RN-001 no impida a esa persona volver a
+registrarse con su propia dirección.
 
 **user_roles**: `user_id`, `role` (`BUYER`, `SELLER`, `MODERATOR`, `ADMIN`),
 `granted_at`. Clave primaria compuesta.
@@ -43,8 +49,10 @@ PostgreSQL 17. Migraciones con Flyway en
 `password_updated_at`, `failed_attempts`, `locked_until`.
 
 **refresh_tokens**: `id`, `user_id`, `token_hash` (nunca el token), `family_id`,
-`expires_at`, `revoked_at`, `replaced_by`, `user_agent`, `ip_hash`.
-El `family_id` permite revocar toda una cadena al detectar reutilización.
+`expires_at`, `revoked_at`, `replaced_by`, `user_agent`, `ip_hash`,
+`created_at`. El `family_id` permite revocar toda una cadena al detectar
+reutilización, y `created_at` es lo que permite mostrarle a alguien desde cuándo
+está abierta cada una de sus sesiones.
 
 **verification_tokens**: `id`, `user_id`, `purpose` (`EMAIL_VERIFICATION`,
 `PASSWORD_RESET`, `EMAIL_CHANGE`), `token_hash`, `expires_at`, `used_at`,

@@ -1,6 +1,6 @@
 # HU-004 — Portada
 
-**Fase:** 1 | **Estado:** hecha, salvo las pruebas de extremo a extremo
+**Fase:** 1 | **Estado:** hecha, salvo la accesibilidad automatizada
 **Reglas que aplica:** RN-011, RN-015, RN-026, RN-031, RN-034
 **Textos:** `docs/producto/textos-web.md`, sección Portada
 
@@ -182,8 +182,15 @@ apunte a una ruta que no está.
   `en.json`. Una prueba que compare los dos árboles evita el texto sin traducir.
 - Extremo a extremo (Playwright): portada a registro por el botón principal;
   portada legible y sin desplazamiento horizontal a 360px; navegación completa
-  por teclado del encabezado y del menú móvil.
+  por teclado del encabezado y del menú móvil. **Hecho.** Los dos primeros en
+  `e2e/portada.spec.ts`, que además baja a 320px y comprueba el foco visible y
+  que ningún enlace esté roto. El tercero vive en `e2e/contenido.spec.ts`, con la
+  navegación del encabezado y el menú móvil, porque la navegación se construyó en
+  HU-005: aquí no había todavía ninguna página a la que llevar.
 - Accesibilidad automatizada sobre la portada en los dos modos, claro y oscuro.
+  **Pendiente**, igual que en HU-005: el proyecto no tiene todavía un motor de
+  auditoría (`@axe-core/playwright` o equivalente) y agregar una dependencia
+  exige ADR.
 
 ## Qué habría que agregar antes de implementar
 

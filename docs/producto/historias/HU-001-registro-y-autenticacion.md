@@ -1,7 +1,14 @@
 # HU-001 — Registro y autenticación
 
-**Fase:** 1 | **Estado:** pendiente
+**Fase:** 1 | **Estado:** hecha, salvo la foto de perfil del criterio 21
 **Reglas:** RN-001 a RN-009
+
+Los veintitrés criterios están implementados y probados, con una excepción: el
+criterio 21 incluye la foto de perfil y esa parte no está. `avatar_url` existe en
+`users` desde V2 y sigue sin usarse porque subir una imagen exige almacenamiento
+de archivos, que es una rebanada aparte y no de esta fase
+(`docs/producto/alcance.md`). Nombre, ciudad, teléfono y cambio de correo con
+confirmación sí están.
 
 ## Objetivo
 

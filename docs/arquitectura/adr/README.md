@@ -37,3 +37,4 @@ la referencia.
 | 0012 | Resend como proveedor de correo transaccional | Aceptada |
 | 0013 | Contraseñas filtradas con Have I Been Pwned y k-anonimato | Aceptada |
 | 0014 | Ventana de gracia en la detección de reutilización del refresco | Aceptada |
+| 0015 | Generación de identificadores: UUID v7 o v4 | Propuesta |

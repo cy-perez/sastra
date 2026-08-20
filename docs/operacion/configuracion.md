@@ -31,6 +31,9 @@ correo, ningún NIT, ningún porcentaje de comisión.
 | `JWT_ACCESS_TTL` | `PT15M` | sí |
 | `JWT_REFRESH_TTL` | `P30D` | sí |
 | `JWT_REFRESH_GRACE` | `PT10S` | no, `PT10S` por omisión |
+| `SESSION_COOKIE_NAME` | `sastra_refresh` | no, `sastra_refresh` por omisión |
+| `SESSION_COOKIE_PATH` | `/api/v1/auth` | no, `/api/v1/auth` por omisión |
+| `SESSION_COOKIE_SECURE` | `true` | no, `true` por omisión |
 | `RATE_LIMIT_CREDENTIALS_MAX` | `10` | no, `10` por omisión |
 | `RATE_LIMIT_CREDENTIALS_WINDOW` | `PT1M` | no, `PT1M` por omisión |
 | `RATE_LIMIT_SESSION_MAX` | `60` | no, `60` por omisión |
@@ -55,8 +58,8 @@ correo, ningún NIT, ningún porcentaje de comisión.
 | `PASSWORD_BREACH_CHECK_ENABLED` | `true` | no, `true` por omisión |
 | `PASSWORD_BREACH_CHECK_TIMEOUT` | `PT2S` | no |
 | `PASSWORD_BREACH_API_URL` | `https://api.pwnedpasswords.com/range` | no |
-| `STORAGE_BUCKET` | `sastra-media-dev` | sí |
-| `STORAGE_SIGNED_URL_TTL` | `PT10M` | sí |
+| `STORAGE_BUCKET` | `sastra-media-dev` | Fase 2 |
+| `STORAGE_SIGNED_URL_TTL` | `PT10M` | Fase 2 |
 | `WOMPI_PUBLIC_KEY` | | Fase 3 |
 | `WOMPI_PRIVATE_KEY` | | Fase 3 |
 | `WOMPI_EVENTS_SECRET` | | Fase 3 |
@@ -75,8 +78,19 @@ correo, ningún NIT, ningún porcentaje de comisión.
 informativo **anuncia** (RN-026, RN-051). En Colombia lo anunciado es exigible,
 así que la cifra no puede vivir en dos sitios: ni en una plantilla de Angular, ni
 en un archivo de traducción. El texto lleva el marcador y el valor lo interpola
-la aplicación. Eso obliga a exponer las dos al frontend, que hoy no las recibe;
-queda decidirlo al implementar HU-005, junto con los cuatro campos de empresa.
+la aplicación.
+
+Las dos se exponen al frontend desde HU-005, junto con los cuatro campos de
+empresa: `readAppConfig` las lee, las valida y las deja en el estado transferido,
+y las páginas informativas las interpolan en el texto. Si faltan, se sirve el
+valor de la regla de negocio —5% y 3 días— porque es el correcto; lo único que se
+pierde es poder cambiarlo sin desplegar. Lo que no se acepta es una cifra
+distinta de la regla sin que nadie se entere: los rangos se validan al arrancar y
+un valor fuera de ellos no levanta el servidor.
+
+Las tres filas de empresa y `SUPPORT_EMAIL` figuran como obligatorias porque el
+backend no arranca sin ellas. El frontend las trata como opcionales por lo que se
+explica más abajo, en su propia tabla.
 
 `CLAIM_WINDOW_DAYS` se cuenta en días **hábiles** desde la entrega y gobierna dos
 cosas a la vez: hasta cuándo puede reportar el comprador y cuándo se da la

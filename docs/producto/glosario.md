@@ -23,9 +23,14 @@ se anuncie en el idioma que se anuncie.
 | Vendedor | `Seller` | Rol del usuario cuando publica y vende. Persona natural. |
 | Vendedor verificado | `VerifiedSeller` | Vendedor que superó identidad, selfie y validación bancaria. Muestra sello. |
 | Moderador | `Moderator` | Persona de Sastra que aprueba o rechaza publicaciones. |
+| Administrador | `Admin` | Persona de Sastra con acceso a la operación completa: configuración, cuentas y resolución de disputas. No es un moderador con más permisos: el moderador decide sobre publicaciones y nada más. |
 
 Un usuario tiene una sola cuenta. Ser vendedor no es otra cuenta: es un rol
 adicional que se activa al completar la verificación.
+
+Los cuatro roles son los valores de `Role` y del `CHECK` de `user_roles`. Los dos
+últimos existen en el esquema desde Fase 1 y todavía no los otorga nadie: el
+panel que los usa llega en Fase 4 (`docs/producto/alcance.md`).
 
 ## Catálogo
 
@@ -93,6 +98,13 @@ regulatoria en Colombia: describen figuras financieras que Sastra no ejerce
 (RN-031).
 
 ## Estados
+
+**Cuenta:** `ACTIVE`, `BLOCKED`, `CLOSING`, `CLOSED`. Son los valores de
+`UserStatus` y del `CHECK` de `users`. Estar sin verificar **no** es un estado:
+es `email_verified_at` en nulo, porque la cuenta existe y se puede entrar en
+ella, solo que sin poder hacer nada más que reenviar el correo (RN-002).
+`CLOSING` está declarado y todavía no lo usa nadie: es el cierre que queda
+pendiente por pedidos sin resolver (RN-009), y en Fase 1 no hay pedidos.
 
 **Publicación:** `DRAFT`, `PENDING_REVIEW`, `PUBLISHED`, `REJECTED`, `PAUSED`,
 `SOLD`, `ARCHIVED`.

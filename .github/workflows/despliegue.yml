@@ -58,9 +58,33 @@ jobs:
             echo "etiqueta=main-${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
           fi
 
+  # Avisa, una sola vez y en verde, de que no hay nada configurado. Sin esto, la
+  # única señal serían dos trabajos omitidos sin explicación, y quien mire la
+  # ejecución no sabría si se saltaron a propósito o por un error del flujo.
+  sin-configurar:
+    name: Sin configurar
+    needs: destino
+    if: vars.GCP_PROJECT_ID == '' && vars.VERCEL_PROJECT_ID == ''
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "::notice::No hay nada desplegado todavía: falta crear las cuentas."
+          echo "El flujo está completo y la verificación ya pasó. Lo que falta son"
+          echo "el proyecto de Google Cloud, la base gestionada, el de Vercel y los"
+          echo "secretos. El procedimiento, en orden, está en:"
+          echo "  docs/operacion/despliegue.md"
+
   backend:
     name: Backend en Cloud Run
     needs: [verificar, destino]
+    # Se omite mientras no haya proyecto de Google Cloud configurado.
+    #
+    # Sin esta condición, cada integración a `main` deja una ejecución roja: el
+    # paso de autenticación falla porque no existen las variables. Y una
+    # canalización que está roja siempre deja de leerse, con lo cual el día que se
+    # rompa de verdad nadie lo va a notar. Omitido dice la verdad —no hay dónde
+    # desplegar— sin gastar la señal de alarma.
+    if: vars.GCP_PROJECT_ID != ''
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # El entorno `prod` lleva revisores obligatorios configurados en GitHub: es
@@ -150,6 +174,10 @@ jobs:
   frontend:
     name: Frontend en Vercel
     needs: [verificar, destino]
+    # Igual que el backend: omitido mientras no exista el proyecto de Vercel. Los
+    # dos se guardan por separado a propósito, para poder poner en pie una mitad
+    # antes que la otra.
+    if: vars.VERCEL_PROJECT_ID != ''
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment: ${{ needs.destino.outputs.entorno }}

@@ -46,5 +46,12 @@ Thumbs.db
 # Playwright
 /test-results
 /playwright-report
+
+# El registro del backend que dejan las pruebas de extremo a extremo completas.
+# Es un archivo generado y ademas lleva dentro los enlaces de verificacion con su
+# token en claro: es como la suite recupera el token (ADR-0017). Son de cuentas
+# @example.test contra una base local, no sirven para nada fuera de esa ejecucion,
+# pero un artefacto generado no se versiona.
+/e2e-completo/.registro-backend.log
 /blob-report
 /playwright/.cache

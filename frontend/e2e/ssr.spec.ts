@@ -40,7 +40,7 @@ test.describe('renderizado en servidor', () => {
     // Pie
     expect(html).toContain('Sastra S.A.S.');
     expect(html).toContain('000000000-0');
-    expect(html).toContain('mailto:hola@sastra.co');
+    expect(html).toContain('mailto:soporte@example.test');
   });
 
   /**

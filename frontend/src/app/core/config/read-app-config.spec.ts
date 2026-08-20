@@ -109,14 +109,14 @@ describe('readAppConfig', () => {
       COMPANY_NAME: 'Sastra S.A.S.',
       COMPANY_TAX_ID: '000000000-0',
       COMPANY_ADDRESS: '  Medellin, Colombia  ',
-      SUPPORT_EMAIL: 'hola@sastra.co',
+      SUPPORT_EMAIL: 'soporte@example.test',
     });
 
     expect(config.company).toEqual({
       name: 'Sastra S.A.S.',
       taxId: '000000000-0',
       address: 'Medellin, Colombia',
-      supportEmail: 'hola@sastra.co',
+      supportEmail: 'soporte@example.test',
     });
   });
 
@@ -137,6 +137,88 @@ describe('readAppConfig', () => {
 });
 
 /**
+ * Las cifras que el sitio informativo anuncia (HU-005). Se validan al leerlas y
+ * no al pintarlas: una comision negativa o una ventana de cero dias no son un
+ * problema de maquetacion, son una promesa incorrecta publicada, y en Colombia
+ * lo que se anuncia es exigible.
+ */
+describe('readAppConfig, cifras de negocio', () => {
+  it('cae en los valores de las reglas de negocio cuando no se declaran', () => {
+    expect(readAppConfig(MINIMUM).business).toEqual({
+      commissionRate: 0.05,
+      claimWindowDays: 3,
+    });
+  });
+
+  it('trata una cifra en blanco como ausente', () => {
+    expect(readAppConfig({ ...MINIMUM, COMMISSION_RATE: '   ' }).business.commissionRate).toBe(
+      0.05,
+    );
+  });
+
+  it('toma cada cifra de su variable', () => {
+    const config = readAppConfig({
+      ...MINIMUM,
+      COMMISSION_RATE: '0.08',
+      CLAIM_WINDOW_DAYS: '5',
+    });
+
+    expect(config.business).toEqual({ commissionRate: 0.08, claimWindowDays: 5 });
+  });
+
+  // El error que este proyecto tiene delante: la comision se escribe 0.05 en la
+  // configuracion y 5% en pantalla. Quien declare 5 esta anunciando un 500%.
+  it('rechaza una comision que no sea una fraccion', () => {
+    expect(() => readAppConfig({ ...MINIMUM, COMMISSION_RATE: '5' })).toThrowError(/fraccion/);
+    expect(() => readAppConfig({ ...MINIMUM, COMMISSION_RATE: '-0.1' })).toThrowError(/fraccion/);
+  });
+
+  /**
+   * Los bordes, que es donde estaba el hueco: el cero entraba y publicaba "no
+   * se cobra comision" en las cuatro paginas, y eso en Colombia es exigible.
+   * Se prueban los cuatro extremos, no solo el centro del rango.
+   */
+  it('rechaza una comision de cero y una por encima del techo de cordura', () => {
+    expect(() => readAppConfig({ ...MINIMUM, COMMISSION_RATE: '0' })).toThrowError(/RN-026/);
+    expect(() => readAppConfig({ ...MINIMUM, COMMISSION_RATE: '0.99' })).toThrowError(/RN-026/);
+    expect(() => readAppConfig({ ...MINIMUM, COMMISSION_RATE: '1' })).toThrowError(/RN-026/);
+    expect(readAppConfig({ ...MINIMUM, COMMISSION_RATE: '0.5' }).business.commissionRate).toBe(0.5);
+  });
+
+  it('rechaza una ventana de reclamo que no sea un entero de dias positivo', () => {
+    expect(() => readAppConfig({ ...MINIMUM, CLAIM_WINDOW_DAYS: '0' })).toThrowError(
+      /CLAIM_WINDOW_DAYS/,
+    );
+    expect(() => readAppConfig({ ...MINIMUM, CLAIM_WINDOW_DAYS: '2.5' })).toThrowError(
+      /CLAIM_WINDOW_DAYS/,
+    );
+    expect(() => readAppConfig({ ...MINIMUM, CLAIM_WINDOW_DAYS: '-3' })).toThrowError(
+      /CLAIM_WINDOW_DAYS/,
+    );
+  });
+
+  it('rechaza una ventana de reclamo de meses', () => {
+    expect(() => readAppConfig({ ...MINIMUM, CLAIM_WINDOW_DAYS: '31' })).toThrowError(/RN-051/);
+    expect(readAppConfig({ ...MINIMUM, CLAIM_WINDOW_DAYS: '1' }).business.claimWindowDays).toBe(1);
+  });
+
+  it('rechaza una cifra que no sea un numero en vez de servir NaN', () => {
+    expect(() => readAppConfig({ ...MINIMUM, COMMISSION_RATE: 'cinco' })).toThrowError(
+      /no es un numero/,
+    );
+  });
+
+  // La configuracion de relleno solo existe al construir, pero si llegara a
+  // pintarse no puede anunciar una comision indefinida.
+  it('la configuracion de relleno trae las cifras de las reglas', () => {
+    expect(readAppConfigForBootstrap({}).business).toEqual({
+      commissionRate: 0.05,
+      claimWindowDays: 3,
+    });
+  });
+});
+
+/**
  * Caso borde de HU-004: un despliegue con la configuracion de empresa a medias
  * arranca igual, pero lo dice. Descubrirlo mirando el pie en produccion es tarde.
  */
@@ -148,7 +230,7 @@ describe('avisosDeConfiguracion', () => {
     COMPANY_NAME: 'Sastra S.A.S.',
     COMPANY_TAX_ID: '000000000-0',
     COMPANY_ADDRESS: 'Medellin, Colombia',
-    SUPPORT_EMAIL: 'hola@sastra.co',
+    SUPPORT_EMAIL: 'soporte@example.test',
   };
 
   it('no avisa de nada cuando la configuracion esta completa', () => {

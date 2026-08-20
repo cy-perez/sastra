@@ -41,7 +41,7 @@ correo, ningún NIT, ningún porcentaje de comisión.
 | `APP_TIME_ZONE` | `America/Bogota` | no, `America/Bogota` por omisión |
 | `CORS_ALLOWED_ORIGINS` | lista separada por comas | sí |
 | `COMMISSION_RATE` | `0.05` | sí |
-| `CLAIM_WINDOW_DAYS` | `3` | no, `3` por omisión |
+| `CLAIM_WINDOW_DAYS` | `3` | Fase 3 |
 | `MAIL_PROVIDER` | `resend` o `console` | no, `resend` por omisión |
 | `MAIL_PROVIDER_API_KEY` | clave de Resend, ver ADR-0012 | sí |
 | `MAIL_FROM` | `hola@sastra.co` | sí |
@@ -81,6 +81,13 @@ queda decidirlo al implementar HU-005, junto con los cuatro campos de empresa.
 `CLAIM_WINDOW_DAYS` se cuenta en días **hábiles** desde la entrega y gobierna dos
 cosas a la vez: hasta cuándo puede reportar el comprador y cuándo se da la
 entrega por confirmada si no hace nada (RN-051, RN-052). Cambiarla mueve las dos.
+
+**Hoy la lee solo el frontend**, para escribir la cifra en las páginas
+informativas. En el backend figura como de Fase 3 porque no hay ninguna clase de
+propiedades que la lea todavía: la ventana no se aplica hasta que existan los
+pedidos. Cuando entre, las dos tienen que valer lo mismo, igual que las versiones
+de los documentos legales: una página que anuncie tres días y un sistema que
+libere a los cinco es publicidad engañosa.
 
 `APP_TIME_ZONE` no es cosmética: RN-008 compara fechas de calendario, no
 instantes. Con UTC, alguien en Colombia cumpliría 18 años cinco horas antes de
@@ -189,6 +196,27 @@ para `dev` y para `prod`.
 | `COMPANY_TAX_ID` | `1054994043-1` | no, el pie lo omite si falta |
 | `COMPANY_ADDRESS` | `Medellín, Colombia` | no, el pie lo omite si falta |
 | `SUPPORT_EMAIL` | `hola@sastra.co` | no, el pie lo omite si falta |
+| `COMMISSION_RATE` | `0.05` | no, RN-026 por omisión |
+| `CLAIM_WINDOW_DAYS` | `3` | no, RN-051 por omisión |
+
+Las dos últimas son las cifras que el sitio informativo **anuncia**: la comisión
+en el recorrido del vendedor y la ventana de reclamo en el del comprador
+(HU-005). Viajan al navegador porque las páginas las dicen en voz alta, y no son
+secretas: cualquiera que entre las lee.
+
+Se validan al leerlas, no al pintarlas. `COMMISSION_RATE` es una **fracción**
+mayor que `0` y hasta `0.5`: `0.05` es el 5%, quien declare `5` estaría
+anunciando un 500% y quien declare `0`, que no se cobra nada, así que el servidor
+no arranca en ninguno de los tres casos. El cero importa tanto como el 5: un
+despliegue a medias que deje la variable en cero publica «no cobramos comisión»
+en las cuatro páginas, y en Colombia lo anunciado es exigible frente a RN-026.
+`CLAIM_WINDOW_DAYS` tiene que ser un entero de días hábiles entre `1` y `30`; el
+techo es de cordura, no una regla: la ventana son 3 días (RN-051) y una de meses
+retiene el dinero del comprador todo ese tiempo. Una promesa incorrecta publicada
+no es un problema de maquetación.
+
+Si faltan, se sirve el valor de las reglas de negocio, que es el correcto; lo
+único que se pierde es poder cambiarlo sin desplegar.
 
 Las cuatro últimas son **las mismas variables que lee el backend**, no unas
 paralelas: es la misma empresa y no tendría sentido que el pie del sitio dijera

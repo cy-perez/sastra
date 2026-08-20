@@ -2,6 +2,11 @@
      encabezado y llega al contenido de la ruta. -->
 <a class="salto-al-contenido" href="#contenido">{{ 'layout.skipToContent' | transloco }}</a>
 
+<!-- El keydown no esta aqui sino en el host del componente (site-header.ts): tiene
+     que alcanzar la cabecera entera, porque Escape debe funcionar tambien con el
+     foco en el boton, que vive fuera del panel. Ponerlo en este `header` obliga
+     a hacerlo enfocable, y un contenedor que entra en el orden de tabulacion es
+     una parada de mas para quien navega con teclado. -->
 <header class="cabecera">
   <div class="contenedor barra">
     <!-- El nombre accesible vive en el enlace. Las dos imagenes llevan alt
@@ -12,6 +17,69 @@
       <img class="logo-oscuro" src="/logo-mono-negativo.svg" alt="" width="184" height="34" />
     </a>
 
+    <!-- Solo se ve por debajo de 640px. aria-expanded es lo que le dice al lector
+         de pantalla si lo que controla esta desplegado o no. -->
+    <button
+      #boton
+      type="button"
+      class="boton-icono boton-menu"
+      aria-controls="menu-principal"
+      [attr.aria-expanded]="abierto()"
+      [attr.aria-label]="menuLabelKey() | transloco"
+      (click)="alternarMenu()"
+    >
+      @if (abierto()) {
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.75"
+          aria-hidden="true"
+        >
+          <path d="M6 6l12 12M18 6L6 18" />
+        </svg>
+      } @else {
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.75"
+          aria-hidden="true"
+        >
+          <path d="M4 7h16M4 12h16M4 17h16" />
+        </svg>
+      }
+    </button>
+
+    <!-- Un solo panel para los dos tamanos: en escritorio es una fila, en movil
+         se despliega. No se duplican los enlaces porque el HTML servido tendria
+         cada pagina dos veces y el buscador ve dos navegaciones donde hay una. -->
+    <div #panel id="menu-principal" class="panel" [class.desplegado]="abierto()">
+      <!-- aria-label porque hay mas de un nav en la pagina: este y los dos del
+           pie. Sin distinguirlos, un lector anuncia tres "navegacion" iguales. -->
+      <nav class="navegacion" [attr.aria-label]="'layout.nav.label' | transloco">
+        <ul class="lista-nav" role="list">
+          @for (pagina of paginas; track pagina) {
+            <li>
+              <a
+                class="enlace-nav tipo-secundario"
+                [routerLink]="rutaDe(pagina)"
+                routerLinkActive="activo"
+                ariaCurrentWhenActive="page"
+                (click)="cerrarMenu()"
+              >
+                {{ 'layout.nav.pages.' + pagina | transloco }}
+              </a>
+            </li>
+          }
+        </ul>
+      </nav>
+    </div>
+
+    <!-- Fuera del panel a proposito: idioma, tema y sesion no son navegacion.
+         Dentro quedaban escondidos tras la hamburguesa por debajo de 640px, y
+         lo que HU-005 sustituye por el menu compacto son los enlaces, no los
+         controles con los que alguien entra o cambia de idioma. -->
     <div class="acciones">
       <label class="solo-lectores" for="language-picker">
         {{ 'layout.language.label' | transloco }}

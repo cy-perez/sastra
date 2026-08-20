@@ -38,6 +38,24 @@
         </address>
       </div>
 
+      <!-- Las paginas informativas (HU-005). Van antes que las legales porque es
+           lo que alguien busca en un pie: entender el sitio. Los documentos
+           legales se buscan cuando ya se sabe que se busca. -->
+      <nav class="columna" aria-labelledby="pie-sitio">
+        <h2 class="tipo-titulo-tarjeta titulo-columna" id="pie-sitio">
+          {{ 'layout.footer.contentLabel' | transloco }}
+        </h2>
+        <ul class="lista-enlaces" role="list">
+          @for (pagina of paginas; track pagina) {
+            <li>
+              <a class="tipo-secundario" [routerLink]="rutaDePagina(pagina)">
+                {{ 'layout.nav.pages.' + pagina | transloco }}
+              </a>
+            </li>
+          }
+        </ul>
+      </nav>
+
       <!-- La politica de tratamiento tiene que ser un enlace visible en el pie: es
            obligatorio y es lo primero que revisa una autoridad
            (docs/operacion/datos-personales.md). Los tres van juntos porque se

@@ -50,6 +50,22 @@
     "confirmEmail": {
       "title": "Confirmar correo nuevo",
       "description": "Termina el cambio de correo de tu cuenta de Sastra."
+    },
+    "howItWorks": {
+      "title": "Cómo funciona",
+      "description": "Cómo se compra y cómo se vende en Sastra: vendedores verificados, publicaciones revisadas y el pago retenido hasta que el comprador confirma la entrega."
+    },
+    "about": {
+      "title": "Qué es Sastra",
+      "description": "Sastra reúne la moda nueva y de segunda que hoy se vende dispersa en redes, con vendedores verificados y el pago retenido hasta la entrega."
+    },
+    "faq": {
+      "title": "Preguntas frecuentes",
+      "description": "Cómo comprar y vender en Sastra: verificación de vendedores, publicaciones revisadas, pago retenido, comisión y medios de pago."
+    },
+    "contact": {
+      "title": "Contacto",
+      "description": "Cómo comunicarte con Sastra y cómo ejercer tus derechos sobre tus datos personales."
     }
   },
   "layout": {
@@ -72,12 +88,24 @@
       "contactLabel": "Contacto",
       "company": {
         "taxId": "NIT"
-      }
+      },
+      "contentLabel": "El sitio"
     },
     "session": {
       "login": "Entrar",
       "logout": "Salir",
       "account": "Mi cuenta"
+    },
+    "nav": {
+      "label": "Principal",
+      "open": "Abrir el menú",
+      "close": "Cerrar el menú",
+      "pages": {
+        "howItWorks": "Cómo funciona",
+        "about": "Sobre Sastra",
+        "faq": "Preguntas frecuentes",
+        "contact": "Contacto"
+      }
     }
   },
   "home": {
@@ -381,6 +409,202 @@
         "body": "Ya puedes entrar con tu correo nuevo. Le avisamos al anterior por si no fuiste tú.",
         "goToLogin": "Iniciar sesión"
       }
+    }
+  },
+  "howItWorks": {
+    "title": "Cómo funciona Sastra",
+    "intro": "Comprar o vender moda por internet en Colombia suele significar transferirle a un desconocido y esperar, o despachar y esperar. Sastra se pone en medio con reglas iguales para los dos lados.",
+    "buyer": {
+      "title": "Si vas a comprar",
+      "steps": {
+        "browse": {
+          "title": "Eliges una prenda",
+          "body": "Cada publicación pasó por revisión antes de aparecer y muestra la prenda desde ocho ángulos, con su talla, sus medidas reales en centímetros y su condición declarada. Una prenda, una publicación: lo que ves es la pieza exacta que recibes."
+        },
+        "pay": {
+          "title": "Pagas producto más envío",
+          "body": "El envío se cotiza con las transportadoras y el valor es aproximado; lo ves antes de confirmar. La comisión de Sastra no se te suma: la asume el vendedor."
+        },
+        "hold": {
+          "title": "El pago queda retenido",
+          "body": "Tu pago lo recauda y lo retiene la pasarela. No llega al vendedor mientras la prenda viaja."
+        },
+        "confirm": {
+          "title": "Confirmas y se libera",
+          "body": "Cuando recibes la prenda y confirmas que corresponde a lo publicado, el pago se libera. Si no confirmas ni reportas nada dentro de la ventana de reclamo, se da por confirmada."
+        }
+      },
+      "claim": {
+        "title": "Si lo que recibes no es lo publicado",
+        "body": "Tienes {{dias}} días hábiles desde la entrega para reportarlo desde tu pedido, con fotos de lo que recibiste. Mientras el reporte esté abierto el pago sigue retenido, así que el reintegro sale de ese dinero y no depende de que el vendedor colabore. Si el reporte se acepta, se te devuelve el valor de la prenda y el envío que pagaste, y el flete de regreso lo asume el vendedor.",
+        "warning": "Confirmar la entrega cierra la ventana. Si algo no cuadra, repórtalo antes de confirmar."
+      },
+      "notCovered": {
+        "title": "Qué no entra en el reporte",
+        "body": "Que la talla no siente como esperabas o que el color se vea distinto en pantalla no es un producto no conforme, siempre que la prenda corresponda a lo publicado. Por eso cada publicación lleva medidas reales en centímetros: mídete una prenda que te quede bien y compárala antes de comprar.",
+        "retracto": "Aparte de esto existe el derecho de retracto que fija la ley colombiana, con sus propios plazos y excepciones. Está en los términos y condiciones."
+      }
+    },
+    "seller": {
+      "title": "Si vas a vender",
+      "steps": {
+        "verify": {
+          "title": "Te verificas",
+          "body": "Validas tu documento de identidad, envías una selfie y registras una cuenta bancaria a tu nombre. Es gratis y se hace una sola vez. Solo personas naturales mayores de edad pueden vender."
+        },
+        "publish": {
+          "title": "Publicas",
+          "body": "El asistente de captura te guía para tomar la prenda desde ocho ángulos y recorta todo a la misma proporción, así que tus fotos se ven como las del resto del catálogo. Declaras talla, medidas en centímetros y condición. Publicar no cuesta."
+        },
+        "review": {
+          "title": "Revisamos",
+          "body": "Cada publicación pasa por revisión antes de aparecer. Si algo falta, te decimos qué corregir y la reenvías."
+        },
+        "ship": {
+          "title": "Despachas",
+          "body": "Cuando alguien compra, el pago ya está retenido. Despachas con la transportadora y registras la guía."
+        },
+        "charge": {
+          "title": "Cobras",
+          "body": "Recibes el valor de la prenda menos la comisión del {{comision}}, en la cuenta bancaria que verificaste. Se libera cuando el comprador confirma la entrega o cuando vence la ventana de reclamo."
+        }
+      },
+      "duties": {
+        "title": "Lo que asumes",
+        "describe": "Describir la condición real, incluidas las manchas, el desgaste y las costuras sueltas. Las medidas en centímetros son obligatorias: son la causa número uno de reclamo en moda de segunda.",
+        "refund": "Si la prenda no corresponde a lo publicado o llega con un daño que no declaraste, asumes el flete de regreso y el comprador recibe su reintegro.",
+        "forbidden": "No se publican réplicas ni falsificaciones, ropa interior usada, artículos que no sean moda o accesorios, ni prendas con daño no declarado."
+      },
+      "why": {
+        "title": "Por qué aquí y no en un grupo de Facebook",
+        "alreadyPaid": {
+          "title": "El comprador ya pagó.",
+          "body": "No despachas contra una promesa de transferencia."
+        },
+        "free": {
+          "title": "No cuesta publicar.",
+          "body": "Puedes tener prendas publicadas sin vender y no pagas nada. Solo se cobra cuando vendes."
+        },
+        "photos": {
+          "title": "Tus fotos se ven bien.",
+          "body": "El asistente de captura fuerza el encuadre y la proporción, y con esas mismas tomas se arma la vista giratoria."
+        },
+        "payout": {
+          "title": "Cobras a tu cuenta.",
+          "body": "El desembolso llega a la cuenta bancaria que verificaste."
+        }
+      }
+    },
+    "cta": {
+      "title": "¿Listo para empezar?",
+      "body": "Crear la cuenta es gratis y toma un minuto. Para comprar no hace falta nada más; para vender, verificarte.",
+      "action": "Crear cuenta"
+    }
+  },
+  "about": {
+    "title": "Por qué existe Sastra",
+    "intro": "En Colombia se compra y se vende muchísima ropa de segunda, pero ocurre en grupos de Facebook, en historias de Instagram y en chats de WhatsApp. El comprador transfiere y espera. El vendedor despacha y espera. Los dos asumen un riesgo que nadie está cubriendo.",
+    "gathers": "Sastra reúne esa oferta dispersa en un solo catálogo y pone cuatro cosas que en un chat no existen: vendedores verificados con documento de identidad, cada publicación revisada antes de aparecer, fotos que muestran la prenda desde ocho ángulos, y un pago que no llega al vendedor hasta que el comprador confirma que recibió lo que se publicó.",
+    "notUs": "No fabricamos ropa ni la revendemos, y no tocamos el dinero: lo recauda y lo retiene la pasarela de pagos. Somos el lugar donde una persona le compra a otra con reglas claras para las dos.",
+    "company": {
+      "title": "Quién responde",
+      "taxId": "NIT"
+    }
+  },
+  "faq": {
+    "title": "Preguntas frecuentes",
+    "intro": "Lo que más se pregunta antes de comprar o de publicar por primera vez.",
+    "buyer": {
+      "title": "Si vas a comprar",
+      "real": {
+        "q": "¿Cómo sé que el vendedor es real?",
+        "a": "Todos los vendedores validan su documento de identidad, una selfie y una cuenta bancaria a su nombre antes de poder publicar. No se puede vender de forma anónima."
+      },
+      "whoGetsPaid": {
+        "q": "¿A quién le pago?",
+        "a": "El pago lo recauda y lo retiene la pasarela, no Sastra. El vendedor no lo recibe mientras la prenda viaja."
+      },
+      "release": {
+        "q": "¿Cuándo se le paga al vendedor?",
+        "a": "Cuando confirmas que recibiste la prenda y corresponde a lo publicado. Si no confirmas ni reportas nada dentro de la ventana de reclamo, se da por confirmada y el pago se libera."
+      },
+      "claim": {
+        "q": "¿Y si me llega algo distinto a lo publicado?",
+        "a": "Mientras no confirmes la entrega el pago sigue retenido. Tienes {{dias}} días hábiles desde la entrega para reportarlo desde tu pedido, con fotos de lo que recibiste. El reintegro sale de ese dinero y no depende de que el vendedor colabore: si el reporte se acepta, recibes el valor de la prenda y el envío que pagaste, y el flete de regreso lo asume el vendedor. Confirmar la entrega cierra la ventana: si algo no cuadra, repórtalo antes de confirmar."
+      },
+      "fit": {
+        "q": "¿La talla no me quedó, puedo devolverla?",
+        "a": "Que la talla no siente o que el color se vea distinto en pantalla no es un producto no conforme. Por eso cada publicación lleva medidas reales en centímetros. Aparte existe el derecho de retracto que fija la ley, con sus plazos y condiciones, en los términos y condiciones."
+      },
+      "shippingCost": {
+        "q": "¿Cuánto cuesta el envío?",
+        "a": "Depende del destino, del peso y del tamaño. Se cotiza con las transportadoras y lo ves antes de pagar. Es un valor aproximado. El envío lo paga el comprador y la comisión de Sastra no se te suma."
+      },
+      "payment": {
+        "q": "¿Cómo puedo pagar?",
+        "a": "Con PSE, Nequi, Bancolombia a la mano y tarjeta débito o crédito a través de Wompi, o a cuotas con Addi. No hay pago contraentrega."
+      },
+      "multiSeller": {
+        "q": "¿Puedo comprarle a dos vendedores a la vez?",
+        "a": "Sí, pero se generan dos pedidos, uno por vendedor, cada uno con su envío y su propio recorrido."
+      }
+    },
+    "seller": {
+      "title": "Si vas a vender",
+      "commission": {
+        "q": "¿Cuánto cobran?",
+        "a": "El {{comision}} sobre el valor de la prenda, a cargo del vendedor y solo cuando vendes. El envío no entra en la base de cálculo. Publicar es gratis."
+      },
+      "payout": {
+        "q": "¿Cuándo me pagan?",
+        "a": "El pago se libera cuando el comprador confirma la entrega, o cuando vence la ventana de reclamo sin que confirme ni reporte. Se desembolsa a la cuenta bancaria que verificaste, no a un saldo dentro de la plataforma."
+      },
+      "requirements": {
+        "q": "¿Qué necesito para vender?",
+        "a": "Tu documento de identidad, una selfie y una cuenta bancaria a tu nombre. Solo personas naturales mayores de edad, y la cuenta tiene que ser del titular del documento."
+      },
+      "photos": {
+        "q": "¿Qué fotos me piden?",
+        "a": "Ocho tomas de la prenda a 45 grados, que el asistente de captura te guía a tomar y recorta a la misma proporción. De ahí salen las cuatro vistas obligatorias, frente, los dos lados y espalda, y la vista giratoria."
+      },
+      "new": {
+        "q": "¿Puedo vender productos nuevos?",
+        "a": "Sí. Sastra tiene catálogo de nuevo y de segunda, y cada publicación indica su condición."
+      },
+      "forbidden": {
+        "q": "¿Qué no puedo publicar?",
+        "a": "Réplicas o falsificaciones, ropa interior usada, artículos que no sean moda o accesorios, y prendas con daño que no declares."
+      },
+      "moderation": {
+        "q": "¿Por qué revisan mi publicación?",
+        "a": "Porque un catálogo limpio es lo que hace que valga la pena comprar aquí. Toda publicación pasa por revisión, sin excepciones. Si se rechaza, se te dice el motivo y qué corregir, y la puedes reenviar."
+      },
+      "stock": {
+        "q": "¿Puedo publicar dos prendas iguales en una sola publicación?",
+        "a": "No. Una prenda, una publicación. Si tienes dos iguales, son dos publicaciones."
+      },
+      "dispute": {
+        "q": "¿Qué pasa si el comprador reclama?",
+        "a": "Si la prenda no corresponde a lo publicado o llegó con un daño que no declaraste, asumes el flete de regreso y el comprador recibe su reintegro. Describir bien la condición real es la mejor forma de que no ocurra."
+      }
+    }
+  },
+  "contact": {
+    "title": "Escríbenos",
+    "intro": "Si tienes un problema con un pedido, escríbenos desde el correo con el que compraste y con el número de pedido a la mano. Así respondemos más rápido.",
+    "email": {
+      "title": "Nuestro correo"
+    },
+    "account": {
+      "title": "Si ya tienes cuenta",
+      "body": "Tu nombre, ciudad, teléfono y correo los cambias tú, sin escribirnos.",
+      "link": "Ir a mi cuenta"
+    },
+    "rights": {
+      "title": "Tus datos personales",
+      "channel": "Por este mismo canal ejerces tus derechos a conocer, actualizar, rectificar y suprimir tus datos, y a revocar la autorización que nos diste.",
+      "deadlines": "Respondemos una consulta en diez días hábiles y un reclamo en quince, prorrogables una vez.",
+      "link": "Leer la política de tratamiento de datos"
     }
   }
 }

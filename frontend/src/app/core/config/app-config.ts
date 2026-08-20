@@ -43,6 +43,26 @@ export interface CompanyInfo {
   readonly supportEmail: string | null;
 }
 
+/**
+ * Cifras de negocio que el sitio informativo <strong>anuncia</strong>.
+ *
+ * <p>Viajan al navegador porque las paginas de HU-005 las dicen en voz alta: la
+ * comision en el recorrido del vendedor (RN-026) y la ventana de reclamo en el
+ * del comprador (RN-051). No son secretas: cualquiera que entre las lee.
+ *
+ * <p><strong>Nunca se escriben en una plantilla ni en un archivo de traduccion.</strong>
+ * En Colombia lo que se anuncia es exigible, asi que una cifra que viva en dos
+ * sitios es una promesa que puede contradecirse a si misma. El texto lleva el
+ * marcador y el valor lo interpola la aplicacion
+ * (docs/operacion/configuracion.md).
+ */
+export interface BusinessFigures {
+  /** Fraccion, no porcentaje: 0.05 es el 5%. La plantilla lo formatea con Intl. */
+  readonly commissionRate: number;
+  /** Dias habiles desde la entrega para reportar un producto no conforme. */
+  readonly claimWindowDays: number;
+}
+
 export interface AppConfig {
   /** Base de la API, incluida la version. Ejemplo: https://api.sastra.co/api/v1 */
   readonly apiBaseUrl: string;
@@ -52,6 +72,7 @@ export interface AppConfig {
   readonly sentryDsn: string | null;
   readonly legalVersions: LegalVersions;
   readonly company: CompanyInfo;
+  readonly business: BusinessFigures;
 }
 
 export const APP_CONFIG = new InjectionToken<AppConfig>('sastra.app-config');

@@ -1,5 +1,7 @@
 import { RenderMode, type ServerRoute } from '@angular/ssr';
 
+import { PAGINAS_DE_CONTENIDO, RUTAS_CONTENIDO } from './core/routes/content-routes';
+
 /**
  * Todo se renderiza en cada peticion, no se prerenderiza: el idioma, el tema y
  * la configuracion salen de las cabeceras y las cookies de quien pide la
@@ -23,6 +25,17 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'recuperar-contrasena', renderMode: RenderMode.Server },
   { path: 'restablecer-contrasena', renderMode: RenderMode.Server },
   { path: 'confirmar-correo-nuevo', renderMode: RenderMode.Server },
+  // Las cuatro informativas de HU-005. Son las que mas dependen de esto: existen
+  // para que alguien que duda las encuentre y las lea, asi que servirlas con 404
+  // las dejaria fuera del buscador aunque se pintaran enteras.
+  //
+  // Derivadas de la constante y no escritas otra vez: el modulo de core existe
+  // precisamente para que la direccion se declare en un solo sitio, y una lista
+  // repetida a mano es la forma exacta en que /ingresar se quedo fuera.
+  ...PAGINAS_DE_CONTENIDO.map((pagina): ServerRoute => ({
+    path: RUTAS_CONTENIDO[pagina].slice(1),
+    renderMode: RenderMode.Server,
+  })),
   // Los legales importan aqui mas que ninguna: son las que una autoridad revisa
   // y las que un buscador tiene que poder indexar.
   { path: 'terminos', renderMode: RenderMode.Server },

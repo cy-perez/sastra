@@ -68,7 +68,7 @@
 .lista-enlaces a {
   display: inline-flex;
   align-items: center;
-  min-height: 44px;
+  min-height: var(--destino-tactil);
   /* La direccion de correo es larga y en movil no cabe en una linea. */
   overflow-wrap: anywhere;
 }

@@ -25,6 +25,14 @@ que nada se publica sin compilar, pasar las pruebas de los cinco módulos, la
 cobertura agregada, el linter, las pruebas de accesibilidad y las de extremo a
 extremo completas.
 
+**Mientras no haya nada configurado, los dos trabajos de despliegue se omiten** y
+la ejecución sale en verde con un aviso que apunta a este documento. Es
+deliberado: si fallaran, cada integración a `main` dejaría una ejecución roja, y
+una canalización que está roja siempre deja de leerse justo antes del día en que
+se rompe de verdad. El interruptor es la presencia de `GCP_PROJECT_ID` y de
+`VERCEL_PROJECT_ID`; en cuanto existan, el trabajo correspondiente empieza a
+desplegar. Van por separado para poder poner en pie una mitad antes que la otra.
+
 Los secretos no pasan por GitHub Actions. Cloud Run los lee de Secret Manager y
 el flujo solo dice qué secreto va en qué variable de entorno. Consecuencia
 práctica: rotar la clave de Resend no toca el repositorio, y el registro de una

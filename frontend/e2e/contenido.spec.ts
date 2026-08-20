@@ -433,7 +433,15 @@ test.describe('preguntas frecuentes, plegado y enlaces', () => {
     await page.goto('/preguntas-frecuentes');
 
     const preguntas = page.locator('details summary h3');
-    const total = await page.locator('details').count();
+    const detalles = page.locator('details');
+
+    // `count()` es una foto sin reintento: se tomaba justo despues de navegar y
+    // con la maquina cargada devolvia 0, con lo que la prueba caia diciendo que
+    // no habia preguntas. Esperar a la primera es lo que da el momento en que la
+    // pagina ya esta pintada; a partir de ahi contar es seguro, porque las
+    // diecisiete llegan juntas en el HTML del servidor.
+    await expect(detalles.first()).toBeAttached();
+    const total = await detalles.count();
 
     expect(total).toBeGreaterThan(0);
     await expect(preguntas).toHaveCount(total);

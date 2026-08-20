@@ -49,6 +49,15 @@ spring-security-crypto = { module = "org.springframework.security:spring-securit
 # modulo que no atiende ninguna peticion.
 spring-web = { module = "org.springframework:spring-web" }
 
+# El convertidor JSON que RestClient necesita para serializar el cuerpo que se le
+# manda a Resend. Va aqui y no se hereda de nadie: `infrastructure` lo usaba sin
+# declararlo y funcionaba solo porque `presentation` arrastra Jackson con su
+# starter de webmvc. Si presentation cambiara de starter, ResendMailSender dejaria
+# de poder serializar y **no se notaria**, porque enviar() se traga la excepcion y
+# solo la registra: todos los correos transaccionales dejarian de salir con el
+# build en verde. Es el starter de JSON, no el de web: no trae servidor ni MVC.
+spring-boot-starter-json = { module = "org.springframework.boot:spring-boot-starter-json" }
+
 # Emision y lectura del token de acceso con HS256 (ADR-0003). Aporta JwtEncoder,
 # JwtDecoder y Nimbus JOSE por debajo. La version la fija el BOM.
 spring-security-oauth2-jose = { module = "org.springframework.security:spring-security-oauth2-jose" }

@@ -8,7 +8,30 @@ criterio 21 incluye la foto de perfil y esa parte no está. `avatar_url` existe 
 `users` desde V2 y sigue sin usarse porque subir una imagen exige almacenamiento
 de archivos, que es una rebanada aparte y no de esta fase
 (`docs/producto/alcance.md`). Nombre, ciudad, teléfono y cambio de correo con
-confirmación sí están.
+confirmación sí están. **Se decidió expresamente dejarla fuera de la Fase 1**, y
+no está pendiente de nadie: entra con una ADR de almacenamiento cuando llegue el
+momento de las imágenes.
+
+## Correcciones posteriores al cierre
+
+Dos cosas se dieron por hechas y no lo estaban. Se anotan porque las dos pasaron
+todas las pruebas que había:
+
+- **La descarga de datos del criterio 22 no incluía ciudad ni teléfono.** Los dos
+  son datos personales que la persona edita en su perfil, y el teléfono está
+  clasificado como interno del titular en `docs/operacion/datos-personales.md`:
+  omitirlos convertía el derecho a conocer en un resumen. El archivo respondía 200
+  y ninguna prueba miraba qué campos llevaba dentro. Corregido, con una prueba que
+  los enumera uno por uno en lugar de comprobar que el archivo no viene vacío.
+- **El perfil y la lista de sesiones de `/mi-cuenta` no se cargaban nunca.** Sus
+  consultas leían la señal de sesión dentro de una función que TanStack invoca
+  fuera del ámbito reactivo, así que nacían deshabilitadas y no se reactivaban.
+  Como la cabecera instancia el almacén en cada carga de página, siempre antes de
+  que termine la recuperación de la sesión por cookie, la pantalla se quedaba en
+  «Cargando tus datos» de forma permanente. Ninguna prueba de componente podía
+  verlo porque todas ponen la sesión antes de crear el componente. Lo encontró la
+  suite de extremo a extremo completa (`frontend/e2e-completo/`), que es
+  precisamente lo que faltaba de las pruebas requeridas de esta historia.
 
 ## Objetivo
 

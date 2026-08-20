@@ -5,8 +5,11 @@
 # cambio en docs/ que toque el contrato de la API deberia poder romper algo, y
 # saltarse la verificacion por la ruta del archivo es como se cuelan esos casos.
 #
-# Aqui no se despliega nada. El despliegue esta descrito en
-# docs/operacion/entornos.md y se anade cuando existan las cuentas.
+# Aqui no se despliega nada: el despliegue vive en despliegue.yml, que llama a
+# esta como paso previo obligatorio (`workflow_call`). Esa es la razon de que sea
+# reutilizable: si el despliegue repitiera los pasos por su cuenta, los dos
+# archivos se irian separando y llegaria el dia en que se despliega algo que paso
+# una verificacion mas floja que la de los pull request.
 
 name: Verificación
 
@@ -14,6 +17,8 @@ on:
   pull_request:
   push:
     branches: [main]
+  # Para que despliegue.yml la exija antes de publicar nada.
+  workflow_call:
 
 # Solo lectura: esta canalizacion no escribe en el repositorio.
 permissions:
@@ -109,4 +114,94 @@ jobs:
           path: |
             frontend/playwright-report/
             frontend/test-results/
+          retention-days: 7
+
+  # Las dos mitades juntas: backend real, PostgreSQL real y navegador real.
+  #
+  # Es un trabajo aparte de `frontend` y no un paso mas dentro, porque cuando algo
+  # se rompe importa muchisimo saber si se rompio el renderizado del servidor o el
+  # contrato entre las dos mitades. Y porque necesita Java y una base de datos:
+  # meterlo en el trabajo del frontend obligaria a instalar todo eso para correr
+  # unas pruebas que no lo necesitan.
+  #
+  # Cubre lo que docs/arquitectura/pruebas.md y las pruebas requeridas de HU-001
+  # pedian y no existia: registro, verificacion, ingreso, cierre y recuperacion de
+  # punta a punta. Antes estaban probados por mitades y ninguna mitad podia ver un
+  # contrato roto entre las dos.
+  extremo-a-extremo:
+    name: Extremo a extremo completo
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: sastra
+          POSTGRES_USER: sastra
+          POSTGRES_PASSWORD: sastra
+        ports:
+          - 5432:5432
+        # Sin esto, el backend arranca antes que la base y Flyway falla por una
+        # causa que no es la real.
+        options: >-
+          --health-cmd "pg_isready -U sastra -d sastra"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # El artefacto empaquetado, el mismo que se lleva la imagen de Cloud Run.
+      # `bootJar` no arrastra `test`: las pruebas ya corrieron en el trabajo
+      # `backend` y aqui no se excluye nada, simplemente esta tarea no las incluye.
+      - name: Empaquetar el backend
+        working-directory: backend
+        run: ./gradlew :bootstrap:bootJar
+
+      - name: Instalar dependencias del frontend
+        working-directory: frontend
+        run: npm ci
+
+      - name: Compilar el frontend
+        working-directory: frontend
+        run: npm run build
+
+      - name: Instalar navegador
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Pruebas de extremo a extremo completas
+        working-directory: frontend
+        env:
+          DB_URL: jdbc:postgresql://localhost:5432/sastra
+          DB_USERNAME: sastra
+          DB_PASSWORD: sastra
+        run: npm run e2e:completo
+
+      # El registro del backend incluido: cuando una de estas pruebas falla, casi
+      # siempre la causa esta ahi y no en la captura del navegador.
+      - name: Publicar informes si algo falla
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: informes-extremo-a-extremo
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+            frontend/e2e-completo/.registro-backend.log
           retention-days: 7

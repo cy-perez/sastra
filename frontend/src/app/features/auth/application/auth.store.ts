@@ -114,7 +114,29 @@ export class AuthStore {
     // solo puede ser 401, y pedirla igual gasta una peticion para descubrir algo
     // que ya se sabia. En el renderizado del servidor no hay sesion nunca
     // (session.store.ts), asi que alli esta consulta no llega a salir.
-    enabled: () => this.sesion.isAuthenticated(),
+    //
+    // **La senal se lee aqui, en las opciones, y no dentro de una funcion.**
+    //
+    // Escrito como `enabled: () => this.sesion.isAuthenticated()`, la lectura
+    // ocurre cuando TanStack invoca esa funcion, fuera del ambito reactivo de
+    // estas opciones: la senal no queda registrada como dependencia y la consulta
+    // no se reactiva cuando la sesion llega mas tarde.
+    //
+    // Eso rompia /mi-cuenta por completo, no solo al recargar. Este almacen es de
+    // raiz y `SessionMenu` lo inyecta desde app.html, asi que su observador nace
+    // en **cada** carga de pagina, siempre antes de que termine la recuperacion de
+    // la sesion por la cookie de refresco. La consulta nacia deshabilitada y se
+    // quedaba asi para toda la vida de la aplicacion: el perfil y la lista de
+    // sesiones no se cargaban nunca y la pantalla decia "Cargando tus datos" sin
+    // fin. Ninguna prueba de componente lo veia porque todas ponen la sesion antes
+    // de crear el componente; lo encontro la suite de extremo a extremo completa.
+    //
+    // Contrapartida asumida: al entrar, estas dos consultas salen aunque la
+    // persona no vaya a /mi-cuenta. Son dos peticiones autenticadas por inicio de
+    // sesion. Evitarlas exige sacar estas consultas del almacen de raiz para que
+    // solo existan mientras la pantalla de cuenta este montada, y eso es un cambio
+    // de estructura que no toca hacer dentro de esta correccion.
+    enabled: this.sesion.isAuthenticated(),
   }));
 
   /** Criterio 17: cerrar una sesion concreta y refrescar la lista. */
@@ -138,8 +160,10 @@ export class AuthStore {
     queryFn: () => this.api.profile(),
     staleTime: 0,
     retry: false,
-    // Igual que las sesiones: ruta autenticada, sin token no hay nada que pedir.
-    enabled: () => this.sesion.isAuthenticated(),
+    // Igual que las sesiones: ruta autenticada, sin token no hay nada que pedir. Y
+    // la senal se lee aqui y no dentro de una funcion, por el mismo motivo: ver la
+    // nota larga en `sessions`.
+    enabled: this.sesion.isAuthenticated(),
   }));
 
   /**

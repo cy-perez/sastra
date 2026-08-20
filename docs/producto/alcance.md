@@ -9,10 +9,25 @@ Es la fase en curso.
 
 **Plataforma**
 - Monorepo con backend y frontend, Gradle multi-módulo y Angular con SSR.
-- Sistema de diseño implementado: tokens, componentes base, modo oscuro,
-  selector de idioma, controles de accesibilidad.
+- Sistema de diseño implementado: tokens, componentes base, modo oscuro y
+  selector de idioma.
+- Controles y garantías de accesibilidad. La línea decía «controles de
+  accesibilidad» sin definir cuáles, y una frase así no se puede dar por
+  cumplida ni por incumplida. Son estos cinco, y están:
+  enlace de salto al contenido, foco visible de 3px que nunca se elimina,
+  conmutador de tema claro y oscuro, selector de idioma, y respeto de las
+  preferencias del sistema (`prefers-reduced-motion` y el tema preferido). La
+  lista completa y comprobable está en `docs/ui/accesibilidad.md`, y la audita
+  `frontend/e2e/accesibilidad.spec.ts` con axe sobre WCAG 2.2 AA en los dos
+  modos (ADR-0016). No entra ningún control de tamaño de texto: nadie lo ha
+  decidido y no se inventa aquí.
 - Internacionalización ES/EN funcionando con SSR.
 - Canalización de integración continua: compilar, probar, analizar y desplegar.
+  Los cuatro pasos existen: `.github/workflows/verificacion.yml` compila, prueba
+  y analiza, y `despliegue.yml` publica en `dev` con cada integración a `main` y
+  en `prod` con etiqueta y aprobación. Falta ejecutarlo por primera vez, que
+  depende de crear las cuentas: el procedimiento está en
+  `docs/operacion/despliegue.md`.
 - Base de datos con migraciones y esquema inicial de usuarios.
 
 **Cuentas**

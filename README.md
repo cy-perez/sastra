@@ -75,25 +75,38 @@ docs/        producto, arquitectura, ui, marca, operación, trabajo con IA
 | Pruebas del backend | `cd backend && gradlew.bat test` |
 | Pruebas del frontend | `cd frontend && npm test` |
 | Pruebas de extremo a extremo | `cd frontend && npm run e2e` |
+| Extremo a extremo con backend real | `cd frontend && npm run e2e:completo` |
+| Cobertura de los cinco módulos juntos | `cd backend && gradlew.bat verificarCoberturaAgregada` |
 | Verificación completa | `gradlew.bat check` y `npm run verify` |
 | Estado de las migraciones | `curl localhost:8080/actuator/flyway` |
+
+`npm run e2e:completo` arranca el backend de verdad, así que antes hace falta
+PostgreSQL levantado (`docker compose up -d postgres`) y el artefacto empaquetado
+(`cd backend && gradlew.bat :bootstrap:bootJar`). Si falta alguna de las dos, el
+propio comando lo dice y explica cómo.
 
 ## Integración continua
 
 `.github/workflows/verificacion.yml` se ejecuta en cada pull request y en cada
-integración a `main`, con dos trabajos en paralelo:
+integración a `main`, con tres trabajos en paralelo:
 
 | Trabajo | Qué hace |
 |---|---|
-| Backend | `gradlew check`: compila, Spotless, las reglas de ArchUnit, las pruebas con Testcontainers y el mínimo de cobertura |
+| Backend | `gradlew check`: compila, Spotless, las reglas de ArchUnit, las pruebas con Testcontainers y el mínimo de cobertura, medido sobre los cinco módulos juntos |
 | Frontend | `npm ci`, linter y formato, Vitest con cobertura, compilación y las pruebas de extremo a extremo con Playwright |
+| Extremo a extremo completo | Levanta PostgreSQL, el backend empaquetado y el servidor de renderizado, y recorre los caminos de cuentas por la interfaz |
 
 Si algo falla, los informes quedan como artefactos de la ejecución durante siete
 días. Es lo mismo que corre en local: `gradlew.bat check` y `npm run verify`.
 
-**Todavía no despliega.** El flujo completo está descrito en
-`docs/operacion/entornos.md` y se añade cuando existan las cuentas de Vercel,
-Cloud Run y la base gestionada.
+`.github/workflows/despliegue.yml` publica en `dev` con cada integración a `main`
+y en `prod` con una etiqueta de versión y aprobación manual. Llama a la
+verificación en lugar de repetir sus pasos, así que nada se publica sin pasarla
+entera.
+
+**Todavía no se ha desplegado nada.** Falta crear las cuentas: el proyecto de
+Google Cloud, la base gestionada, el de Vercel y los secretos. El procedimiento,
+en orden y una sola vez, está en `docs/operacion/despliegue.md`.
 
 Las dependencias las revisa Dependabot cada semana, agrupadas por ecosistema.
 Las subidas de versión mayor no se proponen automáticamente: exigen una ADR.

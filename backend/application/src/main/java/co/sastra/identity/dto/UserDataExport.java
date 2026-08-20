@@ -17,17 +17,34 @@ import org.jspecify.annotations.Nullable;
  * <p>Si lleva la evidencia de consentimiento con su version y su fecha, que es
  * justamente lo que le permite comprobar a que dijo que si.
  *
+ * <p><strong>Lo que si esta, esta entero.</strong> Todo dato personal que la
+ * persona puede editar en su perfil tiene que salir aqui: ciudad y telefono son
+ * datos suyos —el telefono clasificado como interno en
+ * docs/operacion/datos-personales.md— y omitirlos convierte el derecho a conocer
+ * en un resumen. La regla para decidir si un campo entra no es si parece
+ * interesante, sino si es de la persona o del sistema.
+ *
  * @param generado cuando se produjo este archivo, para que quien lo lea sepa a que
  *     momento corresponde
  */
 public record UserDataExport(
         Instant generado, Cuenta cuenta, List<Consentimiento> consentimientos, List<Sesion> sesiones) {
 
+    /**
+     * @param ciudad nula si nunca se puso o si se quito. Se emite igual con valor
+     *     nulo en lugar de omitirse: "no tenemos tu ciudad" es una respuesta al
+     *     derecho a conocer, y una clave ausente no la da
+     * @param telefono lo mismo. Es dato interno, no publico
+     *     (docs/operacion/datos-personales.md), pero interno significa que solo lo
+     *     ve su titular, y este archivo es justamente para su titular
+     */
     public record Cuenta(
             String id,
             String correo,
             String nombre,
             LocalDate fechaDeNacimiento,
+            @Nullable String ciudad,
+            @Nullable String telefono,
             String idioma,
             String estado,
             boolean correoVerificado,

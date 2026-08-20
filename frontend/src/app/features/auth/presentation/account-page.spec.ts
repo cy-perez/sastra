@@ -90,7 +90,13 @@ describe('AccountPage', () => {
     campo.dispatchEvent(new Event('input'));
   };
 
-  beforeEach(() => {
+  /**
+   * Aparte del `beforeEach` porque una prueba necesita montar la pantalla con la
+   * sesion todavia sin resolver, y para eso hace falta configurar sin ponerla.
+   * `SessionStore` no ofrece forma de volver a 'desconocida' a proposito: es el
+   * estado inicial y nada del producto tiene por que devolverlo ahi.
+   */
+  const configurar = () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
@@ -105,6 +111,10 @@ describe('AccountPage', () => {
         provideHttpClientTesting(),
       ],
     });
+  };
+
+  beforeEach(() => {
+    configurar();
     TestBed.inject(SessionStore).set(SESION);
   });
 
@@ -225,5 +235,60 @@ describe('AccountPage', () => {
     // La cuenta ya no existe: la sesion local no puede sobrevivirla.
     expect(TestBed.inject(SessionStore).isAuthenticated()).toBe(false);
     expect(navegar).toHaveBeenCalledWith('/');
+  });
+  /**
+   * La regresion que encontraron las pruebas de extremo a extremo completas.
+   *
+   * <p>Todas las demas pruebas de este archivo ponen la sesion **antes** de crear
+   * el componente. Al recargar /mi-cuenta con sesion abierta ocurre lo contrario:
+   * la ruta no tiene guarda, el enrutador crea la pantalla sin sesion y la
+   * recuperacion por la cookie de refresco termina despues.
+   *
+   * <p>Las consultas del perfil y de las sesiones evaluan su `enabled` al crear su
+   * observador, asi que montandolas antes nacian deshabilitadas y no se
+   * reactivaban nunca: la pantalla se quedaba en "Cargando tus datos" para
+   * siempre. Una consulta deshabilitada esta en estado pendiente, y por eso el
+   * sintoma era una carga eterna y no un error visible.
+   *
+   * <p>Y no era solo al recargar: `SessionMenu` vive en app.html e inyecta el
+   * mismo almacen de raiz, asi que el observador nacia sin sesion en **cada**
+   * carga y el perfil no se cargaba nunca.
+   *
+   * <p>Lo que se comprueba aqui es la secuencia entera: sin sesion no se pregunta
+   * nada, y en cuanto la sesion llega, se pregunta.
+   */
+  it('pide sus datos cuando la sesion llega despues de montarse la pantalla', async () => {
+    // Un TestBed limpio: `SessionStore` recien creado esta en 'desconocida', que
+    // es el estado con el que el enrutador crea esta pantalla en cada carga.
+    TestBed.resetTestingModule();
+    configurar();
+
+    const almacen = TestBed.inject(SessionStore);
+    expect(almacen.status()).toBe('desconocida');
+
+    const fixture = await render();
+    const backend = TestBed.inject(HttpTestingController);
+
+    // Sin sesion no se pregunta: seria un 401 seguro.
+    backend.expectNone((peticion) => peticion.url.startsWith(`${API}/users/me`));
+
+    almacen.set(SESION);
+    // No se espera a que se estabilice antes de responder: una peticion pendiente
+    // mantiene la aplicacion inestable, asi que habria que esperar para siempre.
+    // Se contesta dentro del bucle que asienta.
+    for (let vuelta = 0; vuelta < 8; vuelta++) {
+      await new Promise((listo) => setTimeout(listo, 0));
+      fixture.detectChanges();
+      backend
+        .match((peticion) => peticion.url.startsWith(`${API}/users/me`))
+        .forEach((peticion) => {
+          peticion.flush(peticion.request.url.endsWith('/sessions') ? LISTA : PERFIL);
+        });
+    }
+    await asentar(fixture);
+
+    const texto = fixture.nativeElement.textContent as string;
+    expect(texto).not.toContain('Cargando tus datos');
+    expect(texto).toContain('Chrome');
   });
 });

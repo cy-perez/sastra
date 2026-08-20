@@ -196,6 +196,8 @@ class UsersControllerTest {
                                 "ana@correo.co",
                                 "Ana Maria",
                                 LocalDate.of(1990, 3, 4),
+                                "Medellin",
+                                "+57 300 000 0000",
                                 "es",
                                 "ACTIVE",
                                 true,
@@ -210,6 +212,10 @@ class UsersControllerTest {
                 .andExpect(header().string("Content-Disposition", "attachment; filename=\"sastra-mis-datos.json\""))
                 .andExpect(header().string("Cache-Control", "no-store"))
                 .andExpect(jsonPath("$.cuenta.correo").value("ana@correo.co"))
+                // Ciudad y telefono salen en el archivo: son datos de la persona,
+                // no del sistema, y el derecho a conocer los alcanza.
+                .andExpect(jsonPath("$.cuenta.ciudad").value("Medellin"))
+                .andExpect(jsonPath("$.cuenta.telefono").value("+57 300 000 0000"))
                 // La evidencia con su version: es lo que prueba a que dijo que si.
                 .andExpect(jsonPath("$.consentimientos[0].version").value("2026-08-01"))
                 .andReturn();

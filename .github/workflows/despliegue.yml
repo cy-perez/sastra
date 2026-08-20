@@ -1,0 +1,208 @@
+# Despliegue de las dos mitades (docs/operacion/entornos.md).
+#
+#   rama de trabajo -> pull request -> verificación -> main -> dev automático
+#                                                          -> prod con etiqueta y aprobación
+#
+# Nada se despliega sin pasar antes la verificación completa: este flujo la
+# **llama** en lugar de repetir sus pasos, para que no puedan separarse con el
+# tiempo y acabe publicándose algo que pasó una revisión más floja que la de un
+# pull request.
+#
+# Los secretos no pasan por aquí. Cloud Run los lee de Secret Manager y GitHub
+# solo dice qué secreto va en qué variable: así el registro de una ejecución no
+# puede contener una contraseña, y rotar una no obliga a tocar el repositorio.
+# La autenticación contra Google es por federación de identidades, sin ninguna
+# clave JSON guardada. Lo que hay que crear una sola vez está en
+# docs/operacion/despliegue.md.
+
+name: Despliegue
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+# Un despliegue no se cancela a medias: dejaría una revisión a medio publicar.
+concurrency:
+  group: despliegue-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  # Necesario para pedir el token de federación de identidades a GitHub.
+  id-token: write
+
+jobs:
+  verificar:
+    name: Verificación previa
+    uses: ./.github/workflows/verificacion.yml
+
+  # Decide a qué entorno va esto. Una etiqueta de versión va a producción; un
+  # empujón a main, a desarrollo. Se calcula en un trabajo aparte porque los dos
+  # de abajo lo necesitan y `if` no puede definir un `environment`.
+  destino:
+    name: Destino
+    needs: verificar
+    runs-on: ubuntu-latest
+    outputs:
+      entorno: ${{ steps.decidir.outputs.entorno }}
+      etiqueta: ${{ steps.decidir.outputs.etiqueta }}
+    steps:
+      - id: decidir
+        run: |
+          if [ "${{ startsWith(github.ref, 'refs/tags/v') }}" = "true" ]; then
+            echo "entorno=prod" >> "$GITHUB_OUTPUT"
+            echo "etiqueta=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          else
+            echo "entorno=dev" >> "$GITHUB_OUTPUT"
+            echo "etiqueta=main-${GITHUB_SHA::12}" >> "$GITHUB_OUTPUT"
+          fi
+
+  backend:
+    name: Backend en Cloud Run
+    needs: [verificar, destino]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # El entorno `prod` lleva revisores obligatorios configurados en GitHub: es
+    # ahí donde vive la aprobación manual, no en un `if` de este archivo. Un
+    # archivo se cambia en un commit; un revisor obligatorio, no.
+    environment: ${{ needs.destino.outputs.entorno }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Autenticarse en Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Preparar el acceso a Artifact Registry
+        run: gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev --quiet
+
+      - name: Construir y publicar la imagen
+        env:
+          IMAGEN: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/sastra/backend
+        run: |
+          docker build -t "$IMAGEN:${{ needs.destino.outputs.etiqueta }}" backend
+          docker push "$IMAGEN:${{ needs.destino.outputs.etiqueta }}"
+
+      # Flyway migra al arrancar la revisión nueva, y Cloud Run no le manda
+      # tráfico hasta que su chequeo de estado responde. Por eso el orden que pide
+      # entornos.md —migrar antes de servir— se cumple sin un paso aparte, y por
+      # eso toda migración tiene que seguir siendo compatible hacia atrás: durante
+      # el cambio conviven la revisión vieja y la nueva.
+      - name: Desplegar la revisión
+        env:
+          IMAGEN: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/sastra/backend
+        run: |
+          gcloud run deploy ${{ vars.CLOUD_RUN_SERVICE }} \
+            --image "$IMAGEN:${{ needs.destino.outputs.etiqueta }}" \
+            --region ${{ vars.GCP_REGION }} \
+            --platform managed \
+            --port 8080 \
+            --min-instances ${{ vars.CLOUD_RUN_MIN_INSTANCES }} \
+            --max-instances ${{ vars.CLOUD_RUN_MAX_INSTANCES }} \
+            --memory ${{ vars.CLOUD_RUN_MEMORY }} \
+            --service-account ${{ vars.CLOUD_RUN_SERVICE_ACCOUNT }} \
+            --allow-unauthenticated \
+            --set-env-vars "SPRING_PROFILES_ACTIVE=${{ needs.destino.outputs.entorno }}" \
+            --set-env-vars "APP_BASE_URL=${{ vars.APP_BASE_URL }}" \
+            --set-env-vars "APP_API_BASE_URL=${{ vars.APP_API_BASE_URL }}" \
+            --set-env-vars "CORS_ALLOWED_ORIGINS=${{ vars.CORS_ALLOWED_ORIGINS }}" \
+            --set-env-vars "SUPPORT_EMAIL=${{ vars.SUPPORT_EMAIL }}" \
+            --set-env-vars "COMPANY_NAME=${{ vars.COMPANY_NAME }}" \
+            --set-env-vars "COMPANY_TAX_ID=${{ vars.COMPANY_TAX_ID }}" \
+            --set-env-vars "COMPANY_ADDRESS=${{ vars.COMPANY_ADDRESS }}" \
+            --set-env-vars "COMMISSION_RATE=${{ vars.COMMISSION_RATE }}" \
+            --set-env-vars "MAIL_PROVIDER=resend" \
+            --set-env-vars "MAIL_FROM=${{ vars.MAIL_FROM }}" \
+            --set-env-vars "LEGAL_TERMS_VERSION=${{ vars.LEGAL_TERMS_VERSION }}" \
+            --set-env-vars "LEGAL_PRIVACY_VERSION=${{ vars.LEGAL_PRIVACY_VERSION }}" \
+            --set-secrets "DB_URL=sastra-db-url:latest" \
+            --set-secrets "DB_USERNAME=sastra-db-username:latest" \
+            --set-secrets "DB_PASSWORD=sastra-db-password:latest" \
+            --set-secrets "JWT_SECRET=sastra-jwt-secret:latest" \
+            --set-secrets "JWT_ISSUER=sastra-jwt-issuer:latest" \
+            --set-secrets "MAIL_PROVIDER_API_KEY=sastra-mail-api-key:latest"
+
+      # Que el despliegue termine sin error no significa que la aplicación
+      # responda: comprobarlo aquí es lo que convierte un despliegue roto en un
+      # trabajo rojo en lugar de en un descubrimiento del día siguiente.
+      - name: Comprobar que responde
+        run: |
+          DIRECCION=$(gcloud run services describe ${{ vars.CLOUD_RUN_SERVICE }} \
+            --region ${{ vars.GCP_REGION }} --format 'value(status.url)')
+          echo "Comprobando $DIRECCION/actuator/health"
+          for intento in $(seq 1 20); do
+            if curl --fail --silent --show-error "$DIRECCION/actuator/health" > /dev/null; then
+              echo "Responde."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "No respondió tras 100 segundos."
+          exit 1
+
+  frontend:
+    name: Frontend en Vercel
+    needs: [verificar, destino]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: ${{ needs.destino.outputs.entorno }}
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar la CLI de Vercel
+        run: npm install --global vercel@latest
+
+      # Se construye aquí y se sube ya construido, en lugar de dejar que lo
+      # construya Vercel. Así el artefacto que se publica sale del mismo commit
+      # que acabó de pasar la verificación, con las mismas versiones exactas del
+      # `package-lock.json`, y no de una instalación que Vercel resuelve por su
+      # cuenta más tarde.
+      - name: Traer la configuración del entorno
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+        run: vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
+
+      - name: Construir
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+        run: vercel build --prod --token "$VERCEL_TOKEN"
+
+      - name: Publicar
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+        run: vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"
+
+      - name: Comprobar que responde
+        run: |
+          for intento in $(seq 1 20); do
+            if curl --fail --silent --show-error "${{ vars.APP_BASE_URL }}" > /dev/null; then
+              echo "Responde."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "No respondió tras 100 segundos."
+          exit 1

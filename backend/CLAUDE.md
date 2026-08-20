@@ -165,25 +165,45 @@ antes de escribir desde cero.
 
 Los starters en uso, ya verificados contra el BOM 4.1.0:
 `spring-boot-starter-webmvc`, `-validation`, `-data-jdbc`, `-flyway`,
-`-actuator`, `-test` y `spring-boot-starter` a secas en `bootstrap`.
+`-actuator`, `-security`, `-oauth2-resource-server`, `-json`, `-test` y
+`spring-boot-starter` a secas en `bootstrap`.
 
-Spring Security **todavía no está en el proyecto**: entra con HU-001, junto a su
-bean `SecurityFilterChain`. Agregarla antes deja toda la API detrás de una
-contraseña generada al azar y rompe hasta el chequeo de estado.
+`-json` está en `infrastructure` porque `RestClient` necesita un convertidor para
+serializar el cuerpo que va a Resend. Se usaba sin declararlo: llegaba de rebote
+por el starter de webmvc de `presentation`. Un módulo declara lo que usa, y de
+esto en concreto depende que salga cada correo transaccional —`enviar()` se traga
+la excepción y solo la registra, así que sin convertidor no saldría ninguno y el
+build seguiría en verde.
+
+Spring Security ya está en el proyecto desde HU-001, con su bean
+`SecurityFilterChain` en `presentation` (`SecurityConfig`). Cada endpoint declara
+su autorización y nada queda abierto por omisión.
 
 ## Pruebas
 
 - Unitarias de `domain` y `application`: JUnit 5, sin Spring, sin base de datos.
   Rápidas. Cobertura mínima 90% en `domain`.
-- Integración de `infrastructure`: Testcontainers con PostgreSQL 17. Nunca H2:
-  se comporta distinto y esconde errores reales.
+- `infrastructure` tiene pruebas propias de todo lo que no necesita base de datos:
+  Argon2, el generador de tokens, el emisor de JWT, los enlaces de correo y los
+  dos clientes externos, estos contra un servidor HTTP local. Los seis
+  repositorios JDBC **no** se pueden probar desde aquí: necesitan el esquema, y el
+  esquema lo define Flyway con las migraciones de `bootstrap`. Sus pruebas de
+  integración viven allí, con Testcontainers y PostgreSQL 17. Nunca H2: se
+  comporta distinto y esconde errores reales.
 - `@SpringBootTest` solo en `bootstrap` y solo para caminos completos.
 - Nombres de prueba en español descriptivo:
   `deberia_rechazar_registro_cuando_el_correo_ya_existe`.
 - Datos de prueba por constructores de objetos (`SellerBuilder`), no por SQL
   suelto repetido en cada prueba.
 - La cobertura mínima la exige `gradlew.bat check`, no es una aspiración: 90% en
-  `domain`, 80% en el resto.
+  `domain`, 80% en el resto. El 80% se mide **sobre los cinco módulos juntos**
+  (`verificarCoberturaAgregada`, en `backend/build.gradle.kts`) y no módulo a
+  módulo: medido por módulo, lo que `bootstrap` ejercita de `infrastructure` no
+  contaba, y un módulo sin pruebas propias no tenía datos de ejecución y se
+  saltaba la verificación entera sin decir nada. Ver
+  `docs/arquitectura/pruebas.md`.
+- La regla del módulo `infrastructure` excluye `persistence`, que es lo único que
+  no puede cubrir con pruebas propias. Lo que queda fuera lo mide la agregada.
 - Testcontainers 2 movió las clases de sitio. Es
   `org.testcontainers.postgresql.PostgreSQLContainer`, sin parámetro de tipo, no
   `org.testcontainers.containers.PostgreSQLContainer<?>` de la versión 1.

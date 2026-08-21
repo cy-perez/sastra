@@ -23,6 +23,7 @@ archunit = "1.5.0"
 jacoco = "0.8.15"
 spotless = "8.9.0"
 bouncycastle = "1.85.2"
+google-cloud-storage = "2.69.0"
 palantir-java-format = "2.97.0"
 
 [libraries]
@@ -66,6 +67,17 @@ spring-security-oauth2-jose = { module = "org.springframework.security:spring-se
 # gestiona su version, asi que va fijada aqui. El hash de almacenamiento es
 # Argon2id (docs/arquitectura/modelo-datos.md).
 bouncycastle-provider = { module = "org.bouncycastle:bcprov-jdk18on", version.ref = "bouncycastle" }
+
+# Cloud Storage, los dos almacenes de archivos (ADR-0018). Aprobada el 21 de agosto
+# de 2026: es la unica dependencia de un proveedor de nube en todo el backend, y
+# entra detras de dos puertos, asi que cambiar de proveedor es escribir otro
+# adaptador y no tocar ningun caso de uso.
+#
+# Version fijada aqui porque el BOM de Spring Boot no gestiona las librerias de
+# Google. Se usa el artefacto solo, sin el libraries-bom de GCP: es la unica que se
+# necesita, y una plataforma entera para una dependencia arrastra la version de
+# decenas que no estan.
+google-cloud-storage = { module = "com.google.cloud:google-cloud-storage", version.ref = "google-cloud-storage" }
 
 # --- presentation ----------------------------------------------------------
 # El starter monolitico spring-boot-starter no se usa: en Boot 4 cada pieza

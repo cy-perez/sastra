@@ -46,6 +46,13 @@ dependencies {
     testImplementation(libs.spring.boot.starter.data.jdbc)
     testImplementation(libs.spring.boot.starter.validation)
 
+    // Solo para sustituir el cliente de Cloud Storage por un doble en la prueba que
+    // comprueba que `provider=gcs` cablea los adaptadores de la nube. No entra en el
+    // classpath de ejecucion: `infrastructure` ya lo trae, y lo trae como
+    // `implementation` justamente para que la dependencia del proveedor no se herede
+    // ni se pueda importar desde otro modulo por descuido (ADR-0018).
+    testImplementation(libs.google.cloud.storage)
+
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.spring.boot.testcontainers)
     testImplementation(libs.testcontainers.postgresql)

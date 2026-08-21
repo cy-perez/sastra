@@ -27,7 +27,8 @@ class LocalFileStoresTest {
     Path raiz;
 
     private StorageProperties propiedades() {
-        return new StorageProperties("local", raiz, URI.create("https://archivos.sastra.co/"), 8_000_000, 200, 200);
+        return new StorageProperties(
+                "local", raiz, URI.create("https://archivos.sastra.co/"), 8_000_000, 200, 200, null, null, null);
     }
 
     private LocalPublicFileStore publico() {
@@ -148,8 +149,8 @@ class LocalFileStoresTest {
 
     @Test
     void deberia_componer_la_direccion_publica_cuando_la_base_no_trae_barra() {
-        StorageProperties sinBarra =
-                new StorageProperties("local", raiz, URI.create("https://archivos.sastra.co"), 8_000_000, 200, 200);
+        StorageProperties sinBarra = new StorageProperties(
+                "local", raiz, URI.create("https://archivos.sastra.co"), 8_000_000, 200, 200, null, null, null);
 
         assertThat(new LocalPublicFileStore(sinBarra).direccionDe(new FileKey("avatares/algo.png")))
                 .hasToString("https://archivos.sastra.co/avatares/algo.png");

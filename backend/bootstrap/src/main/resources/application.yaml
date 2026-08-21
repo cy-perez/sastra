@@ -142,6 +142,17 @@ sastra:
     # una historia y se anota en reglas-negocio.md.
     avatar-min-width: ${STORAGE_AVATAR_MIN_WIDTH:200}
     avatar-min-height: ${STORAGE_AVATAR_MIN_HEIGHT:200}
+    # Las tres siguientes son solo de `gcs` y se ignoran con `local`.
+    #
+    # El proyecto es opcional: sin el, la libreria lo toma de las credenciales, que
+    # es lo correcto dentro de Cloud Run. Se declara para poder fijarlo en una
+    # maquina donde `gcloud` apunte a otro proyecto.
+    project-id: ${STORAGE_PROJECT_ID:}
+    # Los dos cubos, y son dos a proposito: el permiso de lectura para allUsers se
+    # concede por cubo, asi que un solo cubo para las dos cosas hace publica la
+    # cedula de alguien (RN-046, ADR-0018). La aplicacion no arranca si son iguales.
+    public-bucket: ${STORAGE_PUBLIC_BUCKET:}
+    restricted-bucket: ${STORAGE_RESTRICTED_BUCKET:}
   legal:
     # Version del texto que la persona acepta. Sin ella el consentimiento no se
     # puede demostrar (docs/operacion/datos-personales.md).

@@ -3,14 +3,17 @@
 **Fecha:** 2026-08-20
 **Estado:** aceptada
 
-> **Dependencia aprobada el 21 de agosto de 2026.** El adaptador de Cloud Storage
-> necesita `com.google.cloud:google-cloud-storage`, que `CLAUDE.md` exige proponer
-> antes de agregar. Queda aprobada. Los puertos, la validación y el adaptador local
-> ya están implementados; el adaptador de Cloud Storage entra en su propia tarea.
+> **Implementada entera el 21 de agosto de 2026.** La dependencia
+> `com.google.cloud:google-cloud-storage` quedó aprobada ese día, fijada en la
+> versión 2.69.0, y con ella entraron `GcsPublicFileStore`, `GcsRestrictedFileStore`
+> y el cliente de `GcsWiring`. Los puertos, la validación y el adaptador local ya
+> estaban.
 >
-> Deja de ser opcional, además, por lo que dice `entornos.md`: mientras el sitio no
-> se despliegue se prueba en local **integrado contra Cloud Storage en capa
-> gratuita**, así que el adaptador hace falta para probar, no solo para publicar.
+> Los dos adaptadores conviven y los elige `sastra.storage.provider`: `local` para
+> desarrollo y para las dos suites de pruebas, que no deben depender de una cuenta de
+> nube ni de que haya red; `gcs` contra los cubos de verdad. Mientras el sitio no se
+> despliegue, esa es la integración que pide `entornos.md`: local contra la capa
+> gratuita.
 
 ## Contexto
 
@@ -129,6 +132,15 @@ Lo que se acepta perder:
   vídeo, no.
 - El adaptador local guarda en el sistema de archivos, que en Cloud Run es efímero.
   Es solo para desarrollo y pruebas, y el perfil de la nube nunca lo usa.
+- **Los nombres de los cubos son configuración, no constantes.** El nombre de un cubo
+  es único en todo Google, así que el que se quiera puede estar tomado. A cambio
+  aparece un error nuevo posible —los dos cubos apuntando al mismo sitio— que no da
+  ningún síntoma y publicaría la cédula de quien se verifique: por eso la aplicación
+  no arranca si son iguales.
+- **El objeto público se guarda con caché de un año e `immutable`.** La clave es un
+  identificador aleatorio que no se reutiliza, así que el contenido de una dirección
+  no puede cambiar, solo dejar de existir. Sin esa cabecera, cada visita al catálogo
+  vuelve a descargar imágenes que el navegador ya tenía.
 
 ## Cuándo revisar
 

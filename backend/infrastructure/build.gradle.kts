@@ -33,6 +33,11 @@ dependencies {
     // y la configuracion vive en esta capa (ADR-0003).
     api(libs.spring.security.oauth2.jose)
 
+    // Cloud Storage: los dos almacenes de archivos de ADR-0018. Solo se carga con
+    // `sastra.storage.provider=gcs`; con `local` los beans no se crean y la
+    // libreria no se toca.
+    implementation(libs.google.cloud.storage)
+
     // La configuracion se declara en clases @ConfigurationProperties validadas:
     // si falta una variable obligatoria, la aplicacion no arranca
     // (docs/operacion/configuracion.md).

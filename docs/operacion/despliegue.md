@@ -72,11 +72,13 @@ ejecución no puede contener una contraseña.
 
 ## 1. Google Cloud
 
-Crea el proyecto y anota su identificador.
+Crea el proyecto y anota su identificador. **El del proyecto es `sastra-col`**, y
+hoy es uno solo para todo: separar `dev` y `prod` en dos proyectos es una decisión
+del lanzamiento, y mientras no haya nada desplegado no habría qué separar.
 
 ```bash
-gcloud projects create sastra-prod --name="Sastra"
-gcloud config set project sastra-prod
+gcloud projects create sastra-col --name="Sastra"
+gcloud config set project sastra-col
 
 gcloud services enable \
   run.googleapis.com \
@@ -110,22 +112,20 @@ Dos cubos con garantías distintas (ADR-0018): el **público** sirve la foto de 
 y, en Fase 2, las tomas de producto; el **reservado** guarda la cédula y la selfie,
 que no se sirven por ninguna dirección pública (RN-046).
 
-> **El adaptador de Cloud Storage todavía no está escrito, pero ya está decidido.**
-> La dependencia `com.google.cloud:google-cloud-storage` quedó aprobada el 21 de
-> agosto de 2026 y ADR-0018 pasó a **aceptada**; el código del adaptador entra en su
-> propia tarea. Mientras no esté, `STORAGE_PROVIDER=local` es el único valor que
-> funciona: con `gcs` no hay bean de `PublicFileStore` y la aplicación no arranca. Y
-> `local` sirve para desarrollo pero **no en la nube**, porque el sistema de archivos
-> de Cloud Run es efímero y se lleva las fotos con la instancia.
+> **El adaptador de Cloud Storage ya está escrito** (`GcsPublicFileStore`,
+> `GcsRestrictedFileStore`), así que `STORAGE_PROVIDER=gcs` funciona. `local` sigue
+> siendo el valor de desarrollo y sirve para recorrer la subida sin credenciales,
+> pero **no vale en la nube**: el sistema de archivos de Cloud Run es efímero y se
+> lleva las fotos con la instancia.
 >
-> Estos dos cubos, en cambio, sí se crean ya: son capa gratuita y son contra lo que
-> se prueba en local mientras el sitio no se despliegue (ver «Cuándo se ejecuta esta
-> lista», arriba).
+> Estos dos cubos se crean ya, aunque el sitio no se despliegue: son capa gratuita y
+> son contra lo que se prueba en local (ver «Cuándo se ejecuta esta lista», arriba).
+> Cómo apuntar la máquina de desarrollo a ellos está al final de este paso.
 
 ### Los dos cubos
 
 ```bash
-PROYECTO=sastra-prod
+PROYECTO=sastra-col
 REGION=us-east1
 
 # El público. Acceso uniforme a nivel de cubo, no ACL por objeto: con ACL, un solo
@@ -211,18 +211,77 @@ y solo para el cubo público y solo para el dominio del sitio.
 
 ### Las variables
 
-Cuando el adaptador exista, en el entorno de la nube:
-
-| Variable | `dev` | `prod` |
+| Variable | Valor | Obligatoria |
 |---|---|---|
-| `STORAGE_PROVIDER` | `gcs` | `gcs` |
-| `STORAGE_PUBLIC_BASE_URL` | `https://storage.googleapis.com/sastra-publico-dev` | el dominio del CDN |
-| `STORAGE_LOCAL_PATH` | no se usa con `gcs` | ídem |
+| `STORAGE_PROVIDER` | `gcs` | sí, para usar Cloud Storage |
+| `STORAGE_PUBLIC_BUCKET` | `sastra-publico` | sí, con `gcs` |
+| `STORAGE_RESTRICTED_BUCKET` | `sastra-reservado` | sí, con `gcs` |
+| `STORAGE_PUBLIC_BASE_URL` | `https://storage.googleapis.com/sastra-publico` | sí |
+| `STORAGE_PROJECT_ID` | `sastra-col` | no |
+| `STORAGE_LOCAL_PATH` | no se usa con `gcs` | no |
+
+Los nombres de los cubos son variables y no constantes del código porque un nombre
+de cubo es único en todo Google: si `sastra-publico` estuviera tomado, el cubo se
+llama de otra forma y eso no puede exigir tocar el código.
+
+**Los dos cubos no pueden ser el mismo.** La aplicación no arranca si lo son, y esa
+comprobación existe porque es el error que no avisa: con un solo cubo todo funciona,
+y la cédula de la primera persona que se verifique queda donde `allUsers` puede
+leerla (RN-046).
+
+`STORAGE_PROJECT_ID` es opcional. Sin él, la librería toma el proyecto de las
+credenciales, que es lo correcto dentro de Cloud Run. Conviene ponerlo en una
+máquina donde `gcloud` apunte a otro proyecto.
 
 En producción conviene que `STORAGE_PUBLIC_BASE_URL` sea un dominio propio detrás
 del CDN y no `storage.googleapis.com`: la dirección de cada imagen queda escrita en
 el HTML que sirve el renderizado, y cambiar de proveedor después obliga a que todas
 esas direcciones sigan resolviendo.
+
+### Probar desde la máquina de desarrollo
+
+No hace falta ninguna clave descargada, y es mejor que no la haya: un archivo de
+clave JSON es justo el que acaba subido a un repositorio por accidente. La librería
+usa las credenciales de aplicación por omisión, así que basta con:
+
+```bash
+gcloud auth application-default login
+gcloud auth application-default set-quota-project sastra-col
+```
+
+Eso deja las credenciales de **tu** usuario, no de la cuenta de servicio, así que tu
+usuario necesita poder escribir en los cubos. Si eres quien creó el proyecto, ya
+eres `owner` y no hay que hacer nada más. Si no:
+
+```bash
+CUENTA=user:tu-correo@ejemplo.com
+
+gcloud storage buckets add-iam-policy-binding gs://sastra-publico   --member=$CUENTA --role=roles/storage.objectAdmin
+gcloud storage buckets add-iam-policy-binding gs://sastra-reservado   --member=$CUENTA --role=roles/storage.objectAdmin
+```
+
+Después, en el `.env` de la raíz del repositorio:
+
+```
+STORAGE_PROVIDER=gcs
+STORAGE_PROJECT_ID=sastra-col
+STORAGE_PUBLIC_BUCKET=sastra-publico
+STORAGE_RESTRICTED_BUCKET=sastra-reservado
+STORAGE_PUBLIC_BASE_URL=https://storage.googleapis.com/sastra-publico
+```
+
+Y se comprueba subiendo una foto de perfil en `/mi-cuenta`: la dirección de la
+imagen tiene que ser la de `storage.googleapis.com` y el objeto tiene que aparecer
+en el cubo.
+
+```bash
+gcloud storage ls gs://sastra-publico/avatares/
+```
+
+**Volver a `local` es cambiar una variable.** `STORAGE_PROVIDER=local` y ya: los
+beans de Cloud Storage no se crean y no se toca la red. Las dos suites de pruebas
+siguen corriendo con `local`, y eso es a propósito: la verificación no debe depender
+de una cuenta de nube ni de que haya red.
 
 ## 4. Los secretos
 
@@ -254,7 +313,7 @@ fueran la misma, la aplicación en marcha tendría permiso para desplegarse a s�
 misma.
 
 ```bash
-PROYECTO=sastra-prod
+PROYECTO=sastra-col
 NUMERO=$(gcloud projects describe $PROYECTO --format='value(projectNumber)')
 
 # La que ejecuta la aplicación. Solo lee secretos.
@@ -314,10 +373,12 @@ repositorio pida el mismo token.
 **Este paso no se puede seguir todavía: no hay proveedor.** Vercel quedó
 descartado y el hospedaje se contrata junto con el dominio, así que el proveedor se
 elige ese día (ADR-0019). Lo que sí está decidido es qué tiene que cumplir, y la
-lista está en esa ADR: ejecución de Node 22 para el renderizado en servidor, cuatro
-cabeceras de seguridad, dos políticas de caché, latencia comparable a `us-east1`,
-configuración por variable de entorno y publicación del artefacto que ya pasó la
-verificación.
+lista está en esa ADR: ejecución de Node 22 para el renderizado en servidor,
+latencia comparable a `us-east1`, configuración por variable de entorno,
+publicación del artefacto que ya pasó la verificación y que no toque las cabeceras
+que manda la aplicación. Las cabeceras de seguridad y las políticas de caché ya no
+son cosa del hospedaje: están en `frontend/src/server.ts` y las comprueba
+`frontend/e2e/cabeceras.spec.ts`.
 
 Cuando exista proveedor, este paso pasa a ser el suyo y hay que escribir a la vez
 el trabajo de despliegue del frontend en `despliegue.yml`, que hoy no existe.
@@ -353,7 +414,7 @@ aparezcan tachadas en los registros cuando haga falta leerlas.
 
 | Variable | `dev` | `prod` |
 |---|---|---|
-| `GCP_PROJECT_ID` | `sastra-dev` | `sastra-prod` |
+| `GCP_PROJECT_ID` | `sastra-col` | `sastra-col` (uno solo, ver paso 1) |
 | `GCP_REGION` | `us-east1` | `us-east1` |
 | `GCP_WORKLOAD_IDENTITY_PROVIDER` | ruta completa del proveedor del paso 5 | ídem |
 | `GCP_DEPLOY_SERVICE_ACCOUNT` | `sastra-despliegue@…` | ídem |

@@ -42,21 +42,11 @@ dónde se sirve el frontend con renderizado en servidor.
 ## Lo que el hospedaje tenga que ser, tendrá que cumplir esto
 
 Esta lista existe para que la elección se pueda hacer después sin volver a
-deducirla, y porque estas decisiones vivían dentro de `frontend/vercel.json`, que
-se borra con esta ADR. Son requisitos del sitio, no de un proveedor:
+deducirla:
 
 - **Ejecución de Node 22** para el renderizado en servidor. No es un sitio
   estático: `server.mjs` resuelve el idioma y el tema antes de pintar
   (`frontend/CLAUDE.md`), así que un hospedaje de archivos no sirve.
-- **Cuatro cabeceras de seguridad** en toda respuesta:
-  `X-Content-Type-Options: nosniff`, `Referrer-Policy:
-  strict-origin-when-cross-origin`, `X-Frame-Options: DENY` y
-  `Strict-Transport-Security: max-age=31536000; includeSubDomains`.
-- **Dos políticas de caché**: las fuentes de `/fuentes/` con
-  `public, max-age=31536000, immutable`, porque llevan huella en el nombre y no
-  cambian nunca; los documentos legales de `/legal/` con `max-age=300`, porque un
-  cambio de versión legal tiene que llegar pronto y no puede quedarse en una caché
-  por un año.
 - **Latencia hacia Colombia comparable a `us-east1`**, que es donde está el
   backend. La configuración anterior fijaba la región `iad1` de Vercel justamente
   por eso: para que la llamada del renderizado en servidor a la API no cruzara el
@@ -67,6 +57,40 @@ se borra con esta ADR. Son requisitos del sitio, no de un proveedor:
   pasó la verificación, no uno que el proveedor construya por su cuenta más tarde.
   El motivo es el de siempre: lo que se publica tiene que salir del mismo commit
   que se probó, con las versiones exactas del `package-lock.json`.
+- **Que no altere ni elimine las cabeceras que manda la aplicación.** Es lo único
+  que hace falta pedirle sobre ellas, por lo que sigue.
+
+### Las cabeceras y la caché ya no son requisito del hospedaje: son código
+
+`frontend/vercel.json` era el único sitio donde existían las cuatro cabeceras de
+seguridad del sitio y las dos políticas de caché propias. Al borrarlo pasaron a
+estar escritas aquí como requisito, y eso era mejor que perderlas pero seguía
+siendo la misma trampa: configuración de un proveedor que hay que reimplementar en
+cada mudanza, y ya hubo una.
+
+Están implementadas en el servidor de SSR, en `frontend/src/server.ts`:
+
+| Qué | Valor |
+|---|---|
+| `X-Content-Type-Options` | `nosniff` |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` |
+| `X-Frame-Options` | `DENY` |
+| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` |
+| Caché de `/fuentes/` | `public, max-age=31536000, immutable` |
+| Caché de `/legal/` | `public, max-age=300` |
+
+El middleware se registra antes que todo lo demás, así que las cabeceras van
+también en las respuestas que no renderiza Angular: los archivos estáticos y el
+500 de configuración incompleta, que son justo las que se olvidan. Y ahora se
+pueden probar: `frontend/e2e/cabeceras.spec.ts` las comprueba sobre la respuesta
+real del servidor, incluido el archivo estático y el 404. Como configuración de un
+proveedor no las comprobaba nada; la única forma de saber si seguían puestas era
+abrir el archivo.
+
+Los cinco minutos de la caché de `/legal/` merecen su motivo: los documentos legales viven
+en la misma carpeta pública que las fuentes, así que la regla general les daría un
+año. Un texto legal con un año de caché es servir una versión que ya no rige
+después de cambiarla.
 
 Se conserva, y ahora es más importante que antes, la condición que ADR-0009 puso:
 **nada específico del proveedor**. Sin funciones propias, sin su almacenamiento,
@@ -96,9 +120,9 @@ del frontend— es el mismo que habría que rehacer si la comparación diera otr
 
 ## Consecuencias
 
-- `frontend/vercel.json` se borra. Sus decisiones —cabeceras, caché, región— viven
-  en esta ADR como requisitos del hospedaje, no como configuración de un proveedor
-  descartado.
+- `frontend/vercel.json` se borra. Sus decisiones no se pierden: las cabeceras y
+  las dos políticas de caché son ahora código en el servidor de SSR, con pruebas;
+  la región queda arriba como requisito del hospedaje.
 - El trabajo `frontend` de `.github/workflows/despliegue.yml` se quita. El flujo
   publica solo el backend hasta que haya proveedor, y el interruptor de «no hay
   nada configurado» pasa a depender únicamente de `GCP_PROJECT_ID`.

@@ -5,7 +5,7 @@ import {
   writeResponseToNodeResponse,
 } from '@angular/ssr/node';
 import express from 'express';
-import { join } from 'node:path';
+import { join, sep } from 'node:path';
 
 import {
   assertRenderingEnvironment,
@@ -17,6 +17,45 @@ const browserDistFolder = join(import.meta.dirname, '../browser');
 
 const app = express();
 const angularApp = new AngularNodeAppEngine();
+
+/** Un anio, en segundos: lo que se cachean las fuentes. */
+const UN_ANIO = 31_536_000;
+
+/** Cinco minutos: lo que se cachea un documento legal. */
+const CINCO_MINUTOS = 300;
+
+/**
+ * Las cuatro cabeceras de seguridad del sitio, en toda respuesta (ADR-0019).
+ *
+ * <p>Vivian en `vercel.json` y estan aqui porque son del sitio y no del
+ * hospedaje. Como configuracion de un proveedor habia que reimplementarlas en
+ * cada mudanza, y ya hubo una: Vercel quedo descartado y el hospedaje esta por
+ * definir. Como codigo viajan con la aplicacion, valen para cualquier proveedor y
+ * las comprueba `e2e/cabeceras.spec.ts`.
+ *
+ * <p>Que sea lo primero que se registra es a proposito: asi las llevan tambien las
+ * respuestas que no renderiza Angular —los archivos estaticos y el 500 de
+ * configuracion incompleta de mas abajo—, que son justo las que se olvidan cuando
+ * esto se pone al lado del renderizado.
+ *
+ * <p>`Strict-Transport-Security` se manda siempre, tambien en local sobre HTTP. El
+ * navegador la ignora en una conexion sin cifrar, asi que no hace dano; ponerla
+ * condicionada al esquema significaria que la cabecera que protege produccion es
+ * la unica que nunca se prueba.
+ */
+app.use((_request, response, next) => {
+  // Sin esto, un archivo subido por alguien se puede servir como el tipo que el
+  // navegador adivine y no como el que declaramos.
+  response.setHeader('X-Content-Type-Options', 'nosniff');
+  // La direccion completa no sale del sitio hacia terceros: un identificador en
+  // la ruta no tiene por que llegarle a quien recibe la visita.
+  response.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  // Nadie mete el sitio en un marco. Es la defensa contra el robo de clics sobre
+  // los formularios de sesion.
+  response.setHeader('X-Frame-Options', 'DENY');
+  response.setHeader('Strict-Transport-Security', `max-age=${UN_ANIO}; includeSubDomains`);
+  next();
+});
 
 /**
  * Accept-CH pide al navegador que, a partir de la siguiente peticion, incluya su
@@ -35,14 +74,41 @@ app.use((_request, response, next) => {
 });
 
 /**
- * Archivos estaticos de /browser. Llevan hash en el nombre, asi que se pueden
- * cachear un ano sin riesgo.
+ * Archivos estaticos de /browser. Los que construye Angular llevan hash en el
+ * nombre, asi que se pueden cachear un ano sin riesgo.
+ *
+ * <p>Dos carpetas de `public/` no siguen esa regla y llevan politica propia
+ * (ADR-0019), tambien heredada de `vercel.json`:
+ *
+ * <ul>
+ *   <li><strong>`/fuentes/`</strong> se cachea un anio y ademas `immutable`: el
+ *   nombre del archivo lleva la familia y el grosor, asi que un cambio de fuente
+ *   es un archivo distinto y el navegador no tiene por que revalidar nunca.
+ *   <li><strong>`/legal/`</strong> se cachea cinco minutos y no un anio, que es lo
+ *   que le daria la regla general por estar en la misma carpeta. Un cambio de
+ *   version de los terminos o de la politica de datos tiene que llegar pronto:
+ *   quedarse un anio en una cache seria servir un texto legal que ya no rige.
+ * </ul>
+ *
+ * <p>La ruta que llega al callback es del sistema de archivos, asi que en Windows
+ * viene con barras invertidas. Se normaliza con el separador de la plataforma
+ * antes de mirarla: sin eso la comprobacion pasaria en la maquina de integracion,
+ * que es Linux, y fallaria en la de desarrollo.
  */
 app.use(
   express.static(browserDistFolder, {
     maxAge: '1y',
     index: false,
     redirect: false,
+    setHeaders: (response, rutaDelArchivo) => {
+      const ruta = rutaDelArchivo.split(sep).join('/');
+
+      if (ruta.includes('/fuentes/')) {
+        response.setHeader('Cache-Control', `public, max-age=${UN_ANIO}, immutable`);
+      } else if (ruta.includes('/legal/')) {
+        response.setHeader('Cache-Control', `public, max-age=${CINCO_MINUTOS}`);
+      }
+    },
   }),
 );
 

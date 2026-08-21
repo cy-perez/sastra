@@ -58,8 +58,10 @@ correo, ningún NIT, ningún porcentaje de comisión.
 | `PASSWORD_BREACH_CHECK_ENABLED` | `true` | no, `true` por omisión |
 | `PASSWORD_BREACH_CHECK_TIMEOUT` | `PT2S` | no |
 | `PASSWORD_BREACH_API_URL` | `https://api.pwnedpasswords.com/range` | no |
-| `STORAGE_BUCKET` | `sastra-media-dev` | Fase 2 |
-| `STORAGE_SIGNED_URL_TTL` | `PT10M` | Fase 2 |
+| `STORAGE_PROVIDER` | `local` o `gcs` | no, `local` por omisión |
+| `STORAGE_PUBLIC_BUCKET` | `sastra-publico` | sí, con `gcs` |
+| `STORAGE_RESTRICTED_BUCKET` | `sastra-reservado` | sí, con `gcs` |
+| `STORAGE_PROJECT_ID` | `sastra-col` | no |
 | `WOMPI_PUBLIC_KEY` | | Fase 3 |
 | `WOMPI_PRIVATE_KEY` | | Fase 3 |
 | `WOMPI_EVENTS_SECRET` | | Fase 3 |
@@ -191,6 +193,26 @@ selfie, que nunca se sirven por una dirección pública (RN-046).
 | `STORAGE_MAX_IMAGE_BYTES` | Tope por imagen | `8388608` (8 MB) |
 | `STORAGE_AVATAR_MIN_WIDTH` | Ancho mínimo de la foto de perfil | `200` |
 | `STORAGE_AVATAR_MIN_HEIGHT` | Alto mínimo de la foto de perfil | `200` |
+| `STORAGE_PUBLIC_BUCKET` | Cubo de lo que cualquiera ve | vacía; obligatoria con `gcs` |
+| `STORAGE_RESTRICTED_BUCKET` | Cubo de la cédula y la selfie | vacía; obligatoria con `gcs` |
+| `STORAGE_PROJECT_ID` | Proyecto de Google Cloud | vacía; la toma de las credenciales |
+
+Las tres últimas son solo de `gcs` y se ignoran con `local`.
+
+**Los dos cubos no pueden ser el mismo, y la aplicación no arranca si lo son.** La
+comprobación está en `StorageProperties` y existe porque es el error que no avisa:
+con un solo cubo todo funciona igual, y la cédula de la primera persona que se
+verifique queda en un cubo con lectura pública (RN-046). Los nombres son variables y
+no constantes del código porque el nombre de un cubo es único en todo Google: si
+`sastra-publico` estuviera tomado, el cubo se llama de otra forma y eso no puede
+exigir tocar el código.
+
+**Con `gcs` no hace falta ninguna clave.** Las credenciales son las de aplicación por
+omisión: dentro de Cloud Run, la cuenta de servicio del servicio, sin ningún secreto
+que rotar; en una máquina de desarrollo, lo que deja `gcloud auth
+application-default login`. Un archivo de clave JSON descargado no se necesita en
+ninguno de los dos casos, y es justo el que acaba subido a un repositorio por
+accidente. El procedimiento para probar en local está en `despliegue.md`, paso 3.
 
 `STORAGE_PROVIDER=local` guarda en el sistema de archivos y es el equivalente del
 proveedor de correo de consola: permite recorrer el criterio 21 completo sin

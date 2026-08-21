@@ -62,6 +62,17 @@ public class SecurityConfig {
                         // asi que estas rutas ni existen.
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
                         .permitAll()
+                        // Los archivos del almacen publico: fotos de perfil hoy, tomas
+                        // de producto en Fase 2. Publicas por definicion, igual que
+                        // cualquier imagen de un catalogo.
+                        //
+                        // **Solo existen con el almacen local.** En la nube las sirve
+                        // Cloud Storage y esta ruta no responde nada (ADR-0018), que es
+                        // lo que se quiere: el backend no es un servidor de archivos.
+                        // Lo reservado —cedula y selfie— no se sirve por ninguna ruta,
+                        // ni aqui ni alli (RN-046).
+                        .requestMatchers("/archivos/**")
+                        .permitAll()
                         .anyRequest()
                         .denyAll())
                 // El decodificador lo aporta infrastructure, que es quien tiene el

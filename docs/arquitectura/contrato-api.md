@@ -94,7 +94,20 @@ Reglas:
 Se mantiene en un enum del backend y en el archivo de traducciones del frontend.
 Agregar un código exige actualizar ambos en el mismo commit. Prefijos por
 contexto: `AUTH_`, `USER_`, `SELLER_`, `CATALOG_`, `ORDER_`, `PAYMENT_`,
-`SHIPPING_`, `COMMON_`.
+`SHIPPING_`, `FILE_`, `COMMON_`.
+
+`FILE_` es de los archivos que sube alguien y no pertenece a un contexto: lo usan
+la foto de perfil, el documento de identidad y las tomas de producto por igual
+(ADR-0018). Sus tres códigos y el estado con el que salen:
+
+| Código | Estado | Cuándo |
+|---|---|---|
+| `FILE_TYPE_UNSUPPORTED` | 415 | El contenido no es una imagen aceptada, decidido por los bytes de cabecera y no por la extensión ni el `Content-Type` |
+| `FILE_TOO_LARGE` | 413 | Pasa del tope de tamaño |
+| `FILE_DIMENSIONS_TOO_SMALL` | 422 | Es una imagen válida pero no llega al mínimo de píxeles |
+
+El 413 tiene su propio estado a propósito: con un 400 genérico el cliente no puede
+distinguir «recorta la imagen» de «revisa el formulario».
 
 ## Nombres de campos
 

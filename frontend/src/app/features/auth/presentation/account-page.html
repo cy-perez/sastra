@@ -9,6 +9,16 @@
   <sastra-profile-form />
 </section>
 
+<!-- Criterio 21. Bloque propio y no un campo mas del formulario del perfil: la
+     foto se sube al elegirla y el resto se guarda al enviar, asi que no comparten
+     ritmo ni boton. -->
+<section class="bloque">
+  <h2 class="tipo-h2">{{ 'auth.account.avatar.title' | transloco }}</h2>
+  <p class="tipo-cuerpo">{{ 'auth.account.avatar.body' | transloco }}</p>
+
+  <sastra-avatar-form />
+</section>
+
 <!-- Criterio 21. Aparte del perfil porque no termina al guardar: termina cuando
      alguien abre el enlace que llega al correo nuevo. -->
 <section class="bloque">

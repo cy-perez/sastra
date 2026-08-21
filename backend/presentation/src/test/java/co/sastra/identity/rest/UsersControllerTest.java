@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -18,6 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import co.sastra.identity.dto.ActiveSession;
 import co.sastra.identity.dto.CloseAccountCommand;
 import co.sastra.identity.dto.RequestEmailChangeCommand;
+import co.sastra.identity.dto.UpdateAvatarCommand;
 import co.sastra.identity.dto.UpdateProfileCommand;
 import co.sastra.identity.dto.UserDataExport;
 import co.sastra.identity.exception.CloseConfirmationMismatchException;
@@ -34,12 +36,19 @@ import co.sastra.identity.usecase.CloseAccountUseCase;
 import co.sastra.identity.usecase.ExportUserDataUseCase;
 import co.sastra.identity.usecase.ListSessionsUseCase;
 import co.sastra.identity.usecase.ReadProfileUseCase;
+import co.sastra.identity.usecase.RemoveAvatarUseCase;
 import co.sastra.identity.usecase.RequestEmailChangeUseCase;
 import co.sastra.identity.usecase.RequestEmailVerificationUseCase;
 import co.sastra.identity.usecase.RevokeSessionUseCase;
+import co.sastra.identity.usecase.UpdateAvatarUseCase;
 import co.sastra.identity.usecase.UpdateProfileUseCase;
+import co.sastra.shared.file.FileKey;
+import co.sastra.shared.file.ImageTooLargeException;
+import co.sastra.shared.file.UnsupportedImageTypeException;
+import co.sastra.shared.port.out.PublicFileStore;
 import co.sastra.shared.rest.ApiExceptionHandler;
 import co.sastra.shared.rest.RefreshCookies;
+import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -50,6 +59,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.core.MethodParameter;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -79,6 +89,9 @@ class UsersControllerTest {
     private final ReadProfileUseCase lectura = mock(ReadProfileUseCase.class);
     private final UpdateProfileUseCase perfil = mock(UpdateProfileUseCase.class);
     private final RequestEmailChangeUseCase cambioDeCorreo = mock(RequestEmailChangeUseCase.class);
+    private final UpdateAvatarUseCase avatar = mock(UpdateAvatarUseCase.class);
+    private final RemoveAvatarUseCase quitarAvatar = mock(RemoveAvatarUseCase.class);
+    private final PublicFileStore almacen = mock(PublicFileStore.class);
 
     private MockMvc mvc;
 
@@ -107,6 +120,22 @@ class UsersControllerTest {
         }
     }
 
+    private static User cuentaCon(@Nullable FileKey avatar) {
+        return User.rehidratar(
+                USUARIO,
+                new Email("ana@correo.co"),
+                new DisplayName("Ana Maria"),
+                new BirthDate(LocalDate.of(1990, 3, 4)),
+                new City("Medellin"),
+                new Phone("3001234567"),
+                avatar,
+                UserLocale.ES,
+                co.sastra.identity.model.UserStatus.ACTIVE,
+                AHORA,
+                java.util.EnumSet.of(co.sastra.identity.model.Role.BUYER),
+                AHORA);
+    }
+
     @BeforeEach
     void montarElBorde() {
         UsersController controlador = new UsersController(
@@ -118,6 +147,9 @@ class UsersControllerTest {
                 lectura,
                 perfil,
                 cambioDeCorreo,
+                avatar,
+                quitarAvatar,
+                almacen,
                 new RefreshCookies("sastra_refresh", "/api/v1/auth", true, Duration.ofDays(30)));
 
         mvc = MockMvcBuilders.standaloneSetup(controlador)
@@ -392,5 +424,93 @@ class UsersControllerTest {
                 .andExpect(jsonPath("$.code").value("COMMON_VALIDATION_FAILED"));
 
         verify(cambioDeCorreo, never()).execute(any());
+    }
+    /**
+     * Criterio 21: la foto llega como multipart y el borde no la valida.
+     *
+     * <p>Lo que se comprueba aqui es el contrato HTTP: que el archivo llega entero al
+     * caso de uso y que la respuesta trae la direccion de la foto, no su clave. La
+     * clave es un detalle del almacen y el cliente lo unico que hace con la foto es
+     * pintarla.
+     */
+    @Test
+    void deberia_recibir_la_foto_de_perfil_y_devolver_su_direccion_criterio_21() throws Exception {
+        byte[] contenido = {(byte) 0x89, 0x50, 0x4E, 0x47};
+        FileKey clave = new FileKey("avatares/la-foto.png");
+
+        when(avatar.execute(any())).thenReturn(cuentaCon(clave));
+        when(almacen.direccionDe(clave)).thenReturn(URI.create("https://archivos.sastra.co/avatares/la-foto.png"));
+
+        mvc.perform(multipart("/api/v1/users/me/avatar")
+                        .file(new MockMultipartFile("archivo", "lo-que-sea.png", "image/png", contenido))
+                        .with(peticion -> {
+                            peticion.setMethod("PUT");
+                            return peticion;
+                        }))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.avatarUrl").value("https://archivos.sastra.co/avatares/la-foto.png"));
+
+        ArgumentCaptor<UpdateAvatarCommand> captor = ArgumentCaptor.forClass(UpdateAvatarCommand.class);
+        verify(avatar).execute(captor.capture());
+
+        assertThat(captor.getValue().usuario()).isEqualTo(USUARIO);
+        assertThat(captor.getValue().contenido()).isEqualTo(contenido);
+    }
+
+    /** La clave con la que se guarda no sale nunca: el cliente recibe una direccion. */
+    @Test
+    void nunca_deberia_devolver_la_clave_del_archivo() throws Exception {
+        FileKey clave = new FileKey("avatares/la-foto.png");
+        when(lectura.execute(USUARIO)).thenReturn(cuentaCon(clave));
+        when(almacen.direccionDe(clave)).thenReturn(URI.create("https://archivos.sastra.co/avatares/la-foto.png"));
+
+        MvcResult resultado =
+                mvc.perform(get("/api/v1/users/me")).andExpect(status().isOk()).andReturn();
+
+        assertThat(resultado.getResponse().getContentAsString()).doesNotContain("avatarKey");
+    }
+
+    @Test
+    void deberia_quitar_la_foto_de_perfil_criterio_21() throws Exception {
+        when(quitarAvatar.execute(USUARIO)).thenReturn(cuentaCon(null));
+
+        mvc.perform(delete("/api/v1/users/me/avatar"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.avatarUrl").doesNotExist());
+
+        verify(quitarAvatar).execute(USUARIO);
+    }
+
+    /**
+     * El tipo se decide por el contenido, y cuando no es una imagen la respuesta es
+     * 415: le dice al cliente que el problema es el formato y no lo que hay dentro.
+     */
+    @Test
+    void deberia_responder_415_cuando_lo_subido_no_es_una_imagen() throws Exception {
+        doThrow(new UnsupportedImageTypeException()).when(avatar).execute(any());
+
+        mvc.perform(multipart("/api/v1/users/me/avatar")
+                        .file(new MockMultipartFile("archivo", "falsa.jpg", "image/jpeg", "<script>".getBytes()))
+                        .with(peticion -> {
+                            peticion.setMethod("PUT");
+                            return peticion;
+                        }))
+                .andExpect(status().isUnsupportedMediaType())
+                .andExpect(jsonPath("$.code").value("FILE_TYPE_UNSUPPORTED"));
+    }
+
+    /** 413 y no 400: con un 400 el cliente no distingue "recorta" de "revisa el formulario". */
+    @Test
+    void deberia_responder_413_cuando_la_imagen_pasa_del_maximo() throws Exception {
+        doThrow(new ImageTooLargeException(9_000_000, 8_388_608)).when(avatar).execute(any());
+
+        mvc.perform(multipart("/api/v1/users/me/avatar")
+                        .file(new MockMultipartFile("archivo", "grande.png", "image/png", new byte[] {1}))
+                        .with(peticion -> {
+                            peticion.setMethod("PUT");
+                            return peticion;
+                        }))
+                .andExpect(status().isContentTooLarge())
+                .andExpect(jsonPath("$.code").value("FILE_TOO_LARGE"));
     }
 }

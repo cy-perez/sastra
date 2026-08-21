@@ -118,6 +118,30 @@ sastra:
     password-reset-path: ${MAIL_PASSWORD_RESET_PATH:/restablecer-contrasena}
     # Criterio 21: confirma el correo nuevo antes de reemplazar el anterior.
     email-change-path: ${MAIL_EMAIL_CHANGE_PATH:/confirmar-correo-nuevo}
+  storage:
+    # local guarda en el sistema de archivos y sirve para desarrollo; gcs es Cloud
+    # Storage (ADR-0018). El sistema de archivos de Cloud Run es efimero, asi que
+    # `local` en la nube pierde lo guardado con la instancia.
+    provider: ${STORAGE_PROVIDER:local}
+    # Raiz de los dos almacenes cuando el proveedor es local. Dentro se crean dos
+    # carpetas, publica y reservada: son dos almacenes tambien aqui.
+    local-path: ${STORAGE_LOCAL_PATH:./archivos-locales}
+    # Desde donde se sirven los archivos publicos. No se guarda en la base: si se
+    # guardara, cambiar de CDN obligaria a reescribir la tabla.
+    public-base-url: ${STORAGE_PUBLIC_BASE_URL}
+    # Cloud Run no acepta peticiones de mas de 32MB, asi que subirlo por encima de
+    # eso no sirve de nada. 8MB sobra para una imagen 3:4 ya recortada en cliente.
+    max-image-bytes: ${STORAGE_MAX_IMAGE_BYTES:8388608}
+    # Minimo para la FOTO DE PERFIL, no para las tomas de producto.
+    #
+    # RN-019 fija 900x1200 y eso es de las tomas de producto (HU-003), no del
+    # avatar: aplicarselo rechazaria casi cualquier foto que alguien tenga a mano.
+    # Nadie ha decidido un minimo para el avatar, asi que estos 200x200 son un
+    # valor de arranque, no una regla de negocio: solo evita que se suba un icono
+    # de 16px que se vera borroso en la cabecera. Si se decide una regla, entra en
+    # una historia y se anota en reglas-negocio.md.
+    avatar-min-width: ${STORAGE_AVATAR_MIN_WIDTH:200}
+    avatar-min-height: ${STORAGE_AVATAR_MIN_HEIGHT:200}
   legal:
     # Version del texto que la persona acepta. Sin ella el consentimiento no se
     # puede demostrar (docs/operacion/datos-personales.md).

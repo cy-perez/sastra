@@ -72,7 +72,122 @@ Crea la base y guarda los tres valores como secretos. **Con Cloud SQL hace falta
 además el conector**, y entonces el `DB_URL` cambia de forma; con Neon o Supabase
 basta la cadena normal con `sslmode=require`.
 
-## 3. Los secretos
+## 3. El almacén de archivos
+
+Dos cubos con garantías distintas (ADR-0018): el **público** sirve la foto de perfil
+y, en Fase 2, las tomas de producto; el **reservado** guarda la cédula y la selfie,
+que no se sirven por ninguna dirección pública (RN-046).
+
+> **El adaptador de Cloud Storage todavía no está escrito.** Necesita la dependencia
+> `com.google.cloud:google-cloud-storage`, y `CLAUDE.md` exige una decisión explícita
+> antes de agregarla, así que ADR-0018 está en estado **propuesta**. Lo que sigue es
+> lo que hay que crear en Google; el código del adaptador entra cuando se apruebe la
+> ADR. Hasta entonces `STORAGE_PROVIDER=local` es el único que funciona, y sirve para
+> desarrollo pero **no en la nube**: el sistema de archivos de Cloud Run es efímero.
+
+### Los dos cubos
+
+```bash
+PROYECTO=sastra-prod
+REGION=us-east1
+
+# El público. Acceso uniforme a nivel de cubo, no ACL por objeto: con ACL, un solo
+# objeto mal marcado queda expuesto o inaccesible y nadie lo nota.
+gcloud storage buckets create gs://sastra-publico   --project=$PROYECTO --location=$REGION --uniform-bucket-level-access
+
+# El reservado. Mismo comando y una diferencia que es todo el punto: este nunca
+# recibe el permiso de lectura pública del paso siguiente.
+gcloud storage buckets create gs://sastra-reservado   --project=$PROYECTO --location=$REGION --uniform-bucket-level-access
+```
+
+Misma región que Cloud Run. Un cubo en otra región se paga en latencia en cada
+imagen del catálogo y en tráfico entre regiones.
+
+### Lectura pública, solo en uno
+
+```bash
+gcloud storage buckets add-iam-policy-binding gs://sastra-publico   --member=allUsers --role=roles/storage.objectViewer
+```
+
+`allUsers` da miedo escrito así y es lo correcto **para este cubo**: son las imágenes
+de un catálogo, tienen que verse sin credenciales. Lo que protege lo demás es que
+este comando no se ejecuta nunca sobre `sastra-reservado`. Que sean dos cubos y no
+dos carpetas del mismo es exactamente lo que permite eso.
+
+Conviene comprobarlo después, porque es el error que no avisa:
+
+```bash
+# Debe decir allUsers.
+gcloud storage buckets get-iam-policy gs://sastra-publico --format=json | grep allUsers
+
+# Y aquí no debe decir nada. Si dice algo, la cédula de alguien es pública.
+gcloud storage buckets get-iam-policy gs://sastra-reservado --format=json | grep allUsers
+```
+
+### Los permisos de la aplicación
+
+La cuenta que ejecuta (`sastra-backend`, del paso siguiente) necesita distinto
+permiso en cada cubo, y ahí está la diferencia que importa:
+
+```bash
+CUENTA=serviceAccount:sastra-backend@$PROYECTO.iam.gserviceaccount.com
+
+# Público: crear y borrar objetos.
+gcloud storage buckets add-iam-policy-binding gs://sastra-publico   --member=$CUENTA --role=roles/storage.objectAdmin
+
+# Reservado: lo mismo, y nada más. No se le da `admin` sobre el cubo, así que no
+# puede cambiar su política de acceso ni hacerlo público por error.
+gcloud storage buckets add-iam-policy-binding gs://sastra-reservado   --member=$CUENTA --role=roles/storage.objectAdmin
+```
+
+### Borrado y versiones
+
+**Sin versionado de objetos en ninguno de los dos.** Es lo contrario de lo habitual
+y es deliberado: con versionado, borrar un objeto guarda una copia anterior, así que
+el derecho de eliminación de la Ley 1581 dejaría la selfie de alguien en una versión
+retenida. Cerrar la cuenta borra el archivo y tiene que borrarlo de verdad
+(`datos-personales.md`).
+
+Una regla de ciclo de vida sí conviene, para limpiar lo que quede huérfano cuando un
+borrado falle:
+
+```bash
+cat > ciclo.json <<'JSON'
+{
+  "rule": [
+    {
+      "action": {"type": "Delete"},
+      "condition": {"daysSinceNoncurrentTime": 1, "isLive": false}
+    }
+  ]
+}
+JSON
+gcloud storage buckets update gs://sastra-publico --lifecycle-file=ciclo.json
+```
+
+### CORS: no hace falta
+
+Las imágenes se cargan con `<img src>`, y eso no está sujeto a CORS. Configurarlo
+«por si acaso» abre el cubo a lecturas desde JavaScript de cualquier origen sin que
+nadie lo necesite. Si algún día el visor 360 lee píxeles con `canvas`, entonces sí,
+y solo para el cubo público y solo para el dominio del sitio.
+
+### Las variables
+
+Cuando el adaptador exista, en el entorno de la nube:
+
+| Variable | `dev` | `prod` |
+|---|---|---|
+| `STORAGE_PROVIDER` | `gcs` | `gcs` |
+| `STORAGE_PUBLIC_BASE_URL` | `https://storage.googleapis.com/sastra-publico-dev` | el dominio del CDN |
+| `STORAGE_LOCAL_PATH` | no se usa con `gcs` | ídem |
+
+En producción conviene que `STORAGE_PUBLIC_BASE_URL` sea un dominio propio detrás
+del CDN y no `storage.googleapis.com`: la dirección de cada imagen queda escrita en
+el HTML que sirve el renderizado, y cambiar de proveedor después obliga a que todas
+esas direcciones sigan resolviendo.
+
+## 4. Los secretos
 
 Seis secretos, con estos nombres exactos porque son los que nombra el flujo:
 
@@ -95,7 +210,7 @@ crear_secreto sastra-jwt-secret "$(openssl rand -base64 48)"
 invalida todos los tokens de acceso emitidos: la gente tiene que volver a entrar.
 No es motivo para no rotarlo, sí para hacerlo a una hora tranquila.
 
-## 4. Las dos cuentas de servicio
+## 5. Las dos cuentas de servicio
 
 Dos, y no una, porque hacen cosas distintas: una despliega y la otra ejecuta. Si
 fueran la misma, la aplicación en marcha tendría permiso para desplegarse a sí
@@ -127,7 +242,7 @@ for papel in roles/run.admin roles/artifactregistry.writer roles/iam.serviceAcco
 done
 ```
 
-## 5. Federación de identidades
+## 6. Federación de identidades
 
 Es lo que permite que GitHub se autentique **sin ninguna clave JSON guardada en
 el repositorio**. Una clave JSON en los secretos de GitHub es una credencial
@@ -157,7 +272,7 @@ Cambia `TU-USUARIO/sastra` por el repositorio real en los dos sitios. El
 `attribute-condition` es la pieza que importa: es lo que impide que otro
 repositorio pida el mismo token.
 
-## 6. Vercel
+## 7. Vercel
 
 Crea el proyecto apuntando a la carpeta `frontend/` del repositorio. Anota el
 identificador de la organización y el del proyecto, y genera un token de acceso.
@@ -170,7 +285,7 @@ cada una está en `configuracion.md`.
 Google: así la llamada del renderizado del servidor a la API no cruza el
 continente.
 
-## 7. Los entornos de GitHub
+## 8. Los entornos de GitHub
 
 En **Settings → Environments**, dos entornos: `dev` y `prod`.
 
@@ -211,6 +326,8 @@ aparezcan tachadas en los registros cuando haga falta leerlas.
 | `COMPANY_NAME`, `COMPANY_TAX_ID`, `COMPANY_ADDRESS` | los reales | ídem |
 | `COMMISSION_RATE` | `0.05` | `0.05` |
 | `LEGAL_TERMS_VERSION`, `LEGAL_PRIVACY_VERSION` | `borrador-local` hasta que existan los textos | la versión real |
+| `STORAGE_PROVIDER` | `gcs` | `gcs` |
+| `STORAGE_PUBLIC_BASE_URL` | `https://storage.googleapis.com/sastra-publico-dev` | el dominio del CDN |
 | `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` | los de Vercel | ídem |
 
 `min-instances = 0` en `dev` es lo que hace que no cueste nada: Cloud Run escala
@@ -220,7 +337,7 @@ frío en la primera visita del día, como dice `entornos.md`.
 `CLOUD_RUN_MIN_INSTANCES = 0` implica arranque en frío de varios segundos. Es lo
 aceptable en la etapa de prototipo.
 
-## 8. Comprobarlo
+## 9. Comprobarlo
 
 El primer despliegue conviene hacerlo a `dev` y mirándolo:
 

@@ -1,6 +1,7 @@
 package co.sastra.identity.model;
 
 import co.sastra.identity.exception.UnderageException;
+import co.sastra.shared.file.FileKey;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.EnumSet;
@@ -33,6 +34,17 @@ public final class User {
     private final @Nullable City city;
 
     private final @Nullable Phone phone;
+
+    /**
+     * La foto de perfil, como clave dentro del almacen publico (ADR-0018). Nula
+     * mientras no haya foto.
+     *
+     * <p>Es la clave y no la direccion: la direccion depende del almacen y del
+     * dominio desde el que se sirve, que son configuracion, y construirla es cosa
+     * del borde.
+     */
+    private final @Nullable FileKey avatarKey;
+
     private final UserLocale locale;
     private final UserStatus status;
 
@@ -49,6 +61,7 @@ public final class User {
             BirthDate birthDate,
             @Nullable City city,
             @Nullable Phone phone,
+            @Nullable FileKey avatarKey,
             UserLocale locale,
             UserStatus status,
             @Nullable Instant emailVerifiedAt,
@@ -60,6 +73,7 @@ public final class User {
         this.birthDate = Objects.requireNonNull(birthDate);
         this.city = city;
         this.phone = phone;
+        this.avatarKey = avatarKey;
         this.locale = Objects.requireNonNull(locale);
         this.status = Objects.requireNonNull(status);
         this.emailVerifiedAt = emailVerifiedAt;
@@ -95,6 +109,7 @@ public final class User {
                 birthDate,
                 null,
                 null,
+                null,
                 locale,
                 UserStatus.ACTIVE,
                 null,
@@ -110,13 +125,25 @@ public final class User {
             BirthDate birthDate,
             @Nullable City city,
             @Nullable Phone phone,
+            @Nullable FileKey avatarKey,
             UserLocale locale,
             UserStatus status,
             @Nullable Instant emailVerifiedAt,
             Set<Role> roles,
             Instant createdAt) {
         return new User(
-                id, email, displayName, birthDate, city, phone, locale, status, emailVerifiedAt, roles, createdAt);
+                id,
+                email,
+                displayName,
+                birthDate,
+                city,
+                phone,
+                avatarKey,
+                locale,
+                status,
+                emailVerifiedAt,
+                roles,
+                createdAt);
     }
 
     /**
@@ -129,7 +156,18 @@ public final class User {
     public User conPerfil(DisplayName nombre, @Nullable City ciudad, @Nullable Phone telefono) {
         Objects.requireNonNull(nombre, "El nombre es obligatorio");
         return new User(
-                id, email, nombre, birthDate, ciudad, telefono, locale, status, emailVerifiedAt, roles, createdAt);
+                id,
+                email,
+                nombre,
+                birthDate,
+                ciudad,
+                telefono,
+                avatarKey,
+                locale,
+                status,
+                emailVerifiedAt,
+                roles,
+                createdAt);
     }
 
     /**
@@ -141,8 +179,54 @@ public final class User {
      */
     public User conCorreoCambiado(Email nuevo, Instant ahora) {
         Objects.requireNonNull(nuevo, "El correo nuevo es obligatorio");
-        return new User(id, nuevo, displayName, birthDate, city, phone, locale, status, ahora, roles, createdAt);
+        return new User(
+                id, nuevo, displayName, birthDate, city, phone, avatarKey, locale, status, ahora, roles, createdAt);
     }
+
+    /**
+     * Criterio 21: pone o reemplaza la foto de perfil.
+     *
+     * <p>Devuelve tambien la clave anterior, si habia, porque el archivo viejo hay
+     * que borrarlo del almacen y la entidad es la unica que sabia cual era. Sin
+     * eso, cada cambio de foto deja un archivo huerfano pagando almacenamiento para
+     * siempre, y ademas sigue accesible por su direccion para quien la tuviera.
+     */
+    public CambioDeAvatar conAvatar(FileKey nueva) {
+        Objects.requireNonNull(nueva, "La clave del avatar es obligatoria");
+        return new CambioDeAvatar(conClaveDeAvatar(nueva), avatarKey);
+    }
+
+    /** Criterio 21: quita la foto. Devuelve la que habia, para borrarla del almacen. */
+    public CambioDeAvatar sinAvatar() {
+        return new CambioDeAvatar(conClaveDeAvatar(null), avatarKey);
+    }
+
+    private User conClaveDeAvatar(@Nullable FileKey clave) {
+        return new User(
+                id,
+                email,
+                displayName,
+                birthDate,
+                city,
+                phone,
+                clave,
+                locale,
+                status,
+                emailVerifiedAt,
+                roles,
+                createdAt);
+    }
+
+    /**
+     * La cuenta despues del cambio y el archivo que queda por borrar.
+     *
+     * @param cuenta la cuenta ya con la clave nueva, o sin ninguna
+     * @param anterior la clave que habia antes, nula si no habia foto. Quien orquesta
+     *     el caso de uso la borra del almacen despues de guardar la cuenta, nunca
+     *     antes: si se borra primero y el guardado falla, la fila apunta a un archivo
+     *     que ya no existe
+     */
+    public record CambioDeAvatar(User cuenta, @Nullable FileKey anterior) {}
 
     public boolean tieneElCorreoVerificado() {
         return emailVerifiedAt != null;
@@ -157,7 +241,8 @@ public final class User {
         if (tieneElCorreoVerificado()) {
             return this;
         }
-        return new User(id, email, displayName, birthDate, city, phone, locale, status, ahora, roles, createdAt);
+        return new User(
+                id, email, displayName, birthDate, city, phone, avatarKey, locale, status, ahora, roles, createdAt);
     }
 
     public UserId id() {
@@ -178,6 +263,10 @@ public final class User {
 
     public @Nullable Phone phone() {
         return phone;
+    }
+
+    public @Nullable FileKey avatarKey() {
+        return avatarKey;
     }
 
     public BirthDate birthDate() {

@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { expect, test, type Page } from '@playwright/test';
 
 import { enlacesVistos, esperarEnlace, rutaRelativa } from './correo-de-consola';
+import { pngDe } from './png';
 
 /**
  * El ciclo de vida de una cuenta, con backend y base de datos de verdad.
@@ -267,5 +268,98 @@ test.describe('ciclo de vida de una cuenta', () => {
     await registrarse(page, correo);
 
     await expect(page.locator('[role="alert"]')).toHaveCount(0);
+  });
+  /**
+   * Criterio 21 completo: la foto de perfil, de punta a punta.
+   *
+   * <p>Es la unica prueba que recorre lo que ADR-0018 promete de verdad. Se sube un
+   * PNG hecho aqui mismo, el servidor lo decodifica, lo vuelve a codificar, lo
+   * guarda con una clave opaca y devuelve una direccion; el navegador la pide y la
+   * imagen llega. Ninguna prueba de componente puede ver eso: en todas ellas el
+   * servidor es un simulacro.
+   */
+  test('subir la foto de perfil y volver a verla al recargar', async ({ page }) => {
+    const correo = correoNuevo('foto');
+    const yaVistos = enlacesVistos('/verificar-correo');
+
+    await registrarse(page, correo);
+    await verificarElCorreo(page, await esperarEnlace('/verificar-correo', yaVistos));
+
+    await page.goto('/mi-cuenta');
+    await expect(page.getByRole('heading', { name: 'Tu foto' })).toBeVisible();
+
+    // Un PNG de verdad, generado en el navegador: el servidor lo rechazaria si no
+    // pudiera decodificarlo, asi que no vale un archivo con la firma y basura.
+    await page
+      .locator('input[type="file"]')
+      .setInputFiles({ name: 'mi-foto.png', mimeType: 'image/png', buffer: pngDe(300, 300) });
+
+    const foto = page.getByRole('img', { name: 'Tu foto de perfil' });
+    await expect(foto).toBeVisible();
+
+    // La direccion no lleva el nombre del archivo que se subio: la clave es opaca.
+    const direccion = await foto.getAttribute('src');
+    expect(direccion).not.toContain('mi-foto');
+
+    // Y la imagen se sirve de verdad, no es solo un `src` puesto en el DOM.
+    const servida = await page.request.get(direccion ?? '');
+    expect(servida.status()).toBe(200);
+
+    // Sobrevive a una carga completa: quedo guardada, no solo en memoria.
+    await page.reload();
+    await expect(page.getByRole('img', { name: 'Tu foto de perfil' })).toBeVisible();
+  });
+
+  /** El tipo se decide por el contenido: un archivo renombrado no pasa. */
+  test('rechaza un archivo que no es una imagen aunque se llame png', async ({ page }) => {
+    const correo = correoNuevo('falsa');
+    const yaVistos = enlacesVistos('/verificar-correo');
+
+    await registrarse(page, correo);
+    await verificarElCorreo(page, await esperarEnlace('/verificar-correo', yaVistos));
+
+    await page.goto('/mi-cuenta');
+    await expect(page.getByRole('heading', { name: 'Tu foto' })).toBeVisible();
+
+    // El navegador lo declara como PNG, asi que la comprobacion del cliente lo deja
+    // pasar. Lo rechaza el servidor mirando los bytes, que es donde importa.
+    await page.locator('input[type="file"]').setInputFiles({
+      name: 'trampa.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from('<html><script>alert(1)</script></html>', 'utf8'),
+    });
+
+    await expect(page.getByRole('alert')).toContainText('no es una imagen JPG o PNG');
+    await expect(page.getByRole('img', { name: 'Tu foto de perfil' })).toHaveCount(0);
+  });
+
+  test('quitar la foto la borra de verdad', async ({ page }) => {
+    const correo = correoNuevo('quitar');
+    const yaVistos = enlacesVistos('/verificar-correo');
+
+    await registrarse(page, correo);
+    await verificarElCorreo(page, await esperarEnlace('/verificar-correo', yaVistos));
+
+    await page.goto('/mi-cuenta');
+    await page
+      .locator('input[type="file"]')
+      .setInputFiles({ name: 'mi-foto.png', mimeType: 'image/png', buffer: pngDe(300, 300) });
+
+    const foto = page.getByRole('img', { name: 'Tu foto de perfil' });
+    await expect(foto).toBeVisible();
+    const direccion = (await foto.getAttribute('src')) ?? '';
+
+    await page.getByRole('button', { name: 'Quitar la foto' }).click();
+    await page.getByRole('button', { name: 'Sí, quitarla' }).click();
+
+    await expect(foto).toHaveCount(0);
+
+    // El archivo tambien: no basta con soltar la referencia de la fila.
+    await expect(async () => {
+      expect((await page.request.get(direccion)).status()).toBe(404);
+    }).toPass();
+
+    await page.reload();
+    await expect(page.getByRole('img', { name: 'Tu foto de perfil' })).toHaveCount(0);
   });
 });

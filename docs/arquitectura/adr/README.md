@@ -40,3 +40,4 @@ la referencia.
 | 0015 | Generación de identificadores: UUID v7 o v4 | Propuesta |
 | 0016 | Accesibilidad automatizada con axe-core en las pruebas de extremo a extremo | Aceptada |
 | 0017 | Una suite de extremo a extremo que cruza las dos mitades | Aceptada |
+| 0018 | Almacenamiento de archivos: dos almacenes y subida por el backend | Propuesta |

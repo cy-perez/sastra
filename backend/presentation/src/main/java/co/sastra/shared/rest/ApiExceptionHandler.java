@@ -21,6 +21,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
  * Traduce cualquier fallo a {@code ProblemDetail} de la RFC 9457.
@@ -108,6 +109,29 @@ public class ApiExceptionHandler {
     }
 
     /**
+     * Un recurso estatico que no existe. Es un 404, no un error del servidor.
+     *
+     * <p>Sin este manejador lo recogia el de {@code Exception} y respondia 500,
+     * ademas de registrarlo como "Error inesperado" con su traza entera. Dos
+     * problemas: al cliente le decia que el servidor esta roto cuando lo que pasa es
+     * que la foto no esta, y a quien mira el registro le llenaba el nivel de error
+     * con cada rastreador que prueba direcciones al azar. Lo encontro la prueba de
+     * extremo a extremo que comprueba que al quitar la foto el archivo deja de
+     * servirse.
+     *
+     * <p>Se registra en {@code debug} porque no hay nada que investigar: si alguien
+     * pide un archivo que no esta, la respuesta correcta es decirlo y seguir.
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ProblemDetail> recursoInexistente(NoResourceFoundException e) {
+        String traceId = nuevoTraceId();
+        LOG.debug("No existe el recurso pedido traceId={}", traceId);
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(construir(HttpStatus.NOT_FOUND, ErrorCode.COMMON_NOT_FOUND, traceId));
+    }
+
+    /**
      * Cualquier otra cosa. Se registra completa con su traza para poder
      * investigarla, y se responde con lo minimo: un codigo y el mismo traceId.
      */
@@ -163,9 +187,25 @@ public class ApiExceptionHandler {
                     AUTH_VERIFICATION_TOKEN_EXPIRED,
                     AUTH_RESET_TOKEN_INVALID,
                     AUTH_RESET_TOKEN_EXPIRED -> HttpStatus.UNPROCESSABLE_CONTENT;
+            // 415: el contenido no es de un tipo que el servidor sepa manejar. Es
+            // exactamente lo que significa, y le dice al cliente que el problema es
+            // el formato y no lo que hay dentro. Se decide por los bytes de
+            // cabecera, no por lo que declaro el cliente (ADR-0018).
+            case FILE_TYPE_UNSUPPORTED -> HttpStatus.UNSUPPORTED_MEDIA_TYPE;
+            // 413: el tamano tiene su propio estado y conviene usarlo. Con un 400
+            // generico, el cliente no puede distinguir "recorta la imagen" de
+            // "revisa el formulario".
+            //
+            // Se llama CONTENT_TOO_LARGE desde la RFC 9110; PAYLOAD_TOO_LARGE esta
+            // obsoleto en Spring 7, igual que le paso a UNPROCESSABLE_ENTITY.
+            case FILE_TOO_LARGE -> HttpStatus.CONTENT_TOO_LARGE;
+            // 422 y no 400: la peticion esta bien formada y el archivo es una imagen
+            // valida; lo que la rechaza es una regla de negocio, RN-019.
+            case FILE_DIMENSIONS_TOO_SMALL -> HttpStatus.UNPROCESSABLE_CONTENT;
             // 400 y no 422: lo que se escribio no coincide con lo que se pedia
             // escribir, que es un problema de la peticion y no del negocio.
             case AUTH_CLOSE_CONFIRMATION_MISMATCH, COMMON_VALIDATION_FAILED -> HttpStatus.BAD_REQUEST;
+            case COMMON_NOT_FOUND -> HttpStatus.NOT_FOUND;
             case COMMON_TOO_MANY_REQUESTS -> HttpStatus.TOO_MANY_REQUESTS;
             case COMMON_UNEXPECTED -> HttpStatus.INTERNAL_SERVER_ERROR;
         };

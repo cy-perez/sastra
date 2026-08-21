@@ -182,6 +182,30 @@ export class AuthApi {
   }
 
   /**
+   * Criterio 21: pone o reemplaza la foto de perfil.
+   *
+   * <p>Va como {@code FormData} y no en base64 dentro de un JSON: en base64 ocupa
+   * un tercio mas y obliga a tener la imagen dos veces en memoria. Angular pone
+   * solo la cabecera de multipart con su separador, y por eso **no** se toca el
+   * {@code Content-Type} aqui: fijarlo a mano rompe el separador y el servidor
+   * recibe un cuerpo que no puede leer.
+   *
+   * <p>Devuelve el perfil entero con la direccion nueva, en vez de solo la
+   * direccion, para no obligar a la pantalla a pedir el perfil otra vez.
+   */
+  async uploadAvatar(archivo: File): Promise<Profile> {
+    const cuerpo = new FormData();
+    cuerpo.append('archivo', archivo);
+
+    return firstValueFrom(this.http.put<Profile>('users/me/avatar', cuerpo));
+  }
+
+  /** Criterio 21: quita la foto. Idempotente: quitarla sin tenerla responde igual. */
+  async removeAvatar(): Promise<Profile> {
+    return firstValueFrom(this.http.delete<Profile>('users/me/avatar'));
+  }
+
+  /**
    * Criterio 21. Pedirlo no lo cambia: el servidor manda un enlace al correo
    * nuevo y no reemplaza nada hasta que alguien lo abre.
    *

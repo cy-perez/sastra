@@ -80,6 +80,7 @@ class ExportUserDataUseCaseTest {
                 new BirthDate(NACIMIENTO),
                 ciudad,
                 telefono,
+                null,
                 UserLocale.ES,
                 UserStatus.ACTIVE,
                 AHORA.minus(Duration.ofDays(10)),

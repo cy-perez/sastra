@@ -97,6 +97,8 @@ class UserTest {
                 new BirthDate(LocalDate.of(1990, 3, 4)),
                 null,
                 null,
+                // Sin foto de perfil: esta prueba no trata de eso.
+                null,
                 UserLocale.ES,
                 UserStatus.ACTIVE,
                 null,
@@ -108,6 +110,8 @@ class UserTest {
                 new DisplayName("Otra"),
                 new BirthDate(LocalDate.of(1991, 3, 4)),
                 null,
+                null,
+                // Sin foto de perfil: esta prueba no trata de eso.
                 null,
                 UserLocale.EN,
                 UserStatus.BLOCKED,
@@ -128,6 +132,8 @@ class UserTest {
                 new DisplayName("Ana"),
                 new BirthDate(HOY.minusYears(10)),
                 null,
+                null,
+                // Sin foto de perfil: esta prueba no trata de eso.
                 null,
                 UserLocale.ES,
                 UserStatus.ACTIVE,

@@ -76,6 +76,8 @@ class JwtAccessTokenIssuerTest {
                 new BirthDate(LocalDate.of(1990, 3, 4)),
                 null,
                 null,
+                // Sin foto de perfil: esta prueba no trata de eso.
+                null,
                 UserLocale.ES,
                 UserStatus.ACTIVE,
                 correoVerificado ? AHORA.minus(Duration.ofDays(1)) : null,

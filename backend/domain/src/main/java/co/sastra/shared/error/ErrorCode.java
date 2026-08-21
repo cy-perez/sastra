@@ -10,7 +10,11 @@ package co.sastra.shared.error;
  *
  * <p>Los prefijos separan contextos: {@code AUTH_}, {@code USER_},
  * {@code SELLER_}, {@code CATALOG_}, {@code ORDER_}, {@code PAYMENT_},
- * {@code SHIPPING_}, {@code COMMON_}.
+ * {@code SHIPPING_}, {@code FILE_}, {@code COMMON_}.
+ *
+ * <p>{@code FILE_} no es un contexto de negocio sino de mecanismo: lo usan por igual
+ * la foto de perfil, el documento de identidad y las tomas de producto, porque el
+ * archivo se valida igual venga de donde venga (ADR-0018).
  *
  * <p>Falta a proposito un codigo para "el correo ya existe". El criterio 2 de
  * HU-001 exige que registrar un correo existente responda exactamente igual que
@@ -96,6 +100,26 @@ public enum ErrorCode {
      */
     AUTH_CLOSE_CONFIRMATION_MISMATCH,
 
+    /**
+     * Lo que se subio no es una imagen de un tipo aceptado.
+     *
+     * <p>Se decide por los bytes de cabecera, no por la extension ni por el
+     * {@code Content-Type}: los dos los pone quien sube (ADR-0018).
+     */
+    FILE_TYPE_UNSUPPORTED,
+
+    /** El archivo pasa del tamano maximo. */
+    FILE_TOO_LARGE,
+
+    /**
+     * La imagen es valida pero no llega al minimo de pixeles.
+     *
+     * <p>El minimo depende de para que sea: RN-019 fija 900x1200 para las tomas de
+     * producto, y la foto de perfil tiene el suyo, mas bajo. El codigo es el mismo
+     * porque lo que el cliente tiene que hacer es lo mismo: subir una mas grande.
+     */
+    FILE_DIMENSIONS_TOO_SMALL,
+
     /** La peticion no cumple el contrato. El detalle por campo va en {@code errors}. */
     COMMON_VALIDATION_FAILED,
 
@@ -107,6 +131,15 @@ public enum ErrorCode {
      * lo traduce igual (docs/arquitectura/contrato-api.md).
      */
     COMMON_TOO_MANY_REQUESTS,
+
+    /**
+     * No existe lo que se pidio.
+     *
+     * <p>Hoy lo usa el borde para un archivo que no esta. No dice si nunca existio o
+     * si se borro: las dos cosas son "no esta", y distinguirlas le contaria a
+     * cualquiera que ahi hubo algo.
+     */
+    COMMON_NOT_FOUND,
 
     /** Cualquier fallo no previsto. Nunca lleva detalle hacia afuera. */
     COMMON_UNEXPECTED

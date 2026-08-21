@@ -7,6 +7,7 @@ import co.sastra.identity.model.User;
 import co.sastra.identity.port.out.MailSender;
 import co.sastra.identity.port.out.RefreshTokenRepository;
 import co.sastra.identity.port.out.UserRepository;
+import co.sastra.shared.port.out.PublicFileStore;
 import java.time.Clock;
 import java.time.Instant;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,13 +35,19 @@ public class CloseAccountUseCase {
     private final UserRepository usuarios;
     private final RefreshTokenRepository refrescos;
     private final MailSender correo;
+    private final PublicFileStore almacen;
     private final Clock reloj;
 
     public CloseAccountUseCase(
-            UserRepository usuarios, RefreshTokenRepository refrescos, MailSender correo, Clock reloj) {
+            UserRepository usuarios,
+            RefreshTokenRepository refrescos,
+            MailSender correo,
+            PublicFileStore almacen,
+            Clock reloj) {
         this.usuarios = usuarios;
         this.refrescos = refrescos;
         this.correo = correo;
+        this.almacen = almacen;
         this.reloj = reloj;
     }
 
@@ -57,6 +64,19 @@ public class CloseAccountUseCase {
 
         refrescos.revocarTodasDe(cuenta.id(), ahora);
         usuarios.cerrarYAnonimizar(cuenta.id(), ahora);
+
+        // La foto de perfil se borra del almacen, no solo la referencia de la fila.
+        //
+        // Anonimizar la fila y dejar el archivo donde estaba no es ejercer el
+        // derecho de eliminacion: la imagen del rostro de alguien seguiria estando
+        // ahi, y accesible por su direccion para quien la tuviera guardada
+        // (Ley 1581, docs/operacion/datos-personales.md). Va despues de anonimizar
+        // por el mismo orden que en el resto: si el borrado falla queda un archivo
+        // huerfano, que se limpia; si fallara al contrario, quedaria una fila
+        // apuntando a nada.
+        if (cuenta.avatarKey() != null) {
+            almacen.borrar(cuenta.avatarKey());
+        }
     }
 
     /**

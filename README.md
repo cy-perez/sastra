@@ -6,8 +6,11 @@ valor del producto, a cargo del vendedor.
 
 ## Estado
 
-Fase 1: cimientos del proyecto, registro y autenticación de usuarios, y páginas
-informativas del sitio. El detalle por fases está en `docs/producto/alcance.md`.
+Fase 2: publicación y catálogo. La Fase 1 —cimientos, cuentas y sitio
+informativo— quedó cerrada el 21 de agosto de 2026, con dos salvedades: el primer
+despliegue está aplazado por decisión y los tres textos legales siguen siendo
+borradores sin valor legal. El detalle por fases está en
+`docs/producto/alcance.md`.
 
 ## Requisitos locales
 

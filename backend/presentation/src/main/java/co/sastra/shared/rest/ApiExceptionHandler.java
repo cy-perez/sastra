@@ -175,7 +175,15 @@ public class ApiExceptionHandler {
             case AUTH_INVALID_CREDENTIALS, AUTH_SESSION_INVALID -> HttpStatus.UNAUTHORIZED;
             // 409: la peticion es correcta y choca con el estado actual del
             // sistema, que es lo que significa un conflicto.
-            case AUTH_EMAIL_TAKEN -> HttpStatus.CONFLICT;
+            //
+            // Los tres de verificacion son conflictos del mismo tipo: la solicitud
+            // esta bien formada y lo que no encaja es en que punto esta el proceso
+            // —una transicion que RN-059 no admite, los tres intentos de RN-014 ya
+            // gastados, o un documento que ya ocupa otra cuenta (RN-010)—.
+            case AUTH_EMAIL_TAKEN,
+                    SELLER_VERIFICATION_INVALID_STATE,
+                    SELLER_VERIFICATION_ATTEMPTS_EXHAUSTED,
+                    SELLER_DOCUMENT_ALREADY_VERIFIED -> HttpStatus.CONFLICT;
             // 422: se entiende lo que se envio, pero el negocio lo rechaza.
             // Se llama UNPROCESSABLE_CONTENT desde la RFC 9110; el nombre
             // anterior, UNPROCESSABLE_ENTITY, esta obsoleto en Spring 7.
@@ -186,7 +194,11 @@ public class ApiExceptionHandler {
                     AUTH_VERIFICATION_TOKEN_INVALID,
                     AUTH_VERIFICATION_TOKEN_EXPIRED,
                     AUTH_RESET_TOKEN_INVALID,
-                    AUTH_RESET_TOKEN_EXPIRED -> HttpStatus.UNPROCESSABLE_CONTENT;
+                    AUTH_RESET_TOKEN_EXPIRED,
+                    // RN-012: los dos nombres llegaron bien escritos y lo que el
+                    // negocio rechaza es que no sean el mismo. No es un conflicto de
+                    // estado: es el contenido lo que no se puede aceptar.
+                    SELLER_ACCOUNT_HOLDER_MISMATCH -> HttpStatus.UNPROCESSABLE_CONTENT;
             // 415: el contenido no es de un tipo que el servidor sepa manejar. Es
             // exactamente lo que significa, y le dice al cliente que el problema es
             // el formato y no lo que hay dentro. Se decide por los bytes de

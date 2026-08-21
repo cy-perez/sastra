@@ -47,8 +47,9 @@ Si alguna no tiene respuesta, el campo no se crea.
   falta volumen, se generan datos sinteticos.
 - **Ningun dato personal se pide sin uso concreto.** La ciudad y el telefono del
   perfil son opcionales, nacen vacios y se quitan dejando el campo en blanco: no
-  hacen falta para tener cuenta. La foto de perfil no existe todavia porque
-  necesita almacenamiento de archivos, y hasta entonces no se pide.
+  hacen falta para tener cuenta. La foto de perfil tambien es opcional y se quita
+  cuando la persona quiera; al reemplazarla y al cerrar la cuenta, el archivo
+  anterior se borra del almacen.
 
 ## Consentimiento
 

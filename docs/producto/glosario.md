@@ -22,8 +22,8 @@ se anuncie en el idioma que se anuncie.
 | Comprador | `Buyer` | Rol del usuario cuando compra. |
 | Vendedor | `Seller` | Rol del usuario cuando publica y vende. Persona natural. |
 | Vendedor verificado | `VerifiedSeller` | Vendedor que superó identidad, selfie y validación bancaria. Muestra sello. |
-| Moderador | `Moderator` | Persona de Sastra que aprueba o rechaza publicaciones. |
-| Administrador | `Admin` | Persona de Sastra con acceso a la operación completa: configuración, cuentas y resolución de disputas. No es un moderador con más permisos: el moderador decide sobre publicaciones y nada más. |
+| Moderador | `Moderator` | Persona de Sastra que aprueba o rechaza publicaciones y verificaciones de vendedor. Es el único rol que ve la cédula y la selfie de alguien, y solo a través de un endpoint que registra cada lectura (RN-046, ADR-0018). |
+| Administrador | `Admin` | Persona de Sastra con acceso a la operación completa: configuración, cuentas y resolución de disputas. No es un moderador con más permisos: el moderador decide sobre lo que se publica y sobre quién queda verificado, y nada más. |
 
 Un usuario tiene una sola cuenta. Ser vendedor no es otra cuenta: es un rol
 adicional que se activa al completar la verificación.
@@ -97,6 +97,22 @@ coherente con eso, y las palabras de las dos últimas filas además tienen lectu
 regulatoria en Colombia: describen figuras financieras que Sastra no ejerce
 (RN-031).
 
+## Verificación del vendedor
+
+Los nombres del proceso de HU-002. Las listas cerradas con sus valores están en la
+historia, en «Datos de referencia».
+
+| Español | Código | Definición |
+|---|---|---|
+| Tipo de documento | `IdentityDocumentType` | Cédula de ciudadanía, cédula de extranjería o Permiso por Protección Temporal. Sin pasaporte. |
+| Tipo de cuenta | `BankAccountType` | Ahorros, corriente o depósito electrónico. El tercero es el de las billeteras, que no son cuentas de ahorros aunque se usen igual, y la Fase 3 necesita distinguirlo para desembolsar. |
+| Motivo de rechazo | `RejectionReason` | Lista cerrada. El moderador elige uno y puede añadir una nota, que viaja a la persona y nunca lleva información judicial ni de terceros. |
+| Entidad financiera | `Bank` | Banco o billetera donde el vendedor recibe. Vive en tabla con código estable, no en una enumeración del código. |
+
+**«Depósito electrónico» y no «billetera»** en el tipo de cuenta, porque es lo que
+la cuenta es; «billetera» describe el producto que la persona usa para llegar a
+ella.
+
 ## Archivos e imágenes
 
 Dos clases de archivo, y la distinción no es de implementación: es de garantías.
@@ -136,7 +152,13 @@ pendiente por pedidos sin resolver (RN-009), y en Fase 1 no hay pedidos.
 `DELIVERED`, `RELEASED`, `CANCELLED`.
 
 **Verificación del vendedor:** `NOT_STARTED`, `IN_PROGRESS`, `PENDING_REVIEW`,
-`VERIFIED`, `REJECTED`.
+`VERIFIED`, `REJECTED`, `REVOKED`.
+
+`REVOKED` es distinto de `REJECTED` y no se pueden mezclar: `REJECTED` no pasó la
+revisión, `REVOKED` la pasó y se le quitó después (RN-013). Con un solo estado para
+las dos cosas no se puede responder «¿esta persona estuvo verificada alguna vez?»,
+que es justo lo que hay que saber cuando sus publicaciones siguen visibles y no
+puede crear nuevas.
 
 Las transiciones válidas están en `reglas-negocio.md`. Ningún código puede
 inventar un estado que no esté en estas listas.

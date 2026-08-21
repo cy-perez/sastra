@@ -133,6 +133,10 @@ Un commit por unidad lógica. No mezcles refactor con funcionalidad.
 
 ## Estado del proyecto
 
-Fase actual: **Fase 1, cimientos, autenticación y sitio informativo**.
+Fase actual: **Fase 2, publicación y catálogo**. La Fase 1 quedó cerrada el 21 de
+agosto de 2026: cimientos, cuentas y sitio informativo, con las dos salvedades que
+anota `docs/producto/alcance.md`.
+
 El alcance por fase está en `docs/producto/alcance.md`. No implementes
-funcionalidad de fases posteriores aunque el diseño ya la contemple.
+funcionalidad de fases posteriores aunque el diseño ya la contemple: hoy eso
+significa que la Fase 3 —búsqueda, carrito, pagos, envíos— sigue fuera.

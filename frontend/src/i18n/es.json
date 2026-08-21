@@ -175,7 +175,11 @@
       "FILE_TYPE_UNSUPPORTED": "Ese archivo no es una imagen JPG o PNG. Vuelve a exportarla e inténtalo otra vez.",
       "FILE_TOO_LARGE": "La imagen pesa demasiado. Prueba con una más ligera.",
       "FILE_DIMENSIONS_TOO_SMALL": "La imagen es muy pequeña y se vería borrosa. Sube una más grande.",
-      "COMMON_NOT_FOUND": "No encontramos lo que buscabas."
+      "COMMON_NOT_FOUND": "No encontramos lo que buscabas.",
+      "SELLER_VERIFICATION_INVALID_STATE": "Esa acción no corresponde al estado de tu solicitud. Recarga la página para ver en qué punto va.",
+      "SELLER_VERIFICATION_ATTEMPTS_EXHAUSTED": "Ya usaste los tres intentos. Escríbenos para que revisemos tu caso a mano.",
+      "SELLER_ACCOUNT_HOLDER_MISMATCH": "El titular de la cuenta tiene que ser el mismo nombre del documento.",
+      "SELLER_DOCUMENT_ALREADY_VERIFIED": "Ese documento ya está verificado en otra cuenta."
     }
   },
   "form": {

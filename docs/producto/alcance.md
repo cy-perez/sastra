@@ -5,7 +5,19 @@ la contemple y aunque sea fácil. Lo que no está en la fase actual, se anota.
 
 ## Fase 1 — cimientos, cuentas y sitio informativo
 
-Es la fase en curso.
+**Cerrada el 21 de agosto de 2026.** Todo lo que sigue está implementado y probado.
+Quedan dos cosas fuera de esa afirmación, las dos por decisión y las dos anotadas
+donde corresponde:
+
+- **El primer despliegue está aplazado** hasta tener el proyecto lo más completo
+  posible (`docs/operacion/entornos.md`). El flujo está escrito y probado; lo que
+  no se ha hecho es ejecutarlo.
+- **Los tres textos legales siguen siendo `borrador-local`**, que es relleno sin
+  valor legal (`docs/operacion/textos-legales.md`). El mecanismo completo está: las
+  tres rutas, el resolutor que sirve el texto dentro del HTML renderizado, la
+  versión que se guarda con el consentimiento y un aviso visible en la página
+  mientras la versión sea un borrador. Lo que falta es el contenido, que no es
+  trabajo de código y que **bloquea el lanzamiento, no el cierre de la fase**.
 
 **Plataforma**
 - Monorepo con backend y frontend, Gradle multi-módulo y Angular con SSR.
@@ -24,8 +36,10 @@ Es la fase en curso.
 - Internacionalización ES/EN funcionando con SSR.
 - Canalización de integración continua: compilar, probar, analizar y desplegar.
   Los cuatro pasos existen: `.github/workflows/verificacion.yml` compila, prueba
-  y analiza, y `despliegue.yml` publica en `dev` con cada integración a `main` y
-  en `prod` con etiqueta y aprobación. **Ejecutarlo por primera vez está aplazado
+  y analiza, y `despliegue.yml` publica el backend en `dev` con cada integración a
+  `main` y en `prod` con etiqueta y aprobación. **El despliegue del frontend no
+  existe todavía** y es deliberado: no hay proveedor de hospedaje elegido
+  (ADR-0019), y escribirlo exige saber contra qué. **Ejecutarlo por primera vez está aplazado
   por decisión**, no por falta de trabajo: el sitio se despliega —dominio y
   hospedaje— cuando el proyecto esté lo más completo posible. Hasta entonces se
   prueba en local integrado contra los servicios de GCP en capa gratuita, y los
@@ -61,6 +75,8 @@ presente, porque es lo que convence a alguien de registrarse, pero no anuncia
 fechas ni deja enlaces a rutas que no existen.
 
 ## Fase 2 — publicación y catálogo
+
+Es la fase en curso desde el 21 de agosto de 2026.
 
 - Verificación de vendedor: identidad, selfie y cuenta bancaria.
 - Asistente de captura de fotos con overlay, nivelador y recorte en cliente.

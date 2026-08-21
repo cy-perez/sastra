@@ -120,6 +120,32 @@ public enum ErrorCode {
      */
     FILE_DIMENSIONS_TOO_SMALL,
 
+    /**
+     * RN-059: la accion no corresponde al estado de la verificacion.
+     *
+     * <p>Uno solo para todas las transiciones prohibidas, y no uno por par de
+     * estados. Lo que el cliente tiene que hacer es lo mismo en todos los casos
+     * —recargar y mirar en que punto va— y un codigo por combinacion serian
+     * dieciocho codigos que dicen lo mismo.
+     */
+    SELLER_VERIFICATION_INVALID_STATE,
+
+    /** RN-014: se agotaron los tres intentos y el siguiente exige revision manual. */
+    SELLER_VERIFICATION_ATTEMPTS_EXHAUSTED,
+
+    /** RN-012: el titular de la cuenta bancaria no es el del documento. */
+    SELLER_ACCOUNT_HOLDER_MISMATCH,
+
+    /**
+     * RN-010: ese documento ya esta verificado en otra cuenta.
+     *
+     * <p>Es lo contrario del silencio que guarda el registro con un correo repetido,
+     * y a proposito: aqui quien escribe el numero es quien lo tiene en la mano, asi
+     * que no se le esta confirmando nada que no sepa. Lo que no se dice nunca es de
+     * quien es la otra cuenta.
+     */
+    SELLER_DOCUMENT_ALREADY_VERIFIED,
+
     /** La peticion no cumple el contrato. El detalle por campo va en {@code errors}. */
     COMMON_VALIDATION_FAILED,
 

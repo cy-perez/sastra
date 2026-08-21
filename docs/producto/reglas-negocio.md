@@ -41,6 +41,27 @@ Cada regla tiene identificador. Úsalo en el código y en las pruebas:
   revoca; sus publicaciones activas siguen visibles pero no puede crear nuevas.
 - **RN-014** Un vendedor rechazado puede reintentar. Máximo tres intentos; el
   cuarto exige revisión manual.
+- **RN-059** Transiciones válidas de la verificación del vendedor, sobre los seis
+  estados del glosario:
+
+  | Desde | Hacia | Quién lo provoca |
+  |---|---|---|
+  | `NOT_STARTED` | `IN_PROGRESS` | La persona inicia el proceso |
+  | `IN_PROGRESS` | `IN_PROGRESS` | Completa o corrige un dato. Se guarda el avance y se retoma donde iba |
+  | `IN_PROGRESS` | `PENDING_REVIEW` | Envía la solicitud completa |
+  | `PENDING_REVIEW` | `VERIFIED` | El moderador aprueba |
+  | `PENDING_REVIEW` | `REJECTED` | El moderador rechaza con motivo |
+  | `REJECTED` | `IN_PROGRESS` | La persona corrige y reintenta, dentro del límite de RN-014 |
+  | `VERIFIED` | `REVOKED` | El moderador revoca (RN-013) |
+  | `REVOKED` | `IN_PROGRESS` | La persona vuelve a intentarlo |
+
+  Ninguna otra transición existe. En particular: de `PENDING_REVIEW` no se sale
+  hacia atrás por voluntad de la persona —una solicitud enviada se revisa, porque
+  si no habría forma de retirar una cédula ya vista— y a `NOT_STARTED` no se vuelve
+  nunca, porque el estado inicial es la ausencia de intentos y esa ya no es cierta.
+
+  Como en RN-045, ninguna transición se pierde: cada una queda registrada con
+  fecha, actor y motivo.
 
 ## Publicación
 

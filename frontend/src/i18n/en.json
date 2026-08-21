@@ -175,7 +175,11 @@
       "FILE_TYPE_UNSUPPORTED": "That file is not a JPG or PNG image. Export it again and try once more.",
       "FILE_TOO_LARGE": "The image is too heavy. Try a lighter one.",
       "FILE_DIMENSIONS_TOO_SMALL": "The image is too small and would look blurry. Upload a larger one.",
-      "COMMON_NOT_FOUND": "We could not find what you were looking for."
+      "COMMON_NOT_FOUND": "We could not find what you were looking for.",
+      "SELLER_VERIFICATION_INVALID_STATE": "That action does not match the state of your request. Reload the page to see where it stands.",
+      "SELLER_VERIFICATION_ATTEMPTS_EXHAUSTED": "You have used all three attempts. Write to us so we can review your case by hand.",
+      "SELLER_ACCOUNT_HOLDER_MISMATCH": "The account holder must be the same name as on the document.",
+      "SELLER_DOCUMENT_ALREADY_VERIFIED": "That document is already verified on another account."
     }
   },
   "form": {

@@ -62,6 +62,7 @@ correo, ningún NIT, ningún porcentaje de comisión.
 | `STORAGE_PUBLIC_BUCKET` | `sastra-publico` | sí, con `gcs` |
 | `STORAGE_RESTRICTED_BUCKET` | `sastra-reservado` | sí, con `gcs` |
 | `STORAGE_PROJECT_ID` | `sastra-col` | no |
+| `VERIFICATION_REVIEW_DAYS` | `2` | Fase 2 |
 | `WOMPI_PUBLIC_KEY` | | Fase 3 |
 | `WOMPI_PRIVATE_KEY` | | Fase 3 |
 | `WOMPI_EVENTS_SECRET` | | Fase 3 |
@@ -334,7 +335,9 @@ Se manejan como configuración, no como ramas de Git de larga vida:
 | `FEATURE_SEARCH` | Habilita la búsqueda con Typesense |
 | `FEATURE_SPIN_VIEWER` | Habilita el visor 360 |
 
-Todas apagadas en Fase 1. Permiten desplegar código incompleto sin exponerlo.
+Las cinco siguen apagadas: se enciende cada una cuando su funcionalidad exista y
+no cuando empiece la fase que la contiene. Es lo que permite desplegar código
+incompleto sin exponerlo.
 
 ## Rotación de secretos
 

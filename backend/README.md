@@ -91,11 +91,15 @@ en `infrastructure/co/sastra/shared/config/`:
 | `AppProperties` | `sastra.app` | URL publicas, correo de soporte, origenes CORS |
 | `CompanyProperties` | `sastra.company` | Razon social, NIT, direccion |
 | `CommissionProperties` | `sastra.commission` | Tasa de comision, entre 0 y 1 |
-| `FeatureFlags` | `sastra.features` | Las cinco banderas, todas apagadas en Fase 1 |
+| `FeatureFlags` | `sastra.features` | Las cinco banderas, todas apagadas todavia |
+| `StorageProperties` | `sastra.storage` | Proveedor de archivos, los dos cubos y los limites de imagen |
+
+Las de JWT y de correo viven junto a lo que configuran, en
+`infrastructure/co/sastra/identity/config/`: `SessionProperties`, `MailProperties`,
+`PasswordSecurityProperties` y `LegalDocumentProperties`.
 
 Si falta una variable obligatoria, la aplicacion no arranca. La lista completa
 esta en `../docs/operacion/configuracion.md` y el ejemplo en `../.env.example`.
-Las de JWT, correo y almacenamiento entran con la historia que las necesite.
 
 ## Base de datos
 

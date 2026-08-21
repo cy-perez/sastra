@@ -61,6 +61,14 @@ sastra:
     # Apunta al backend porque en local nadie mas sirve esa carpeta. En la nube es
     # el dominio del CDN.
     public-base-url: ${STORAGE_PUBLIC_BASE_URL:http://localhost:8080/archivos}
+  crypto:
+    # Claves de desarrollo, no secretos: estan en el repositorio y por eso mismo no
+    # sirven para nada fuera de localhost. En dev y prod las dos variables son
+    # obligatorias y sin ellas la aplicacion no arranca.
+    data-keys:
+      1: ${CRYPTO_DATA_KEY_V1:c2FzdHJhLWRlc2Fycm9sbG8tZGF0b3MtY2xhdmUtMzI=}
+    current-version: ${CRYPTO_CURRENT_KEY_VERSION:1}
+    lookup-key: ${CRYPTO_LOOKUP_KEY:c2FzdHJhLWRlc2Fycm9sbG8tYnVzcXVlZGEtY2x2MzI=}
   legal:
     terms-version: ${LEGAL_TERMS_VERSION:borrador-local}
     privacy-version: ${LEGAL_PRIVACY_VERSION:borrador-local}

@@ -153,6 +153,26 @@ sastra:
     # cedula de alguien (RN-046, ADR-0018). La aplicacion no arranca si son iguales.
     public-bucket: ${STORAGE_PUBLIC_BUCKET:}
     restricted-bucket: ${STORAGE_RESTRICTED_BUCKET:}
+  crypto:
+    # Cifrado de datos sensibles en columna: numero de documento y de cuenta
+    # bancaria (RN-046, ADR-0020). Los archivos no pasan por aqui: la cedula y la
+    # selfie van al almacen reservado.
+    #
+    # Un mapa de version a clave, y no una clave sola, para poder rotar sin
+    # reescribir la tabla de golpe: las filas viejas siguen diciendo con que
+    # version se cifraron, y su clave tiene que seguir aqui mientras exista una
+    # fila que la use. Rotar es agregar la version siguiente y mover
+    # current-version; retirar la vieja es otro cambio, despues de migrar las
+    # filas.
+    data-keys:
+      1: ${CRYPTO_DATA_KEY_V1}
+    current-version: ${CRYPTO_CURRENT_KEY_VERSION:1}
+    # Clave del HMAC con el que se compara sin descifrar. TIENE que ser distinta de
+    # todas las de cifrado y la aplicacion no arranca si es igual a alguna: si
+    # fueran la misma, filtrarla daria las dos capacidades a la vez, descifrar y
+    # confirmar adivinaciones. Y adivinar es barato, porque una cedula es un numero
+    # de ocho a diez digitos.
+    lookup-key: ${CRYPTO_LOOKUP_KEY}
   legal:
     # Version del texto que la persona acepta. Sin ella el consentimiento no se
     # puede demostrar (docs/operacion/datos-personales.md).
@@ -164,7 +184,9 @@ sastra:
     breach-check-timeout: ${PASSWORD_BREACH_CHECK_TIMEOUT:PT2S}
     breach-check-api-url: ${PASSWORD_BREACH_API_URL:https://api.pwnedpasswords.com/range}
   features:
-    # Todas apagadas en Fase 1. Se encienden por variable, no por despliegue.
+    # Las cinco siguen apagadas. Se enciende cada una cuando su funcionalidad
+    # exista, no cuando empiece la fase que la contiene, y se enciende por variable
+    # y no por despliegue.
     seller-verification: ${FEATURE_SELLER_VERIFICATION:false}
     publishing: ${FEATURE_PUBLISHING:false}
     checkout: ${FEATURE_CHECKOUT:false}

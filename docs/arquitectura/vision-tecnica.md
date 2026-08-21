@@ -43,13 +43,21 @@ reemplazar. Si mañana cambia la base de datos, el marco web o la pasarela, esta
 capa no se toca. Se prueba con JUnit puro en milisegundos.
 
 **application.** Los casos de uso. Orquesta el dominio, abre transacciones,
-publica eventos y declara **puertos de salida**: `SellerRepository`,
-`PaymentGateway`, `ImageStorage`, `EmailSender`. Son interfaces que esta capa
-define según lo que necesita, no según lo que la tecnología ofrece.
+publica eventos y declara **puertos de salida**: `UserRepository`, `MailSender`,
+`PublicFileStore` y `RestrictedFileStore`; con las fases siguientes llegan
+`PaymentGateway` y los demás. Son interfaces que esta capa define según lo que
+necesita, no según lo que la tecnología ofrece.
+
+Que los archivos sean **dos** puertos y no uno con un parámetro de visibilidad es
+el ejemplo de esa frase: la capa necesita distinguir «guarda esto para que
+cualquiera lo vea» de «guarda esta cédula», y con un solo puerto esa diferencia
+quedaría a un argumento de distancia (ADR-0018).
 
 **infrastructure.** Los adaptadores. Implementa cada puerto contra la tecnología
-real: repositorios con Spring Data JDBC, cliente HTTP de Wompi, cliente de Cloud
-Storage. Aquí vive todo lo sucio y todo lo reemplazable.
+real: repositorios con Spring Data JDBC, cliente de Cloud Storage, cliente HTTP de
+Resend y, en Fase 3, el de Wompi. Aquí vive todo lo sucio y todo lo reemplazable.
+Cada puerto de archivos tiene dos adaptadores —sistema de archivos y Cloud
+Storage— y los elige una variable, no un despliegue.
 
 **presentation.** El borde. Controladores REST del lado backend, componentes y
 rutas del lado Angular. Traduce entre el mundo exterior y los casos de uso. No

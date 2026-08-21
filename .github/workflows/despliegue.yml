@@ -146,6 +146,8 @@ jobs:
             --set-env-vars "MAIL_FROM=${{ vars.MAIL_FROM }}" \
             --set-env-vars "LEGAL_TERMS_VERSION=${{ vars.LEGAL_TERMS_VERSION }}" \
             --set-env-vars "LEGAL_PRIVACY_VERSION=${{ vars.LEGAL_PRIVACY_VERSION }}" \
+            --set-env-vars "STORAGE_PROVIDER=${{ vars.STORAGE_PROVIDER }}" \
+            --set-env-vars "STORAGE_PUBLIC_BASE_URL=${{ vars.STORAGE_PUBLIC_BASE_URL }}" \
             --set-secrets "DB_URL=sastra-db-url:latest" \
             --set-secrets "DB_USERNAME=sastra-db-username:latest" \
             --set-secrets "DB_PASSWORD=sastra-db-password:latest" \

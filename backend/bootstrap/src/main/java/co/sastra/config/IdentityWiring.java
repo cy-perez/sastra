@@ -24,14 +24,21 @@ import co.sastra.identity.usecase.LogoutUseCase;
 import co.sastra.identity.usecase.ReadProfileUseCase;
 import co.sastra.identity.usecase.RefreshSessionUseCase;
 import co.sastra.identity.usecase.RegisterUserUseCase;
+import co.sastra.identity.usecase.RemoveAvatarUseCase;
 import co.sastra.identity.usecase.RequestEmailChangeUseCase;
 import co.sastra.identity.usecase.RequestEmailVerificationUseCase;
 import co.sastra.identity.usecase.ResendVerificationUseCase;
 import co.sastra.identity.usecase.ResetPasswordUseCase;
 import co.sastra.identity.usecase.RevokeSessionUseCase;
+import co.sastra.identity.usecase.UpdateAvatarUseCase;
 import co.sastra.identity.usecase.UpdateProfileUseCase;
 import co.sastra.identity.usecase.VerifyEmailUseCase;
 import co.sastra.shared.config.AppProperties;
+import co.sastra.shared.file.ImageDimensions;
+import co.sastra.shared.file.ImagePolicy;
+import co.sastra.shared.file.StorageProperties;
+import co.sastra.shared.port.out.ImageNormalizer;
+import co.sastra.shared.port.out.PublicFileStore;
 import co.sastra.shared.rest.RefreshCookies;
 import java.time.Clock;
 import org.springframework.context.annotation.Bean;
@@ -211,8 +218,38 @@ public class IdentityWiring {
 
     @Bean
     CloseAccountUseCase closeAccountUseCase(
-            UserRepository usuarios, RefreshTokenRepository refrescos, MailSender correo, Clock reloj) {
-        return new CloseAccountUseCase(usuarios, refrescos, correo, reloj);
+            UserRepository usuarios,
+            RefreshTokenRepository refrescos,
+            MailSender correo,
+            PublicFileStore almacen,
+            Clock reloj) {
+        return new CloseAccountUseCase(usuarios, refrescos, correo, almacen, reloj);
+    }
+
+    /**
+     * La politica de la foto de perfil.
+     *
+     * <p>Se llama asi y no "politica de imagenes" a proposito: las tomas de producto
+     * tendran la suya, con el minimo de RN-019, y son numeros distintos. Un unico
+     * bean compartido habria acabado aplicando 900x1200 al avatar, que rechaza casi
+     * cualquier foto que alguien tenga a mano.
+     */
+    @Bean
+    ImagePolicy politicaDeAvatar(StorageProperties almacenamiento) {
+        return new ImagePolicy(
+                almacenamiento.maxImageBytes(),
+                new ImageDimensions(almacenamiento.avatarMinWidth(), almacenamiento.avatarMinHeight()));
+    }
+
+    @Bean
+    UpdateAvatarUseCase updateAvatarUseCase(
+            UserRepository usuarios, PublicFileStore almacen, ImageNormalizer normalizador, ImagePolicy politica) {
+        return new UpdateAvatarUseCase(usuarios, almacen, normalizador, politica);
+    }
+
+    @Bean
+    RemoveAvatarUseCase removeAvatarUseCase(UserRepository usuarios, PublicFileStore almacen) {
+        return new RemoveAvatarUseCase(usuarios, almacen);
     }
 
     @Bean

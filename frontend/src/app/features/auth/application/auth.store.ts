@@ -183,6 +183,34 @@ export class AuthStore {
   }));
 
   /**
+   * Criterio 21: la foto de perfil.
+   *
+   * <p>Como al guardar el perfil, se refresca la consulta con lo que devolvio el
+   * servidor en lugar de pedirlo otra vez: es exactamente lo que hay en la base, y
+   * ademas evita que la foto tarde un viaje mas en aparecer.
+   *
+   * <p>Sin reintentos. Subir una imagen no es idempotente en coste: un reintento
+   * automatico manda el archivo dos veces, y si el primero si llego, deja un
+   * archivo huerfano.
+   */
+  readonly avatarUpload = injectMutation(() => ({
+    mutationFn: (archivo: File) => this.api.uploadAvatar(archivo),
+    retry: false,
+    onSuccess: (guardado) => {
+      this.consultas.setQueryData(queryKeys.profile, guardado);
+    },
+  }));
+
+  /** Criterio 21: quitar la foto. */
+  readonly avatarRemoval = injectMutation(() => ({
+    mutationFn: () => this.api.removeAvatar(),
+    retry: false,
+    onSuccess: (guardado) => {
+      this.consultas.setQueryData(queryKeys.profile, guardado);
+    },
+  }));
+
+  /**
    * Criterio 21. Sin reintentos: el servidor responde igual este la direccion
    * libre u ocupada, asi que un reintento automatico solo mandaria dos correos a
    * quien si esta esperando el enlace.

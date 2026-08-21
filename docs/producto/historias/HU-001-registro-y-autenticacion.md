@@ -3,14 +3,19 @@
 **Fase:** 1 | **Estado:** hecha, salvo la foto de perfil del criterio 21
 **Reglas:** RN-001 a RN-009
 
-Los veintitrés criterios están implementados y probados, con una excepción: el
-criterio 21 incluye la foto de perfil y esa parte no está. `avatar_url` existe en
-`users` desde V2 y sigue sin usarse porque subir una imagen exige almacenamiento
-de archivos, que es una rebanada aparte y no de esta fase
-(`docs/producto/alcance.md`). Nombre, ciudad, teléfono y cambio de correo con
-confirmación sí están. **Se decidió expresamente dejarla fuera de la Fase 1**, y
-no está pendiente de nadie: entra con una ADR de almacenamiento cuando llegue el
-momento de las imágenes.
+Los veintitrés criterios están implementados y probados. La foto de perfil del
+criterio 21 fue la última en llegar: estuvo fuera de la Fase 1 porque exigía
+almacenamiento de archivos y una ADR, y entró con ADR-0018.
+
+**Del lado del servidor está completa y probada**: `PUT /api/v1/users/me/avatar` y
+`DELETE /api/v1/users/me/avatar`, con validación del tipo real por los bytes de
+cabecera, tope de tamaño, mínimo de dimensiones, borrado del EXIF al recodificar y
+borrado del archivo anterior al reemplazarlo y al cerrar la cuenta. Falta la
+interfaz: la pantalla de cuenta todavía no ofrece subirla, así que el criterio no
+se puede dar por cerrado de punta a punta.
+
+`avatar_url`, que existía sin usarse desde V2, quedó sustituida por `avatar_key` en
+V6: lo que se guarda es la clave dentro del almacén, no la dirección.
 
 ## Correcciones posteriores al cierre
 

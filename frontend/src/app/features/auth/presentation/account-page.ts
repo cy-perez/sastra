@@ -15,6 +15,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { SessionStore } from '../../../core/session/session.store';
 import { AuthStore } from '../application/auth.store';
 import { laConfirmacionCoincide } from '../domain/account';
+import { AvatarForm } from './avatar-form';
 import { EmailChangeForm } from './email-change-form';
 import { ProfileForm } from './profile-form';
 import { SubmitButton } from '../../../shared/ui/form/submit-button';
@@ -42,6 +43,7 @@ import { TextField } from '../../../shared/ui/form/text-field';
     TextField,
     SubmitButton,
     ProfileForm,
+    AvatarForm,
     EmailChangeForm,
   ],
   templateUrl: './account-page.html',

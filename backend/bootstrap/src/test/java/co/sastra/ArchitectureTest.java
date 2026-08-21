@@ -181,6 +181,18 @@ class ArchitectureTest {
         regla.check(todasLasClasesIncluidasLasPruebas());
     }
 
+    /**
+     * Los dos paquetes del dominio, no solo {@code model}.
+     *
+     * <p>La regla nombraba unicamente {@code ..model..} y eso la dejaba ciega ante
+     * cualquier tipo de dominio que viva en otro paquete. Al agregar
+     * {@code co.sastra.shared.file} —los objetos de valor de archivos e imagenes,
+     * ADR-0018— un DTO de la API podia exponer una {@code FileKey} entera, es decir
+     * la ruta interna del archivo dentro del almacen, y la regla no habria dicho
+     * nada. Enumerar los
+     * paquetes tiene ese costo: cada paquete nuevo del dominio hay que agregarlo
+     * aqui, y el dia que se olvide la regla protege menos de lo que parece.
+     */
     @Test
     void un_objeto_de_dominio_no_se_filtra_hacia_la_api() {
         ArchRule regla = noClasses()
@@ -188,7 +200,7 @@ class ArchitectureTest {
                 .resideInAPackage("co.sastra..rest.dto..")
                 .should()
                 .dependOnClassesThat()
-                .resideInAPackage("co.sastra..model..")
+                .resideInAnyPackage("co.sastra..model..", "co.sastra.shared.file..")
                 .because("la API tiene sus propios DTO aunque al principio parezcan identicos:"
                         + " asi el dominio puede cambiar sin romper el contrato publico")
                 .allowEmptyShould(true);

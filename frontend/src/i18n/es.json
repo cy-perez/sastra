@@ -171,7 +171,11 @@
       "AUTH_RESET_TOKEN_INVALID": "Este enlace ya no sirve. Puede que lo hayas usado antes.",
       "AUTH_RESET_TOKEN_EXPIRED": "Este enlace venció. Los enlaces para cambiar la contraseña duran 30 minutos.",
       "AUTH_CLOSE_CONFIRMATION_MISMATCH": "Lo que escribiste no coincide con tu correo.",
-      "AUTH_EMAIL_TAKEN": "Esa dirección ya tiene una cuenta en Sastra. Pide el cambio con otra."
+      "AUTH_EMAIL_TAKEN": "Esa dirección ya tiene una cuenta en Sastra. Pide el cambio con otra.",
+      "FILE_TYPE_UNSUPPORTED": "Ese archivo no es una imagen JPG o PNG. Vuelve a exportarla e inténtalo otra vez.",
+      "FILE_TOO_LARGE": "La imagen pesa demasiado. Prueba con una más ligera.",
+      "FILE_DIMENSIONS_TOO_SMALL": "La imagen es muy pequeña y se vería borrosa. Sube una más grande.",
+      "COMMON_NOT_FOUND": "No encontramos lo que buscabas."
     }
   },
   "form": {
@@ -345,6 +349,19 @@
           "city": "La ciudad no puede pasar de 80 caracteres.",
           "phone": "Escribe un teléfono de 7 a 15 dígitos, o déjalo vacío."
         }
+      },
+      "avatar": {
+        "title": "Tu foto",
+        "body": "Se ve junto a tus publicaciones. Es opcional y puedes quitarla cuando quieras.",
+        "loading": "Cargando tu foto",
+        "alt": "Tu foto de perfil",
+        "choose": "Elegir una foto",
+        "replace": "Cambiar la foto",
+        "remove": "Quitar la foto",
+        "confirmRemove": "Sí, quitarla",
+        "cancelRemove": "Dejarla como está",
+        "working": "Subiendo tu foto",
+        "hint": "JPG o PNG, mínimo 200 × 200 píxeles. Se guarda sin los datos de ubicación que traiga la foto."
       },
       "email": {
         "title": "Cambiar mi correo",

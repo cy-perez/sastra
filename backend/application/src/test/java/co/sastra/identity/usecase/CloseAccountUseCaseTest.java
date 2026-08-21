@@ -18,6 +18,7 @@ import co.sastra.identity.model.UserLocale;
 import co.sastra.identity.port.out.MailSender;
 import co.sastra.identity.port.out.RefreshTokenRepository;
 import co.sastra.identity.port.out.UserRepository;
+import co.sastra.shared.port.out.PublicFileStore;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -46,12 +47,15 @@ class CloseAccountUseCaseTest {
     @Mock
     private MailSender correo;
 
+    @Mock
+    private PublicFileStore almacen;
+
     private CloseAccountUseCase caso;
     private User usuario;
 
     @BeforeEach
     void prepararCaso() {
-        caso = new CloseAccountUseCase(usuarios, refrescos, correo, Clock.fixed(AHORA, ZoneOffset.UTC));
+        caso = new CloseAccountUseCase(usuarios, refrescos, correo, almacen, Clock.fixed(AHORA, ZoneOffset.UTC));
 
         usuario = User.registrar(
                 UserId.nuevo(),

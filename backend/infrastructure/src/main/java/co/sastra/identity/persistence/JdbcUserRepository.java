@@ -12,6 +12,7 @@ import co.sastra.identity.model.UserId;
 import co.sastra.identity.model.UserLocale;
 import co.sastra.identity.model.UserStatus;
 import co.sastra.identity.port.out.UserRepository;
+import co.sastra.shared.file.FileKey;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -39,7 +40,7 @@ public class JdbcUserRepository implements UserRepository {
 
     private static final String SELECT_BASE = """
             SELECT u.id, u.email, u.email_verified_at, u.display_name, u.birth_date,
-                   u.city, u.phone, u.locale, u.status, u.created_at
+                   u.city, u.phone, u.avatar_key, u.locale, u.status, u.created_at
             FROM users u
             """;
 
@@ -90,6 +91,7 @@ public class JdbcUserRepository implements UserRepository {
                             display_name      = :displayName,
                             city              = :city,
                             phone             = :phone,
+                            avatar_key        = :avatarKey,
                             locale            = :locale,
                             status            = :status,
                             updated_at        = now()
@@ -101,6 +103,9 @@ public class JdbcUserRepository implements UserRepository {
                 .param("displayName", usuario.displayName().value())
                 .param("city", usuario.city() == null ? null : usuario.city().value())
                 .param("phone", usuario.phone() == null ? null : usuario.phone().value())
+                .param(
+                        "avatarKey",
+                        usuario.avatarKey() == null ? null : usuario.avatarKey().value())
                 .param("locale", usuario.locale().etiqueta())
                 .param("status", usuario.status().name())
                 .param("id", usuario.id().value())
@@ -161,6 +166,7 @@ public class JdbcUserRepository implements UserRepository {
                 // Nulos mientras la persona no los ponga: son opcionales.
                 valorONulo(fila.getString("city"), City::new),
                 valorONulo(fila.getString("phone"), Phone::new),
+                valorONulo(fila.getString("avatar_key"), FileKey::new),
                 UserLocale.de(fila.getString("locale")),
                 UserStatus.valueOf(fila.getString("status").toUpperCase(Locale.ROOT)),
                 instanteONulo(fila.getTimestamp("email_verified_at")),
@@ -217,6 +223,7 @@ public class JdbcUserRepository implements UserRepository {
                             city         = NULL,
                             phone        = NULL,
                             avatar_url   = NULL,
+                            avatar_key   = NULL,
                             status       = 'CLOSED',
                             closed_at    = :ahora,
                             updated_at   = :ahora

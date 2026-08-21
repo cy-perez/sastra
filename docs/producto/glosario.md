@@ -97,6 +97,29 @@ coherente con eso, y las palabras de las dos últimas filas además tienen lectu
 regulatoria en Colombia: describen figuras financieras que Sastra no ejerce
 (RN-031).
 
+## Archivos e imágenes
+
+Dos clases de archivo, y la distinción no es de implementación: es de garantías.
+Una toma de producto se sirve a cualquiera que mire el catálogo; una cédula la ve
+únicamente el proceso de verificación (RN-046). Mezclarlas en un solo concepto es
+lo que hace posible publicar por error lo que nunca debía salir, así que en el
+código son dos cosas con dos nombres.
+
+| Español | Código | Definición |
+|---|---|---|
+| Clave de archivo | `FileKey` | El nombre con el que se guarda. Opaco y derivado de un identificador (ADR-0015): no se deriva del nombre original ni de nada de la persona. |
+| Almacén público | `PublicFileStore` | Donde van las imágenes que el catálogo sirve a cualquiera: tomas de producto y foto de perfil. Cacheable, por CDN. |
+| Almacén reservado | `RestrictedFileStore` | Donde van la cédula y la selfie. Privado, cifrado y con acceso auditado (RN-046, `docs/operacion/datos-personales.md`). Nunca se sirve por una dirección pública. |
+| Imagen normalizada | `NormalizedImage` | Los bytes ya decodificados y vueltos a codificar, sin EXIF y con sus dimensiones conocidas. Es lo único que llega a guardarse: nunca se guarda lo que subió alguien tal como llegó. |
+
+**Almacén y no «almacenamiento»** porque son dos, y hay que poder nombrar cada
+uno. «Reservado» y no «privado» para no confundirlo con la visibilidad de una
+publicación, que es otra cosa.
+
+**El EXIF se quita siempre**, en las dos clases de archivo. Lleva las coordenadas
+GPS de donde se tomó la foto: una toma de producto publicada con su EXIF dice
+dónde vive el vendedor.
+
 ## Estados
 
 **Cuenta:** `ACTIVE`, `BLOCKED`, `CLOSING`, `CLOSED`. Son los valores de

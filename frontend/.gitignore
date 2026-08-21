@@ -53,5 +53,8 @@ Thumbs.db
 # @example.test contra una base local, no sirven para nada fuera de esa ejecucion,
 # pero un artefacto generado no se versiona.
 /e2e-completo/.registro-backend.log
+
+# Los archivos que dejan las pruebas de extremo a extremo al subir una foto.
+/e2e-completo/.archivos/
 /blob-report
 /playwright/.cache

@@ -171,7 +171,11 @@
       "AUTH_RESET_TOKEN_INVALID": "This link no longer works. You may have used it already.",
       "AUTH_RESET_TOKEN_EXPIRED": "This link has expired. Password links last 30 minutes.",
       "AUTH_CLOSE_CONFIRMATION_MISMATCH": "What you typed does not match your email.",
-      "AUTH_EMAIL_TAKEN": "That address already has a Sastra account. Request the change with a different one."
+      "AUTH_EMAIL_TAKEN": "That address already has a Sastra account. Request the change with a different one.",
+      "FILE_TYPE_UNSUPPORTED": "That file is not a JPG or PNG image. Export it again and try once more.",
+      "FILE_TOO_LARGE": "The image is too heavy. Try a lighter one.",
+      "FILE_DIMENSIONS_TOO_SMALL": "The image is too small and would look blurry. Upload a larger one.",
+      "COMMON_NOT_FOUND": "We could not find what you were looking for."
     }
   },
   "form": {
@@ -345,6 +349,19 @@
           "city": "City cannot be longer than 80 characters.",
           "phone": "Enter a phone number with 7 to 15 digits, or leave it empty."
         }
+      },
+      "avatar": {
+        "title": "Your photo",
+        "body": "It shows next to your listings. It is optional and you can remove it whenever you want.",
+        "loading": "Loading your photo",
+        "alt": "Your profile photo",
+        "choose": "Choose a photo",
+        "replace": "Change photo",
+        "remove": "Remove photo",
+        "confirmRemove": "Yes, remove it",
+        "cancelRemove": "Keep it",
+        "working": "Uploading your photo",
+        "hint": "JPG or PNG, at least 200 × 200 pixels. It is stored without any location data the photo carries."
       },
       "email": {
         "title": "Change my email",

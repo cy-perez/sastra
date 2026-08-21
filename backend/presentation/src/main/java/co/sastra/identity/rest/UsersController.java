@@ -4,6 +4,7 @@ import co.sastra.identity.dto.ActiveSession;
 import co.sastra.identity.dto.CloseAccountCommand;
 import co.sastra.identity.dto.RequestEmailChangeCommand;
 import co.sastra.identity.dto.RequestEmailVerificationCommand;
+import co.sastra.identity.dto.UpdateAvatarCommand;
 import co.sastra.identity.dto.UpdateProfileCommand;
 import co.sastra.identity.dto.UserDataExport;
 import co.sastra.identity.model.TokenFamilyId;
@@ -18,12 +19,16 @@ import co.sastra.identity.usecase.CloseAccountUseCase;
 import co.sastra.identity.usecase.ExportUserDataUseCase;
 import co.sastra.identity.usecase.ListSessionsUseCase;
 import co.sastra.identity.usecase.ReadProfileUseCase;
+import co.sastra.identity.usecase.RemoveAvatarUseCase;
 import co.sastra.identity.usecase.RequestEmailChangeUseCase;
 import co.sastra.identity.usecase.RequestEmailVerificationUseCase;
 import co.sastra.identity.usecase.RevokeSessionUseCase;
+import co.sastra.identity.usecase.UpdateAvatarUseCase;
 import co.sastra.identity.usecase.UpdateProfileUseCase;
+import co.sastra.shared.port.out.PublicFileStore;
 import co.sastra.shared.rest.RefreshCookies;
 import jakarta.validation.Valid;
+import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
 import org.jspecify.annotations.Nullable;
@@ -40,8 +45,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Lo que una persona puede hacer sobre su propia cuenta ya autenticada.
@@ -66,6 +73,16 @@ public class UsersController {
     private final ReadProfileUseCase casoDeLectura;
     private final UpdateProfileUseCase casoDePerfil;
     private final RequestEmailChangeUseCase casoDeCambioDeCorreo;
+    private final UpdateAvatarUseCase casoDeAvatar;
+    private final RemoveAvatarUseCase casoDeQuitarAvatar;
+
+    /**
+     * El almacen se inyecta solo para componer la direccion publica de la foto. No
+     * se guarda ni se lee nada por aqui: eso pasa por los casos de uso. La direccion
+     * la compone el almacen porque depende de configuracion, y esta capa no la ve.
+     */
+    private final PublicFileStore almacen;
+
     private final RefreshCookies cookies;
 
     public UsersController(
@@ -77,6 +94,9 @@ public class UsersController {
             ReadProfileUseCase casoDeLectura,
             UpdateProfileUseCase casoDePerfil,
             RequestEmailChangeUseCase casoDeCambioDeCorreo,
+            UpdateAvatarUseCase casoDeAvatar,
+            RemoveAvatarUseCase casoDeQuitarAvatar,
+            PublicFileStore almacen,
             RefreshCookies cookies) {
         this.casoDeReenvio = casoDeReenvio;
         this.casoDeListado = casoDeListado;
@@ -86,6 +106,9 @@ public class UsersController {
         this.casoDeLectura = casoDeLectura;
         this.casoDePerfil = casoDePerfil;
         this.casoDeCambioDeCorreo = casoDeCambioDeCorreo;
+        this.casoDeAvatar = casoDeAvatar;
+        this.casoDeQuitarAvatar = casoDeQuitarAvatar;
+        this.almacen = almacen;
         this.cookies = cookies;
     }
 
@@ -102,7 +125,7 @@ public class UsersController {
     /** Criterio 21: el perfil tal como esta ahora. */
     @GetMapping
     public ProfileResponse perfil(@AuthenticationPrincipal Jwt token) {
-        return comoPerfil(casoDeLectura.execute(usuarioDe(token)));
+        return comoPerfil(casoDeLectura.execute(usuarioDe(token)), almacen);
     }
 
     /**
@@ -118,7 +141,7 @@ public class UsersController {
         User guardado = casoDePerfil.execute(
                 new UpdateProfileCommand(usuarioDe(token), peticion.displayName(), peticion.city(), peticion.phone()));
 
-        return comoPerfil(guardado);
+        return comoPerfil(guardado, almacen);
     }
 
     /**
@@ -167,6 +190,42 @@ public class UsersController {
     }
 
     /**
+     * Criterio 21: la foto de perfil.
+     *
+     * <p>PUT y no POST: se reemplaza la foto entera, no se agrega una a una coleccion.
+     * Subir una segunda vez sustituye la primera, que es lo que significa PUT.
+     *
+     * <p>El archivo llega como multipart y no en base64 dentro de un JSON. En base64
+     * ocupa un tercio mas y obliga a tener la cadena entera en memoria dos veces,
+     * una codificada y otra no.
+     *
+     * <p>Aqui no se valida el contenido, y no es un olvido: validar en el borde
+     * dejaria la regla en un sitio donde no se puede probar sin HTTP. El caso de uso
+     * comprueba el tamano, el tipo por los bytes de cabecera y las dimensiones
+     * (ADR-0018). Lo unico que se hace aqui es leer los bytes.
+     */
+    @PutMapping("/avatar")
+    public ResponseEntity<ProfileResponse> ponerAvatar(
+            @AuthenticationPrincipal Jwt token, @RequestPart("archivo") MultipartFile archivo) throws IOException {
+
+        User actualizada = casoDeAvatar.execute(new UpdateAvatarCommand(usuarioDe(token), archivo.getBytes()));
+
+        return ResponseEntity.ok(comoPerfil(actualizada, almacen));
+    }
+
+    /**
+     * Criterio 21: quitar la foto.
+     *
+     * <p>Idempotente: quitarla cuando no hay ninguna responde igual. Devuelve el
+     * perfil y no 204 para que el cliente no tenga que volver a pedirlo solo para
+     * saber que ya no hay foto.
+     */
+    @DeleteMapping("/avatar")
+    public ResponseEntity<ProfileResponse> quitarAvatar(@AuthenticationPrincipal Jwt token) {
+        return ResponseEntity.ok(comoPerfil(casoDeQuitarAvatar.execute(usuarioDe(token)), almacen));
+    }
+
+    /**
      * Criterio 22: el derecho a conocer, en un archivo que la persona se lleva.
      *
      * <p>{@code Content-Disposition} para que el navegador lo descargue en vez de
@@ -199,13 +258,20 @@ public class UsersController {
                 .build();
     }
 
-    private static ProfileResponse comoPerfil(User usuario) {
+    /**
+     * El almacen entra por parametro para componer la direccion de la foto. Sigue
+     * siendo estatico: asi no puede leer nada del controlador por accidente.
+     */
+    private static ProfileResponse comoPerfil(User usuario, PublicFileStore almacen) {
         return new ProfileResponse(
                 usuario.email().value(),
                 usuario.tieneElCorreoVerificado(),
                 usuario.displayName().value(),
                 usuario.city() == null ? null : usuario.city().value(),
-                usuario.phone() == null ? null : usuario.phone().value());
+                usuario.phone() == null ? null : usuario.phone().value(),
+                usuario.avatarKey() == null
+                        ? null
+                        : almacen.direccionDe(usuario.avatarKey()).toString());
     }
 
     private static UserId usuarioDe(Jwt token) {

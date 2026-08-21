@@ -114,6 +114,18 @@ export default defineConfig({
         RATE_LIMIT_CREDENTIALS_MAX: '500',
         RATE_LIMIT_SESSION_MAX: '500',
 
+        // El almacen local, con su carpeta dentro de e2e-completo para que se pueda
+        // borrar sin tocar nada mas. El backend sirve esa carpeta en /archivos
+        // cuando el proveedor es local (LocalFilesWiring), y por eso la direccion
+        // publica apunta al backend y no al servidor de renderizado.
+        STORAGE_PROVIDER: 'local',
+        STORAGE_LOCAL_PATH: './e2e-completo/.archivos',
+        STORAGE_PUBLIC_BASE_URL: `${API_URL}/archivos`,
+        // Bajo a proposito: 200x200 permite generar imagenes de prueba pequenas y
+        // rapidas, y sigue habiendo una prueba de que el minimo se aplica.
+        STORAGE_AVATAR_MIN_WIDTH: '200',
+        STORAGE_AVATAR_MIN_HEIGHT: '200',
+
         // Imprime el enlace en el registro en vez de enviarlo. Es como la prueba
         // recupera el token: ver e2e-completo/arrancar-backend.mjs.
         MAIL_PROVIDER: 'console',

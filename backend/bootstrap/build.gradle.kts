@@ -26,6 +26,12 @@ dependencies {
     // Para declarar el origen permitido de CORS a partir de la configuracion.
     implementation(libs.spring.web)
 
+    // Para servir los archivos del almacen local en desarrollo (LocalFilesWiring).
+    // No agrega nada al classpath de ejecucion: `presentation` ya trae este starter,
+    // solo que como `implementation`, asi que no se hereda al compilar. Se declara
+    // aqui por el mismo motivo que spring-web arriba: un modulo declara lo que usa.
+    implementation(libs.spring.boot.starter.webmvc)
+
     // Flyway gobierna el esquema y sus migraciones viven en este modulo. Ningun
     // codigo importa Flyway: es puro arranque, por eso runtimeOnly.
     runtimeOnly(libs.spring.boot.starter.flyway)

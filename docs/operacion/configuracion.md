@@ -177,6 +177,40 @@ Los datos de la empresa también: hoy la operación es como persona natural y m�
 adelante puede constituirse una sociedad. Ese cambio debe ser una variable, no
 una búsqueda de texto por todo el repositorio.
 
+### Almacenamiento de archivos
+
+Dos almacenes con garantías distintas (ADR-0018): el **público** sirve la foto de
+perfil y, en Fase 2, las tomas de producto; el **reservado** guarda la cédula y la
+selfie, que nunca se sirven por una dirección pública (RN-046).
+
+| Variable | Qué es | Por omisión |
+|---|---|---|
+| `STORAGE_PROVIDER` | `local` o `gcs` | `local` |
+| `STORAGE_LOCAL_PATH` | Raíz de los dos almacenes con `local` | `./archivos-locales` |
+| `STORAGE_PUBLIC_BASE_URL` | Desde dónde se sirven los archivos públicos | obligatoria en dev y prod |
+| `STORAGE_MAX_IMAGE_BYTES` | Tope por imagen | `8388608` (8 MB) |
+| `STORAGE_AVATAR_MIN_WIDTH` | Ancho mínimo de la foto de perfil | `200` |
+| `STORAGE_AVATAR_MIN_HEIGHT` | Alto mínimo de la foto de perfil | `200` |
+
+`STORAGE_PROVIDER=local` guarda en el sistema de archivos y es el equivalente del
+proveedor de correo de consola: permite recorrer el criterio 21 completo sin
+credenciales de ningún proveedor. **En la nube no vale**, porque el sistema de
+archivos de Cloud Run es efímero y lo guardado desaparece con la instancia.
+
+`STORAGE_PUBLIC_BASE_URL` no se guarda en la base de datos. Si se guardara la
+dirección completa en cada fila, cambiar de CDN obligaría a reescribir la tabla; lo
+que se guarda es la clave, y la dirección se compone al servir.
+
+Subir `STORAGE_MAX_IMAGE_BYTES` por encima de 32 MB no sirve de nada: Cloud Run no
+acepta peticiones más grandes.
+
+**El mínimo del avatar no es RN-019.** Esa regla fija 900 × 1200 y es de las tomas
+de producto (HU-003). Aplicársela a la foto de perfil rechazaría casi cualquier foto
+que alguien tenga a mano, así que el avatar tiene su propio mínimo. Nadie ha
+decidido cuál debe ser: los 200 × 200 son un valor de arranque que solo evita que se
+suba un icono de 16 px, no una regla de negocio. Si se decide una, entra en una
+historia y se anota en `reglas-negocio.md`.
+
 ## Solo para desarrollo local
 
 Estas dos no las lee la aplicación: las lee `docker-compose.yml` para crear la

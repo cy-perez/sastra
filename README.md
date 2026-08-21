@@ -104,9 +104,12 @@ y en `prod` con una etiqueta de versión y aprobación manual. Llama a la
 verificación en lugar de repetir sus pasos, así que nada se publica sin pasarla
 entera.
 
-**Todavía no se ha desplegado nada.** Falta crear las cuentas: el proyecto de
-Google Cloud, la base gestionada, el de Vercel y los secretos. El procedimiento,
-en orden y una sola vez, está en `docs/operacion/despliegue.md`.
+**Todavía no se ha desplegado nada, y es una decisión.** El sitio se publica
+cuando el proyecto esté lo más completo posible; hasta entonces se prueba en local
+integrado contra los servicios de GCP en capa gratuita. El hospedaje del sitio se
+contrata con el dominio y su proveedor está por definir (ADR-0019). El motivo está
+en `docs/operacion/entornos.md` y el procedimiento, listo para ese día, en
+`docs/operacion/despliegue.md`.
 
 Las dependencias las revisa Dependabot cada semana, agrupadas por ecosistema.
 Las subidas de versión mayor no se proponen automáticamente: exigen una ADR.

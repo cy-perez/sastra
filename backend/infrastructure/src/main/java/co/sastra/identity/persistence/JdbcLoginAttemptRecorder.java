@@ -2,13 +2,13 @@ package co.sastra.identity.persistence;
 
 import co.sastra.identity.model.Email;
 import co.sastra.identity.port.out.LoginAttemptRecorder;
+import co.sastra.shared.id.Uuid7;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.HexFormat;
-import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -41,7 +41,7 @@ public class JdbcLoginAttemptRecorder implements LoginAttemptRecorder {
                         INSERT INTO login_attempts (id, email_hash, ip_hash, succeeded, created_at)
                         VALUES (:id, :correo, :ip, :exitoso, :cuando)
                         """)
-                .param("id", UUID.randomUUID())
+                .param("id", Uuid7.nuevo())
                 .param("correo", hashearCorreo(correo))
                 .param("ip", ipHash)
                 .param("exitoso", exitoso)

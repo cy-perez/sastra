@@ -107,7 +107,7 @@ código son dos cosas con dos nombres.
 
 | Español | Código | Definición |
 |---|---|---|
-| Clave de archivo | `FileKey` | El nombre con el que se guarda. Opaco y derivado de un identificador (ADR-0015): no se deriva del nombre original ni de nada de la persona. |
+| Clave de archivo | `FileKey` | El nombre con el que se guarda. Opaco y derivado de un identificador aleatorio, no ordenable por tiempo: es la excepción que ADR-0015 aparta, porque esta clave se publica. No se deriva del nombre original ni de nada de la persona. |
 | Almacén público | `PublicFileStore` | Donde van las imágenes que el catálogo sirve a cualquiera: tomas de producto y foto de perfil. Cacheable, por CDN. |
 | Almacén reservado | `RestrictedFileStore` | Donde van la cédula y la selfie. Privado, cifrado y con acceso auditado (RN-046, `docs/operacion/datos-personales.md`). Nunca se sirve por una dirección pública. |
 | Imagen normalizada | `NormalizedImage` | Los bytes ya decodificados y vueltos a codificar, sin EXIF y con sus dimensiones conocidas. Es lo único que llega a guardarse: nunca se guarda lo que subió alguien tal como llegó. |

@@ -1,5 +1,6 @@
 package co.sastra.identity.model;
 
+import co.sastra.shared.id.Uuid7;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -19,7 +20,7 @@ public record TokenFamilyId(UUID value) {
     }
 
     public static TokenFamilyId nueva() {
-        return new TokenFamilyId(UUID.randomUUID());
+        return new TokenFamilyId(Uuid7.nuevo());
     }
 
     @Override

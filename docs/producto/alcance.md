@@ -25,8 +25,12 @@ Es la fase en curso.
 - Canalización de integración continua: compilar, probar, analizar y desplegar.
   Los cuatro pasos existen: `.github/workflows/verificacion.yml` compila, prueba
   y analiza, y `despliegue.yml` publica en `dev` con cada integración a `main` y
-  en `prod` con etiqueta y aprobación. Falta ejecutarlo por primera vez, que
-  depende de crear las cuentas: el procedimiento está en
+  en `prod` con etiqueta y aprobación. **Ejecutarlo por primera vez está aplazado
+  por decisión**, no por falta de trabajo: el sitio se despliega —dominio y
+  hospedaje— cuando el proyecto esté lo más completo posible. Hasta entonces se
+  prueba en local integrado contra los servicios de GCP en capa gratuita, y los
+  servicios de pago se contratan antes del lanzamiento inicial. El motivo está en
+  `docs/operacion/entornos.md` y el procedimiento, listo para ese día, en
   `docs/operacion/despliegue.md`.
 - Base de datos con migraciones y esquema inicial de usuarios.
 

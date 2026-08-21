@@ -1,5 +1,6 @@
 package co.sastra.identity.model;
 
+import co.sastra.shared.id.Uuid7;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -17,7 +18,7 @@ public record UserId(UUID value) {
     }
 
     public static UserId nuevo() {
-        return new UserId(UUID.randomUUID());
+        return new UserId(Uuid7.nuevo());
     }
 
     public static UserId de(String texto) {

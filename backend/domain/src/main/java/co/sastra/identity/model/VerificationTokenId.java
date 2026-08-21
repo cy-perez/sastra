@@ -1,5 +1,6 @@
 package co.sastra.identity.model;
 
+import co.sastra.shared.id.Uuid7;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -11,7 +12,7 @@ public record VerificationTokenId(UUID value) {
     }
 
     public static VerificationTokenId nuevo() {
-        return new VerificationTokenId(UUID.randomUUID());
+        return new VerificationTokenId(Uuid7.nuevo());
     }
 
     @Override

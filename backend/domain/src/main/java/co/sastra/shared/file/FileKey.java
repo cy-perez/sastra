@@ -22,7 +22,8 @@ public record FileKey(String value) {
     /**
      * Carpeta, barra y nombre. La carpeta agrupa por clase de archivo —{@code
      * avatares/}, {@code documentos/}— y el nombre sale de un identificador
-     * (ADR-0015) mas la extension del tipo detectado.
+     * aleatorio mas la extension del tipo detectado. Aleatorio y no ordenable por
+     * tiempo: es la excepcion que ADR-0015 aparta, porque esta clave se publica.
      */
     private static final Pattern VALIDA = Pattern.compile("[a-z0-9]+(?:-[a-z0-9]+)*/[a-zA-Z0-9_-]+\\.[a-z]{3,4}");
 

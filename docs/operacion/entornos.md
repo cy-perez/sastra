@@ -5,9 +5,29 @@ un tercer entorno es sobre todo mantenimiento sin beneficio.
 
 ## Etapa actual: prototipo
 
+**Nada de esto está desplegado todavía, y es una decisión, no un pendiente.** El
+despliegue del sitio —dominio y hospedaje— se hace cuando el proyecto esté lo más
+completo posible. Hasta entonces se trabaja y se prueba en local, integrado contra
+los servicios de GCP que hagan falta **en su capa gratuita**: son cuentas reales
+contra las que se prueba de verdad, no simulaciones, y cuestan cero. Los servicios
+de pago —el dominio `sastra.co`, la instancia mínima siempre activa, Cloud SQL, el
+balanceador— se contratan justo antes del lanzamiento inicial.
+
+El motivo es el costo de tener algo en pie que nadie usa. Un despliegue vivo pide
+atención continua —secretos que rotar, respaldos que verificar, alertas que
+atender, dependencias que actualizar en un artefacto publicado— y con un solo
+desarrollador esa atención sale del tiempo de construir el producto. Además, el
+mes en que empieza a contar el dominio y la instancia mínima es el mes en que
+empieza el gasto, y conviene que sea el mes en que hay algo que mostrar.
+
+Lo que esto **no** significa: no significa aplazar la canalización ni el flujo de
+despliegue, que están escritos y probados (`despliegue.md`), ni probar contra
+imitaciones de los servicios de la nube. La tabla siguiente es dónde vivirá cada
+pieza y lo que costará cuando se ponga en pie.
+
 | Pieza | Dónde | Costo |
 |---|---|---|
-| Frontend Angular SSR | Vercel, capa gratuita | 0 |
+| Frontend Angular SSR | Sin hospedaje: se ejecuta en local (ADR-0019) | 0 |
 | Backend Spring Boot | Cloud Run, escalado a cero | Prácticamente 0 |
 | PostgreSQL | Neon o Supabase, capa gratuita | 0 |
 | Imágenes | Cloud Storage, capa gratuita 5GB | 0 |
@@ -17,8 +37,9 @@ un tercer entorno es sobre todo mantenimiento sin beneficio.
 | Errores del frontend | Sentry, capa gratuita | 0 |
 | Repositorio y CI | GitHub Actions, minutos gratuitos | 0 |
 
-Cloud Run escala a cero: sin tráfico no cobra. Por eso el backend puede estar
-desplegado desde el primer día. Cloud SQL, en cambio, cobra por hora encendida
+Cloud Run escala a cero: sin tráfico no cobra. Por eso el backend **podría** estar
+desplegado desde el primer día sin costo; que no lo esté es la decisión de arriba,
+tomada por el trabajo de operación que arrastra y no por el precio. Cloud SQL, en cambio, cobra por hora encendida
 aunque nadie lo use, y es lo primero que conviene aplazar.
 
 **Primer arranque en frío.** Con escalado a cero, la primera petición tras un
@@ -56,10 +77,11 @@ Todo por integración continua. Nadie despliega desde su máquina.
 > manual. El despliegue **llama** a la verificación en lugar de repetir sus pasos,
 > así que nada se publica sin pasarla entera.
 >
-> Lo que falta no es código: son las cuentas. Hacen falta el proyecto de Google
-> Cloud, la base gestionada, el proyecto de Vercel y los secretos en Secret
-> Manager. El procedimiento, en orden y una sola vez, está en `despliegue.md`.
-> Hasta que eso exista, no hay nada desplegado.
+> Lo que falta no es código. Para el backend son las cuentas: el proyecto de
+> Google Cloud, la base gestionada y los secretos en Secret Manager, con el
+> procedimiento en orden y una sola vez en `despliegue.md`. Para el frontend falta
+> además elegir dónde: el hospedaje del sitio se contrata con el dominio y su
+> proveedor está por definir (ADR-0019). Hasta entonces no hay nada desplegado.
 
 ```
 rama de trabajo -> pull request -> verificación -> main -> dev automático

@@ -1,12 +1,16 @@
 # ADR-0018 — Almacenamiento de archivos: dos almacenes y subida por el backend
 
 **Fecha:** 2026-08-20
-**Estado:** propuesta
+**Estado:** aceptada
 
-> **Requiere una decisión tuya antes de implementarse entera.** El adaptador de
-> Cloud Storage necesita una dependencia nueva, `com.google.cloud:google-cloud-storage`,
-> y `CLAUDE.md` exige proponerla antes de agregarla. Lo que no depende de esa
-> decisión —los puertos, la validación y el adaptador local— se implementa ya.
+> **Dependencia aprobada el 21 de agosto de 2026.** El adaptador de Cloud Storage
+> necesita `com.google.cloud:google-cloud-storage`, que `CLAUDE.md` exige proponer
+> antes de agregar. Queda aprobada. Los puertos, la validación y el adaptador local
+> ya están implementados; el adaptador de Cloud Storage entra en su propia tarea.
+>
+> Deja de ser opcional, además, por lo que dice `entornos.md`: mientras el sitio no
+> se despliegue se prueba en local **integrado contra Cloud Storage en capa
+> gratuita**, así que el adaptador hace falta para probar, no solo para publicar.
 
 ## Contexto
 

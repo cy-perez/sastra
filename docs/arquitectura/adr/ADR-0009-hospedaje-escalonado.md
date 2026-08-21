@@ -1,6 +1,12 @@
 # ADR-0009 — Hospedaje escalonado: Vercel primero, GCP después
 
-**Fecha:** 2026-08-15 · **Estado:** aceptada
+**Fecha:** 2026-08-15 · **Estado:** sustituida por ADR-0019
+
+> Lo que sigue es lo que se decidió el 15 de agosto de 2026 y se conserva sin
+> editar. **Ya no aplica:** Vercel quedó descartado y el despliegue se aplazó hasta
+> tener el proyecto completo, con lo cual desapareció la etapa de prototipo
+> hospedada y el escalonamiento se quedó sin nada que escalonar. La decisión vigente
+> está en ADR-0019.
 
 ## Contexto
 

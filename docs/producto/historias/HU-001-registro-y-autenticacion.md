@@ -1,18 +1,20 @@
 # HU-001 — Registro y autenticación
 
-**Fase:** 1 | **Estado:** hecha, salvo la foto de perfil del criterio 21
+**Fase:** 1 | **Estado:** hecha
 **Reglas:** RN-001 a RN-009
 
 Los veintitrés criterios están implementados y probados. La foto de perfil del
 criterio 21 fue la última en llegar: estuvo fuera de la Fase 1 porque exigía
 almacenamiento de archivos y una ADR, y entró con ADR-0018.
 
-**Del lado del servidor está completa y probada**: `PUT /api/v1/users/me/avatar` y
+Está cerrada de punta a punta. En el servidor, `PUT /api/v1/users/me/avatar` y
 `DELETE /api/v1/users/me/avatar`, con validación del tipo real por los bytes de
 cabecera, tope de tamaño, mínimo de dimensiones, borrado del EXIF al recodificar y
-borrado del archivo anterior al reemplazarlo y al cerrar la cuenta. Falta la
-interfaz: la pantalla de cuenta todavía no ofrece subirla, así que el criterio no
-se puede dar por cerrado de punta a punta.
+borrado del archivo anterior al reemplazarlo y al cerrar la cuenta. En la interfaz,
+`AvatarForm` dentro de `/mi-cuenta`: sube al elegir el archivo, pide confirmación
+en dos pasos para quitarla —subir se corrige subiendo otra, borrar no se corrige
+con nada— y rechaza en el navegador los tipos que el servidor no acepta, como
+cortesía y no como defensa.
 
 `avatar_url`, que existía sin usarse desde V2, quedó sustituida por `avatar_key` en
 V6: lo que se guarda es la clave dentro del almacén, no la dirección.
@@ -147,7 +149,7 @@ Endpoints: `POST /api/v1/auth/register`, `POST /api/v1/auth/verify-email`,
 `POST /api/v1/auth/confirm-email-change`, `GET|PUT /api/v1/users/me`,
 `POST /api/v1/users/me/email`, `POST /api/v1/users/me/email-verification`,
 `GET|DELETE /api/v1/users/me/sessions`, `GET /api/v1/users/me/export`,
-`DELETE /api/v1/users/me`.
+`DELETE /api/v1/users/me`, `PUT|DELETE /api/v1/users/me/avatar`.
 
 El perfil se guarda con **PUT y no con PATCH**. Con PATCH habría que distinguir
 "no mandé este campo" de "lo dejé vacío", y esa distinción es justo donde se

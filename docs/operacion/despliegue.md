@@ -7,11 +7,42 @@ lo que hay que crear a mano una sola vez.
 La arquitectura y los costos están en `entornos.md`. Aquí solo está el
 procedimiento.
 
+## Cuándo se ejecuta esta lista
+
+**No ahora, y a propósito.** El despliegue del sitio —dominio y hospedaje— se hace
+cuando el proyecto esté lo más completo posible; la decisión y su motivo están en
+`entornos.md`. Este documento se queda escrito y listo para ese día.
+
+Lo que sí se hace desde ya es **crear las cuentas de GCP que se necesiten en capa
+gratuita** para probar en local contra los servicios de verdad: Cloud Storage para
+las imágenes es el primer caso, y llegarán los que hagan falta. De esta lista, eso
+es el paso 1 (el proyecto), el paso 3 (los dos cubos) y la cuenta de servicio
+`sastra-backend` del paso 5, que es la identidad con la que el backend lee y
+escribe en los cubos y la que da credenciales a la máquina de desarrollo. Nada de
+eso cuesta.
+
+Esperan los pasos que solo sirven para poner el sitio en pie: los secretos de
+Secret Manager (4), que en local llegan por `.env`; la cuenta de servicio de
+despliegue (5); la federación de identidades con GitHub (6); el hospedaje del
+sitio (7), que además todavía no tiene proveedor; y los entornos de GitHub con su
+aprobación manual (8).
+
+La diferencia importa porque son dos cosas que suelen confundirse: probar contra
+la nube no es estar en la nube. Se prueba contra Cloud Storage real desde la
+máquina de desarrollo, con una cuenta gratuita y un bucket de pruebas, y nada de
+eso implica un sitio publicado, un dominio comprado ni una instancia encendida.
+
+Los servicios de pago —el dominio `sastra.co`, la instancia mínima siempre activa,
+Cloud SQL, el balanceador con certificado— se contratan justo antes del
+lanzamiento inicial, no antes.
+
 > **Antes de desplegar a producción de verdad**, falta una cosa que no es
 > técnica: los tres textos legales siguen siendo `borrador-local`, que es relleno
 > sin valor legal (`textos-legales.md`). Publicar el registro con un consentimiento
-> que apunta a un borrador no es aceptable. Lo demás de esta lista se puede hacer
-> ya, y `dev` puede quedar en pie con los borradores.
+> que apunta a un borrador no es aceptable. Con el despliegue aplazado esto deja de
+> ser urgente, pero sigue siendo bloqueante: los textos tienen que estar antes de
+> que exista un `prod`, y también antes de un `dev` al que entre alguien que no sea
+> quien lo construye.
 
 ## Lo que hace el flujo
 
@@ -29,9 +60,10 @@ extremo completas.
 la ejecución sale en verde con un aviso que apunta a este documento. Es
 deliberado: si fallaran, cada integración a `main` dejaría una ejecución roja, y
 una canalización que está roja siempre deja de leerse justo antes del día en que
-se rompe de verdad. El interruptor es la presencia de `GCP_PROJECT_ID` y de
-`VERCEL_PROJECT_ID`; en cuanto existan, el trabajo correspondiente empieza a
-desplegar. Van por separado para poder poner en pie una mitad antes que la otra.
+se rompe de verdad. El interruptor es la presencia de `GCP_PROJECT_ID`; en cuanto exista, el backend
+empieza a desplegarse. El frontend no tiene trabajo de despliegue todavía, porque
+no hay proveedor de hospedaje elegido (ADR-0019): se escribe el día que se
+contrate.
 
 Los secretos no pasan por GitHub Actions. Cloud Run los lee de Secret Manager y
 el flujo solo dice qué secreto va en qué variable de entorno. Consecuencia
@@ -78,12 +110,17 @@ Dos cubos con garantías distintas (ADR-0018): el **público** sirve la foto de 
 y, en Fase 2, las tomas de producto; el **reservado** guarda la cédula y la selfie,
 que no se sirven por ninguna dirección pública (RN-046).
 
-> **El adaptador de Cloud Storage todavía no está escrito.** Necesita la dependencia
-> `com.google.cloud:google-cloud-storage`, y `CLAUDE.md` exige una decisión explícita
-> antes de agregarla, así que ADR-0018 está en estado **propuesta**. Lo que sigue es
-> lo que hay que crear en Google; el código del adaptador entra cuando se apruebe la
-> ADR. Hasta entonces `STORAGE_PROVIDER=local` es el único que funciona, y sirve para
-> desarrollo pero **no en la nube**: el sistema de archivos de Cloud Run es efímero.
+> **El adaptador de Cloud Storage todavía no está escrito, pero ya está decidido.**
+> La dependencia `com.google.cloud:google-cloud-storage` quedó aprobada el 21 de
+> agosto de 2026 y ADR-0018 pasó a **aceptada**; el código del adaptador entra en su
+> propia tarea. Mientras no esté, `STORAGE_PROVIDER=local` es el único valor que
+> funciona: con `gcs` no hay bean de `PublicFileStore` y la aplicación no arranca. Y
+> `local` sirve para desarrollo pero **no en la nube**, porque el sistema de archivos
+> de Cloud Run es efímero y se lleva las fotos con la instancia.
+>
+> Estos dos cubos, en cambio, sí se crean ya: son capa gratuita y son contra lo que
+> se prueba en local mientras el sitio no se despliegue (ver «Cuándo se ejecuta esta
+> lista», arriba).
 
 ### Los dos cubos
 
@@ -272,17 +309,24 @@ Cambia `TU-USUARIO/sastra` por el repositorio real en los dos sitios. El
 `attribute-condition` es la pieza que importa: es lo que impide que otro
 repositorio pida el mismo token.
 
-## 7. Vercel
+## 7. El hospedaje del sitio
 
-Crea el proyecto apuntando a la carpeta `frontend/` del repositorio. Anota el
-identificador de la organización y el del proyecto, y genera un token de acceso.
+**Este paso no se puede seguir todavía: no hay proveedor.** Vercel quedó
+descartado y el hospedaje se contrata junto con el dominio, así que el proveedor se
+elige ese día (ADR-0019). Lo que sí está decidido es qué tiene que cumplir, y la
+lista está en esa ADR: ejecución de Node 22 para el renderizado en servidor, cuatro
+cabeceras de seguridad, dos políticas de caché, latencia comparable a `us-east1`,
+configuración por variable de entorno y publicación del artefacto que ya pasó la
+verificación.
 
-Las variables del frontend se configuran **en Vercel**, no aquí: `API_BASE_URL`,
-`COMPANY_*`, `SUPPORT_EMAIL`, `LEGAL_*_VERSION`. La lista completa y qué hace
-cada una está en `configuracion.md`.
+Cuando exista proveedor, este paso pasa a ser el suyo y hay que escribir a la vez
+el trabajo de despliegue del frontend en `despliegue.yml`, que hoy no existe.
 
-`vercel.json` ya fija la región `iad1`, que es la misma zona que `us-east1` de
-Google: así la llamada del renderizado del servidor a la API no cruza el
+Dos cosas que ya se sabrán ese día y conviene no volver a deducir: las variables
+del frontend —`API_BASE_URL`, `COMPANY_*`, `SUPPORT_EMAIL`, `LEGAL_*_VERSION`, con
+la lista completa en `configuracion.md`— se configuran **en el hospedaje**, no en
+este repositorio; y la región tiene que quedar en la misma zona que `us-east1` de
+Google, para que la llamada del renderizado del servidor a la API no cruce el
 continente.
 
 ## 8. Los entornos de GitHub
@@ -295,11 +339,11 @@ archivo se cambia en un commit, un revisor obligatorio no.
 
 Conviene también marcar en `prod` que solo puede desplegarse desde etiquetas.
 
-### Secreto (uno)
+### Secretos
 
-| Nombre | Dónde se saca |
-|---|---|
-| `VERCEL_TOKEN` | Vercel → Account Settings → Tokens |
+Ninguno, por ahora. La autenticación contra Google es por federación de
+identidades y no lleva clave (paso 6), y el token que hacía falta para publicar el
+frontend dependía del proveedor de hospedaje, que está por definir (ADR-0019).
 
 ### Variables
 
@@ -328,7 +372,6 @@ aparezcan tachadas en los registros cuando haga falta leerlas.
 | `LEGAL_TERMS_VERSION`, `LEGAL_PRIVACY_VERSION` | `borrador-local` hasta que existan los textos | la versión real |
 | `STORAGE_PROVIDER` | `gcs` | `gcs` |
 | `STORAGE_PUBLIC_BASE_URL` | `https://storage.googleapis.com/sastra-publico-dev` | el dominio del CDN |
-| `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` | los de Vercel | ídem |
 
 `min-instances = 0` en `dev` es lo que hace que no cueste nada: Cloud Run escala
 a cero y sin tráfico no cobra. En `prod` se pone 1 para no pagar el arranque en
@@ -377,9 +420,14 @@ al menos un despliegue.
 
 Se anota para no confundir lo que falta con lo que está:
 
-- **Dominio y certificado.** `sastra.co` no está comprado. Hasta entonces, las
-  direcciones son las que Cloud Run y Vercel asignan solas, y las variables de
-  arriba llevan esas.
+- **Dominio y certificado.** `sastra.co` no está comprado, por decisión y no por
+  olvido: se contrata antes del lanzamiento inicial, junto con el resto de los
+  servicios de pago y con el hospedaje del sitio. Hasta entonces, la única
+  dirección asignada sola es la que da Cloud Run al backend, y las variables de
+  arriba llevan esa.
+
+- **El despliegue del frontend.** No existe: no hay proveedor de hospedaje elegido
+  (ADR-0019). El flujo publica solo el backend.
 - **Registro y métricas.** Cloud Logging recoge la salida sin configurar nada,
   pero no hay ninguna alerta. Sentry para los errores del frontend está en
   `entornos.md` y aún no está conectado.

@@ -7,7 +7,7 @@ Navegador
    |
    |  HTML renderizado en servidor + hidratación
    v
-Angular 21 SSR  (Vercel ahora, Cloud Run después)
+Angular 21 SSR  (en local; hospedaje por definir, ADR-0019)
    |
    |  REST /api/v1  ·  JWT  ·  JSON
    v

@@ -1,7 +1,7 @@
 # ADR-0015 — Generación de identificadores: UUID v7 o v4
 
 **Fecha:** 2026-08-20
-**Estado:** propuesta
+**Estado:** aceptada
 
 ## Contexto
 
@@ -59,9 +59,25 @@ capacidad nueva.
 
 ## Decisión
 
-Pendiente de aprobación. La propuesta es la **opción A**: implementar v7 en
-`domain` con biblioteca estándar, sin contador de monotonicidad, y conservar la
-decisión que el modelo de datos ya había tomado.
+**Opción A**, aprobada el 21 de agosto de 2026: v7 generado en `domain` con
+biblioteca estándar, sin contador de monotonicidad, conservando la decisión que el
+modelo de datos ya había tomado.
+
+La fábrica es `co.sastra.shared.id.Uuid7`, con `nuevo()` y `nuevo(Instant)` —la
+sobrecarga existe para que la prueba pueda afirmar la marca de tiempo embebida—. La
+usan los cinco identificadores de Fase 1 y el `id` de `login_attempts`, que se
+generaba en `JdbcLoginAttemptRecorder` y también es clave primaria de una tabla.
+
+### La excepción: las claves de archivo siguen en v4
+
+`ArchivosLocales.claveNueva`, que nombra el archivo de una imagen subida, sigue
+generando con `UUID.randomUUID()`. Es el caso que la sección «Cuándo revisar»
+aparta, y se aparta desde el primer día en lugar de esperar a que aparezca: de
+todos los identificadores del proyecto, la clave de archivo es el único que sale
+hacia afuera, porque viaja dentro de la dirección pública de la imagen. Un v7 ahí
+publicaría el instante de la subida a cualquiera que vea el enlace, y la localidad
+de escritura que se gana no aplica: el nombre de un archivo no es una fila de un
+índice.
 
 ## Motivo
 
@@ -104,7 +120,8 @@ token, y por eso los tokens siguen siendo hash aleatorio y no un `uuid`.
 
 Si aparece un identificador que sí se publique hacia afuera y donde la marca de
 tiempo revele algo sobre el negocio —cuántas publicaciones entran por día, por
-ejemplo—, ese tipo concreto vuelve a v4 y se documenta la excepción.
+ejemplo—, ese tipo concreto vuelve a v4 y se documenta la excepción. La primera ya
+existe y está en la decisión: la clave de archivo.
 
 Si el generador propio da un solo problema real, se reabre la opción B con la
 evidencia en la mano.

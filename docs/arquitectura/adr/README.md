@@ -31,13 +31,14 @@ la referencia.
 | 0006 | Angular con renderizado en servidor desde el inicio | Aceptada |
 | 0007 | TanStack Query pese a su estado experimental | Aceptada con condiciones |
 | 0008 | Búsqueda con Typesense | Aceptada, se implementa en Fase 3 |
-| 0009 | Hospedaje escalonado: Vercel primero, GCP después | Aceptada |
+| 0009 | Hospedaje escalonado: Vercel primero, GCP después | Sustituida por ADR-0019 |
 | 0010 | Ocho tomas a 45 grados y proporción 3:4 para el visor | Aceptada |
 | 0011 | El tipo se aplica por rol, no por tamaño | Aceptada |
 | 0012 | Resend como proveedor de correo transaccional | Aceptada |
 | 0013 | Contraseñas filtradas con Have I Been Pwned y k-anonimato | Aceptada |
 | 0014 | Ventana de gracia en la detección de reutilización del refresco | Aceptada |
-| 0015 | Generación de identificadores: UUID v7 o v4 | Propuesta |
+| 0015 | Generación de identificadores: UUID v7 o v4 | Aceptada, v7 |
 | 0016 | Accesibilidad automatizada con axe-core en las pruebas de extremo a extremo | Aceptada |
 | 0017 | Una suite de extremo a extremo que cruza las dos mitades | Aceptada |
-| 0018 | Almacenamiento de archivos: dos almacenes y subida por el backend | Propuesta |
+| 0018 | Almacenamiento de archivos: dos almacenes y subida por el backend | Aceptada |
+| 0019 | Un solo hospedaje, elegido al contratar el dominio | Aceptada |

@@ -72,7 +72,23 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
 
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    {
+      name: 'chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        // La camara, para el recorrido de verificacion de vendedor (HU-002). El
+        // dispositivo falso de Chromium entrega un patron sintetico con bordes
+        // marcados, que es justo lo que la deteccion de desenfoque necesita para
+        // aceptar la foto; y el permiso concedido evita el dialogo del navegador,
+        // que ninguna prueba puede pulsar.
+        permissions: ['camera'],
+        launchOptions: {
+          args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream'],
+        },
+      },
+    },
+  ],
 
   webServer: [
     {
@@ -141,6 +157,11 @@ export default defineConfig({
         LEGAL_TERMS_VERSION: 'borrador-local',
         LEGAL_PRIVACY_VERSION: 'borrador-local',
 
+        // HU-002. Sin la bandera, el controlador de verificacion no se crea y sus
+        // rutas responden 404: la prueba del recorrido no tendria contra que correr.
+        FEATURE_SELLER_VERIFICATION: 'true',
+        VERIFICATION_REVIEW_DAYS: '2',
+
         COMPANY_NAME: 'Sastra S.A.S.',
         COMPANY_TAX_ID: '000000000-0',
         COMPANY_ADDRESS: 'Medellin, Colombia',
@@ -160,6 +181,10 @@ export default defineConfig({
         // Aqui si apunta al backend de verdad. Es toda la diferencia con la otra
         // configuracion.
         API_BASE_URL: `${API_URL}/api/v1`,
+        // El mismo numero que el backend. Se declara en los dos lados a proposito: la
+        // pantalla lo dice y el correo tambien, y una prueba que confirma el texto contra
+        // el valor por omision no comprueba que la configuracion llegue.
+        VERIFICATION_REVIEW_DAYS: '2',
         COMPANY_NAME: 'Sastra S.A.S.',
         COMPANY_TAX_ID: '000000000-0',
         COMPANY_ADDRESS: 'Medellin, Colombia',

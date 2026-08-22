@@ -1,8 +1,10 @@
 package co.sastra.identity.port.out;
 
 import co.sastra.identity.model.Email;
+import co.sastra.identity.model.RejectionReason;
 import co.sastra.identity.model.User;
 import java.time.Instant;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Puerto de salida hacia el correo transaccional (ADR-0012).
@@ -95,6 +97,47 @@ public interface MailSender {
      * esta usando. El mismo trato que el aviso de registro con correo existente.
      */
     void enviarAvisoDeIntentoDeCambioAEsteCorreo(User titular);
+
+    // --- Verificacion de vendedor. HU-002 criterio 10 ------------------------
+    //
+    // Los cuatro cambios de estado que otra persona provoca o que dejan a alguien
+    // esperando. **No hay aviso de empezar el proceso**, aunque NOT_STARTED a
+    // IN_PROGRESS tambien sea un cambio de estado: lo provoca la propia persona
+    // pulsando un boton y lo ve en pantalla en el momento. Un correo ahi no informa de
+    // nada y ensena a ignorar los nuestros.
+
+    /**
+     * Criterio 6 y 10: la solicitud quedo enviada y espera revision.
+     *
+     * <p>No lleva el plazo como parametro: lo lee el adaptador de su configuracion, que
+     * es donde vive. Pasarlo por aqui obligaria al caso de uso a conocer una cifra que
+     * solo aparece en un texto.
+     */
+    void enviarAvisoDeVerificacionRecibida(User titular);
+
+    /** Criterio 8 y 10: aprobada. Ya es vendedor verificado. */
+    void enviarAvisoDeVerificacionAprobada(User titular);
+
+    /**
+     * Criterio 7 y 10: rechazada, con el motivo de la lista cerrada.
+     *
+     * @param nota lo que escribio quien revisa. Viaja a la persona rechazada y nunca
+     *     lleva informacion judicial ni datos de un tercero
+     * @param intentosRestantes lo que queda de RN-014. En cero, el correo dice que hay
+     *     que escribir en lugar de invitar a reintentar
+     */
+    void enviarAvisoDeVerificacionRechazada(
+            User titular, RejectionReason motivo, @Nullable String nota, int intentosRestantes);
+
+    /**
+     * RN-013 y criterio 10: se revoco el sello de quien ya lo tenia.
+     *
+     * <p>Aviso propio y no el de rechazo, por lo mismo que son dos estados distintos:
+     * a quien nunca paso la revision se le dice que corrija; a quien la paso y perdio el
+     * sello hay que decirle que sus publicaciones siguen visibles y que no puede crear
+     * nuevas, que es otra conversacion.
+     */
+    void enviarAvisoDeVerificacionRevocada(User titular, RejectionReason motivo, @Nullable String nota);
 
     /**
      * Criterio 21: el correo de la cuenta acaba de cambiar.

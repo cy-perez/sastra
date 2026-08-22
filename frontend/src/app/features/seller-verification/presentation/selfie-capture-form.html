@@ -1,0 +1,28 @@
+<div class="formulario">
+  @if (errorDelServidor(); as error) {
+    <p class="error tipo-cuerpo" role="alert">{{ error | transloco }}</p>
+  } @else if (envio.isSuccess()) {
+    <p class="guardado tipo-cuerpo" role="status">
+      {{ 'sellerVerification.selfieForm.saved' | transloco }}
+    </p>
+  }
+
+  <sastra-capture-field
+    encuadre="rostro"
+    labelKey="sellerVerification.steps.selfie.title"
+    (capturada)="foto.set($event)"
+  />
+
+  @if (errorDeFoto(); as error) {
+    <p class="error-campo tipo-secundario" role="alert">{{ error | transloco }}</p>
+  }
+
+  <button
+    type="button"
+    class="accion tipo-secundario"
+    [disabled]="envio.isPending()"
+    (click)="guardar()"
+  >
+    {{ 'sellerVerification.selfieForm.submit' | transloco }}
+  </button>
+</div>

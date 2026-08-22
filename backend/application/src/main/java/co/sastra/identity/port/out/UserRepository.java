@@ -2,6 +2,7 @@ package co.sastra.identity.port.out;
 
 import co.sastra.identity.model.Email;
 import co.sastra.identity.model.PasswordHash;
+import co.sastra.identity.model.Role;
 import co.sastra.identity.model.User;
 import co.sastra.identity.model.UserId;
 import java.time.Instant;
@@ -42,6 +43,26 @@ public interface UserRepository {
      * enlace.
      */
     void actualizarCorreo(User usuario);
+
+    /**
+     * Otorga un rol. Criterio 8 de HU-002: aprobada la verificacion, la persona pasa a
+     * ser vendedora.
+     *
+     * <p>Metodo propio y no parte de {@code actualizar}, por el mismo motivo por el que
+     * ese metodo excluye el correo: los roles deciden lo que alguien puede hacer, y si
+     * cupieran en el guardado del perfil, cualquier cambio de nombre podria llevarse un
+     * rol por delante. Hasta ahora los roles solo se escribian al crear la cuenta.
+     *
+     * <p>Es idempotente: otorgar dos veces el mismo rol no falla ni duplica la fila.
+     */
+    void otorgarRol(UserId usuario, Role rol, Instant ahora);
+
+    /**
+     * Quita un rol. RN-013: revocar la verificacion quita el sello de vendedor.
+     *
+     * <p>Tambien idempotente: quitar lo que no esta no es un error.
+     */
+    void revocarRol(UserId usuario, Role rol);
 
     Optional<User> buscarPorCorreo(Email correo);
 

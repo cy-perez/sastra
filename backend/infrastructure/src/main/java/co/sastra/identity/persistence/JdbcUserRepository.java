@@ -136,6 +136,31 @@ public class JdbcUserRepository implements UserRepository {
                 .update();
     }
 
+    /**
+     * {@code ON CONFLICT DO NOTHING} para que sea idempotente: aprobar dos veces la
+     * misma verificacion no puede reventar por la clave primaria de {@code user_roles}.
+     */
+    @Override
+    public void otorgarRol(UserId usuario, Role rol, Instant ahora) {
+        jdbc.sql("""
+                        INSERT INTO user_roles (user_id, role, granted_at)
+                        VALUES (:usuario, :rol, :ahora)
+                        ON CONFLICT (user_id, role) DO NOTHING
+                        """)
+                .param("usuario", usuario.value())
+                .param("rol", rol.name())
+                .param("ahora", Timestamp.from(ahora))
+                .update();
+    }
+
+    @Override
+    public void revocarRol(UserId usuario, Role rol) {
+        jdbc.sql("DELETE FROM user_roles WHERE user_id = :usuario AND role = :rol")
+                .param("usuario", usuario.value())
+                .param("rol", rol.name())
+                .update();
+    }
+
     @Override
     public Optional<User> buscarPorCorreo(Email correo) {
         // La comparacion la resuelve citext: "Ana@Correo.co" encuentra la fila de

@@ -137,6 +137,17 @@ public enum ErrorCode {
     SELLER_ACCOUNT_HOLDER_MISMATCH,
 
     /**
+     * Criterio 1 de HU-002: hay que tener el correo verificado para empezar.
+     *
+     * <p>Codigo propio y no uno de {@code AUTH_}: no ha fallado ninguna credencial,
+     * falta un paso que la persona ya tiene empezado y puede reenviar.
+     */
+    SELLER_EMAIL_NOT_VERIFIED,
+
+    /** La entidad financiera no esta en el catalogo activo. */
+    SELLER_UNKNOWN_INSTITUTION,
+
+    /**
      * RN-010: ese documento ya esta verificado en otra cuenta.
      *
      * <p>Es lo contrario del silencio que guarda el registro con un correo repetido,

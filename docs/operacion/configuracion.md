@@ -62,7 +62,7 @@ correo, ningún NIT, ningún porcentaje de comisión.
 | `STORAGE_PUBLIC_BUCKET` | `sastra-publico` | sí, con `gcs` |
 | `STORAGE_RESTRICTED_BUCKET` | `sastra-reservado` | sí, con `gcs` |
 | `STORAGE_PROJECT_ID` | `sastra-col` | no |
-| `VERIFICATION_REVIEW_DAYS` | `2` | Fase 2 |
+| `VERIFICATION_REVIEW_DAYS` | `2` | no, `2` por omisión |
 | `WOMPI_PUBLIC_KEY` | | Fase 3 |
 | `WOMPI_PRIVATE_KEY` | | Fase 3 |
 | `WOMPI_EVENTS_SECRET` | | Fase 3 |
@@ -179,6 +179,20 @@ puede cambiar, y no debería exigir un despliegue de código.
 Los datos de la empresa también: hoy la operación es como persona natural y más
 adelante puede constituirse una sociedad. Ese cambio debe ser una variable, no
 una búsqueda de texto por todo el repositorio.
+
+### Verificación de vendedor
+
+| Variable | Qué es | Por omisión |
+|---|---|---|
+| `VERIFICATION_REVIEW_DAYS` | Días hábiles que se promete tardar en revisar | `2` |
+
+La dicen en voz alta la pantalla y el correo de «solicitud recibida», así que cambiarla
+no puede exigir un despliegue de código. **Nadie la hace cumplir**: una solicitud que
+tarda más no cambia de estado sola ni avisa a nadie. Si eso hace falta, es una regla
+nueva y hay que escribirla en `reglas-negocio.md`.
+
+El backend la valida entre 1 y 20. El cero está cerrado a propósito: prometer revisar
+«en cero días hábiles» no significa nada, y en Colombia lo anunciado es exigible.
 
 ### Almacenamiento de archivos
 
@@ -338,6 +352,11 @@ Se manejan como configuración, no como ramas de Git de larga vida:
 Las cinco siguen apagadas: se enciende cada una cuando su funcionalidad exista y
 no cuando empiece la fase que la contiene. Es lo que permite desplegar código
 incompleto sin exponerlo.
+
+«Sin exponerlo» es literal en el caso de `FEATURE_SELLER_VERIFICATION`: con la bandera
+apagada, el controlador de la verificación no se crea y sus rutas responden 404. No
+rechazan la petición, no existen. Un 403 le confirmaría a cualquiera que la
+funcionalidad está ahí esperando.
 
 ## Rotación de secretos
 

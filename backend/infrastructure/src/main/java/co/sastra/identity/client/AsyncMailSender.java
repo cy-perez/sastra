@@ -1,6 +1,7 @@
 package co.sastra.identity.client;
 
 import co.sastra.identity.model.Email;
+import co.sastra.identity.model.RejectionReason;
 import co.sastra.identity.model.User;
 import co.sastra.identity.port.out.MailSender;
 import jakarta.annotation.PreDestroy;
@@ -71,6 +72,31 @@ public class AsyncMailSender implements MailSender {
             hilo.setDaemon(true);
             return hilo;
         };
+    }
+
+    @Override
+    public void enviarAvisoDeVerificacionRecibida(User titular) {
+        enDiferido("aviso de verificacion recibida", () -> transporte.enviarAvisoDeVerificacionRecibida(titular));
+    }
+
+    @Override
+    public void enviarAvisoDeVerificacionAprobada(User titular) {
+        enDiferido("aviso de verificacion aprobada", () -> transporte.enviarAvisoDeVerificacionAprobada(titular));
+    }
+
+    @Override
+    public void enviarAvisoDeVerificacionRechazada(
+            User titular, RejectionReason motivo, String nota, int intentosRestantes) {
+        enDiferido(
+                "aviso de verificacion rechazada",
+                () -> transporte.enviarAvisoDeVerificacionRechazada(titular, motivo, nota, intentosRestantes));
+    }
+
+    @Override
+    public void enviarAvisoDeVerificacionRevocada(User titular, RejectionReason motivo, String nota) {
+        enDiferido(
+                "aviso de verificacion revocada",
+                () -> transporte.enviarAvisoDeVerificacionRevocada(titular, motivo, nota));
     }
 
     @Override

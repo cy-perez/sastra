@@ -16,15 +16,18 @@ import co.sastra.identity.model.IdentityDocumentType;
 import co.sastra.identity.model.LegalName;
 import co.sastra.identity.model.RawPassword;
 import co.sastra.identity.model.RejectionReason;
+import co.sastra.identity.model.Role;
 import co.sastra.identity.model.SellerVerification;
 import co.sastra.identity.model.SellerVerificationId;
 import co.sastra.identity.model.User;
 import co.sastra.identity.model.UserId;
 import co.sastra.identity.model.UserLocale;
+import co.sastra.identity.model.VerificationAccess;
 import co.sastra.identity.model.VerificationStatus;
 import co.sastra.identity.port.out.PasswordHasher;
 import co.sastra.identity.port.out.SellerVerificationRepository;
 import co.sastra.identity.port.out.UserRepository;
+import co.sastra.identity.port.out.VerificationAccessLog;
 import co.sastra.shared.file.FileKey;
 import java.time.Clock;
 import java.time.Instant;
@@ -80,6 +83,7 @@ class SellerVerificationPersistenceTest {
     private static final LegalName TITULAR = new LegalName("Ana Maria Garcia");
 
     private final SellerVerificationRepository verificaciones;
+    private final VerificationAccessLog bitacora;
     private final UserRepository usuarios;
     private final PasswordHasher hasher;
     private final JdbcClient jdbc;
@@ -87,11 +91,13 @@ class SellerVerificationPersistenceTest {
 
     SellerVerificationPersistenceTest(
             SellerVerificationRepository verificaciones,
+            VerificationAccessLog bitacora,
             UserRepository usuarios,
             PasswordHasher hasher,
             JdbcClient jdbc,
             Clock reloj) {
         this.verificaciones = verificaciones;
+        this.bitacora = bitacora;
         this.usuarios = usuarios;
         this.hasher = hasher;
         this.jdbc = jdbc;
@@ -397,5 +403,99 @@ class SellerVerificationPersistenceTest {
 
         assertThat(entidades).isEqualTo(28);
         assertThat(billeteras).isEqualTo(7);
+    }
+
+    // --- Roles y bitacora. Rebanada C2 ---------------------------------------
+
+    /** Criterio 8: aprobar convierte a la persona en vendedora. */
+    @Test
+    void deberia_otorgar_el_rol_de_vendedor() {
+        UserId usuario = cuentaNueva();
+
+        usuarios.otorgarRol(usuario, Role.SELLER, reloj.instant());
+
+        assertThat(rolesDe(usuario)).contains("SELLER");
+    }
+
+    /** Aprobar dos veces la misma solicitud no puede reventar por la clave primaria. */
+    @Test
+    void deberia_poder_otorgar_el_mismo_rol_dos_veces() {
+        UserId usuario = cuentaNueva();
+
+        usuarios.otorgarRol(usuario, Role.SELLER, reloj.instant());
+        usuarios.otorgarRol(usuario, Role.SELLER, reloj.instant());
+
+        assertThat(rolesDe(usuario)).containsOnlyOnce("SELLER");
+    }
+
+    /** RN-013: revocar quita el sello y deja el resto de los roles en su sitio. */
+    @Test
+    void deberia_cumplir_RN_013_quitando_solo_el_rol_de_vendedor() {
+        UserId usuario = cuentaNueva();
+        usuarios.otorgarRol(usuario, Role.SELLER, reloj.instant());
+
+        usuarios.revocarRol(usuario, Role.SELLER);
+
+        assertThat(rolesDe(usuario)).doesNotContain("SELLER").contains("BUYER");
+    }
+
+    @Test
+    void deberia_poder_revocar_un_rol_que_no_tiene() {
+        UserId usuario = cuentaNueva();
+
+        usuarios.revocarRol(usuario, Role.SELLER);
+
+        assertThat(rolesDe(usuario)).contains("BUYER");
+    }
+
+    @Test
+    void deberia_anotar_en_la_bitacora_quien_vio_un_documento() {
+        UserId vendedor = cuentaNueva();
+        UserId moderador = cuentaNueva();
+        SellerVerification solicitud = completaDe(vendedor, cedulaNueva());
+        verificaciones.guardar(solicitud);
+
+        bitacora.registrar(
+                solicitud.id(),
+                moderador,
+                VerificationAccess.VIEW_DOCUMENT_FRONT,
+                "revision de la solicitud",
+                reloj.instant());
+
+        List<String> anotado = jdbc.sql(
+                        "SELECT action, reason FROM verification_access_log WHERE verification_id = :id")
+                .param("id", solicitud.id().value())
+                .query((fila, numero) -> List.of(fila.getString(1), fila.getString(2)))
+                .single();
+
+        assertThat(anotado).containsExactly("VIEW_DOCUMENT_FRONT", "revision de la solicitud");
+    }
+
+    /**
+     * La accion se valida contra la lista del CHECK de V8. Una accion inventada en el
+     * enum sin migracion que la agregue tiene que fallar aqui y no colarse.
+     */
+    @Test
+    void deberia_rechazar_una_accion_que_la_migracion_no_conoce() {
+        UserId vendedor = cuentaNueva();
+        SellerVerification solicitud = completaDe(vendedor, cedulaNueva());
+        verificaciones.guardar(solicitud);
+
+        assertThatThrownBy(() -> jdbc.sql("""
+                                INSERT INTO verification_access_log (id, verification_id, actor_id, action, created_at)
+                                VALUES (:id, :verificacion, :actor, 'ESPIAR', now())
+                                """)
+                        .param("id", java.util.UUID.randomUUID())
+                        .param("verificacion", solicitud.id().value())
+                        .param("actor", vendedor.value())
+                        .update())
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    private List<String> rolesDe(UserId usuario) {
+        return jdbc.sql("SELECT role FROM user_roles WHERE user_id = :usuario")
+                .param("usuario", usuario.value())
+                .query(String.class)
+                .list();
     }
 }

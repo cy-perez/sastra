@@ -53,8 +53,13 @@ que por selector CSS. Nunca se prueban métodos privados.
   lo que promete ADR-0006. No necesita base de datos ni backend.
 - `frontend/e2e-completo/` con `playwright.completo.config.ts`. Levanta el backend
   empaquetado, PostgreSQL y el servidor de renderizado, y recorre los caminos
-  críticos de cuentas por la interfaz: registro, verificación, ingreso, cierre de
-  sesión, recuperación de contraseña, descarga de datos y cierre de cuenta.
+  críticos por la interfaz: los de cuentas —registro, verificación, ingreso, cierre
+  de sesión, recuperación de contraseña, descarga de datos y cierre de cuenta— y el
+  de verificación de vendedor hasta quedar en revisión, con la cámara falsa de
+  Chromium. Lo que sigue del recorrido de HU-002 —aprobar, el sello, el rol— vive en
+  una prueba de `bootstrap`, porque otorgar el rol de moderador exige la base de
+  datos y darle acceso a esta suite significaría agregarle al frontend un cliente de
+  PostgreSQL.
 
 La segunda existe porque la primera no puede ver un contrato roto entre las dos
 mitades (ADR-0017). Los caminos de cuentas estaban probados por mitades —MockMvc en

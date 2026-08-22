@@ -542,6 +542,60 @@ Nunca "Campo inválido".
 **Página 404** (`notFound.*`): Esta página no existe o la movimos. Vuelve al
 inicio o escríbenos si buscabas algo puntual.
 
+## Verificación de vendedor — Fase 2
+
+El texto de HU-002. Las claves van bajo `sellerVerification.*`, y los mensajes de
+error no están aquí: salen del código de error, en `errors.byCode.*`.
+
+**Encabezado** (`sellerVerification.intro.*`):
+`.title`: Verifícate para vender
+`.body`: Necesitamos confirmar quién eres antes de que publiques. Son tres pasos y
+puedes salir y volver cuando quieras: guardamos lo que ya hiciste.
+`.reviewTime`: Revisamos tu solicitud en máximo `{{días}}` días hábiles.
+
+**Los tres pasos** (`sellerVerification.steps.*`). Cada uno con su estado:
+
+| Clave | Texto |
+|---|---|
+| `.document.title` | Tu documento de identidad |
+| `.document.body` | Una foto del frente y otra del reverso. Que se lea todo, sin brillos ni dedos encima. |
+| `.selfie.title` | Una foto de tu cara |
+| `.selfie.body` | Se toma en el momento con tu cámara. No se puede subir desde la galería. |
+| `.bank.title` | Dónde recibes tu dinero |
+| `.bank.body` | La cuenta tiene que estar a tu nombre, el mismo del documento. |
+| `.done` | Listo |
+| `.pending` | Falta |
+
+**Estados de la solicitud** (`sellerVerification.status.*`). La clave es el valor del
+estado, en mayúsculas, porque la plantilla la compone con el dato que llega:
+`.IN_PROGRESS`: Te falta algo por entregar.
+`.PENDING_REVIEW`: Estamos revisando tu solicitud.
+`.VERIFIED`: Ya eres vendedor verificado.
+`.REJECTED`: No pudimos verificarte.
+`.REVOKED`: Tu verificación se revocó.
+
+**Enviar** (`sellerVerification.submit.*`):
+`.action`: Enviar para revisión
+`.blocked`: Completa los tres pasos para poder enviar.
+`.attempts`: Te quedan `{{intentos}}` intentos.
+`.exhausted`: Usaste tus tres intentos. Escríbenos y lo revisamos a mano.
+
+**Rechazo** (`sellerVerification.rejected.*`):
+`.reasonLabel`: Motivo
+`.noteLabel`: Nota de quien revisó
+`.retry`: Corregir y volver a enviar
+
+Los motivos son lista cerrada y se traducen por su código
+(`sellerVerification.reasons.*`): fotos ilegibles → «Las fotos no se pueden leer»;
+documento vencido → «El documento está vencido»; titular distinto → «El titular de la
+cuenta no coincide con tu documento»; documento ya verificado → «Ese documento ya está
+verificado en otra cuenta»; requisitos → «No cumples los requisitos para vender».
+
+**Lo que no se escribe aquí, y por qué.** No hay texto que prometa cuándo estará
+aprobada más allá del plazo configurable, ni que anuncie qué se puede hacer al
+verificarse: publicar llega con su propia historia y anunciarlo antes deja un enlace a
+una ruta que no existe, que es lo que HU-004 y HU-005 prohíben.
+
 ## Etiquetas de ficha de producto — Fase 2
 
 - **Condición:** Nuevo · Como nuevo · Buen estado · Con detalles. Son las cuatro

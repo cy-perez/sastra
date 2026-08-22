@@ -180,9 +180,137 @@ prometió nada distinto y no se inventa aquí.
   interfaz.
 - **El formato del número por tipo de documento**, según la nota de arriba.
 
+## Notas técnicas
+
+Endpoints del lado de quien se verifica, todos bajo `/api/v1/users/me/verification`:
+
+| Método y ruta | Qué hace |
+|---|---|
+| `POST /` | Inicia, o devuelve la solicitud en curso. Idempotente, responde 200 |
+| `GET /` | El estado propio. 404 mientras no haya empezado |
+| `PUT /document` | Las dos caras, multipart. Sustituye lo anterior |
+| `PUT /selfie` | La selfie, multipart |
+| `PUT /bank-account` | La cuenta, JSON |
+| `POST /submission` | Envía a revisión. Cuenta un intento de RN-014 |
+
+Van bajo `users/me` y no bajo `sellers` porque quien llama **todavía no es vendedor**,
+y la ruta de un recurso no puede depender del resultado de la operación que se le pide.
+
+**Los endpoints solo existen con `FEATURE_SELLER_VERIFICATION` encendida.** Sin la
+bandera el controlador no se crea y las rutas responden 404: no es que rechacen, es que
+no están, que es para lo que existen las banderas. Un 403 le diría a cualquiera que la
+funcionalidad está ahí.
+
+### Endpoints del moderador
+
+Bajo `/api/v1/verifications`, **fuera de `users/**` a propósito**: esa ruta solo exige
+token, y con estos endpoints allí cualquiera con una cuenta podría aprobar su propia
+verificación. Aquí la regla es `hasRole("MODERATOR")`.
+
+| Método y ruta | Qué hace |
+|---|---|
+| `GET /` | La bandeja: lo que espera revisión, lo más viejo primero |
+| `GET /{id}/images/{imagen}` | Una de las tres imágenes, con la lectura anotada en bitácora |
+| `POST /{id}/approval` | Aprueba. Otorga el rol de vendedor (criterio 8) |
+| `POST /{id}/rejection` | Rechaza con motivo de la lista cerrada y nota opcional |
+| `POST /{id}/revocation` | Revoca el sello de quien ya lo tenía (RN-013) |
+
+**Dos cerraduras, no una.** La regla por ruta en `SecurityConfig` y un `@PreAuthorize`
+en cada método. Es redundante a propósito: mover un endpoint de sitio no se lleva su
+autorización por delante. Ojo con que `@PreAuthorize` **solo funciona con
+`@EnableMethodSecurity`**; sin esa anotación Spring lo ignora en silencio y el método se
+lee como protegido sin estarlo.
+
+**Las imágenes se sirven por ese endpoint y no por URL firmada.** Es la decisión de
+ADR-0018 aplicada: un enlace que funciona por sí solo no puede registrar quién lo usó, y
+esta historia exige bitácora con actor y motivo. Se pide «el frente de esta solicitud», no
+una clave de archivo: con la clave en la URL, quien la tuviera podría pedir cualquier cosa
+del almacén reservado. Las respuestas van con `Cache-Control: no-store`.
+
+**Una tensión del criterio 11 que conviene mirar.** Ese criterio no hace excepciones por
+rol, así que el moderador tampoco ve el número de documento completo: compara la imagen
+contra los cuatro últimos dígitos. Serví las imágenes porque la sección de seguridad de
+esta historia dice expresamente que se ven «solo para el rol de moderación», pero **los
+números no**. Si revisar exige el número entero, hay que decidirlo y anotarlo: la acción
+`VIEW_BANK_ACCOUNT` ya existe en la bitácora para ese día y hoy no la usa nadie.
+
+### Los correos del criterio 10
+
+Cuatro avisos, uno por cambio de estado que la persona necesita saber:
+
+| Cuándo | Qué dice |
+|---|---|
+| `PENDING_REVIEW` | Recibimos la solicitud y la revisamos en máximo `{{días}}` días hábiles |
+| `VERIFIED` | Ya es vendedor verificado y su perfil muestra el sello |
+| `REJECTED` | El motivo de la lista cerrada, la nota, y cuántos intentos quedan |
+| `REVOKED` | El motivo, y que lo publicado sigue visible pero no puede crear más (RN-013) |
+
+**No hay aviso de empezar el proceso**, aunque `NOT_STARTED → IN_PROGRESS` también sea
+un cambio de estado y el criterio diga «cada cambio». Lo provoca la propia persona
+pulsando un botón y lo ve en pantalla en el momento: un correo ahí no informa de nada y
+enseña a ignorar los nuestros. Si se quiere, es una línea.
+
+**En cero intentos el correo de rechazo no invita a reintentar.** RN-014 no lo permite,
+así que decir «vuelve a intentarlo» sería mandar a alguien a una negativa. Dice que
+escriba.
+
+**El aviso de revocación es propio y no el de rechazo**, por lo mismo que son dos
+estados distintos: a quien nunca pasó la revisión se le dice que corrija; a quien la
+pasó y perdió el sello hay que decirle qué pasa con lo que ya publicó.
+
+Ninguno de los cuatro puede tumbar la operación: el puerto de correo no lanza (ADR-0012)
+y los avisos se mandan **después** de guardar y de anotar en la bitácora. Un aviso de
+algo que no se guardó es peor que no avisar.
+
+### Cómo se otorga el rol de moderador
+
+**No hay mecanismo, y es una decisión.** Nadie otorga `MODERATOR` desde ninguna pantalla:
+el panel administrativo que lo haría es de Fase 4 (`alcance.md`). Hasta entonces se otorga
+a mano, una vez, con acceso a la base:
+
+```sql
+INSERT INTO user_roles (user_id, role, granted_at)
+SELECT id, 'MODERATOR', now() FROM users WHERE email = 'quien-revisa@sastra.co'
+ON CONFLICT (user_id, role) DO NOTHING;
+```
+
+Lo descartado y por qué: **no se otorga desde configuración al arrancar**. Una variable
+con correos que reciben el rol de moderación convierte una variable de entorno en un
+otorgamiento de privilegios, y quien pueda editar la configuración del despliegue pasa a
+poder verse las cédulas de todo el mundo. Una sentencia a mano deja rastro y exige acceso
+a la base, que es un permiso distinto y más difícil de conseguir por accidente.
+
 ## Pruebas requeridas
 
 - Unitarias: coincidencia de titular, conteo de intentos, transiciones de estado.
 - Integración: unicidad de documento bajo concurrencia, cifrado efectivo en base
   de datos, ausencia de datos sensibles en las respuestas.
 - Extremo a extremo: recorrido completo hasta obtener el sello.
+
+### Cómo quedó repartido el extremo a extremo
+
+El recorrido está cubierto entero, pero en dos piezas, y no por comodidad:
+
+- `frontend/e2e-completo/verificacion-de-vendedor.spec.ts` recorre **la mitad de la
+  persona por el navegador**, con el backend y PostgreSQL de verdad: empezar,
+  documento con las dos caras, selfie, cuenta, y enviar a revisión hasta
+  `PENDING_REVIEW`. También el caso borde de retomar tras recargar, la negativa de
+  RN-012 traducida en pantalla y el criterio 11 sobre el HTML que llega. La cámara
+  es la falsa de Chromium.
+- `backend/bootstrap/.../SellerVerificationJourneyTest.java` recorre **la cadena
+  hasta el sello** contra PostgreSQL real: aprobar, el rol `SELLER`, la bitácora, y
+  además RN-013, RN-014 y el criterio 5 de punta a punta por los mismos casos de
+  uso que usa el borde.
+
+El corte está donde está porque aprobar exige un moderador y el rol se otorga con
+la sentencia SQL de más arriba —no hay pantalla—. Darle a la suite de navegador
+acceso a la base significaría agregarle al frontend un cliente de PostgreSQL, que
+es una dependencia nueva para una sola prueba.
+
+**Lo que encontró.** La captura estaba rota en cualquier navegador: el visor vive
+dentro de un `@if`, así que al volver de `getUserMedia` el elemento todavía no
+existía y `srcObject` se asignaba sobre nada. La cámara quedaba concedida y
+encendida, sin imagen, y tomar la foto fallaba por un fotograma de cero por cero.
+Ninguna prueba de componente podía verlo: todas usan un doble de la cámara que no
+necesita un elemento de verdad. Corregido enganchando el flujo cuando el elemento
+aparece, con su prueba de regresión en `capture-field.spec.ts`.

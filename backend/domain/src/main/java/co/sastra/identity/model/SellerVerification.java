@@ -292,9 +292,21 @@ public final class SellerVerification {
      * Editar un dato es quedarse en {@code IN_PROGRESS}, que RN-059 admite. Desde
      * {@code PENDING_REVIEW} no se edita: una solicitud enviada no se toca mientras
      * alguien la mira.
+     *
+     * <p><strong>Desde {@code REJECTED} o {@code REVOKED}, editar ES reintentar</strong>,
+     * porque la transicion que RN-059 permite lleva a {@code IN_PROGRESS}. Asi que el
+     * limite de RN-014 se comprueba tambien aqui: sin esto, alguien sin intentos podria
+     * corregir el formulario entero y descubrir la negativa al enviar, que es la misma
+     * negativa con el trabajo perdido en medio.
      */
     private void exigirQuePuedaEditarse() {
         exigirTransicion(VerificationStatus.IN_PROGRESS);
+
+        boolean vieneDeUnaNegativa = status == VerificationStatus.REJECTED || status == VerificationStatus.REVOKED;
+
+        if (vieneDeUnaNegativa && agotoLosIntentos()) {
+            throw new VerificationAttemptsExhaustedException(attempts);
+        }
     }
 
     private void exigirTransicion(VerificationStatus destino) {

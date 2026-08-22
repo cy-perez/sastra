@@ -1,0 +1,49 @@
+<fieldset class="captura">
+  <legend class="tipo-secundario">{{ labelKey() | transloco }}</legend>
+
+  @if (error(); as clave) {
+    <p class="error tipo-cuerpo" role="alert">{{ clave | transloco }}</p>
+  }
+
+  @if (tomada(); as fuente) {
+    <!-- El alt describe lo que es, no "imagen": quien no la ve necesita saber que ese
+         paso ya tiene foto. -->
+    <img
+      class="vista-previa"
+      [src]="fuente"
+      [alt]="'sellerVerification.capture.preview' | transloco"
+    />
+
+    <button type="button" class="accion tipo-secundario" [disabled]="ocupada()" (click)="repetir()">
+      {{ 'sellerVerification.capture.retake' | transloco }}
+    </button>
+  } @else if (abierta()) {
+    <p class="tipo-secundario">{{ guia() | transloco }}</p>
+
+    <div class="visor">
+      <!-- `muted` y `playsinline` para que el movil no lo abra a pantalla completa ni
+           pida sonido que no existe. -->
+      <video #video class="video" autoplay playsinline muted></video>
+      <!-- La guia de encuadre es decorativa: lo que dice ya esta en el texto de arriba. -->
+      <div class="guia" [class.guia-rostro]="encuadre() === 'rostro'" aria-hidden="true"></div>
+    </div>
+
+    <button type="button" class="accion tipo-secundario" [disabled]="ocupada()" (click)="tomar()">
+      {{ 'sellerVerification.capture.take' | transloco }}
+    </button>
+
+    @if (borrosa()) {
+      <p class="error tipo-cuerpo" role="alert">
+        {{ 'sellerVerification.capture.blurry' | transloco }}
+      </p>
+    }
+  } @else {
+    <button type="button" class="accion tipo-secundario" [disabled]="ocupada()" (click)="abrir()">
+      {{ 'sellerVerification.capture.activate' | transloco }}
+    </button>
+
+    <!-- Se dice por que no hay boton de subir archivo, en lugar de dejar el hueco sin
+         explicacion (criterio 3). -->
+    <p class="pista tipo-secundario">{{ 'sellerVerification.capture.noGallery' | transloco }}</p>
+  }
+</fieldset>

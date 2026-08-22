@@ -3,6 +3,7 @@ package co.sastra.shared.rest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -32,6 +33,11 @@ import org.springframework.security.web.SecurityFilterChain;
  */
 @Configuration
 @EnableWebSecurity
+// Activa @PreAuthorize. Sin esta anotacion, Spring **ignora** esas reglas y no avisa de
+// nada: el metodo queda anotado, se lee como protegido y no lo esta. Se enciende aqui
+// porque las rutas de revision de HU-002 la usan como segunda cerradura, ademas de la
+// regla por ruta de mas abajo.
+@EnableMethodSecurity
 public class SecurityConfig {
 
     @Bean
@@ -50,7 +56,32 @@ public class SecurityConfig {
                         // cookie de refresco).
                         .requestMatchers("/api/v1/auth/**")
                         .permitAll()
-                        // Todo lo que actua sobre la propia cuenta exige token.
+                        // El catalogo de entidades financieras. Token si, rol no: son
+                        // veintiocho nombres de bancos, iguales para todo el mundo, y no
+                        // hay nada personal que proteger. Se pide token porque solo lo
+                        // necesita quien se esta verificando.
+                        .requestMatchers("/api/v1/financial-institutions")
+                        .authenticated()
+                        // Revision de verificaciones: ver la cedula de otra persona y
+                        // decidir sobre su solicitud. **Rol, no solo token.**
+                        //
+                        // Vive en su propia ruta y no bajo /users/** precisamente por
+                        // esto: alli la regla es "autenticado", y cualquiera con token
+                        // podria aprobar su propia verificacion. Los metodos llevan
+                        // ademas @PreAuthorize, que es redundante a proposito: mover un
+                        // endpoint de sitio no se lleva su autorizacion por delante.
+                        .requestMatchers("/api/v1/verifications/**")
+                        .hasRole("MODERATOR")
+                        // Todo lo que actua sobre la propia cuenta exige token. Aqui
+                        // entra tambien la verificacion de vendedor
+                        // (/api/v1/users/me/verification), que es de quien la pide.
+                        //
+                        // **Las rutas del moderador no van a caber aqui.** Aprobar o
+                        // rechazar la verificacion de OTRA persona, y ver su cedula,
+                        // exige `hasRole("MODERATOR")` y no solo estar autenticado: iran
+                        // en su propia regla, antes de esta, cuando existan. Con la
+                        // regla generica y una ruta bajo /users/**, cualquier persona
+                        // con token podria aprobarse a si misma.
                         .requestMatchers("/api/v1/users/**")
                         .authenticated()
                         // Sondas de estado. Que responda /actuator/flyway o no lo

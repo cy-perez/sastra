@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import co.sastra.identity.config.MailProperties;
+import co.sastra.identity.config.VerificationProperties;
 import co.sastra.identity.model.BirthDate;
 import co.sastra.identity.model.DisplayName;
 import co.sastra.identity.model.Email;
@@ -94,7 +95,7 @@ class ResendMailSenderEnvioTest {
                 "/restablecer-contrasena",
                 "/confirmar-correo-nuevo");
 
-        return new ResendMailSender(correo, new VerificationLink(app(), correo), app());
+        return new ResendMailSender(correo, new VerificationLink(app(), correo), app(), new VerificationProperties(2));
     }
 
     private User cuenta(UserLocale idioma) {

@@ -147,6 +147,7 @@ describe('readAppConfig, cifras de negocio', () => {
     expect(readAppConfig(MINIMUM).business).toEqual({
       commissionRate: 0.05,
       claimWindowDays: 3,
+      verificationReviewDays: 2,
     });
   });
 
@@ -163,7 +164,11 @@ describe('readAppConfig, cifras de negocio', () => {
       CLAIM_WINDOW_DAYS: '5',
     });
 
-    expect(config.business).toEqual({ commissionRate: 0.08, claimWindowDays: 5 });
+    expect(config.business).toEqual({
+      commissionRate: 0.08,
+      claimWindowDays: 5,
+      verificationReviewDays: 2,
+    });
   });
 
   // El error que este proyecto tiene delante: la comision se escribe 0.05 en la
@@ -214,6 +219,7 @@ describe('readAppConfig, cifras de negocio', () => {
     expect(readAppConfigForBootstrap({}).business).toEqual({
       commissionRate: 0.05,
       claimWindowDays: 3,
+      verificationReviewDays: 2,
     });
   });
 });

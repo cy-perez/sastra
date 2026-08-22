@@ -1,6 +1,7 @@
 package co.sastra.identity.client;
 
 import co.sastra.identity.model.Email;
+import co.sastra.identity.model.RejectionReason;
 import co.sastra.identity.model.User;
 import co.sastra.identity.port.out.MailSender;
 import java.time.Instant;
@@ -135,6 +136,45 @@ public class ConsoleMailSender implements MailSender {
                 Alguien intento mudar su cuenta a este correo, que ya tiene una.
                 ===============================================================================
                 """, titular.email().value());
+    }
+
+    @Override
+    public void enviarAvisoDeVerificacionRecibida(User titular) {
+        registrar("SOLICITUD DE VERIFICACION RECIBIDA (criterio 6)", titular, "");
+    }
+
+    @Override
+    public void enviarAvisoDeVerificacionAprobada(User titular) {
+        registrar("VERIFICACION APROBADA (criterio 8)", titular, "Ya es vendedor verificado.");
+    }
+
+    @Override
+    public void enviarAvisoDeVerificacionRechazada(
+            User titular, RejectionReason motivo, String nota, int intentosRestantes) {
+        registrar(
+                "VERIFICACION RECHAZADA (criterio 7)",
+                titular,
+                "Motivo: " + motivo + ". Intentos restantes: " + intentosRestantes);
+    }
+
+    @Override
+    public void enviarAvisoDeVerificacionRevocada(User titular, RejectionReason motivo, String nota) {
+        registrar("VERIFICACION REVOCADA (RN-013)", titular, "Motivo: " + motivo);
+    }
+
+    /**
+     * Un formato para los cuatro avisos de verificacion. La nota del moderador **no se
+     * imprime**: es texto de una persona sobre otra persona y el registro no es sitio
+     * para eso (docs/operacion/datos-personales.md).
+     */
+    private static void registrar(String titulo, User titular, String detalle) {
+        LOG.info("""
+
+                ================ {} =======================
+                Para: {}
+                {}
+                ===============================================================================
+                """, titulo, titular.email().value(), detalle);
     }
 
     @Override

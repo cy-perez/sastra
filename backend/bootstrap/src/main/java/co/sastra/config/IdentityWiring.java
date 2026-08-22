@@ -5,40 +5,56 @@ import co.sastra.identity.port.out.AccessTokenIssuer;
 import co.sastra.identity.port.out.BreachedPasswordChecker;
 import co.sastra.identity.port.out.ConsentRepository;
 import co.sastra.identity.port.out.CredentialsRepository;
+import co.sastra.identity.port.out.FinancialInstitutions;
 import co.sastra.identity.port.out.LegalDocuments;
 import co.sastra.identity.port.out.LoginAttemptRecorder;
 import co.sastra.identity.port.out.MailSender;
 import co.sastra.identity.port.out.PasswordHasher;
 import co.sastra.identity.port.out.RefreshTokenRepository;
+import co.sastra.identity.port.out.SellerVerificationRepository;
 import co.sastra.identity.port.out.TokenGenerator;
 import co.sastra.identity.port.out.UserRepository;
+import co.sastra.identity.port.out.VerificationAccessLog;
 import co.sastra.identity.port.out.VerificationTokenRepository;
+import co.sastra.identity.usecase.ApproveVerificationUseCase;
 import co.sastra.identity.usecase.CloseAccountUseCase;
 import co.sastra.identity.usecase.ConfirmEmailChangeUseCase;
 import co.sastra.identity.usecase.ExportUserDataUseCase;
 import co.sastra.identity.usecase.ForgotPasswordUseCase;
 import co.sastra.identity.usecase.IssueSessionUseCase;
+import co.sastra.identity.usecase.ListFinancialInstitutionsUseCase;
+import co.sastra.identity.usecase.ListPendingVerificationsUseCase;
 import co.sastra.identity.usecase.ListSessionsUseCase;
 import co.sastra.identity.usecase.LoginUseCase;
 import co.sastra.identity.usecase.LogoutUseCase;
 import co.sastra.identity.usecase.ReadProfileUseCase;
+import co.sastra.identity.usecase.ReadSellerVerificationUseCase;
 import co.sastra.identity.usecase.RefreshSessionUseCase;
 import co.sastra.identity.usecase.RegisterUserUseCase;
+import co.sastra.identity.usecase.RejectVerificationUseCase;
 import co.sastra.identity.usecase.RemoveAvatarUseCase;
 import co.sastra.identity.usecase.RequestEmailChangeUseCase;
 import co.sastra.identity.usecase.RequestEmailVerificationUseCase;
 import co.sastra.identity.usecase.ResendVerificationUseCase;
 import co.sastra.identity.usecase.ResetPasswordUseCase;
 import co.sastra.identity.usecase.RevokeSessionUseCase;
+import co.sastra.identity.usecase.RevokeVerificationUseCase;
+import co.sastra.identity.usecase.StartSellerVerificationUseCase;
+import co.sastra.identity.usecase.SubmitBankAccountUseCase;
+import co.sastra.identity.usecase.SubmitIdentityDocumentUseCase;
+import co.sastra.identity.usecase.SubmitSelfieUseCase;
+import co.sastra.identity.usecase.SubmitVerificationForReviewUseCase;
 import co.sastra.identity.usecase.UpdateAvatarUseCase;
 import co.sastra.identity.usecase.UpdateProfileUseCase;
 import co.sastra.identity.usecase.VerifyEmailUseCase;
+import co.sastra.identity.usecase.ViewVerificationImageUseCase;
 import co.sastra.shared.config.AppProperties;
 import co.sastra.shared.file.ImageDimensions;
 import co.sastra.shared.file.ImagePolicy;
 import co.sastra.shared.file.StorageProperties;
 import co.sastra.shared.port.out.ImageNormalizer;
 import co.sastra.shared.port.out.PublicFileStore;
+import co.sastra.shared.port.out.RestrictedFileStore;
 import co.sastra.shared.rest.RefreshCookies;
 import java.time.Clock;
 import org.springframework.context.annotation.Bean;
@@ -255,6 +271,113 @@ public class IdentityWiring {
     @Bean
     ReadProfileUseCase readProfileUseCase(UserRepository usuarios) {
         return new ReadProfileUseCase(usuarios);
+    }
+
+    // --- Verificacion de vendedor. HU-002 rebanada C -------------------------
+    //
+    // Los tres casos de uso que suben imagenes reciben el almacen RESERVADO y no el
+    // publico, y ahi esta la garantia de RN-046: no es que se acuerden de usar el
+    // correcto, es que el otro no lo tienen.
+    //
+    // La politica de imagen es la misma del avatar por ahora. Nadie ha decidido un
+    // minimo de pixeles para la foto de una cedula, y ponerle uno inventado
+    // rechazaria documentos legibles; que la foto se pueda leer lo decide el
+    // moderador, y para eso existe el motivo de rechazo ILLEGIBLE_PHOTOS.
+
+    @Bean
+    StartSellerVerificationUseCase startSellerVerificationUseCase(
+            UserRepository usuarios, SellerVerificationRepository verificaciones, Clock reloj) {
+        return new StartSellerVerificationUseCase(usuarios, verificaciones, reloj);
+    }
+
+    @Bean
+    SubmitIdentityDocumentUseCase submitIdentityDocumentUseCase(
+            SellerVerificationRepository verificaciones,
+            RestrictedFileStore almacen,
+            ImageNormalizer normalizador,
+            ImagePolicy politica,
+            Clock reloj) {
+        return new SubmitIdentityDocumentUseCase(verificaciones, almacen, normalizador, politica, reloj);
+    }
+
+    @Bean
+    SubmitSelfieUseCase submitSelfieUseCase(
+            SellerVerificationRepository verificaciones,
+            RestrictedFileStore almacen,
+            ImageNormalizer normalizador,
+            ImagePolicy politica,
+            Clock reloj) {
+        return new SubmitSelfieUseCase(verificaciones, almacen, normalizador, politica, reloj);
+    }
+
+    @Bean
+    SubmitBankAccountUseCase submitBankAccountUseCase(
+            SellerVerificationRepository verificaciones, FinancialInstitutions entidades, Clock reloj) {
+        return new SubmitBankAccountUseCase(verificaciones, entidades, reloj);
+    }
+
+    @Bean
+    ReadSellerVerificationUseCase readSellerVerificationUseCase(SellerVerificationRepository verificaciones) {
+        return new ReadSellerVerificationUseCase(verificaciones);
+    }
+
+    @Bean
+    SubmitVerificationForReviewUseCase submitVerificationForReviewUseCase(
+            SellerVerificationRepository verificaciones, UserRepository usuarios, MailSender correo, Clock reloj) {
+        return new SubmitVerificationForReviewUseCase(verificaciones, usuarios, correo, reloj);
+    }
+
+    // El camino del moderador. Los tres reciben la bitacora, y los dos que mueven el
+    // sello reciben tambien el repositorio de cuentas: aprobar otorga el rol SELLER y
+    // revocar lo quita, en la misma transaccion que el cambio de estado.
+
+    @Bean
+    ListFinancialInstitutionsUseCase listFinancialInstitutionsUseCase(FinancialInstitutions entidades) {
+        return new ListFinancialInstitutionsUseCase(entidades);
+    }
+
+    @Bean
+    ListPendingVerificationsUseCase listPendingVerificationsUseCase(SellerVerificationRepository verificaciones) {
+        return new ListPendingVerificationsUseCase(verificaciones);
+    }
+
+    @Bean
+    ViewVerificationImageUseCase viewVerificationImageUseCase(
+            SellerVerificationRepository verificaciones,
+            RestrictedFileStore almacen,
+            VerificationAccessLog bitacora,
+            Clock reloj) {
+        return new ViewVerificationImageUseCase(verificaciones, almacen, bitacora, reloj);
+    }
+
+    @Bean
+    ApproveVerificationUseCase approveVerificationUseCase(
+            SellerVerificationRepository verificaciones,
+            UserRepository usuarios,
+            VerificationAccessLog bitacora,
+            MailSender correo,
+            Clock reloj) {
+        return new ApproveVerificationUseCase(verificaciones, usuarios, bitacora, correo, reloj);
+    }
+
+    @Bean
+    RejectVerificationUseCase rejectVerificationUseCase(
+            SellerVerificationRepository verificaciones,
+            UserRepository usuarios,
+            VerificationAccessLog bitacora,
+            MailSender correo,
+            Clock reloj) {
+        return new RejectVerificationUseCase(verificaciones, usuarios, bitacora, correo, reloj);
+    }
+
+    @Bean
+    RevokeVerificationUseCase revokeVerificationUseCase(
+            SellerVerificationRepository verificaciones,
+            UserRepository usuarios,
+            VerificationAccessLog bitacora,
+            MailSender correo,
+            Clock reloj) {
+        return new RevokeVerificationUseCase(verificaciones, usuarios, bitacora, correo, reloj);
     }
 
     @Bean

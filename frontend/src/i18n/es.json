@@ -66,6 +66,10 @@
     "contact": {
       "title": "Contacto",
       "description": "Cómo comunicarte con Sastra y cómo ejercer tus derechos sobre tus datos personales."
+    },
+    "sellerVerification": {
+      "title": "Verifícate para vender · Sastra",
+      "description": "Confirma tu identidad para poder publicar y recibir tus pagos."
     }
   },
   "layout": {
@@ -179,7 +183,9 @@
       "SELLER_VERIFICATION_INVALID_STATE": "Esa acción no corresponde al estado de tu solicitud. Recarga la página para ver en qué punto va.",
       "SELLER_VERIFICATION_ATTEMPTS_EXHAUSTED": "Ya usaste los tres intentos. Escríbenos para que revisemos tu caso a mano.",
       "SELLER_ACCOUNT_HOLDER_MISMATCH": "El titular de la cuenta tiene que ser el mismo nombre del documento.",
-      "SELLER_DOCUMENT_ALREADY_VERIFIED": "Ese documento ya está verificado en otra cuenta."
+      "SELLER_DOCUMENT_ALREADY_VERIFIED": "Ese documento ya está verificado en otra cuenta.",
+      "SELLER_EMAIL_NOT_VERIFIED": "Verifica tu correo antes de empezar. Te reenviamos el enlace desde tu cuenta.",
+      "SELLER_UNKNOWN_INSTITUTION": "Esa entidad no está en nuestra lista. Elige una de las opciones."
     }
   },
   "form": {
@@ -626,6 +632,118 @@
       "channel": "Por este mismo canal ejerces tus derechos a conocer, actualizar, rectificar y suprimir tus datos, y a revocar la autorización que nos diste.",
       "deadlines": "Respondemos una consulta en diez días hábiles y un reclamo en quince, prorrogables una vez.",
       "link": "Leer la política de tratamiento de datos"
+    }
+  },
+  "sellerVerification": {
+    "intro": {
+      "title": "Verifícate para vender",
+      "body": "Necesitamos confirmar quién eres antes de que publiques. Son tres pasos y puedes salir y volver cuando quieras: guardamos lo que ya hiciste.",
+      "reviewTime": "Revisamos tu solicitud en máximo {{dias}} días hábiles."
+    },
+    "start": "Empezar",
+    "loading": "Cargando tu solicitud",
+    "steps": {
+      "document": {
+        "title": "Tu documento de identidad",
+        "body": "Una foto del frente y otra del reverso. Que se lea todo, sin brillos ni dedos encima."
+      },
+      "selfie": {
+        "title": "Una foto de tu cara",
+        "body": "Se toma en el momento con tu cámara. No se puede subir desde la galería."
+      },
+      "bank": {
+        "title": "Dónde recibes tu dinero",
+        "body": "La cuenta tiene que estar a tu nombre, el mismo del documento."
+      },
+      "done": "Listo",
+      "pending": "Falta"
+    },
+    "status": {
+      "IN_PROGRESS": "Te falta algo por entregar.",
+      "PENDING_REVIEW": "Estamos revisando tu solicitud.",
+      "VERIFIED": "Ya eres vendedor verificado.",
+      "REJECTED": "No pudimos verificarte.",
+      "REVOKED": "Tu verificación se revocó."
+    },
+    "submit": {
+      "action": "Enviar para revisión",
+      "blocked": "Completa los tres pasos para poder enviar.",
+      "attempts": "Te quedan {{intentos}} intentos.",
+      "exhausted": "Usaste tus tres intentos. Escríbenos y lo revisamos a mano."
+    },
+    "rejected": {
+      "reasonLabel": "Motivo",
+      "noteLabel": "Nota de quien revisó",
+      "retry": "Corregir y volver a enviar"
+    },
+    "reasons": {
+      "ILLEGIBLE_PHOTOS": "Las fotos no se pueden leer",
+      "EXPIRED_DOCUMENT": "El documento está vencido",
+      "HOLDER_MISMATCH": "El titular de la cuenta no coincide con tu documento",
+      "DOCUMENT_ALREADY_VERIFIED": "Ese documento ya está verificado en otra cuenta",
+      "REQUIREMENTS_NOT_MET": "No cumples los requisitos para vender"
+    },
+    "bankForm": {
+      "title": "Dónde recibes tu dinero",
+      "entity": "Entidad",
+      "entityPlaceholder": "Elige tu banco o billetera",
+      "accountType": "Tipo de cuenta",
+      "accountNumber": "Número de cuenta",
+      "holderName": "Nombre del titular",
+      "holderHint": "Tal como aparece en tu documento de identidad.",
+      "types": {
+        "SAVINGS": "Ahorros",
+        "CHECKING": "Corriente",
+        "ELECTRONIC_DEPOSIT": "Depósito electrónico"
+      },
+      "walletNote": "Las billeteras solo reciben en depósito electrónico.",
+      "submit": "Guardar la cuenta",
+      "saved": "Guardamos tu cuenta.",
+      "loadingEntities": "Cargando las entidades",
+      "errors": {
+        "entity": "Elige una entidad de la lista.",
+        "accountNumber": "Escribe el número de tu cuenta, solo dígitos.",
+        "holderName": "Escribe el nombre del titular."
+      }
+    },
+    "capture": {
+      "activate": "Abrir la cámara",
+      "take": "Tomar la foto",
+      "retake": "Tomar otra",
+      "preview": "Foto tomada",
+      "guideDocument": "Encuadra el documento dentro del marco.",
+      "guideFace": "Pon tu cara dentro del marco.",
+      "blurry": "La foto salió borrosa. Sujeta firme y vuelve a intentarlo.",
+      "unsupported": "Este navegador no da acceso a la cámara.",
+      "denied": "No nos diste permiso para usar la cámara. Habilítalo en los ajustes del navegador y vuelve a intentarlo.",
+      "noGallery": "No se puede subir una foto de la galería: se toma en el momento."
+    },
+    "documentForm": {
+      "type": "Tipo de documento",
+      "number": "Número del documento",
+      "holder": "Nombre completo, como aparece en el documento",
+      "front": "Frente del documento",
+      "back": "Reverso del documento",
+      "types": {
+        "CC": "Cédula de ciudadanía",
+        "CE": "Cédula de extranjería",
+        "PPT": "Permiso por Protección Temporal"
+      },
+      "submit": "Guardar el documento",
+      "saved": "Guardamos tu documento.",
+      "errors": {
+        "type": "Elige el tipo de documento.",
+        "number": "Escribe el número, solo dígitos.",
+        "holder": "Escribe tu nombre completo.",
+        "photos": "Faltan las dos fotos del documento."
+      }
+    },
+    "selfieForm": {
+      "submit": "Guardar la foto",
+      "saved": "Guardamos tu foto.",
+      "errors": {
+        "photo": "Falta tu foto."
+      }
     }
   }
 }

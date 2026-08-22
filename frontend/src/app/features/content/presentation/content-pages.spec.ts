@@ -52,7 +52,7 @@ const CONFIG_BASE: AppConfig = {
   sentryDsn: null,
   legalVersions: { terms: 'borrador-local', privacy: 'borrador-local', cookies: 'borrador-local' },
   company: EMPRESA_COMPLETA,
-  business: { commissionRate: 0.05, claimWindowDays: 3 },
+  business: { commissionRate: 0.05, claimWindowDays: 3, verificationReviewDays: 2 },
 };
 
 describe('paginas informativas', () => {
@@ -128,7 +128,7 @@ describe('cifras interpoladas en el texto', () => {
    * es.json y borraba la interpolacion, que es exactamente lo que el criterio 8
    * prohibe. Con 8 % y 7 dias solo pasa si el texto viene de la configuracion.
    */
-  const CIFRAS_AJENAS = { commissionRate: 0.08, claimWindowDays: 7 };
+  const CIFRAS_AJENAS = { commissionRate: 0.08, claimWindowDays: 7, verificationReviewDays: 3 };
 
   const textoDe = async (Pagina: Type<unknown>, business = CIFRAS_AJENAS) => {
     TestBed.configureTestingModule({

@@ -1,7 +1,9 @@
 package co.sastra.identity.client;
 
 import co.sastra.identity.config.MailProperties;
+import co.sastra.identity.config.VerificationProperties;
 import co.sastra.identity.model.Email;
+import co.sastra.identity.model.RejectionReason;
 import co.sastra.identity.model.User;
 import co.sastra.identity.model.UserLocale;
 import co.sastra.identity.port.out.MailSender;
@@ -52,10 +54,17 @@ public class ResendMailSender implements MailSender {
     private final MailProperties propiedades;
     private final VerificationLink enlaces;
 
+    private final VerificationProperties verificacion;
+
     /** Para dar la hora de desbloqueo en la zona de operacion y no en UTC. */
     private final ZoneId zona;
 
-    public ResendMailSender(MailProperties propiedades, VerificationLink enlaces, AppProperties app) {
+    public ResendMailSender(
+            MailProperties propiedades,
+            VerificationLink enlaces,
+            AppProperties app,
+            VerificationProperties verificacion) {
+        this.verificacion = verificacion;
         // La clave se exige aqui y no en MailProperties porque aqui es donde se
         // usa: con el proveedor de consola no hace falta ninguna, y validarla
         // para todos obligaba a inventarse una para arrancar en local. Sigue
@@ -218,6 +227,41 @@ public class ResendMailSender implements MailSender {
                                 + "This is the last message we will send you.</p>"
                                 + "<p>If you want to come back, you can register again with this same address.</p>"
                                 + "<p>If you did not ask for this, contact us right away.</p>");
+    }
+
+    // --- Verificacion de vendedor. HU-002 criterio 10 ------------------------
+
+    @Override
+    public void enviarAvisoDeVerificacionRecibida(User titular) {
+        enviar(
+                titular.email().value(),
+                VerificationMailTexts.asuntoDeRecibida(titular.locale()),
+                VerificationMailTexts.cuerpoDeRecibida(titular.locale(), verificacion.reviewDays()));
+    }
+
+    @Override
+    public void enviarAvisoDeVerificacionAprobada(User titular) {
+        enviar(
+                titular.email().value(),
+                VerificationMailTexts.asuntoDeAprobada(titular.locale()),
+                VerificationMailTexts.cuerpoDeAprobada(titular.locale()));
+    }
+
+    @Override
+    public void enviarAvisoDeVerificacionRechazada(
+            User titular, RejectionReason motivo, String nota, int intentosRestantes) {
+        enviar(
+                titular.email().value(),
+                VerificationMailTexts.asuntoDeRechazada(titular.locale()),
+                VerificationMailTexts.cuerpoDeRechazada(titular.locale(), motivo, nota, intentosRestantes));
+    }
+
+    @Override
+    public void enviarAvisoDeVerificacionRevocada(User titular, RejectionReason motivo, String nota) {
+        enviar(
+                titular.email().value(),
+                VerificationMailTexts.asuntoDeRevocada(titular.locale()),
+                VerificationMailTexts.cuerpoDeRevocada(titular.locale(), motivo, nota));
     }
 
     /** Criterio 21: va a la direccion NUEVA. Solo quien la abra completa el cambio. */

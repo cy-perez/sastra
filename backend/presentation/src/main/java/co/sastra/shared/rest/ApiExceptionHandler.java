@@ -198,7 +198,15 @@ public class ApiExceptionHandler {
                     // RN-012: los dos nombres llegaron bien escritos y lo que el
                     // negocio rechaza es que no sean el mismo. No es un conflicto de
                     // estado: es el contenido lo que no se puede aceptar.
-                    SELLER_ACCOUNT_HOLDER_MISMATCH -> HttpStatus.UNPROCESSABLE_CONTENT;
+                    SELLER_ACCOUNT_HOLDER_MISMATCH,
+                    // Criterio 1: falta un paso previo que la persona ya tiene
+                    // empezado. No es 403: no le falta permiso, le falta abrir un
+                    // correo que ya recibio.
+                    SELLER_EMAIL_NOT_VERIFIED,
+                    // La entidad no esta en el catalogo. Codigo propio y no el de
+                    // validacion generica: lo que hay que decirle es que elija de la
+                    // lista, no que revise el formulario.
+                    SELLER_UNKNOWN_INSTITUTION -> HttpStatus.UNPROCESSABLE_CONTENT;
             // 415: el contenido no es de un tipo que el servidor sepa manejar. Es
             // exactamente lo que significa, y le dice al cliente que el problema es
             // el formato y no lo que hay dentro. Se decide por los bytes de

@@ -61,6 +61,14 @@ export interface BusinessFigures {
   readonly commissionRate: number;
   /** Dias habiles desde la entrega para reportar un producto no conforme. */
   readonly claimWindowDays: number;
+  /**
+   * Dias habiles que se promete tardar en revisar una verificacion de vendedor.
+   *
+   * Es una promesa que la pantalla dice en voz alta (criterio 6 de HU-002), asi que va
+   * por configuracion: cambiarla no puede exigir un despliegue de codigo. Nadie la hace
+   * cumplir: una solicitud que tarda mas no cambia de estado sola.
+   */
+  readonly verificationReviewDays: number;
 }
 
 export interface AppConfig {

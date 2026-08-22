@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import co.sastra.identity.model.BirthDate;
 import co.sastra.identity.model.DisplayName;
 import co.sastra.identity.model.Email;
+import co.sastra.identity.model.RejectionReason;
 import co.sastra.identity.model.User;
 import co.sastra.identity.model.UserId;
 import co.sastra.identity.model.UserLocale;
@@ -101,6 +102,27 @@ class AsyncMailSenderTest {
         @Override
         public void enviarAvisoDeIntentoDeCambioAEsteCorreo(User titular) {
             anotar("intento-de-cambio");
+        }
+
+        @Override
+        public void enviarAvisoDeVerificacionRecibida(User titular) {
+            anotar("verificacion-recibida");
+        }
+
+        @Override
+        public void enviarAvisoDeVerificacionAprobada(User titular) {
+            anotar("verificacion-aprobada");
+        }
+
+        @Override
+        public void enviarAvisoDeVerificacionRechazada(
+                User titular, RejectionReason motivo, String nota, int intentosRestantes) {
+            anotar("verificacion-rechazada");
+        }
+
+        @Override
+        public void enviarAvisoDeVerificacionRevocada(User titular, RejectionReason motivo, String nota) {
+            anotar("verificacion-revocada");
         }
 
         @Override

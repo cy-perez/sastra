@@ -20,6 +20,7 @@ import co.sastra.shared.port.out.SensitiveDataCipher;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.util.List;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -173,6 +174,14 @@ public class JdbcSellerVerificationRepository implements SellerVerificationRepos
                 .optional();
     }
 
+    @Override
+    public Optional<SellerVerification> buscarPorId(SellerVerificationId verificacion) {
+        return jdbc.sql(SELECT_BASE + " WHERE id = :id")
+                .param("id", verificacion.value())
+                .query(this::mapear)
+                .optional();
+    }
+
     /**
      * Compara por la huella, que es lo unico comparable: el cifrado produce un texto
      * distinto cada vez a proposito, asi que un {@code WHERE} sobre la columna cifrada
@@ -195,6 +204,18 @@ public class JdbcSellerVerificationRepository implements SellerVerificationRepos
                 .param("excepto", exceptoEstaCuenta.value())
                 .query(Boolean.class)
                 .single();
+    }
+
+    /**
+     * Usa el indice parcial de V8 sobre {@code updated_at} para las pendientes: sin el,
+     * esta consulta recorreria la tabla entera para encontrar las pocas que esperan.
+     */
+    @Override
+    public List<SellerVerification> pendientesDeRevision(int limite) {
+        return jdbc.sql(SELECT_BASE + " WHERE status = 'PENDING_REVIEW' ORDER BY updated_at ASC LIMIT :limite")
+                .param("limite", limite)
+                .query(this::mapear)
+                .list();
     }
 
     private SellerVerification mapear(ResultSet fila, int numero) throws SQLException {

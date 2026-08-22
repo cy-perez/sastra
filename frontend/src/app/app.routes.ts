@@ -74,6 +74,21 @@ export const routes: Routes = [
       import('./features/auth/presentation/account-page').then((m) => m.AccountPage),
   },
   {
+    // HU-002. Direccion en espanol, como el resto del sitio.
+    //
+    // **Todavia no hay enlace a esta pantalla desde ninguna parte**, y es deliberado: el
+    // backend responde 404 en estas rutas mientras FEATURE_SELLER_VERIFICATION este
+    // apagada, y HU-004 y HU-005 prohiben dejar enlaces a algo que no funciona. El punto
+    // de entrada entra cuando la bandera se encienda.
+    path: 'verificacion-de-vendedor',
+    title: 'meta.sellerVerification.title',
+    data: { descriptionKey: 'meta.sellerVerification.description' },
+    loadComponent: () =>
+      import('./features/seller-verification/presentation/verification-page').then(
+        (m) => m.VerificationPage,
+      ),
+  },
+  {
     path: 'verificar-correo',
     title: 'meta.verify.title',
     data: { descriptionKey: 'meta.verify.description' },

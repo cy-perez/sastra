@@ -1,0 +1,89 @@
+@if (entidades.isPending()) {
+  <p class="esqueleto barra" aria-hidden="true"></p>
+  <p class="solo-lectores" role="status">
+    {{ 'sellerVerification.bankForm.loadingEntities' | transloco }}
+  </p>
+} @else {
+  <form class="formulario" [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+    @if (errorDelServidor(); as error) {
+      <p class="error tipo-cuerpo" role="alert">{{ error | transloco }}</p>
+    } @else if (envio.isSuccess()) {
+      <p class="guardado tipo-cuerpo" role="status">
+        {{ 'sellerVerification.bankForm.saved' | transloco }}
+      </p>
+    }
+
+    <!-- No hay componente de desplegable en el sistema de diseno, asi que va el
+         elemento nativo con su etiqueta asociada. Nativo antes que ARIA: un select
+         trae navegacion por teclado y lectura correcta sin ayuda. -->
+    <div class="campo">
+      <label class="etiqueta tipo-secundario" for="entidad">
+        {{ 'sellerVerification.bankForm.entity' | transloco }}
+      </label>
+
+      <select
+        id="entidad"
+        class="control tipo-cuerpo"
+        formControlName="entidad"
+        [attr.aria-invalid]="errorDeEntidad() ? 'true' : null"
+        [attr.aria-describedby]="errorDeEntidad() ? 'entidad-error' : null"
+      >
+        <option value="">{{ 'sellerVerification.bankForm.entityPlaceholder' | transloco }}</option>
+        @for (una of entidades.data() ?? []; track una.code) {
+          <option [value]="una.code">{{ una.name }}</option>
+        }
+      </select>
+
+      @if (errorDeEntidad(); as error) {
+        <p id="entidad-error" class="error-campo tipo-secundario">{{ error | transloco }}</p>
+      }
+    </div>
+
+    <div class="campo">
+      <label class="etiqueta tipo-secundario" for="tipo-de-cuenta">
+        {{ 'sellerVerification.bankForm.accountType' | transloco }}
+      </label>
+
+      <select id="tipo-de-cuenta" class="control tipo-cuerpo" formControlName="tipo">
+        @if (tiposDisponibles().length !== 1) {
+          <option value="">{{ 'sellerVerification.bankForm.accountType' | transloco }}</option>
+        }
+        @for (tipo of tiposDisponibles(); track tipo) {
+          <option [value]="tipo">
+            {{ 'sellerVerification.bankForm.types.' + tipo | transloco }}
+          </option>
+        }
+      </select>
+
+      <!-- Se explica por que solo hay una opcion, en lugar de dejar un desplegable de
+           un elemento sin motivo aparente. -->
+      @if (esBilletera()) {
+        <p class="pista tipo-secundario">
+          {{ 'sellerVerification.bankForm.walletNote' | transloco }}
+        </p>
+      }
+    </div>
+
+    <sastra-text-field
+      fieldId="numero-de-cuenta"
+      autocomplete="off"
+      labelKey="sellerVerification.bankForm.accountNumber"
+      [control]="control('numero')"
+      [errorKey]="errorDeNumero()"
+    />
+
+    <sastra-text-field
+      fieldId="titular"
+      autocomplete="name"
+      labelKey="sellerVerification.bankForm.holderName"
+      hintKey="sellerVerification.bankForm.holderHint"
+      [control]="control('titular')"
+      [errorKey]="errorDeTitular()"
+    />
+
+    <sastra-submit-button
+      labelKey="sellerVerification.bankForm.submit"
+      [loading]="envio.isPending()"
+    />
+  </form>
+}

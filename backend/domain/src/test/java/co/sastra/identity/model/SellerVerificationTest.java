@@ -235,6 +235,45 @@ class SellerVerificationTest {
                 .isInstanceOf(VerificationAttemptsExhaustedException.class);
     }
 
+    /**
+     * El hueco que aparecio al escribir la pantalla: desde REJECTED, editar un dato mueve
+     * el estado a IN_PROGRESS por RN-059, asi que editar ES reintentar y el limite de
+     * RN-014 tiene que aplicar tambien ahi. Sin esta comprobacion, alguien sin intentos
+     * rellenaba el formulario entero para que se lo negaran al enviar.
+     */
+    @Test
+    void deberia_cumplir_RN_014_tambien_al_corregir_un_dato_sin_intentos() {
+        SellerVerification agotada = completa();
+
+        for (int intento = 1; intento <= SellerVerification.MAXIMO_INTENTOS; intento++) {
+            agotada = agotada.enviarARevision(AHORA).rechazar(RejectionReason.ILLEGIBLE_PHOTOS, null, AHORA);
+            if (intento < SellerVerification.MAXIMO_INTENTOS) {
+                agotada = agotada.reintentar(AHORA);
+            }
+        }
+
+        SellerVerification sinIntentos = agotada;
+
+        assertThatThrownBy(() -> sinIntentos.conSelfie(new FileKey("selfies/otra.jpg"), AHORA))
+                .isInstanceOf(VerificationAttemptsExhaustedException.class);
+        assertThatThrownBy(() -> sinIntentos.conDocumento(documento(TITULAR), AHORA))
+                .isInstanceOf(VerificationAttemptsExhaustedException.class);
+        assertThatThrownBy(() -> sinIntentos.conCuentaBancaria(cuenta(TITULAR), AHORA))
+                .isInstanceOf(VerificationAttemptsExhaustedException.class);
+    }
+
+    /** Con intentos disponibles, corregir desde un rechazo si funciona y vuelve a curso. */
+    @Test
+    void deberia_dejar_corregir_desde_un_rechazo_cuando_quedan_intentos() {
+        SellerVerification rechazada =
+                completa().enviarARevision(AHORA).rechazar(RejectionReason.ILLEGIBLE_PHOTOS, null, AHORA);
+
+        SellerVerification corregida = rechazada.conSelfie(new FileKey("selfies/otra.jpg"), AHORA);
+
+        assertThat(corregida.status()).isEqualTo(VerificationStatus.IN_PROGRESS);
+        assertThat(corregida.attempts()).isEqualTo(1);
+    }
+
     // --- Inmutabilidad --------------------------------------------------------
 
     @Test

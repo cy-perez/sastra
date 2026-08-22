@@ -1,7 +1,9 @@
 package co.sastra.identity.port.out;
 
 import co.sastra.identity.model.SellerVerification;
+import co.sastra.identity.model.SellerVerificationId;
 import co.sastra.identity.model.UserId;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -28,6 +30,15 @@ public interface SellerVerificationRepository {
     Optional<SellerVerification> buscarPorUsuario(UserId usuario);
 
     /**
+     * Por su identificador, que es como llega desde la bandeja del moderador.
+     *
+     * <p>El moderador trabaja sobre una lista de solicitudes y no sobre cuentas: pedirle
+     * el identificador de la cuenta seria pedirle un dato que su pantalla no tiene por
+     * que mostrar.
+     */
+    Optional<SellerVerification> buscarPorId(SellerVerificationId verificacion);
+
+    /**
      * Criterio 5 de HU-002 y RN-010: si ese documento ya esta verificado en otra
      * cuenta.
      *
@@ -39,4 +50,19 @@ public interface SellerVerificationRepository {
      * documento en su propia fila, y sin excluirla chocaria consigo mismo.
      */
     boolean existeOtraVerificadaConDocumento(String numeroDeDocumento, UserId exceptoEstaCuenta);
+
+    /**
+     * Las que esperan revision, las mas viejas primero. La bandeja del moderador.
+     *
+     * <p>Con tope y sin paginacion por cursor. El contrato de la API la pide para los
+     * listados de catalogo (contrato-api.md) y aqui no aplica: esta lista la trabaja una
+     * persona hasta vaciarla, y si llega a necesitar paginacion el problema no es la
+     * consulta, es que nadie esta revisando.
+     *
+     * <p>Devuelve el agregado entero, asi que descifra el numero de cada fila. Es
+     * trabajo de mas para una lista, y se acepta mientras el volumen sea el que es:
+     * partir el tipo en dos —uno para listar y otro para decidir— es lo que se hara
+     * cuando la bandeja tenga cientos de filas y no antes.
+     */
+    List<SellerVerification> pendientesDeRevision(int limite);
 }

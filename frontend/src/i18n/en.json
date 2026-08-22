@@ -66,6 +66,10 @@
     "contact": {
       "title": "Contact",
       "description": "How to reach Sastra and how to exercise your rights over your personal data."
+    },
+    "sellerVerification": {
+      "title": "Get verified to sell · Sastra",
+      "description": "Confirm your identity so you can publish and get paid."
     }
   },
   "layout": {
@@ -179,7 +183,9 @@
       "SELLER_VERIFICATION_INVALID_STATE": "That action does not match the state of your request. Reload the page to see where it stands.",
       "SELLER_VERIFICATION_ATTEMPTS_EXHAUSTED": "You have used all three attempts. Write to us so we can review your case by hand.",
       "SELLER_ACCOUNT_HOLDER_MISMATCH": "The account holder must be the same name as on the document.",
-      "SELLER_DOCUMENT_ALREADY_VERIFIED": "That document is already verified on another account."
+      "SELLER_DOCUMENT_ALREADY_VERIFIED": "That document is already verified on another account.",
+      "SELLER_EMAIL_NOT_VERIFIED": "Verify your email before you start. You can resend the link from your account.",
+      "SELLER_UNKNOWN_INSTITUTION": "That institution is not on our list. Pick one of the options."
     }
   },
   "form": {
@@ -626,6 +632,118 @@
       "channel": "Through this same channel you exercise your rights to know, update, correct and delete your data, and to withdraw the authorisation you gave us.",
       "deadlines": "We answer an enquiry within ten business days and a complaint within fifteen, which can be extended once.",
       "link": "Read the data processing policy"
+    }
+  },
+  "sellerVerification": {
+    "intro": {
+      "title": "Get verified to sell",
+      "body": "We need to confirm who you are before you publish. It is three steps, and you can leave and come back whenever you want: we keep what you already did.",
+      "reviewTime": "We review your request in {{dias}} business days at most."
+    },
+    "start": "Start",
+    "loading": "Loading your request",
+    "steps": {
+      "document": {
+        "title": "Your identity document",
+        "body": "One photo of the front and one of the back. Everything readable, no glare and no fingers in the way."
+      },
+      "selfie": {
+        "title": "A photo of your face",
+        "body": "Taken on the spot with your camera. It cannot be uploaded from your gallery."
+      },
+      "bank": {
+        "title": "Where you get your money",
+        "body": "The account has to be in your name, the same one on the document."
+      },
+      "done": "Done",
+      "pending": "Missing"
+    },
+    "status": {
+      "IN_PROGRESS": "Something is still missing.",
+      "PENDING_REVIEW": "We are reviewing your request.",
+      "VERIFIED": "You are a verified seller.",
+      "REJECTED": "We could not verify you.",
+      "REVOKED": "Your verification was revoked."
+    },
+    "submit": {
+      "action": "Send for review",
+      "blocked": "Complete the three steps to send it.",
+      "attempts": "You have {{intentos}} attempts left.",
+      "exhausted": "You used your three attempts. Write to us and we will review it by hand."
+    },
+    "rejected": {
+      "reasonLabel": "Reason",
+      "noteLabel": "Note from the reviewer",
+      "retry": "Fix it and send again"
+    },
+    "reasons": {
+      "ILLEGIBLE_PHOTOS": "The photos cannot be read",
+      "EXPIRED_DOCUMENT": "The document has expired",
+      "HOLDER_MISMATCH": "The account holder does not match your document",
+      "DOCUMENT_ALREADY_VERIFIED": "That document is already verified on another account",
+      "REQUIREMENTS_NOT_MET": "You do not meet the requirements to sell"
+    },
+    "bankForm": {
+      "title": "Where you get your money",
+      "entity": "Institution",
+      "entityPlaceholder": "Pick your bank or wallet",
+      "accountType": "Account type",
+      "accountNumber": "Account number",
+      "holderName": "Account holder name",
+      "holderHint": "Exactly as it appears on your identity document.",
+      "types": {
+        "SAVINGS": "Savings",
+        "CHECKING": "Checking",
+        "ELECTRONIC_DEPOSIT": "Electronic deposit"
+      },
+      "walletNote": "Wallets only receive money as an electronic deposit.",
+      "submit": "Save the account",
+      "saved": "We saved your account.",
+      "loadingEntities": "Loading institutions",
+      "errors": {
+        "entity": "Pick an institution from the list.",
+        "accountNumber": "Type your account number, digits only.",
+        "holderName": "Type the account holder name."
+      }
+    },
+    "capture": {
+      "activate": "Open the camera",
+      "take": "Take the photo",
+      "retake": "Take another",
+      "preview": "Photo taken",
+      "guideDocument": "Fit the document inside the frame.",
+      "guideFace": "Put your face inside the frame.",
+      "blurry": "The photo came out blurry. Hold steady and try again.",
+      "unsupported": "This browser does not give access to the camera.",
+      "denied": "You did not give us permission to use the camera. Enable it in your browser settings and try again.",
+      "noGallery": "You cannot upload a photo from your gallery: it is taken on the spot."
+    },
+    "documentForm": {
+      "type": "Document type",
+      "number": "Document number",
+      "holder": "Full name, as it appears on the document",
+      "front": "Front of the document",
+      "back": "Back of the document",
+      "types": {
+        "CC": "Citizenship ID",
+        "CE": "Foreigner ID",
+        "PPT": "Temporary Protection Permit"
+      },
+      "submit": "Save the document",
+      "saved": "We saved your document.",
+      "errors": {
+        "type": "Pick the document type.",
+        "number": "Type the number, digits only.",
+        "holder": "Type your full name.",
+        "photos": "Both photos of the document are missing."
+      }
+    },
+    "selfieForm": {
+      "submit": "Save the photo",
+      "saved": "We saved your photo.",
+      "errors": {
+        "photo": "Your photo is missing."
+      }
     }
   }
 }

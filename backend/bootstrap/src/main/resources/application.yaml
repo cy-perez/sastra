@@ -153,6 +153,12 @@ sastra:
     # cedula de alguien (RN-046, ADR-0018). La aplicacion no arranca si son iguales.
     public-bucket: ${STORAGE_PUBLIC_BUCKET:}
     restricted-bucket: ${STORAGE_RESTRICTED_BUCKET:}
+  verification:
+    # Dias habiles que se promete tardar en revisar una solicitud de vendedor
+    # (criterio 6 de HU-002). Lo dicen la pantalla y el correo, asi que cambiarlo no
+    # puede exigir un despliegue. Nadie lo hace cumplir: una solicitud que tarda mas
+    # no cambia de estado sola.
+    review-days: ${VERIFICATION_REVIEW_DAYS:2}
   crypto:
     # Cifrado de datos sensibles en columna: numero de documento y de cuenta
     # bancaria (RN-046, ADR-0020). Los archivos no pasan por aqui: la cedula y la

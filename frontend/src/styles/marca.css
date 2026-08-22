@@ -48,6 +48,16 @@
      44px suelto en la cabecera, el pie y las paginas informativas. */
   --destino-tactil: 44px;
 
+  /* Ancho de un formulario. Una linea de campo ancha es incomoda de recorrer con
+     la vista, asi que los formularios del sitio no usan --medida, que es el ancho
+     de LECTURA y es mas largo.
+     
+     Se nombra aqui por lo que dice CLAUDE.md: si falta una medida, el sistema esta
+     incompleto y se agrega con nombre. Estaba como 480px suelto en profile-form.css
+     y en los formularios de acceso, que siguen con el valor literal: cambiarlos es
+     otra tarea. */
+  --medida-formulario: 480px;
+
   /* Impresion. El papel no es una pantalla: no tiene modo claro ni oscuro,
      tiene tinta. Estos dos NO se redefinen en oscuro, y ese es el punto: con
      --color-texto el problema volveria invertido. Tinta sobre papel da 15.1:1. */

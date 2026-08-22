@@ -84,9 +84,20 @@ export function readAppConfig(env: EnvironmentVariables): AppConfig {
  * cero dias no son un problema de maquetacion, son una promesa incorrecta
  * publicada. Vale mas no levantar el servidor que anunciar que se cobra el -5%.
  */
+/** Dos dias habiles, lo decidido para HU-002. */
+const REVISION_POR_OMISION = 2;
+
+/** Un mes laboral: mas alla de eso ya no es una promesa, es un aviso. */
+const REVISION_MAXIMA = 20;
+
 function leerCifrasDeNegocio(env: EnvironmentVariables): BusinessFigures {
   const commissionRate = numeroOpcional(env, 'COMMISSION_RATE', COMISION_POR_OMISION);
   const claimWindowDays = numeroOpcional(env, 'CLAIM_WINDOW_DAYS', VENTANA_DE_RECLAMO_POR_OMISION);
+  const verificationReviewDays = numeroOpcional(
+    env,
+    'VERIFICATION_REVIEW_DAYS',
+    REVISION_POR_OMISION,
+  );
 
   /*
    * Los dos bordes estan cerrados a proposito. El cero entraba por abajo, y un
@@ -114,7 +125,23 @@ function leerCifrasDeNegocio(env: EnvironmentVariables): BusinessFigures {
     );
   }
 
-  return { commissionRate, claimWindowDays };
+  /*
+   * El tope es holgado a proposito: lo que hay que evitar es un cero o un numero
+   * absurdo, no acotar una decision de operacion. Un cero prometeria revisar "en cero
+   * dias habiles", que no significa nada, y en Colombia lo anunciado es exigible.
+   */
+  if (
+    !Number.isInteger(verificationReviewDays) ||
+    verificationReviewDays < 1 ||
+    verificationReviewDays > REVISION_MAXIMA
+  ) {
+    throw new Error(
+      `VERIFICATION_REVIEW_DAYS es "${verificationReviewDays}" y tiene que ser un entero de dias ` +
+        `habiles entre 1 y ${REVISION_MAXIMA} (criterio 6 de HU-002).`,
+    );
+  }
+
+  return { commissionRate, claimWindowDays, verificationReviewDays };
 }
 
 /** Una variable ausente o en blanco toma el valor por omision; una con basura, no. */
@@ -256,6 +283,7 @@ export function readAppConfigForBootstrap(env: EnvironmentVariables): AppConfig 
       business: {
         commissionRate: COMISION_POR_OMISION,
         claimWindowDays: VENTANA_DE_RECLAMO_POR_OMISION,
+        verificationReviewDays: REVISION_POR_OMISION,
       },
     };
   }

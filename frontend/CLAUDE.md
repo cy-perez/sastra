@@ -143,8 +143,14 @@ Es requisito de aceptación, no un extra. Cada componente entra con:
 - Extremo a extremo con Playwright, en **dos suites** que no se mezclan:
   `e2e/` comprueba el HTML que sale del servidor sin llamar a la API (ADR-0006), y
   `e2e-completo/` levanta el backend y PostgreSQL de verdad y recorre los caminos
-  de cuentas por la interfaz. La segunda existe porque la primera no puede ver un
-  contrato roto entre las dos mitades. Publicación y compra llegan con sus fases.
+  de cuentas y la verificación de vendedor por la interfaz. La segunda existe porque
+  la primera no puede ver un contrato roto entre las dos mitades. Publicación y
+  compra llegan con sus fases.
+- **La cámara en `e2e-completo/` es la falsa de Chromium**, con
+  `--use-fake-device-for-media-stream` y el permiso concedido en el proyecto. Su
+  patrón tiene zonas de degradado suave y algunos fotogramas caen por debajo del
+  umbral de nitidez: el ayudante reintenta, acotado. Bajar el umbral para que pase a
+  la primera sería cambiar una regla del producto para acomodar una prueba.
 - **Una prueba de componente que pone la sesión antes de crear el componente no
   prueba la carga real.** En una carga de página el componente nace primero y la
   sesión llega después, por la cookie de refresco. Es la diferencia que dejó el

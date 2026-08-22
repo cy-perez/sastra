@@ -53,6 +53,12 @@ dependencies {
     // ni se pueda importar desde otro modulo por descuido (ADR-0018).
     testImplementation(libs.google.cloud.storage)
 
+    // Los post-procesadores `jwt()` con los que se prueba la autorizacion por rol de
+    // las rutas de revision (HU-002). Es la unica forma de comprobar @PreAuthorize y la
+    // regla de la cadena: sin contexto de seguridad, un montaje autonomo responde 200 a
+    // todo y la prueba no probaria nada.
+    testImplementation(libs.spring.security.test)
+
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.spring.boot.testcontainers)
     testImplementation(libs.testcontainers.postgresql)

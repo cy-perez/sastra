@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import co.sastra.identity.config.MailProperties;
+import co.sastra.identity.config.VerificationProperties;
 import co.sastra.shared.config.AppProperties;
 import java.net.URI;
 import java.time.ZoneId;
@@ -53,7 +54,7 @@ class ResendMailSenderTest {
     }
 
     private static ResendMailSender construir(MailProperties correo) {
-        return new ResendMailSender(correo, new VerificationLink(APP, correo), APP);
+        return new ResendMailSender(correo, new VerificationLink(APP, correo), APP, new VerificationProperties(2));
     }
 
     @Test

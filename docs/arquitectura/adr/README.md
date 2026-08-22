@@ -43,3 +43,4 @@ la referencia.
 | 0018 | Almacenamiento de archivos: dos almacenes y subida por el backend | Aceptada |
 | 0019 | Un solo hospedaje, elegido al contratar el dominio | Aceptada |
 | 0020 | Cifrado de datos sensibles: AES-GCM en la aplicación con HMAC indexado | Aceptada |
+| 0021 | Guard de ruta por rol, y qué se renderiza en el servidor | Aceptada |

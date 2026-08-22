@@ -189,6 +189,17 @@ sastra:
     breach-check-enabled: ${PASSWORD_BREACH_CHECK_ENABLED:true}
     breach-check-timeout: ${PASSWORD_BREACH_CHECK_TIMEOUT:PT2S}
     breach-check-api-url: ${PASSWORD_BREACH_API_URL:https://api.pwnedpasswords.com/range}
+  security:
+    # HU-006: quien arranca siendo moderador. Vacia por omision, y vacia no hace nada.
+    #
+    # Responde a una pregunta que HU-002 dejo abierta: como existe el primer moderador en
+    # un entorno nuevo sin que alguien entre a la base de produccion a escribir un INSERT.
+    #
+    # Concede un rol a cuentas que YA existen. No crea cuentas, no abre sesiones y no
+    # salta ninguna comprobacion. Y no revoca: quitar un correo de aqui no le quita el rol
+    # a nadie, porque un despliegue con la variable mal puesta degradaria a todos los
+    # moderadores en silencio y quedarse sin quien apruebe es peor que un rol de mas.
+    moderators: ${SECURITY_BOOTSTRAP_MODERATORS:}
   features:
     # Las cinco siguen apagadas. Se enciende cada una cuando su funcionalidad
     # exista, no cuando empiece la fase que la contiene, y se enciende por variable

@@ -194,6 +194,46 @@ nueva y hay que escribirla en `reglas-negocio.md`.
 El backend la valida entre 1 y 20. El cero está cerrado a propósito: prometer revisar
 «en cero días hábiles» no significa nada, y en Colombia lo anunciado es exigible.
 
+### Quién es moderador
+
+| Variable | Qué es | Por omisión |
+|---|---|---|
+| `SECURITY_BOOTSTRAP_MODERATORS` | Correos, separados por comas, que reciben el rol `MODERATOR` al arrancar | vacía |
+
+Responde a una pregunta que HU-002 dejó abierta: **cómo existe el primer moderador**
+en un entorno nuevo. Hasta ahora el rol solo se concedía con un `INSERT` escrito a
+mano contra la base, lo que obliga a entrar a la base de producción para dar de alta
+a la primera persona que puede aprobar verificaciones.
+
+Vacía —que es lo que hay por omisión— no hace absolutamente nada.
+
+**Lo que no hace, y es la mitad importante:**
+
+- **No crea cuentas.** Si el correo no tiene una, se registra un aviso y se sigue.
+  Si de aquí pudiera salir una cuenta nueva con rol de moderador, esto sería una
+  puerta trasera y no una forma de conceder un rol.
+- **No abre sesiones** ni salta ninguna comprobación de autenticación.
+- **No concede `ADMIN`.** Solo `MODERATOR`.
+- **No revoca.** Quitar un correo de la lista no le quita el rol a nadie. Un
+  despliegue con la variable mal puesta degradaría a todos los moderadores en
+  silencio, y quedarse sin quien apruebe es peor que un rol de más. Retirar el rol
+  sigue siendo una operación deliberada, a mano, hasta el panel administrativo de la
+  Fase 4.
+
+Es idempotente: arrancar cien veces deja lo mismo que arrancar una.
+
+**Siempre deja rastro en el registro del arranque.** Otorgar autorización en silencio
+es lo que convierte un mecanismo legítimo en algo indistinguible de una puerta
+trasera: si alguien pregunta por qué esa cuenta modera, la respuesta tiene que estar
+en el log. Un correo mal escrito no detiene el arranque —lo que está en juego es que
+una persona se quede sin un rol, no que el servicio funcione— y se registra como
+aviso, distinguiendo la errata del correo sin cuenta, porque se corrigen en sitios
+distintos.
+
+Recuerda RN-060: un moderador no puede decidir sobre su propia solicitud de
+verificación. Poner aquí a alguien que además va a venderse no le sirve para
+auto-aprobarse.
+
 ### Cifrado de datos sensibles
 
 Las columnas cifradas de la verificación de vendedor: número de documento y número

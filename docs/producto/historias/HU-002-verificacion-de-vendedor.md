@@ -187,10 +187,14 @@ Queda abierto, y no bloquea la historia:
   el criterio 11 no exceptúa al moderador, así que tampoco él ve el número
   completo y no hay lectura que registrar. Se deja porque el desembolso de la
   Fase 3 sí tendrá que leerlo.
-- **El rol de moderador se otorga a mano**, con el `INSERT` de más abajo. El
-  panel administrativo es Fase 4; la interfaz de la bandeja de revisión es el
-  punto «panel de moderación» de la Fase 2 y no entra en esta historia, cuyos
-  cinco endpoints de revisión sí están y probados.
+- **La interfaz de la bandeja de revisión** es el punto «panel de moderación» de
+  la Fase 2 y no entra en esta historia, cuyos cinco endpoints de revisión sí
+  están y probados. La escribe HU-006.
+
+Resuelto después, por HU-006: el rol de moderador ya no se otorga solo a mano.
+`SECURITY_BOOTSTRAP_MODERATORS` lo concede al arrancar a los correos que se
+configuren, sobre cuentas que ya existen. El `INSERT` de más abajo sigue siendo
+válido y es lo que esa variable hace por dentro.
 
 ## Notas técnicas
 

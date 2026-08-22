@@ -21,6 +21,7 @@ import co.sastra.identity.usecase.CloseAccountUseCase;
 import co.sastra.identity.usecase.ConfirmEmailChangeUseCase;
 import co.sastra.identity.usecase.ExportUserDataUseCase;
 import co.sastra.identity.usecase.ForgotPasswordUseCase;
+import co.sastra.identity.usecase.GrantConfiguredModeratorsUseCase;
 import co.sastra.identity.usecase.IssueSessionUseCase;
 import co.sastra.identity.usecase.ListFinancialInstitutionsUseCase;
 import co.sastra.identity.usecase.ListPendingVerificationsUseCase;
@@ -378,6 +379,12 @@ public class IdentityWiring {
             MailSender correo,
             Clock reloj) {
         return new RevokeVerificationUseCase(verificaciones, usuarios, bitacora, correo, reloj);
+    }
+
+    /** HU-006: quien arranca siendo moderador. Con la lista vacia no hace nada. */
+    @Bean
+    GrantConfiguredModeratorsUseCase grantConfiguredModeratorsUseCase(UserRepository usuarios, Clock reloj) {
+        return new GrantConfiguredModeratorsUseCase(usuarios, reloj);
     }
 
     @Bean

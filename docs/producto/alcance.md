@@ -78,13 +78,24 @@ fechas ni deja enlaces a rutas que no existen.
 
 Es la fase en curso desde el 21 de agosto de 2026.
 
-- Verificación de vendedor: identidad, selfie y cuenta bancaria.
-- Asistente de captura de fotos con overlay, nivelador y recorte en cliente.
+- **Hecho.** Verificación de vendedor: identidad, selfie y cuenta bancaria
+  (HU-002). Incluye los cinco endpoints de revisión del moderador; la bandeja
+  con la que se usan es el punto de más abajo. Detrás de
+  `FEATURE_SELLER_VERIFICATION`, hoy apagada.
+- Asistente de captura de fotos con overlay, nivelador y recorte en cliente
+  (HU-003, pendiente).
+- Visor 360º en la ficha de producto (HU-003, pendiente).
 - Publicación de prenda con las cuatro tomas obligatorias y las intermedias.
-- Visor 360º en la ficha de producto.
-- Panel de moderación y flujo de aprobación o rechazo con motivo.
-- Catálogo, categorías, ficha de producto y favoritos.
-- Panel del vendedor con sus publicaciones y su estado.
+  Sin historia escrita.
+- Panel de moderación y flujo de aprobación o rechazo con motivo. **Cubierto a
+  medias**: HU-006 escribe la bandeja de verificaciones de vendedor, cuyos
+  endpoints ya están, y es lo que permite encender
+  `FEATURE_SELLER_VERIFICATION`. La moderación de publicaciones —RN-015, la otra
+  mitad de este punto— sigue sin historia y llega con la publicación de prenda.
+  Revocar un sello ya otorgado queda fuera de HU-006 y también sin historia.
+- Catálogo, categorías, ficha de producto y favoritos. Sin historia escrita, y
+  bloqueado mientras el árbol de categorías siga sin definir.
+- Panel del vendedor con sus publicaciones y su estado. Sin historia escrita.
 
 ## Fase 3 — transacción
 

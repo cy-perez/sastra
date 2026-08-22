@@ -194,6 +194,42 @@ nueva y hay que escribirla en `reglas-negocio.md`.
 El backend la valida entre 1 y 20. El cero está cerrado a propósito: prometer revisar
 «en cero días hábiles» no significa nada, y en Colombia lo anunciado es exigible.
 
+### Cifrado de datos sensibles
+
+Las columnas cifradas de la verificación de vendedor: número de documento y número
+de cuenta bancaria (RN-046, ADR-0020). Los archivos **no** pasan por aquí; la cédula
+y la selfie van al almacén reservado.
+
+| Variable | Qué es | Por omisión |
+|---|---|---|
+| `CRYPTO_DATA_KEY_V1` | Clave de cifrado AES-256-GCM de la versión 1, en base64 | **obligatoria** |
+| `CRYPTO_CURRENT_KEY_VERSION` | Con qué versión se cifra lo nuevo. Tiene que existir en el mapa de claves | `1` |
+| `CRYPTO_LOOKUP_KEY` | Clave del HMAC-SHA256 con el que se compara sin descifrar, en base64 | **obligatoria** |
+
+Las dos obligatorias lo son en `dev` y en `prod`: sin ellas la aplicación no
+arranca. El perfil `local` trae claves de desarrollo escritas en
+`application-local.yaml`, que están en el repositorio y justo por eso no sirven
+para nada fuera de localhost.
+
+**Son dos claves independientes y no es ceremonia.** Si el HMAC de búsqueda usara la
+clave de cifrado, filtrar una daría las dos capacidades a la vez: descifrar y
+confirmar adivinaciones. Y adivinar es barato, porque una cédula colombiana es un
+número de ocho a diez dígitos. La aplicación **no arranca** si `CRYPTO_LOOKUP_KEY`
+coincide con alguna clave de cifrado.
+
+Las claves de datos son un mapa de versión a clave, y no una sola clave, para poder
+rotar sin reescribir la tabla de golpe: cada fila guarda con qué versión se cifró
+—`document_number_key_version`— y esa clave tiene que seguir configurada mientras
+exista una fila que la use. Rotar es agregar `CRYPTO_DATA_KEY_V2` y mover
+`CRYPTO_CURRENT_KEY_VERSION` a `2`; retirar la versión 1 es un cambio posterior, y
+solo después de migrar las filas que todavía la referencian.
+
+Cambiar `CRYPTO_LOOKUP_KEY` es distinto y **no es una rotación sin más**: el índice
+único que impide que un mismo documento quede verificado en dos cuentas (criterio 5
+de HU-002) está construido sobre ese HMAC. Cambiar la clave invalida todos los
+valores ya guardados y hay que recalcularlos, o el índice deja de detectar
+duplicados sin que falle nada.
+
 ### Almacenamiento de archivos
 
 Dos almacenes con garantías distintas (ADR-0018): el **público** sirve la foto de

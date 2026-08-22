@@ -1,6 +1,6 @@
 # HU-002 — Verificación de vendedor
 
-**Fase:** 2 | **Estado:** planeada, sin implementar
+**Fase:** 2 | **Estado:** hecha
 **Reglas:** RN-010 a RN-014, RN-046, RN-059
 
 ## Decisiones tomadas el 21 de agosto de 2026
@@ -175,10 +175,22 @@ prometió nada distinto y no se inventa aquí.
 
 ## Lo que todavía falta
 
-- **El texto de las pantallas.** `textos-web.md` cubre el sitio informativo y no
-  esto; sin fuente escrita no hay claves de Transloco. Se escribe con la rebanada de
-  interfaz.
-- **El formato del número por tipo de documento**, según la nota de arriba.
+El texto de las pantallas ya está escrito: `textos-web.md` §«Verificación de
+vendedor — Fase 2» y las claves `sellerVerification.*` en `src/i18n`.
+
+Queda abierto, y no bloquea la historia:
+
+- **El formato del número por tipo de documento**, según la nota de arriba. Hoy
+  se valida el mínimo —dígitos y rango de longitud— y está anotado como regla
+  por endurecer cuando se decida.
+- **`VIEW_BANK_ACCOUNT` no lo usa nadie.** La acción existe en la bitácora, pero
+  el criterio 11 no exceptúa al moderador, así que tampoco él ve el número
+  completo y no hay lectura que registrar. Se deja porque el desembolso de la
+  Fase 3 sí tendrá que leerlo.
+- **El rol de moderador se otorga a mano**, con el `INSERT` de más abajo. El
+  panel administrativo es Fase 4; la interfaz de la bandeja de revisión es el
+  punto «panel de moderación» de la Fase 2 y no entra en esta historia, cuyos
+  cinco endpoints de revisión sí están y probados.
 
 ## Notas técnicas
 
@@ -195,6 +207,19 @@ Endpoints del lado de quien se verifica, todos bajo `/api/v1/users/me/verificati
 
 Van bajo `users/me` y no bajo `sellers` porque quien llama **todavía no es vendedor**,
 y la ruta de un recurso no puede depender del resultado de la operación que se le pide.
+
+Y uno más, que no cuelga de la solicitud porque es un catálogo:
+
+| Método y ruta | Qué hace |
+|---|---|
+| `GET /api/v1/financial-institutions` | Bancos y billeteras activos, para el desplegable del formulario de cuenta |
+
+Ruta propia y no bajo la solicitud, porque el catálogo no es parte de la solicitud
+de nadie: es la tabla de `V7`. **Exige token pero no rol** —no hay nada personal ahí,
+son los mismos nombres de bancos para todo el mundo— y está detrás de la misma
+bandera que el resto. Devuelve el `code`, que es lo estable; el `name` es lo que
+cambia cuando dos entidades se fusionan. Cuando la Fase 3 lo necesite para el
+desembolso, lo pedirá aquí mismo.
 
 **Los endpoints solo existen con `FEATURE_SELLER_VERIFICATION` encendida.** Sin la
 bandera el controlador no se crea y las rutas responden 404: no es que rechacen, es que

@@ -76,13 +76,72 @@ versión exacta del documento aceptado.
 
 ## Fase 2
 
-**seller_verifications**: `id`, `user_id`, `status`, `document_type`,
-`document_number_encrypted`, `document_number_last4`, `full_name`, `birth_date`,
-`selfie_object_key`, `document_front_object_key`, `document_back_object_key`,
-`attempts`, `reviewed_by`, `reviewed_at`, `rejection_reason`, `submitted_at`.
+Las tres primeras ya están aplicadas (`V7` y `V8`, HU-002). El resto de la fase
+sigue sin migración y se describe como intención.
 
-**bank_accounts**: `id`, `user_id`, `bank_code`, `account_type`,
-`account_number_encrypted`, `account_number_last4`, `holder_name`, `verified_at`.
+**financial_institutions** (`V7`)
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| code | text | PK. Forma `^[a-z0-9]+(-[a-z0-9]+)*$`, la misma que valida `BankCode` en el dominio |
+| name | text | Lo que cambia cuando dos entidades se fusionan. Nunca se guarda en la fila del vendedor |
+| kind | text | `BANK` (ahorros y corriente) o `WALLET` (solo depósito electrónico) |
+| active | boolean | Una entidad que deja de operar se desactiva, no se borra: hay filas apuntando a ella |
+| created_at | timestamptz | |
+
+Es una tabla y no una enumeración del código porque agregar un banco no puede
+exigir un despliegue, y porque la Fase 3 necesita el código de cada entidad para
+el desembolso.
+
+**seller_verifications** (`V8`)
+
+Una fila por persona (`UNIQUE (user_id)`), no una por intento: los reintentos de
+RN-014 se cuentan en `attempts` y sobrescriben la misma fila.
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| id | uuid | PK |
+| user_id | uuid | FK a `users`, único |
+| status | text | `NOT_STARTED`, `IN_PROGRESS`, `PENDING_REVIEW`, `VERIFIED`, `REJECTED`, `REVOKED`. Transiciones en RN-059 |
+| document_type | text | `CC`, `CE`, `PPT` |
+| document_number_cipher | text | AES-256-GCM con nonce y etiqueta (ADR-0020) |
+| document_number_key_version | smallint | Con qué versión de clave se cifró |
+| document_number_lookup | bytea | HMAC-SHA256 con clave propia, distinta de la de cifrado. Es lo único comparable: el cifrado no se puede indexar |
+| document_number_last_four | text | En claro a propósito: es lo único que la pantalla muestra (RN-046) |
+| document_holder_name | text | El nombre tal como aparece en el documento |
+| document_front_key, document_back_key | text | Claves del cubo privado, no URL (ADR-0018) |
+| selfie_key | text | Íd. |
+| bank_code | text | FK a `financial_institutions` |
+| bank_account_type | text | `SAVINGS`, `CHECKING`, `ELECTRONIC_DEPOSIT` |
+| bank_account_cipher | text | Mismo formato de ADR-0020 |
+| bank_account_key_version | smallint | |
+| bank_account_last_four | text | |
+| bank_account_holder_name | text | Debe coincidir con `document_holder_name` (criterio 4) |
+| attempts | smallint | RN-014: máximo tres. El cuarto exige que una persona intervenga |
+| rejection_reason | text | `ILLEGIBLE_PHOTOS`, `EXPIRED_DOCUMENT`, `HOLDER_MISMATCH`, `DOCUMENT_ALREADY_VERIFIED`, `REQUIREMENTS_NOT_MET` |
+| rejection_note | text | Nota libre y opcional del moderador |
+| created_at, updated_at | timestamptz | |
+
+No hay `reviewed_by` ni `reviewed_at`: **quién decidió y cuándo vive en
+`verification_access_log`**, que es la única fuente de esa información y guarda
+además los accesos que no cambian el estado. Duplicarlo en dos sitios dejaría
+que se contradijeran.
+
+Tampoco hay `birth_date`: la edad ya está en `users` (RN-008) y no se copia.
+
+**verification_access_log** (`V8`)
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| id | uuid | PK |
+| verification_id | uuid | FK a `seller_verifications` |
+| actor_id | uuid | FK a `users`. No admite nulo: un acceso sin actor no es una bitácora |
+| action | text | `VIEW_DOCUMENT_FRONT`, `VIEW_DOCUMENT_BACK`, `VIEW_SELFIE`, `VIEW_BANK_ACCOUNT`, `APPROVE`, `REJECT`, `REVOKE` |
+| reason | text | Motivo declarado por quien accede. Nunca contiene el dato al que se accedió |
+| created_at | timestamptz | |
+
+Es la razón de que la cédula y la selfie no se sirvan por URL firmada: un enlace
+que funciona por sí solo no puede registrar quién lo usó (ADR-0018).
 
 **products**: `id`, `seller_id`, `title`, `description`, `category_id`,
 `brand`, `condition`, `size_system`, `size_value`, `measurements` (`jsonb`),
@@ -140,6 +199,13 @@ El identificador único del proveedor es lo que garantiza idempotencia.
 - `listings(status, published_at desc)` para el catálogo.
 - `products(seller_id)`.
 - `product_images(product_id, position)` único.
+- `seller_verifications(document_number_lookup)` único **parcial**, solo sobre
+  `status = 'VERIFIED'`. Es la lectura literal del criterio 5 de HU-002: dos
+  personas pueden tener el mismo documento en revisión —pasa cuando alguien
+  intenta usar la cédula de otro— y lo que no puede pasar es que las dos queden
+  verificadas. `REVOKED` no bloquea.
+- `seller_verifications(updated_at)` parcial sobre `status = 'PENDING_REVIEW'`,
+  para la bandeja del moderador.
 - `payment_events(provider_event_id)` único.
 - `orders(buyer_id, created_at desc)` y `orders(seller_id, created_at desc)`.
 

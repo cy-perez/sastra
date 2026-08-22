@@ -63,6 +63,18 @@ Cada regla tiene identificador. Úsalo en el código y en las pruebas:
   Como en RN-045, ninguna transición se pierde: cada una queda registrada con
   fecha, actor y motivo.
 
+- **RN-060** Un moderador no puede aprobar ni rechazar su propia solicitud de
+  verificación. Quien revisa y quien es revisado tienen que ser dos personas.
+  La comprobación es del servidor: esconder el botón no es la regla, porque los
+  endpoints de revisión se pueden llamar sin pasar por la interfaz.
+
+  No es una sospecha sobre nadie: es que el sello de verificado es lo que
+  responde por una transacción ante quien compra, y un sello que alguien puede
+  otorgarse a sí mismo no responde por nada.
+
+  Un moderador sí puede verificarse como vendedor —RN-010 no lo prohíbe—; lo
+  que no puede es ser quien decida sobre su propia solicitud. La resuelve otro.
+
 ## Publicación
 
 - **RN-015** Toda publicación pasa por moderación antes de ser visible. Sin

@@ -596,6 +596,99 @@ aprobada más allá del plazo configurable, ni que anuncie qué se puede hacer a
 verificarse: publicar llega con su propia historia y anunciarlo antes deja un enlace a
 una ruta que no existe, que es lo que HU-004 y HU-005 prohíben.
 
+## Bandeja del moderador — Fase 2
+
+El texto de HU-006. Las claves van bajo `verificationReview.*`.
+
+**Es la primera pantalla interna del sitio**, y eso cambia el tono: quien la usa
+trabaja aquí, revisa muchas al día y no necesita que se le explique el producto. El
+texto es corto y dice qué hace cada cosa. Nada de «¡Listo!» ni de acompañamiento.
+
+**La bandeja** (`verificationReview.inbox.*`):
+`.title`: Verificaciones pendientes
+`.waitingSince`: Espera desde hace `{{tiempo}}`
+`.attempt`: Intento `{{intento}}` de 3
+`.empty.title`: No hay nada por revisar
+`.empty.body`: Cuando alguien envíe su solicitud, aparece aquí.
+`.error.title`: No pudimos cargar la bandeja
+`.error.retry`: Reintentar
+
+**El detalle** (`verificationReview.detail.*`):
+
+| Clave | Texto |
+|---|---|
+| `.documentSection` | Documento de identidad |
+| `.bankSection` | Cuenta bancaria |
+| `.holder` | Titular |
+| `.lastFour` | Termina en `{{dígitos}}` |
+| `.documentType` | Tipo de documento |
+| `.bank` | Entidad |
+| `.accountType` | Tipo de cuenta |
+| `.holderMismatch` | El titular de la cuenta no coincide con el del documento |
+| `.back` | Volver a la bandeja |
+
+`.holderMismatch` es el criterio 7 y **no es decorativo**: es la comprobación de
+RN-012 dicha en palabras, para que no dependa de que alguien note un color.
+
+**Las imágenes** (`verificationReview.images.*`):
+`.front`: Frente del documento
+`.back`: Reverso del documento
+`.selfie`: Selfie
+`.reveal`: Ver
+`.missing`: Esta imagen no está disponible
+`.notice`: Cada vez que abres una imagen queda registrado que la viste.
+
+`.notice` se muestra siempre y no es una advertencia legal de relleno: la bitácora
+existe (RN-046) y quien revisa tiene derecho a saber que también se le registra a él.
+
+**Decidir** (`verificationReview.decision.*`):
+`.approve`: Aprobar
+`.reject`: Rechazar
+`.reasonLabel`: Motivo del rechazo
+`.reasonPlaceholder`: Elige un motivo
+`.noteLabel`: Nota para la persona (opcional)
+`.noteHint`: La lee quien envió la solicitud. No escribas información de terceros ni
+datos de procesos judiciales.
+`.confirmApprove`: ¿Aprobar esta verificación? La persona queda como vendedora
+verificada y recibe un correo.
+`.confirmReject`: ¿Rechazar esta verificación? La persona recibe un correo con el
+motivo y podrá corregir si le quedan intentos.
+`.confirm`: Confirmar
+`.cancel`: Cancelar
+`.approved`: Verificación aprobada
+`.rejected`: Verificación rechazada
+`.alreadyResolved`: Otra persona ya resolvió esta solicitud.
+
+`.noteHint` va donde se escribe la nota y no en una ayuda escondida: es la única
+barrera que tiene esa regla, porque el campo es texto libre y ninguna validación
+puede imponerla.
+
+`.alreadyResolved` es el criterio 11. Se dice qué pasó, no «error inesperado».
+
+**Los motivos de rechazo** se reutilizan de `sellerVerification.reasons.*` **solo si
+sirven tal cual**, y no sirven: están escritos para quien recibe el rechazo, en
+segunda persona. El moderador elige de una lista y necesita etiquetas cortas, así que
+van aparte en `verificationReview.reasons.*`:
+
+| Código | Texto |
+|---|---|
+| `ILLEGIBLE_PHOTOS` | Fotos ilegibles |
+| `EXPIRED_DOCUMENT` | Documento vencido |
+| `HOLDER_MISMATCH` | Titular no coincide |
+| `DOCUMENT_ALREADY_VERIFIED` | Documento ya verificado en otra cuenta |
+| `REQUIREMENTS_NOT_MET` | No cumple los requisitos |
+
+**Sin acceso** (`verificationReview.forbidden.*`). Criterio 2: quien no es moderador
+no puede enterarse de que esta pantalla existe, así que **no hay texto propio**. Se
+reutiliza la página 404 (`notFound.*`), y esto es una decisión de seguridad, no un
+ahorro de trabajo: un «no tienes permiso» confirma que hay algo detrás.
+
+**Lo que no se escribe aquí, y por qué.** No hay texto de revocación: el endpoint
+existe pero la acción quedó fuera de HU-006 porque no hay forma de llegar a una
+verificación ya aprobada desde la interfaz. Tampoco hay texto para conceder el rol de
+moderador: eso sigue siendo un `INSERT` a mano hasta el panel administrativo de la
+Fase 4.
+
 ## Etiquetas de ficha de producto — Fase 2
 
 - **Condición:** Nuevo · Como nuevo · Buen estado · Con detalles. Son las cuatro

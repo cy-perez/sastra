@@ -22,6 +22,10 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'ingresar', renderMode: RenderMode.Server },
   { path: 'verificar-correo', renderMode: RenderMode.Server },
   { path: 'mi-cuenta', renderMode: RenderMode.Server },
+  // HU-002. Faltaba, y el sintoma es el que este archivo describe arriba: la pagina
+  // se pintaba entera y se servia con 404. No se nota mirandola, solo midiendo el
+  // estado, que es lo que hace ahora `rutas.spec.ts`.
+  { path: 'verificacion-de-vendedor', renderMode: RenderMode.Server },
   { path: 'recuperar-contrasena', renderMode: RenderMode.Server },
   { path: 'restablecer-contrasena', renderMode: RenderMode.Server },
   { path: 'confirmar-correo-nuevo', renderMode: RenderMode.Server },

@@ -1,6 +1,7 @@
 package co.sastra.identity.usecase;
 
 import co.sastra.identity.dto.ApproveVerificationCommand;
+import co.sastra.identity.exception.SelfReviewForbiddenException;
 import co.sastra.identity.exception.VerificationNotFoundException;
 import co.sastra.identity.model.Role;
 import co.sastra.identity.model.SellerVerification;
@@ -27,9 +28,9 @@ import org.springframework.transaction.annotation.Transactional;
  * endpoint (backend/CLAUDE.md, ADR-0003). Lo que si sale del token y nunca de la
  * peticion es el actor, porque es lo que queda escrito en la bitacora.
  *
- * <p>Lo que <strong>no</strong> comprueba nadie todavia: que el moderador no sea la
- * misma persona que la solicitud. Ninguna regla de negocio lo prohibe por escrito y no
- * se inventa aqui; queda anotado en HU-002 como decision pendiente.
+ * <p><strong>RN-060 si esta aqui</strong>, y es la excepcion a lo anterior: que el
+ * moderador no sea el dueno de la solicitud no lo puede comprobar el borde, que sabe
+ * el rol pero no de quien es la solicitud.
  *
  * <p>El sello y el rol se otorgan; el correo de aviso del criterio 10 llega con su
  * propia rebanada.
@@ -60,6 +61,13 @@ public class ApproveVerificationUseCase {
         SellerVerification actual = verificaciones
                 .buscarPorId(comando.verificacion())
                 .orElseThrow(() -> new VerificationNotFoundException(comando.verificacion()));
+
+        // RN-060. Antes de tocar nada: quien revisa y quien es revisado tienen que ser
+        // dos personas. Va aqui y no en el borde HTTP porque el borde comprueba el rol
+        // —que lo tiene— y no sabe de quien es la solicitud.
+        if (actual.userId().equals(comando.moderador())) {
+            throw new SelfReviewForbiddenException();
+        }
 
         Instant ahora = reloj.instant();
 

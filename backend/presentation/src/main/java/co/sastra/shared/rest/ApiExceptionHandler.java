@@ -173,6 +173,10 @@ public class ApiExceptionHandler {
             // cliente no sabria que lo que toca es volver a pedir la contrasena
             // (docs/arquitectura/contrato-api.md).
             case AUTH_INVALID_CREDENTIALS, AUTH_SESSION_INVALID -> HttpStatus.UNAUTHORIZED;
+            // 403: tiene credencial valida y hasta el rol correcto, y aun asi no puede
+            // hacer esto. RN-060 es el unico caso hoy: el moderador es moderador, pero
+            // la solicitud es suya.
+            case SELLER_SELF_REVIEW_FORBIDDEN -> HttpStatus.FORBIDDEN;
             // 409: la peticion es correcta y choca con el estado actual del
             // sistema, que es lo que significa un conflicto.
             //

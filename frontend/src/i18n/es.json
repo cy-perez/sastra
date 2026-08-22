@@ -185,7 +185,8 @@
       "SELLER_ACCOUNT_HOLDER_MISMATCH": "El titular de la cuenta tiene que ser el mismo nombre del documento.",
       "SELLER_DOCUMENT_ALREADY_VERIFIED": "Ese documento ya está verificado en otra cuenta.",
       "SELLER_EMAIL_NOT_VERIFIED": "Verifica tu correo antes de empezar. Te reenviamos el enlace desde tu cuenta.",
-      "SELLER_UNKNOWN_INSTITUTION": "Esa entidad no está en nuestra lista. Elige una de las opciones."
+      "SELLER_UNKNOWN_INSTITUTION": "Esa entidad no está en nuestra lista. Elige una de las opciones.",
+      "SELLER_SELF_REVIEW_FORBIDDEN": "No puedes decidir sobre tu propia solicitud. La revisa otra persona."
     }
   },
   "form": {

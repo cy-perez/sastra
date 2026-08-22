@@ -15,6 +15,7 @@ import co.sastra.identity.dto.ApproveVerificationCommand;
 import co.sastra.identity.dto.RejectVerificationCommand;
 import co.sastra.identity.dto.VerificationImageContent;
 import co.sastra.identity.dto.ViewVerificationImageCommand;
+import co.sastra.identity.exception.SelfReviewForbiddenException;
 import co.sastra.identity.exception.VerificationNotFoundException;
 import co.sastra.identity.model.BankAccount;
 import co.sastra.identity.model.BankAccountNumber;
@@ -230,6 +231,24 @@ class VerificationReviewControllerTest {
     }
 
     // --- Las tres decisiones --------------------------------------------------
+
+    /**
+     * RN-060 sale como 403 y con su codigo propio.
+     *
+     * <p>El estado importa: 422 diria que el contenido esta mal y 409 que el estado no
+     * lo admite, y no es ninguna de las dos. Lo que falla es quien lo pide.
+     *
+     * <p>El codigo propio importa mas. Un 403 generico le diria "no eres moderador" a
+     * alguien que si lo es, y lo dejaria buscando un problema de permisos inexistente.
+     */
+    @Test
+    void deberia_cumplir_RN_060_respondiendo_403_al_aprobar_la_propia() throws Exception {
+        when(aprobar.execute(any())).thenThrow(new SelfReviewForbiddenException());
+
+        mvc.perform(post("/api/v1/verifications/" + SOLICITUD + "/approval"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("SELLER_SELF_REVIEW_FORBIDDEN"));
+    }
 
     @Test
     void deberia_aprobar_tomando_el_moderador_del_token() throws Exception {

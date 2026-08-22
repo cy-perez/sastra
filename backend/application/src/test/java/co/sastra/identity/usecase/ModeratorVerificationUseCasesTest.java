@@ -14,6 +14,7 @@ import co.sastra.identity.dto.ApproveVerificationCommand;
 import co.sastra.identity.dto.RejectVerificationCommand;
 import co.sastra.identity.dto.RevokeVerificationCommand;
 import co.sastra.identity.exception.InvalidVerificationTransitionException;
+import co.sastra.identity.exception.SelfReviewForbiddenException;
 import co.sastra.identity.exception.VerificationNotFoundException;
 import co.sastra.identity.model.BankAccount;
 import co.sastra.identity.model.BankAccountNumber;
@@ -182,6 +183,91 @@ class ModeratorVerificationUseCasesTest {
                 .execute(new RejectVerificationCommand(moderador, solicitud, RejectionReason.EXPIRED_DOCUMENT, null));
 
         verify(bitacora).registrar(solicitud, moderador, VerificationAccess.REJECT, "EXPIRED_DOCUMENT", AHORA);
+    }
+
+    // --- RN-060: nadie decide sobre su propia solicitud -----------------------
+
+    /**
+     * El caso que la regla ataca. Un moderador que se aprueba a si mismo se otorga el
+     * sello que responde por una transaccion ante quien compra, y ese sello dejaria de
+     * responder por nada.
+     *
+     * <p>Se comprueba tambien que <strong>no se toco nada</strong>: sin el corte antes
+     * de guardar, una implementacion que lanzara al final habria dejado el rol otorgado
+     * y la bitacora escrita, y solo la transaccion evitaria el desastre.
+     */
+    @Test
+    void deberia_cumplir_RN_060_impidiendo_que_el_moderador_apruebe_su_propia_solicitud() {
+        SellerVerification propia = SellerVerification.iniciar(solicitud, moderador, AHORA)
+                .conDocumento(
+                        new IdentityDocument(
+                                IdentityDocumentType.CC,
+                                new IdentityDocumentNumber("1053812947"),
+                                TITULAR,
+                                new FileKey("documentos/frente.png"),
+                                new FileKey("documentos/reverso.png")),
+                        AHORA)
+                .conSelfie(new FileKey("selfies/abc.png"), AHORA)
+                .conCuentaBancaria(
+                        new BankAccount(
+                                new BankCode("bancolombia"),
+                                BankAccountType.SAVINGS,
+                                new BankAccountNumber("91500123456"),
+                                TITULAR),
+                        AHORA)
+                .enviarARevision(AHORA);
+        when(verificaciones.buscarPorId(solicitud)).thenReturn(Optional.of(propia));
+
+        assertThatThrownBy(() -> casoDeAprobar().execute(new ApproveVerificationCommand(moderador, solicitud)))
+                .isInstanceOf(SelfReviewForbiddenException.class);
+
+        verify(verificaciones, never()).guardar(any());
+        verify(usuarios, never()).otorgarRol(any(), any(), any());
+        verify(bitacora, never()).registrar(any(), any(), any(), any(), any());
+    }
+
+    /** RN-060 nombra las dos decisiones, no solo la que concede. */
+    @Test
+    void deberia_cumplir_RN_060_impidiendo_que_el_moderador_rechace_su_propia_solicitud() {
+        SellerVerification propia = SellerVerification.iniciar(solicitud, moderador, AHORA)
+                .conDocumento(
+                        new IdentityDocument(
+                                IdentityDocumentType.CC,
+                                new IdentityDocumentNumber("1053812947"),
+                                TITULAR,
+                                new FileKey("documentos/frente.png"),
+                                new FileKey("documentos/reverso.png")),
+                        AHORA)
+                .conSelfie(new FileKey("selfies/abc.png"), AHORA)
+                .conCuentaBancaria(
+                        new BankAccount(
+                                new BankCode("bancolombia"),
+                                BankAccountType.SAVINGS,
+                                new BankAccountNumber("91500123456"),
+                                TITULAR),
+                        AHORA)
+                .enviarARevision(AHORA);
+        when(verificaciones.buscarPorId(solicitud)).thenReturn(Optional.of(propia));
+
+        assertThatThrownBy(() -> new RejectVerificationUseCase(verificaciones, usuarios, bitacora, correo, RELOJ)
+                        .execute(new RejectVerificationCommand(
+                                moderador, solicitud, RejectionReason.ILLEGIBLE_PHOTOS, null)))
+                .isInstanceOf(SelfReviewForbiddenException.class);
+
+        verify(verificaciones, never()).guardar(any());
+    }
+
+    /**
+     * La otra cara, y la que impide que la regla se implemente de mas: la solicitud de
+     * otra persona se aprueba igual que siempre. Sin esta, un `if` invertido pasaria.
+     */
+    @Test
+    void deberia_permitir_que_el_moderador_apruebe_la_solicitud_de_otra_persona() {
+        when(verificaciones.buscarPorId(solicitud)).thenReturn(Optional.of(enRevision()));
+
+        SellerVerification aprobada = casoDeAprobar().execute(new ApproveVerificationCommand(moderador, solicitud));
+
+        assertThat(aprobada.status()).isEqualTo(VerificationStatus.VERIFIED);
     }
 
     // --- Revocar. RN-013 ----------------------------------------------------

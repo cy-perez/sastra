@@ -185,7 +185,8 @@
       "SELLER_ACCOUNT_HOLDER_MISMATCH": "The account holder must be the same name as on the document.",
       "SELLER_DOCUMENT_ALREADY_VERIFIED": "That document is already verified on another account.",
       "SELLER_EMAIL_NOT_VERIFIED": "Verify your email before you start. You can resend the link from your account.",
-      "SELLER_UNKNOWN_INSTITUTION": "That institution is not on our list. Pick one of the options."
+      "SELLER_UNKNOWN_INSTITUTION": "That institution is not on our list. Pick one of the options.",
+      "SELLER_SELF_REVIEW_FORBIDDEN": "You cannot decide on your own application. Someone else reviews it."
     }
   },
   "form": {

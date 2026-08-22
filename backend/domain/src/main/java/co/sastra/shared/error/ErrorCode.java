@@ -157,6 +157,17 @@ public enum ErrorCode {
      */
     SELLER_DOCUMENT_ALREADY_VERIFIED,
 
+    /**
+     * RN-060: un moderador no puede decidir sobre su propia solicitud.
+     *
+     * <p>403 y no 422: la peticion esta bien formada y el estado la admitiria; lo que
+     * falla es quien la hace. Es de las pocas veces que este proyecto responde 403 a
+     * alguien que si tiene el rol, y por eso el codigo es propio: un 403 generico le
+     * diria "no eres moderador" a quien lo es, y a esa persona la dejaria buscando un
+     * problema de permisos que no existe.
+     */
+    SELLER_SELF_REVIEW_FORBIDDEN,
+
     /** La peticion no cumple el contrato. El detalle por campo va en {@code errors}. */
     COMMON_VALIDATION_FAILED,
 

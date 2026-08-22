@@ -13,6 +13,7 @@ import co.sastra.identity.dto.SubmitSelfieCommand;
 import co.sastra.identity.dto.SubmitVerificationForReviewCommand;
 import co.sastra.identity.exception.DocumentAlreadyVerifiedException;
 import co.sastra.identity.exception.EmailNotVerifiedException;
+import co.sastra.identity.exception.SelfReviewForbiddenException;
 import co.sastra.identity.exception.VerificationAttemptsExhaustedException;
 import co.sastra.identity.model.BankAccountType;
 import co.sastra.identity.model.BirthDate;
@@ -357,6 +358,48 @@ class SellerVerificationJourneyTest {
         // Deja de poder publicar y sigue siendo compradora: el rol se quita, la cuenta no.
         assertThat(rolesDe(vendedor)).doesNotContain("SELLER").contains("BUYER");
         assertThat(bitacoraDe(solicitud)).containsExactly("APPROVE", "REVOKE");
+    }
+
+    /**
+     * RN-060 sobre la base de verdad, con las dos caras en la misma prueba: la propia se
+     * rechaza y la ajena se aprueba.
+     *
+     * <p>Las dos juntas a proposito. Solo con la primera, un `if` invertido —o una regla
+     * que bloqueara a todo el mundo— pasaria igual y dejaria la bandeja inservible sin
+     * que ninguna prueba lo dijera.
+     *
+     * <p>El moderador se verifica como vendedor, que RN-010 permite: lo que no puede es
+     * ser quien decida.
+     */
+    @Test
+    void deberia_cumplir_RN_060_dejando_decidir_solo_sobre_solicitudes_ajenas() {
+        UserId quienRevisa = moderador();
+
+        // Su propia solicitud, enviada por el mismo camino que cualquiera.
+        solicitudCompleta(quienRevisa, cedulaNueva());
+        SellerVerificationId propia = enviar.execute(new SubmitVerificationForReviewCommand(quienRevisa))
+                .id();
+
+        assertThatThrownBy(() -> aprobar.execute(new ApproveVerificationCommand(quienRevisa, propia)))
+                .isInstanceOf(SelfReviewForbiddenException.class);
+        assertThatThrownBy(() -> rechazar.execute(
+                        new RejectVerificationCommand(quienRevisa, propia, RejectionReason.ILLEGIBLE_PHOTOS, null)))
+                .isInstanceOf(SelfReviewForbiddenException.class);
+
+        // Nada quedo escrito: ni el rol, ni la bitacora, ni el estado.
+        assertThat(rolesDe(quienRevisa)).doesNotContain("SELLER");
+        assertThat(bitacoraDe(propia)).isEmpty();
+
+        // Y la de otra persona se aprueba con normalidad.
+        UserId vendedor = cuentaVerificada();
+        solicitudCompleta(vendedor, cedulaNueva());
+        SellerVerificationId ajena =
+                enviar.execute(new SubmitVerificationForReviewCommand(vendedor)).id();
+
+        assertThat(aprobar.execute(new ApproveVerificationCommand(quienRevisa, ajena))
+                        .status())
+                .isEqualTo(VerificationStatus.VERIFIED);
+        assertThat(rolesDe(vendedor)).contains("SELLER");
     }
 
     /**

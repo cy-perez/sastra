@@ -1,6 +1,7 @@
 package co.sastra.identity.usecase;
 
 import co.sastra.identity.dto.RejectVerificationCommand;
+import co.sastra.identity.exception.SelfReviewForbiddenException;
 import co.sastra.identity.exception.VerificationNotFoundException;
 import co.sastra.identity.model.SellerVerification;
 import co.sastra.identity.model.VerificationAccess;
@@ -48,6 +49,13 @@ public class RejectVerificationUseCase {
         SellerVerification actual = verificaciones
                 .buscarPorId(comando.verificacion())
                 .orElseThrow(() -> new VerificationNotFoundException(comando.verificacion()));
+
+        // RN-060. Antes de tocar nada: quien revisa y quien es revisado tienen que ser
+        // dos personas. Va aqui y no en el borde HTTP porque el borde comprueba el rol
+        // —que lo tiene— y no sabe de quien es la solicitud.
+        if (actual.userId().equals(comando.moderador())) {
+            throw new SelfReviewForbiddenException();
+        }
 
         Instant ahora = reloj.instant();
 

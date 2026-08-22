@@ -10,17 +10,18 @@
  * una plantilla que espere un dato que nunca va a llegar.
  */
 
+import type { RejectionReason } from '../../../shared/domain/rejection-reason';
+
+/**
+ * Los motivos de rechazo subieron a `shared`: los necesitan tambien la bandeja del
+ * moderador (HU-006) y una funcionalidad no importa de otra. Se reexporta para que
+ * quien ya los tomaba de aqui no tenga que cambiar de sitio.
+ */
+export type { RejectionReason };
+
 /** Los seis estados del glosario. */
 export type VerificationStatus =
   'NOT_STARTED' | 'IN_PROGRESS' | 'PENDING_REVIEW' | 'VERIFIED' | 'REJECTED' | 'REVOKED';
-
-/** Los cinco motivos de la lista cerrada. Se traducen por su código. */
-export type RejectionReason =
-  | 'ILLEGIBLE_PHOTOS'
-  | 'EXPIRED_DOCUMENT'
-  | 'HOLDER_MISMATCH'
-  | 'DOCUMENT_ALREADY_VERIFIED'
-  | 'REQUIREMENTS_NOT_MET';
 
 export type IdentityDocumentType = 'CC' | 'CE' | 'PPT';
 

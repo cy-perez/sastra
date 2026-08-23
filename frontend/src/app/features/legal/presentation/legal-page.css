@@ -4,14 +4,13 @@
    recibe el atributo de encapsulacion, de modo que las reglas normales no lo
    alcanzarian. */
 
-/* El carril de contenido de la rejilla de <main>.
-   `.contenido > *` de app.css no alcanza a este host: el componente de la ruta
-   lo inserta el router como hermano de <router-outlet> y no recibe el atributo
-   de encapsulacion de App, asi que la regla no lo selecciona. Sin esta linea el
-   host cae en `grid-column: auto`, la rejilla lo auto-coloca en un carril de
-   sangria y los tres documentos se pintaban en una columna de 40px en
-   escritorio, pegados al borde izquierdo y sin adaptarse a la ventana. Es el
-   mismo fallo que content-page.css documenta para las cuatro informativas.
+/* El carril de contenido de la rejilla de <main>. Hoy lo asigna ya
+   `.contenido > *` desde src/styles.css, que por ser hoja global si alcanza al
+   host que el router inserta como hermano de <router-outlet>; esta regla es
+   redundante y se conserva porque hace explicito el carril del documento.
+   Cuando la asignacion vivia en app.css, con encapsulacion, no llegaba: el host
+   caia en `grid-column: auto` y los tres documentos se pintaban en una columna
+   de 40px en escritorio, pegados al borde izquierdo.
 
    Va por nombre de elemento y no con :host porque este componente se declara
    con ViewEncapsulation.None: ahi Angular no transforma :host, que fuera de un

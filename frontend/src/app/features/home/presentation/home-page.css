@@ -5,12 +5,13 @@
   display: contents;
 }
 
-/* Y el carril hay que asignarlo desde aqui.
-   `display: contents` cambia el arbol de CAJAS, no el del DOM: los selectores
-   `.contenido > *` de app.css siguen exigiendo que el padre en el DOM sea
-   .contenido, y el padre real de estas secciones es <sastra-home-page>. Sin
-   estas dos reglas las secciones caen en `grid-column: auto`, la rejilla las
-   auto-coloca en los carriles de sangria y el hero acaba midiendo 16px. */
+/* Y el carril hay que asignarlo desde aqui. Estas dos reglas **no** son
+   redundantes con las de src/styles.css, al contrario que las de las demas
+   paginas: `display: contents` cambia el arbol de CAJAS, no el del DOM, y
+   `.contenido > *` sigue exigiendo que el padre en el DOM sea .contenido,
+   mientras que el padre real de estas secciones es <sastra-home-page>. Sin
+   ellas las secciones caen en `grid-column: auto`, la rejilla las auto-coloca
+   en los carriles de sangria y el hero acaba midiendo 16px. */
 :host > * {
   grid-column: content;
 }

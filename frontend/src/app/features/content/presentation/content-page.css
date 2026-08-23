@@ -8,13 +8,12 @@
 
 :host {
   display: block;
-  /* El carril de contenido de la rejilla de <main>, declarado aqui.
-     `.contenido > *` de app.css no alcanza a este host: el componente de la ruta
-     lo inserta el router y no recibe el atributo de encapsulacion de App, asi
-     que la regla no lo selecciona. Sin esta linea el host cae en
-     `grid-column: auto`, la rejilla lo auto-coloca en un carril de sangria y las
-     cuatro paginas se pintaban en una columna de 40px en escritorio: medido.
-     Es la misma trampa que home-page.css documenta para el hero. */
+  /* El carril de contenido de la rejilla de <main>. Hoy lo asigna ya
+     `.contenido > *` desde src/styles.css, que por ser hoja global si alcanza al
+     host que inserta el router; esta linea es redundante y se conserva porque
+     hace explicito el carril de la pagina. Cuando la regla vivia en app.css, con
+     encapsulacion, no llegaba: el host caia en `grid-column: auto` y las cuatro
+     paginas se pintaban en una columna de 40px en escritorio. */
   grid-column: content;
   /* El ancho de lectura del sistema. .tipo-cuerpo ya lo trae, pero el titulo y
      las rejillas de pasos no, y una linea de 200 caracteres no se lee. */

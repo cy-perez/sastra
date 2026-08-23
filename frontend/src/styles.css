@@ -40,6 +40,66 @@ body {
   outline-offset: 2px;
 }
 
+/**
+ * Rejilla de carriles de <main>. Es maquetacion del sitio, no de un componente:
+ * vive aqui por lo mismo que .contenedor, que es el mecanismo al que sustituye.
+ *
+ * Para una pagina normal el comportamiento es equivalente, con una diferencia
+ * medible: .contenedor limitaba a 1200px la caja CON su relleno, dejando 1168px
+ * de contenido en escritorio; aqui el carril de contenido llega a 1200px. Son
+ * hasta 32px mas de ancho por encima de 1232px de ventana.
+ *
+ * Lo que agrega es un carril a sangre completa, que .contenedor no podia dar. El
+ * hero de la portada tiene que llegar de borde a borde igual que el pie, y el
+ * pie solo lo consigue porque vive fuera de <main>. Con esto no hace falta sacar
+ * nada de <main>.
+ *
+ * La alternativa habitual, `margin-inline: calc(50% - 50vw)`, se descarto: 100vw
+ * incluye la barra de desplazamiento y produce el desbordamiento horizontal que
+ * la propia historia prohibe.
+ *
+ * **Por que en una hoja global y no en app.css, que es de donde cuelga el
+ * marcado.** Porque en app.css no funciona para las paginas. La hoja de un
+ * componente lleva encapsulacion emulada: `.contenido > *` se compila a
+ * `.contenido > *[_ngcontent-app]`, y el componente de la ruta lo inserta el
+ * router como hermano de <router-outlet>, sin ese atributo. La regla no lo
+ * seleccionaba, el host caia en `grid-column: auto` y la rejilla lo auto-colocaba
+ * en un carril de sangria: la pagina se pintaba en una columna estrechisima
+ * pegada al borde izquierdo y sin adaptarse a la ventana. Paso con las cuatro
+ * informativas, con los tres documentos legales y con toda la familia de
+ * cuentas, y cada vez se parcheo pidiendo el carril desde el host de esa pagina.
+ * Aqui la hoja no se encapsula, el selector llega y ninguna pagina tiene que
+ * pedir nada.
+ */
+.contenido {
+  flex: 1;
+  --sangria: var(--esp-16);
+  display: grid;
+  align-content: start;
+  grid-template-columns:
+    [full-start] minmax(var(--sangria), 1fr)
+    [content-start] min(var(--ancho-max), calc(100% - var(--sangria) * 2)) [content-end]
+    minmax(var(--sangria), 1fr) [full-end];
+  padding-top: var(--esp-32);
+  padding-bottom: var(--esp-48);
+}
+
+@media (min-width: 640px) {
+  .contenido {
+    --sangria: var(--esp-24);
+  }
+}
+
+/* Por omision todo se queda en la columna de contenido, que es lo que hacia
+   .contenedor. Solo se sale quien lo pida. */
+.contenido > * {
+  grid-column: content;
+}
+
+.contenido > .a-sangre {
+  grid-column: full;
+}
+
 /* Ancho de contenido del sitio. --ancho-max lo fija marca.css en 1200px. */
 .contenedor {
   width: 100%;

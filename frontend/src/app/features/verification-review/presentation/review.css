@@ -6,11 +6,12 @@
    las dos acciones son aprobar y rechazar, y se distinguen por forma y texto, nunca
    solo por color. */
 
-/* El carril de contenido de la rejilla de <main>. `.contenido > *` de app.css no
-   alcanza a este host: el componente de la ruta lo inserta el router y no recibe el
-   atributo de encapsulacion de App. Sin esto la pagina cae en un carril de sangria y
-   se pinta en una columna de 40px, que es lo que le paso a las informativas y a las
-   legales. */
+/* El carril de contenido de la rejilla de <main>. Hoy lo asigna ya
+   `.contenido > *` desde src/styles.css, que por ser hoja global si alcanza al host
+   que inserta el router; esta linea es redundante y se conserva porque hace explicito
+   el carril de la pantalla. Cuando la asignacion vivia en app.css, con encapsulacion,
+   no llegaba y la pagina caia en un carril de sangria, pintada en una columna de
+   40px: lo mismo que le paso a las informativas y a las legales. */
 :host {
   display: block;
   grid-column: content;

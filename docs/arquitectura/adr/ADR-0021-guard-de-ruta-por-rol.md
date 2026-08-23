@@ -34,14 +34,19 @@ Pero incumple el criterio 2: la pantalla se pinta antes de saber si corresponde.
 **Guard que lee el rol al entrar.** Lo obvio, y está roto. En toda recarga la sesión
 todavía es `desconocida` y el guard echaría al moderador de su propia bandeja.
 
-**Guard que espera a que la sesión se resuelva, y la ruta fuera del renderizado del
-servidor.** Más piezas, y resuelve los tres problemas a la vez.
+**Sacar la ruta del renderizado del servidor** (`RenderMode.Client`). Es lo que parece
+natural para una pantalla interna, y **no funciona en este proyecto**: `APP_CONFIG` llega
+por el estado transferido del SSR, así que una ruta que no se renderiza allí arranca sin
+configuración y la aplicación no levanta. Se intentó y se descartó con la prueba delante.
+
+**Guard que espera a que la sesión se resuelva, y que deniega en el servidor.** Más
+piezas, y resuelve los tres problemas a la vez.
 
 ## Decisión
 
 Un guard `exigirRol(rol)` en `core/session` que **espera** a que la sesión deje de ser
-`desconocida` antes de decidir, y las rutas que lo usan declaradas
-`RenderMode.Client` en `app.routes.server.ts`.
+`desconocida` antes de decidir en el navegador, y que **deniega siempre en el servidor**.
+Las rutas se renderizan en servidor como todas las demás.
 
 ## Motivo
 
@@ -50,16 +55,20 @@ respuesta llegue siempre lo garantiza el inicializador del navegador, que marca 
 sesión como resuelta también cuando no hay ninguna que recuperar. Sin esto el guard
 sería peor que no tenerlo: rechazaría a quien sí tiene permiso, en cada F5.
 
-**El renderizado en cliente no es una optimización, es la mitad de la protección.**
-Un guard no puede proteger un HTML que se generó antes de que el guard existiera. Y
-en el servidor tampoco habría a quién preguntar: allí la sesión se queda en
-`desconocida` para siempre, porque el renderizado no tiene la cookie de nadie, así
-que un guard que espera se quedaría esperando.
+**Denegar en el servidor no es una limitación: es la mitad de la protección.** Allí la
+sesión se queda en `desconocida` para siempre —el renderizado no tiene la cookie de
+nadie— así que esperar colgaría el SSR, y dejar pasar metería el título de la pantalla
+en el HTML que recibe cualquiera que pida la dirección. Denegar deja servida la página
+de «no existe», que es exactamente lo que debe ver quien no tiene el rol.
 
-No se pierde nada al no renderizarlas: son pantallas internas detrás de sesión. Lo
-que ADR-0006 protege es el posicionamiento del catálogo y del sitio informativo, y
-eso aquí no aplica. Esta es la primera excepción a esa ADR y conviene que se lea como
-lo que es: una excepción con motivo, no una grieta.
+Al hidratar, el guard vuelve a correr en el navegador, ahí sí espera a la sesión, y quien
+tenga el rol entra. El coste es que la página de «no existe» se ve un instante antes de
+la bandeja. Se acepta: es una herramienta interna, y ese instante es justo lo que ve
+quien no debería pasar.
+
+Esto conserva ADR-0006 intacta —todo se sigue renderizando en servidor— que es
+justamente lo que obligó a descartar `RenderMode.Client`: el proyecto **depende** del
+SSR para entregar la configuración, no solo para el posicionamiento.
 
 **Al denegar se manda a la página de «no existe», sin cambiar la dirección.** Un «no
 tienes permiso» confirma que detrás hay algo. Es la misma razón por la que el backend
@@ -79,12 +88,15 @@ alguien acaba quitando una comprobación del backend porque «ya lo valida el fr
 ## Consecuencias
 
 - Toda ruta protegida por rol que venga después —panel del vendedor, moderación de
-  publicaciones, disputas de la Fase 4— hereda las dos piezas: el guard y el
-  `RenderMode.Client`. Poner el guard y olvidar el modo de renderizado deja el
-  contenido en el HTML servido, que es el fallo silencioso de esta ADR.
-- La primera pintura de estas pantallas es más lenta: no hay HTML previo y hay que
-  esperar a la hidratación y a que la sesión se recupere. Es aceptable para una
-  herramienta interna que se usa con sesión abierta.
+  publicaciones, disputas de la Fase 4— basta con que declare el guard. La protección
+  del HTML servido va dentro del propio guard, no en una segunda pieza que se pueda
+  olvidar. Fue así a propósito: la primera versión repartía la responsabilidad entre el
+  guard y el modo de renderizado, y olvidar la mitad dejaba el contenido servido sin que
+  nada avisara.
+- Quien tiene el rol ve un instante la página de «no existe» antes de su pantalla. Es el
+  precio de que el HTML servido no cuente nada.
+- El SSR de estas rutas renderiza siempre la página de «no existe», así que su coste de
+  servidor es el de esa página y no el de la bandeja.
 - `exigirRol` recibe el rol como cadena. No hay un tipo de roles compartido en el
   frontend porque el backend los manda así en la sesión; el día que haya más de dos
   pantallas por rol, conviene un tipo.
@@ -93,8 +105,8 @@ alguien acaba quitando una comprobación del backend porque «ya lo valida el fr
 ## Cuándo revisar
 
 - Si aparece una pantalla protegida que **sí** necesita posicionamiento o que se
-  comparte por enlace a alguien sin sesión: ahí el renderizado en cliente estorba y
-  hay que resolver la sesión en el servidor, que es una decisión mucho más grande.
+  comparte por enlace a alguien sin sesión: servirla siempre como «no existe» deja de
+  valer, y hay que resolver la sesión en el servidor, que es una decisión mucho mayor.
 - Si el servidor llegara a poder resolver la sesión durante el renderizado —hoy no
   puede, la cookie de refresco es `HttpOnly` y el SSR no la usa—, la mitad de esta
   ADR se queda sin motivo.

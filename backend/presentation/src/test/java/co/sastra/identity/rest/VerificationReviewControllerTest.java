@@ -110,7 +110,12 @@ class VerificationReviewControllerTest {
     }
 
     private static SellerVerification enRevision() {
-        return SellerVerification.iniciar(SOLICITUD, UserId.nuevo(), AHORA)
+        return enRevisionDe(UserId.nuevo());
+    }
+
+    /** La misma solicitud, con dueno elegido: es lo que distingue el caso de RN-060. */
+    private static SellerVerification enRevisionDe(UserId dueno) {
+        return SellerVerification.iniciar(SOLICITUD, dueno, AHORA)
                 .conDocumento(
                         new IdentityDocument(
                                 IdentityDocumentType.CC,
@@ -231,6 +236,32 @@ class VerificationReviewControllerTest {
     }
 
     // --- Las tres decisiones --------------------------------------------------
+
+    /**
+     * El campo del que depende la mitad de interfaz de RN-060.
+     *
+     * <p>La cadena es: dueno de la solicitud, comparado con el del token, hasta un
+     * booleano que la pantalla usa para no ofrecer la accion. El unico punto donde las dos
+     * mitades se tocan es el mapeador, y sin estas dos pruebas invertir el `equals` deja
+     * backend y frontend en verde con el criterio 12 roto en produccion.
+     */
+    @Test
+    void deberia_decir_que_la_solicitud_es_propia_cuando_el_dueno_es_quien_mira() throws Exception {
+        when(listado.execute(20)).thenReturn(List.of(enRevisionDe(MODERADOR)));
+
+        mvc.perform(get("/api/v1/verifications"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].own").value(true));
+    }
+
+    @Test
+    void deberia_decir_que_la_solicitud_es_ajena_cuando_el_dueno_es_otro() throws Exception {
+        when(listado.execute(20)).thenReturn(List.of(enRevisionDe(UserId.nuevo())));
+
+        mvc.perform(get("/api/v1/verifications"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].own").value(false));
+    }
 
     /**
      * RN-060 sale como 403 y con su codigo propio.

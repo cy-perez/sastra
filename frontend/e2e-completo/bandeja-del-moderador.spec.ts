@@ -157,9 +157,10 @@ test.describe('bandeja del moderador', () => {
   /**
    * Criterio 13, sobre el HTML que sale del servidor.
    *
-   * <p>Las rutas de moderación se declaran `RenderMode.Client` justamente para esto: si
-   * se renderizaran, sus títulos viajarían en el HTML de cualquiera que pidiese la
-   * dirección, guard o no, porque el guard corre después.
+   * <p>Lo consigue el guard, que **deniega en el servidor**: lo que se sirve es la página
+   * de «no existe». Las rutas se renderizan en servidor como todas las demás; se probó
+   * `RenderMode.Client` y no sirve, porque `APP_CONFIG` llega por el estado transferido
+   * del SSR (ADR-0021).
    */
   test('el HTML servido de la bandeja no dice de que va', async ({ request }) => {
     const respuesta = await request.get(RUTA_BANDEJA);

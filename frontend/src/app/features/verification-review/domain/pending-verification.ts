@@ -84,17 +84,6 @@ const normalizar = (nombre: string): string =>
   nombre.trim().replace(/\s+/g, ' ').toLocaleLowerCase('es-CO');
 
 /**
- * Cuánto lleva esperando, en milisegundos.
- *
- * <p>Se calcula contra un instante que se recibe y no contra `Date.now()`: la pantalla se
- * renderiza también en el servidor y una función que lee el reloj por su cuenta no se
- * puede probar sin congelarlo.
- */
-export function esperaEnMilisegundos(solicitud: PendingVerification, ahora: Date): number {
-  return Math.max(0, ahora.getTime() - new Date(solicitud.waitingSince).getTime());
-}
-
-/**
  * La más vieja primero, que es el orden de la bandeja.
  *
  * <p>El servidor ya las manda así. Se ordena igualmente porque el orden es parte del

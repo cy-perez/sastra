@@ -11,6 +11,7 @@ import co.sastra.identity.dto.SubmitBankAccountCommand;
 import co.sastra.identity.dto.SubmitIdentityDocumentCommand;
 import co.sastra.identity.dto.SubmitSelfieCommand;
 import co.sastra.identity.dto.SubmitVerificationForReviewCommand;
+import co.sastra.identity.dto.ViewVerificationImageCommand;
 import co.sastra.identity.exception.DocumentAlreadyVerifiedException;
 import co.sastra.identity.exception.EmailNotVerifiedException;
 import co.sastra.identity.exception.SelfReviewForbiddenException;
@@ -27,6 +28,7 @@ import co.sastra.identity.model.SellerVerificationId;
 import co.sastra.identity.model.User;
 import co.sastra.identity.model.UserId;
 import co.sastra.identity.model.UserLocale;
+import co.sastra.identity.model.VerificationImage;
 import co.sastra.identity.model.VerificationStatus;
 import co.sastra.identity.port.out.PasswordHasher;
 import co.sastra.identity.port.out.UserRepository;
@@ -38,6 +40,7 @@ import co.sastra.identity.usecase.SubmitBankAccountUseCase;
 import co.sastra.identity.usecase.SubmitIdentityDocumentUseCase;
 import co.sastra.identity.usecase.SubmitSelfieUseCase;
 import co.sastra.identity.usecase.SubmitVerificationForReviewUseCase;
+import co.sastra.identity.usecase.ViewVerificationImageUseCase;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -100,6 +103,7 @@ class SellerVerificationJourneyTest {
     private final ApproveVerificationUseCase aprobar;
     private final RejectVerificationUseCase rechazar;
     private final RevokeVerificationUseCase revocar;
+    private final ViewVerificationImageUseCase imagen;
     private final UserRepository usuarios;
     private final PasswordHasher hasher;
     private final JdbcClient jdbc;
@@ -114,6 +118,7 @@ class SellerVerificationJourneyTest {
             ApproveVerificationUseCase aprobar,
             RejectVerificationUseCase rechazar,
             RevokeVerificationUseCase revocar,
+            ViewVerificationImageUseCase imagen,
             UserRepository usuarios,
             PasswordHasher hasher,
             JdbcClient jdbc,
@@ -126,6 +131,7 @@ class SellerVerificationJourneyTest {
         this.aprobar = aprobar;
         this.rechazar = rechazar;
         this.revocar = revocar;
+        this.imagen = imagen;
         this.usuarios = usuarios;
         this.hasher = hasher;
         this.jdbc = jdbc;
@@ -216,6 +222,19 @@ class SellerVerificationJourneyTest {
     private List<String> bitacoraDe(SellerVerificationId verificacion) {
         return jdbc.sql("""
                         SELECT action FROM verification_access_log
+                        WHERE verification_id = :verificacion
+                        ORDER BY created_at, action
+                        """)
+                .param("verificacion", verificacion.value())
+                .query(String.class)
+                .list();
+    }
+
+    /** Las tres columnas que RN-046 exige, no solo la accion. */
+    private List<String> bitacoraCompletaDe(SellerVerificationId verificacion) {
+        return jdbc.sql("""
+                        SELECT action || '|' || actor_id || '|' || coalesce(reason, '(sin motivo)')
+                        FROM verification_access_log
                         WHERE verification_id = :verificacion
                         ORDER BY created_at, action
                         """)
@@ -358,6 +377,30 @@ class SellerVerificationJourneyTest {
         // Deja de poder publicar y sigue siendo compradora: el rol se quita, la cuenta no.
         assertThat(rolesDe(vendedor)).doesNotContain("SELLER").contains("BUYER");
         assertThat(bitacoraDe(solicitud)).containsExactly("APPROVE", "REVOKE");
+    }
+
+    /**
+     * RN-046: mirar una cedula deja fila con <strong>actor, accion y motivo</strong>.
+     *
+     * <p>Es la razon de que las imagenes no se sirvan por URL firmada: un enlace que
+     * funciona por si solo no puede registrar quien lo uso (ADR-0018). La bitacora es lo
+     * que responde ante una autoridad por que alguien vio una cedula, asi que se
+     * comprueban las tres columnas y no solo que exista la fila.
+     */
+    @Test
+    void deberia_cumplir_RN_046_anotando_actor_y_motivo_al_ver_una_imagen() {
+        UserId vendedor = cuentaVerificada();
+        UserId quienRevisa = moderador();
+
+        solicitudCompleta(vendedor, cedulaNueva());
+        SellerVerificationId solicitud =
+                enviar.execute(new SubmitVerificationForReviewCommand(vendedor)).id();
+
+        imagen.execute(new ViewVerificationImageCommand(
+                quienRevisa, solicitud, VerificationImage.DOCUMENT_FRONT, "Revision de solicitud pendiente"));
+
+        assertThat(bitacoraCompletaDe(solicitud))
+                .containsExactly("VIEW_DOCUMENT_FRONT|" + quienRevisa.value() + "|Revision de solicitud pendiente");
     }
 
     /**

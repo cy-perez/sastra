@@ -1,15 +1,38 @@
 <figure class="imagen">
   <figcaption class="tipo-secundario">{{ etiqueta() }}</figcaption>
 
-  @if (url(); as direccion) {
-    <!-- alt real y no vacío: describe qué es, que es lo que necesita quien no la ve
-         para saber que aquí hay un documento y no un adorno. -->
-    <img [src]="direccion" [alt]="etiqueta()" />
-  } @else if (fallo()) {
+  <!-- El botón vive siempre en el DOM y alterna. Si lo sustituyera la imagen, el foco de
+       quien lo acaba de pulsar caería al cuerpo del documento.
+
+       El nombre accesible lleva la etiqueta dentro: sin ella la página tendría tres
+       botones llamados «Ver» y quien navegue por lista de botones no sabría cuál abre
+       qué. Va en un <span> oculto y no en aria-label porque el texto visible sigue
+       siendo corto. -->
+  <button type="button" class="boton" [disabled]="cargando()" (click)="alternar()">
+    {{
+      (visible() ? 'verificationReview.images.hide' : 'verificationReview.images.reveal')
+        | transloco
+    }}
+    <span class="solo-lectores">{{ etiqueta() }}</span>
+  </button>
+
+  <!-- Región viva: al pulsar no cambia nada visible durante un instante, y quien no ve la
+       pantalla no tiene forma de saber que la imagen está en camino ni que llegó. -->
+  <p class="solo-lectores" role="status">
+    @if (cargando()) {
+      {{ 'verificationReview.images.loading' | transloco }}
+    } @else if (visible()) {
+      {{ 'verificationReview.images.loaded' | transloco }}
+    }
+  </p>
+
+  @if (fallo()) {
     <p class="tipo-secundario">{{ 'verificationReview.images.missing' | transloco }}</p>
-  } @else {
-    <button type="button" class="boton" [disabled]="cargando()" (click)="abrir()">
-      {{ 'verificationReview.images.reveal' | transloco }}
-    </button>
+  }
+
+  @if (visible() && url(); as direccion) {
+    <!-- El alt describe el contenido, no repite el pie: quien lo oiga después del
+         figcaption no necesita el mismo texto dos veces. -->
+    <img [src]="direccion" [alt]="descripcion()" />
   }
 </figure>

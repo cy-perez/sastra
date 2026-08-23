@@ -1,4 +1,4 @@
-import { EnvironmentInjector, runInInjectionContext } from '@angular/core';
+import { EnvironmentInjector, PLATFORM_ID, runInInjectionContext } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, RedirectCommand } from '@angular/router';
 import { firstValueFrom, type Observable } from 'rxjs';
@@ -107,6 +107,36 @@ describe('exigirRol', () => {
     TestBed.tick();
 
     expect(decidido).toBeInstanceOf(RedirectCommand);
+  });
+
+  /**
+   * En el servidor deniega siempre, y no es una limitacion: es lo que hace que el
+   * criterio 2 se cumpla.
+   *
+   * <p>Alli la sesion se queda en `desconocida` para siempre —el renderizado no tiene la
+   * cookie de nadie— asi que esperar colgaria el SSR, y dejar pasar meteria el titulo de
+   * la pantalla en el HTML de cualquiera que pida la direccion. Es la rama de la que
+   * depende que la bandeja no se anuncie sola, y solo la veia el e2e.
+   */
+  it('deniega en el servidor sin esperar a la sesion', async () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [provideRouter([]), { provide: PLATFORM_ID, useValue: 'server' }],
+    });
+    const almacenDelServidor = TestBed.inject(SessionStore);
+    const inyectorDelServidor = TestBed.inject(EnvironmentInjector);
+
+    // Con el rol puesto: aun asi deniega, porque en el servidor no hay a quien preguntar.
+    almacenDelServidor.set(sesionCon(['MODERATOR']));
+
+    const decision = await firstValueFrom(
+      runInInjectionContext(
+        inyectorDelServidor,
+        () => exigirRol('MODERATOR')(null!, null!) as Observable<boolean | RedirectCommand>,
+      ),
+    );
+
+    expect(decision).toBeInstanceOf(RedirectCommand);
   });
 
   /** El rol pedido es el que se comprueba, no cualquiera. */

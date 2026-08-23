@@ -30,19 +30,37 @@ test.use({ locale: 'es-CO' });
 const rutaDelArchivo = (relativa: string): string => join(__dirname, '..', 'src', 'app', relativa);
 
 /**
+ * Un valor de ejemplo para cada ruta con parametro.
+ *
+ * <p>`:id` no es una direccion, es una plantilla, y pedirla tal cual no demuestra nada.
+ * Pero saltarsela deja esa ruta sin comprobar, que es justo el fallo que esta suite
+ * existe para impedir: paso con `moderacion/verificaciones/:id`, declarada y sin medir,
+ * el mismo dia que se escribio este archivo. Ruta nueva con parametro, entrada nueva
+ * aqui; si falta, la prueba de mas abajo lo dice.
+ */
+const EJEMPLOS: Readonly<Record<string, string>> = {
+  ':id': '00000000-0000-7000-8000-000000000000',
+};
+
+/**
  * Las direcciones literales que declara la tabla de rutas.
  *
- * <p>Fuera el comodin, la raiz —que se comprueba en portada.spec.ts— y cualquiera
- * con parametro: `:id` no es una direccion, es una plantilla, y pedirla tal cual no
- * demuestra nada. Cuando exista la primera con parametro habra que darle un valor
- * de ejemplo aqui.
+ * <p>Fuera el comodin y la raiz, que se comprueba en portada.spec.ts. Las que llevan
+ * parametro entran con su valor de ejemplo.
  */
 const rutasDeclaradas = (): string[] => {
   const codigo = readFileSync(rutaDelArchivo('app.routes.ts'), 'utf8');
   const literales = [...codigo.matchAll(/path:\s*'([^']*)'/g)].map((c) => c[1]);
 
-  return literales.filter((ruta) => ruta !== '' && ruta !== '**' && !ruta.includes(':'));
+  return literales.filter((ruta) => ruta !== '' && ruta !== '**').map((ruta) => concretar(ruta));
 };
+
+/** Sustituye cada segmento con parametro por su valor de ejemplo. */
+const concretar = (ruta: string): string =>
+  ruta
+    .split('/')
+    .map((segmento) => (segmento.startsWith(':') ? (EJEMPLOS[segmento] ?? segmento) : segmento))
+    .join('/');
 
 /**
  * Las dos familias que la tabla no escribe como literal: las genera a partir de las
@@ -61,6 +79,14 @@ test.describe('rutas declaradas', () => {
   test('se encontraron rutas que comprobar', () => {
     expect(TODAS.length).toBeGreaterThan(10);
     expect(TODAS).toContain('verificacion-de-vendedor');
+  });
+
+  /**
+   * Ninguna ruta puede quedarse sin medir por no tener valor de ejemplo. Sin esto, un
+   * `:algo` nuevo se pediria tal cual, respondaria lo que respondiera, y nadie lo notaria.
+   */
+  test('toda ruta con parametro tiene un valor de ejemplo', () => {
+    expect(TODAS.filter((ruta) => ruta.includes(':'))).toEqual([]);
   });
 
   for (const ruta of TODAS) {

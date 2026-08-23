@@ -1,10 +1,29 @@
-@if (solicitud(); as actual) {
-  <h1 class="tipo-h1">
-    {{ actual.documentHolderName ?? ('verificationReview.inbox.noName' | transloco) }}
-  </h1>
+<!-- Fuera del @if: la página tiene su h1 también mientras carga y cuando la solicitud ya
+     no está. Dentro, los otros dos estados se quedaban sin encabezado. -->
+<h1 class="tipo-h1">{{ 'verificationReview.detail.title' | transloco }}</h1>
 
-  <p class="tipo-secundario">
-    {{ 'verificationReview.inbox.attempt' | transloco: { intento: actual.attempts } }}
+<!-- Fuera del bloque de la solicitud: cuando otra persona la resuelve, la bandeja se
+     refresca y la fila desaparece. Si el aviso viviera dentro se iria con ella, y quien
+     acaba de pulsar se quedaria sin saber que paso. El aviso es de la accion, no de la
+     fila. -->
+@if (yaResuelta()) {
+  <p class="aviso-de-error tipo-cuerpo" role="alert">
+    {{ 'verificationReview.decision.alreadyResolved' | transloco }}
+  </p>
+} @else if (claveDeError(); as clave) {
+  <p class="aviso-de-error tipo-cuerpo" role="alert">{{ clave | transloco }}</p>
+}
+
+@if (solicitud(); as actual) {
+  <p class="tipo-entradilla">
+    {{ actual.documentHolderName ?? ('verificationReview.inbox.noName' | transloco) }}
+  </p>
+
+  <p class="datos tipo-secundario">
+    <span>{{ 'verificationReview.inbox.attempt' | transloco: { intento: actual.attempts } }}</span>
+    <!-- Criterio 5: desde cuándo espera. Es lo que decide a quién atender primero, así
+         que tiene que estar también aquí y no solo en la lista. -->
+    <span>{{ 'verificationReview.inbox.waitingSince' | transloco: { tiempo: espera() } }}</span>
   </p>
 
   @if (discrepa()) {
@@ -18,16 +37,22 @@
     <h2 class="tipo-h2">{{ 'verificationReview.detail.documentSection' | transloco }}</h2>
     <dl class="datos-de-la-solicitud tipo-cuerpo">
       <dt>{{ 'verificationReview.detail.documentType' | transloco }}</dt>
-      <dd>{{ actual.documentType ?? '—' }}</dd>
+      <dd>{{ tipoDeDocumento() | transloco }}</dd>
       <dt>{{ 'verificationReview.detail.holder' | transloco }}</dt>
-      <dd>{{ actual.documentHolderName ?? '—' }}</dd>
-      <!-- Criterio 5: cuatro dígitos, nunca el número completo. Tampoco para el
-           moderador: el criterio 11 de HU-002 no hace excepciones por rol. -->
       <dd>
-        {{
-          'verificationReview.detail.lastFour'
-            | transloco: { digitos: actual.documentNumberLastFour ?? '—' }
-        }}
+        {{ actual.documentHolderName ?? ('verificationReview.detail.missingValue' | transloco) }}
+      </dd>
+      <!-- Su propio dt: un dd suelto se asocia al término anterior, y un lector de
+           pantalla anunciaba «Titular: Ana García, Termina en 1234». -->
+      <dt>{{ 'verificationReview.detail.documentNumber' | transloco }}</dt>
+      <dd>
+        <!-- Criterio 5: cuatro dígitos, nunca el número completo. Tampoco para el
+             moderador: el criterio 11 de HU-002 no hace excepciones por rol. -->
+        @if (actual.documentNumberLastFour; as ultimos) {
+          {{ 'verificationReview.detail.lastFour' | transloco: { digitos: ultimos } }}
+        } @else {
+          {{ 'verificationReview.detail.missingValue' | transloco }}
+        }
       </dd>
     </dl>
   </section>
@@ -36,16 +61,20 @@
     <h2 class="tipo-h2">{{ 'verificationReview.detail.bankSection' | transloco }}</h2>
     <dl class="datos-de-la-solicitud tipo-cuerpo">
       <dt>{{ 'verificationReview.detail.bank' | transloco }}</dt>
-      <dd>{{ actual.bank ?? '—' }}</dd>
+      <dd>{{ actual.bank ?? ('verificationReview.detail.missingValue' | transloco) }}</dd>
       <dt>{{ 'verificationReview.detail.accountType' | transloco }}</dt>
-      <dd>{{ actual.bankAccountType ?? '—' }}</dd>
+      <dd>{{ tipoDeCuenta() | transloco }}</dd>
       <dt>{{ 'verificationReview.detail.holder' | transloco }}</dt>
-      <dd>{{ actual.bankAccountHolderName ?? '—' }}</dd>
       <dd>
-        {{
-          'verificationReview.detail.lastFour'
-            | transloco: { digitos: actual.bankAccountLastFour ?? '—' }
-        }}
+        {{ actual.bankAccountHolderName ?? ('verificationReview.detail.missingValue' | transloco) }}
+      </dd>
+      <dt>{{ 'verificationReview.detail.accountNumber' | transloco }}</dt>
+      <dd>
+        @if (actual.bankAccountLastFour; as ultimos) {
+          {{ 'verificationReview.detail.lastFour' | transloco: { digitos: ultimos } }}
+        } @else {
+          {{ 'verificationReview.detail.missingValue' | transloco }}
+        }
       </dd>
     </dl>
   </section>
@@ -56,122 +85,132 @@
     <p class="tipo-secundario">{{ 'verificationReview.images.notice' | transloco }}</p>
 
     <div class="imagenes">
-      @for (cual of imagenes; track cual) {
+      @for (imagen of imagenes(); track imagen.cual) {
         <sastra-verification-image
           [solicitud]="actual.id"
-          [cual]="cual"
-          [etiqueta]="
-            (cual === 'document-front'
-              ? 'verificationReview.images.front'
-              : cual === 'document-back'
-                ? 'verificationReview.images.back'
-                : 'verificationReview.images.selfie'
-            ) | transloco
-          "
+          [cual]="imagen.cual"
+          [etiqueta]="imagen.etiqueta | transloco"
+          [descripcion]="imagen.descripcion | transloco"
         />
       }
     </div>
   </section>
 
-  <section class="seccion">
-    <label class="campo" for="motivo">
-      {{ 'verificationReview.decision.reasonLabel' | transloco }}
-    </label>
-    <select
-      id="motivo"
-      class="control"
-      [value]="motivoElegido()"
-      (change)="elegirMotivo($any($event.target).value)"
-    >
-      <option value="">{{ 'verificationReview.decision.reasonPlaceholder' | transloco }}</option>
-      @for (motivo of motivos; track motivo) {
-        <option [value]="motivo">
-          {{ 'verificationReview.reasons.' + motivo | transloco }}
-        </option>
-      }
-    </select>
-
-    <label class="campo" for="nota">
-      {{ 'verificationReview.decision.noteLabel' | transloco }}
-    </label>
-    <!-- La ayuda va donde se escribe y no escondida: es la única barrera que tiene esa
-         regla, porque el campo es libre y ninguna validación puede imponerla. -->
-    <p id="ayuda-nota" class="tipo-leyenda">
-      {{ 'verificationReview.decision.noteHint' | transloco }}
+  @if (esPropia()) {
+    <!-- Criterio 12 y RN-060. No se ofrece decidir, y tampoco los campos con los que se
+         decidiría: enseñar un formulario que no se puede enviar es peor que no tenerlo. -->
+    <p class="aviso-de-error tipo-cuerpo">
+      {{ 'verificationReview.decision.ownApplication' | transloco }}
     </p>
-    <textarea
-      id="nota"
-      class="control"
-      rows="3"
-      maxlength="500"
-      aria-describedby="ayuda-nota"
-      [value]="nota()"
-      (input)="nota.set($any($event.target).value)"
-    ></textarea>
-  </section>
-
-  @if (porConfirmar(); as pendiente) {
-    <!-- Criterio 10: se confirma una vez. Notifica por correo y no se deshace. -->
-    <div
-      class="confirmacion"
-      role="group"
-      [attr.aria-label]="'verificationReview.decision.confirm' | transloco"
-    >
-      <p class="tipo-cuerpo">
-        {{
-          (pendiente === 'aprobar'
-            ? 'verificationReview.decision.confirmApprove'
-            : 'verificationReview.decision.confirmReject'
-          ) | transloco
-        }}
-      </p>
-      <button type="button" class="boton" [disabled]="enCurso()" (click)="confirmar()">
-        {{ 'verificationReview.decision.confirm' | transloco }}
-      </button>
-      <button type="button" class="boton" [disabled]="enCurso()" (click)="cancelar()">
-        {{ 'verificationReview.decision.cancel' | transloco }}
-      </button>
-    </div>
   } @else {
-    @if (esPropia()) {
-      <!-- Criterio 12 y RN-060. No se ofrece decidir, y se dice por que. -->
-      <p class="aviso-de-error tipo-cuerpo">
-        {{ 'verificationReview.decision.ownApplication' | transloco }}
+    <!-- Un <form> de verdad: así el envío es nativo y la validación del criterio 9 puede
+         señalar el campo en vez de apagar el botón, que sale del orden de tabulación y no
+         dice por qué. -->
+    <form class="seccion" (submit)="alEnviar($event)">
+      <label class="campo tipo-secundario" for="motivo">
+        {{ 'verificationReview.decision.reasonLabel' | transloco }}
+      </label>
+      <select
+        id="motivo"
+        class="control"
+        [value]="motivoElegido()"
+        [attr.aria-invalid]="faltaMotivo() ? 'true' : null"
+        [attr.aria-describedby]="faltaMotivo() ? 'error-motivo' : null"
+        (change)="elegirMotivo($any($event.target).value)"
+      >
+        <option value="">{{ 'verificationReview.decision.reasonPlaceholder' | transloco }}</option>
+        @for (motivo of motivos; track motivo) {
+          <option [value]="motivo">{{ 'verificationReview.reasons.' + motivo | transloco }}</option>
+        }
+      </select>
+
+      @if (faltaMotivo()) {
+        <p id="error-motivo" class="tipo-cuerpo mensaje-de-error" role="alert">
+          {{ 'verificationReview.decision.reasonRequired' | transloco }}
+        </p>
+      }
+
+      <label class="campo tipo-secundario" for="nota">
+        {{ 'verificationReview.decision.noteLabel' | transloco }}
+      </label>
+      <!-- La ayuda va donde se escribe y no escondida: es la única barrera que tiene esa
+           regla, porque el campo es libre y ninguna validación puede imponerla. -->
+      <p id="ayuda-nota" class="tipo-leyenda">
+        {{ 'verificationReview.decision.noteHint' | transloco }}
       </p>
-    } @else {
+      <textarea
+        id="nota"
+        class="control"
+        rows="3"
+        [attr.maxlength]="maximoDeNota"
+        aria-describedby="ayuda-nota"
+        [value]="nota()"
+        (input)="nota.set($any($event.target).value)"
+      ></textarea>
+
       <div class="acciones">
-        <button type="button" class="boton" (click)="pedirConfirmacion('aprobar')">
-          {{ 'verificationReview.decision.approve' | transloco }}
-        </button>
-        <!-- Criterio 9: sin motivo elegido no se puede enviar. -->
         <button
           type="button"
-          class="boton"
-          [disabled]="!puedeRechazar()"
-          (click)="pedirConfirmacion('rechazar')"
+          class="boton boton-principal"
+          [disabled]="enCurso()"
+          (click)="pedirConfirmacion('aprobar')"
         >
+          {{ 'verificationReview.decision.approve' | transloco }}
+        </button>
+        <!-- Habilitado siempre: si falta el motivo lo dice el mensaje de arriba. -->
+        <button type="submit" class="boton" [disabled]="enCurso()">
           {{ 'verificationReview.decision.reject' | transloco }}
         </button>
       </div>
+    </form>
+
+    @if (porConfirmar(); as pendiente) {
+      <!-- Criterio 10: se confirma una vez. Notifica por correo y no se deshace.
+           Recibe el foco al aparecer y lo devuelve al cancelar: si no, con teclado habría
+           que recorrer la página entera para llegar a «Confirmar». -->
+      <div
+        #confirmacion
+        class="confirmacion"
+        role="group"
+        tabindex="-1"
+        aria-labelledby="texto-confirmacion"
+      >
+        <p id="texto-confirmacion" class="tipo-cuerpo">
+          {{
+            (pendiente === 'aprobar'
+              ? 'verificationReview.decision.confirmApprove'
+              : 'verificationReview.decision.confirmReject'
+            ) | transloco
+          }}
+        </p>
+        <div class="acciones">
+          <button
+            type="button"
+            class="boton boton-principal"
+            [disabled]="enCurso()"
+            (click)="confirmar()"
+          >
+            {{ 'verificationReview.decision.confirm' | transloco }}
+          </button>
+          <button type="button" class="boton" [disabled]="enCurso()" (click)="cancelar()">
+            {{ 'verificationReview.decision.cancel' | transloco }}
+          </button>
+        </div>
+      </div>
     }
   }
-
-  @if (yaResuelta()) {
-    <p class="aviso-de-error tipo-cuerpo" role="alert">
-      {{ 'verificationReview.decision.alreadyResolved' | transloco }}
-    </p>
-  } @else if (claveDeError(); as clave) {
-    <p class="aviso-de-error tipo-cuerpo" role="alert">{{ clave | transloco }}</p>
-  }
 } @else if (consulta.isPending()) {
-  <span class="esqueleto esqueleto-fila"></span>
+  <!-- El esqueleto no se anuncia: para quien no ve la pantalla es una caja vacía. Lo que
+       se anuncia es que está cargando. -->
+  <span class="esqueleto esqueleto-fila" aria-hidden="true"></span>
+  <p class="solo-lectores" role="status">{{ 'verificationReview.inbox.loading' | transloco }}</p>
 } @else {
   <!-- Ya se resolvió, o la dirección es de una que nunca estuvo. -->
   <p class="tipo-entradilla">{{ 'verificationReview.detail.notFound' | transloco }}</p>
 }
 
 <p class="seccion">
-  <a routerLink="/moderacion/verificaciones">
+  <a class="enlace-de-volver" routerLink="/moderacion/verificaciones">
     {{ 'verificationReview.detail.back' | transloco }}
   </a>
 </p>

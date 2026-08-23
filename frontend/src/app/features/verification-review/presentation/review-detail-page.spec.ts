@@ -34,6 +34,11 @@ describe('ReviewDetailPage', () => {
     attempts: 1,
     documentType: 'CC',
     documentNumberLastFour: '2947',
+    // Los completos NO viajan (criterio 11). Se dejan aqui como campos ajenos al tipo
+    // para que la asercion de mas abajo pueda fallar: sin ellos, `not.toContain` era
+    // cierto por construccion y no probaba nada.
+    documentNumberFull: '1053812947',
+    bankAccountNumberFull: '91500123456',
     documentHolderName: 'Ana Maria Garcia',
     documentSubmitted: true,
     selfieSubmitted: true,
@@ -111,6 +116,37 @@ describe('ReviewDetailPage', () => {
     backend.match((p) => p.url.includes('/images/'));
 
   /**
+   * Envia el formulario de decision.
+   *
+   * <p>Se despacha el evento en vez de pulsar el boton porque jsdom no implementa
+   * `requestSubmit()`, asi que un clic sobre un `type="submit"` no dispara nada. El
+   * camino que se prueba sigue siendo el real: `ngSubmit`.
+   */
+  /**
+   * Deja pasar el tiempo atendiendo lo que vaya llegando.
+   *
+   * <p>No sirve `asentar` despues de un conflicto: la bandeja se refresca sola, y
+   * `whenStable()` no vuelve mientras haya una peticion en vuelo. Aqui se late y se sirve
+   * lo que aparezca, que es lo que hace el navegador de verdad.
+   */
+  const latirYServir = async (
+    fixture: { detectChanges: () => void },
+    backend: HttpTestingController,
+    respuesta: unknown[],
+  ) => {
+    for (let vuelta = 0; vuelta < 5; vuelta++) {
+      await new Promise((listo) => setTimeout(listo, 0));
+      backend.match((p) => p.url === `${API}/verifications`).forEach((p) => p.flush(respuesta));
+      fixture.detectChanges();
+    }
+  };
+
+  const enviarFormulario = (fixture: { nativeElement: HTMLElement }) =>
+    fixture.nativeElement
+      .querySelector('form')
+      ?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+
+  /**
    * <strong>La prueba que justifica el componente de imagen.</strong>
    *
    * <p>Cada lectura de una imagen deja una fila en la bitacora con actor y motivo
@@ -158,11 +194,55 @@ describe('ReviewDetailPage', () => {
     expect(fixture.nativeElement.textContent).toContain('queda registrado');
   });
 
-  /** Criterio 9: sin motivo elegido, rechazar no se puede enviar. */
-  it('no deja rechazar sin motivo', async () => {
+  /**
+   * Criterio 9. El boton NO se deshabilita: uno deshabilitado sale del orden de
+   * tabulacion y no dice por que. Se intenta, se senala el campo y no se llama a nadie.
+   */
+  it('al rechazar sin motivo lo dice y no llama al servidor', async () => {
+    const { fixture, backend } = await montar([solicitud()]);
+
+    enviarFormulario(fixture);
+    await asentar(fixture);
+
+    expect(fixture.nativeElement.textContent).toContain('Elige un motivo');
+    expect(fixture.nativeElement.querySelector('#motivo')?.getAttribute('aria-invalid')).toBe(
+      'true',
+    );
+    expect(backend.match((p) => p.url.includes('/rejection'))).toHaveLength(0);
+  });
+
+  /** Y con motivo elegido si se puede: sin esto, un `false` fijo pasaria la anterior. */
+  it('rechaza con el motivo y la nota elegidos', async () => {
+    const { fixture, backend } = await montar([solicitud()]);
+
+    const motivo = fixture.nativeElement.querySelector('#motivo') as HTMLSelectElement;
+    motivo.value = 'ILLEGIBLE_PHOTOS';
+    motivo.dispatchEvent(new Event('change'));
+
+    const nota = fixture.nativeElement.querySelector('#nota') as HTMLTextAreaElement;
+    nota.value = 'El reverso sale oscuro';
+    nota.dispatchEvent(new Event('input'));
+    await asentar(fixture);
+
+    enviarFormulario(fixture);
+    await asentar(fixture);
+    boton(fixture, 'Confirmar')?.click();
+    await latir(fixture);
+
+    const peticion = backend.expectOne(`${API}/verifications/${ID}/rejection`);
+    expect(peticion.request.body).toEqual({
+      reason: 'ILLEGIBLE_PHOTOS',
+      note: 'El reverso sale oscuro',
+    });
+    peticion.flush(null);
+  });
+
+  /** El tope de la nota es el mismo que valida el backend. */
+  it('no deja escribir una nota mas larga de 500', async () => {
     const { fixture } = await montar([solicitud()]);
 
-    expect(boton(fixture, 'Rechazar')?.disabled).toBe(true);
+    const nota = fixture.nativeElement.querySelector('#nota') as HTMLTextAreaElement;
+    expect(nota.getAttribute('maxlength')).toBe('500');
   });
 
   /** Criterio 10: aprobar se confirma una vez. Notifica por correo y no se deshace. */
@@ -251,9 +331,33 @@ describe('ReviewDetailPage', () => {
         { code: 'SELLER_VERIFICATION_INVALID_STATE' },
         { status: 409, statusText: 'Conflict' },
       );
-    await asentar(fixture);
+
+    // Criterio 11, la otra mitad: la bandeja se refresca sola, porque la que se esta
+    // mirando ya no es la que hay.
+    await latirYServir(fixture, backend, []);
 
     expect(fixture.nativeElement.textContent).toContain('Otra persona ya');
+  });
+
+  /** No se navega tras un conflicto: quien revisa tiene que leerlo aqui. */
+  it('se queda en el detalle cuando la solicitud ya no esta pendiente', async () => {
+    const { fixture, backend } = await montar([solicitud()]);
+
+    boton(fixture, 'Aprobar')?.click();
+    await asentar(fixture);
+    boton(fixture, 'Confirmar')?.click();
+    await latir(fixture);
+
+    backend
+      .expectOne(`${API}/verifications/${ID}/approval`)
+      .flush(
+        { code: 'SELLER_VERIFICATION_INVALID_STATE' },
+        { status: 409, statusText: 'Conflict' },
+      );
+
+    await latirYServir(fixture, backend, [solicitud()]);
+
+    expect(boton(fixture, 'Aprobar')).toBeDefined();
   });
 
   /** Recargar con la direccion de una que ya no esta: se dice, no se deja en blanco. */

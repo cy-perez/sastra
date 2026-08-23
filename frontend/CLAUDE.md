@@ -16,8 +16,9 @@ src/app/
     http/                     interceptores: auth, errores, idioma
     i18n/                     configuración de Transloco
     theme/                    modo claro y oscuro
-  shared/                     componentes sin lógica de negocio
+  shared/                     lo que usan dos funcionalidades y no es de ninguna
     ui/                       botón, campo, tarjeta, sello, visor 360
+    domain/                   vocabulario común: TypeScript puro, sin Angular
     directives/  pipes/
   features/<funcionalidad>/
     domain/                   modelos y reglas puras. Sin Angular.

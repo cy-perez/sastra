@@ -768,7 +768,8 @@
       "error": {
         "title": "No pudimos cargar la bandeja",
         "retry": "Reintentar"
-      }
+      },
+      "loading": "Cargando las solicitudes pendientes."
     },
     "detail": {
       "documentSection": "Documento de identidad",
@@ -780,7 +781,21 @@
       "accountType": "Tipo de cuenta",
       "holderMismatch": "El titular de la cuenta no coincide con el del documento",
       "back": "Volver a la bandeja",
-      "notFound": "Esta solicitud ya no está en la bandeja."
+      "notFound": "Esta solicitud ya no está en la bandeja.",
+      "title": "Revisar verificación",
+      "documentNumber": "Número del documento",
+      "accountNumber": "Número de la cuenta",
+      "missingValue": "Sin entregar",
+      "documentTypes": {
+        "CC": "Cédula de ciudadanía",
+        "CE": "Cédula de extranjería",
+        "PPT": "Permiso por Protección Temporal"
+      },
+      "accountTypes": {
+        "SAVINGS": "Ahorros",
+        "CHECKING": "Corriente",
+        "ELECTRONIC_DEPOSIT": "Depósito electrónico"
+      }
     },
     "images": {
       "front": "Frente del documento",
@@ -788,7 +803,15 @@
       "selfie": "Selfie",
       "reveal": "Ver",
       "missing": "Esta imagen no está disponible",
-      "notice": "Cada vez que abres una imagen queda registrado que la viste."
+      "notice": "Cada vez que abres una imagen queda registrado que la viste.",
+      "hide": "Ocultar",
+      "loading": "Cargando la imagen.",
+      "loaded": "Imagen cargada.",
+      "alt": {
+        "front": "Frente del documento de identidad de la persona que se verifica",
+        "back": "Reverso del documento de identidad de la persona que se verifica",
+        "selfie": "Foto del rostro de la persona que se verifica"
+      }
     },
     "decision": {
       "approve": "Aprobar",
@@ -804,7 +827,8 @@
       "approved": "Verificación aprobada",
       "rejected": "Verificación rechazada",
       "alreadyResolved": "Otra persona ya resolvió esta solicitud.",
-      "ownApplication": "Esta solicitud es tuya. La revisa otra persona."
+      "ownApplication": "Esta solicitud es tuya. La revisa otra persona.",
+      "reasonRequired": "Elige un motivo antes de rechazar."
     },
     "reasons": {
       "ILLEGIBLE_PHOTOS": "Fotos ilegibles",

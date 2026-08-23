@@ -768,7 +768,8 @@
       "error": {
         "title": "We could not load the queue",
         "retry": "Try again"
-      }
+      },
+      "loading": "Loading pending applications."
     },
     "detail": {
       "documentSection": "Identity document",
@@ -780,7 +781,21 @@
       "accountType": "Account type",
       "holderMismatch": "The account holder does not match the document holder",
       "back": "Back to the queue",
-      "notFound": "This application is no longer in the queue."
+      "notFound": "This application is no longer in the queue.",
+      "title": "Review verification",
+      "documentNumber": "Document number",
+      "accountNumber": "Account number",
+      "missingValue": "Not submitted",
+      "documentTypes": {
+        "CC": "Citizenship card",
+        "CE": "Foreigner ID card",
+        "PPT": "Temporary Protection Permit"
+      },
+      "accountTypes": {
+        "SAVINGS": "Savings",
+        "CHECKING": "Checking",
+        "ELECTRONIC_DEPOSIT": "Electronic deposit"
+      }
     },
     "images": {
       "front": "Front of the document",
@@ -788,7 +803,15 @@
       "selfie": "Selfie",
       "reveal": "View",
       "missing": "This image is not available",
-      "notice": "Every time you open an image, it is recorded that you saw it."
+      "notice": "Every time you open an image, it is recorded that you saw it.",
+      "hide": "Hide",
+      "loading": "Loading the image.",
+      "loaded": "Image loaded.",
+      "alt": {
+        "front": "Front of the identity document of the person being verified",
+        "back": "Back of the identity document of the person being verified",
+        "selfie": "Face photo of the person being verified"
+      }
     },
     "decision": {
       "approve": "Approve",
@@ -804,7 +827,8 @@
       "approved": "Verification approved",
       "rejected": "Verification rejected",
       "alreadyResolved": "Someone else already resolved this application.",
-      "ownApplication": "This is your own application. Someone else reviews it."
+      "ownApplication": "This is your own application. Someone else reviews it.",
+      "reasonRequired": "Choose a reason before rejecting."
     },
     "reasons": {
       "ILLEGIBLE_PHOTOS": "Illegible photos",

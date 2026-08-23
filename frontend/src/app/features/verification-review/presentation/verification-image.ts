@@ -23,6 +23,10 @@ import type { VerificationImage as CualImagen } from '../domain/pending-verifica
  * funciona por sí solo no puede registrar quién lo usó (ADR-0018), y por eso hay que
  * construir aquí la URL de objeto —y revocarla al destruir, o cada solicitud revisada
  * deja unos cuantos megas retenidos en el navegador—.
+ *
+ * <p><strong>El botón no desaparece al mostrar la imagen.</strong> Alterna entre ver y
+ * ocultar. Si se sustituyera por la imagen, el foco de quien lo acaba de pulsar caería al
+ * cuerpo del documento y con teclado habría que recorrer la página entera para volver.
  */
 @Component({
   selector: 'sastra-verification-image',
@@ -34,11 +38,15 @@ import type { VerificationImage as CualImagen } from '../domain/pending-verifica
 export class VerificationImage {
   readonly solicitud = input.required<string>();
   readonly cual = input.required<CualImagen>();
+  /** El nombre de la imagen, ya traducido: «Frente del documento» y sus dos hermanas. */
   readonly etiqueta = input.required<string>();
+  /** La descripción para quien no la ve. Es distinta del nombre: describe el contenido. */
+  readonly descripcion = input.required<string>();
 
   private readonly store = inject(ReviewStore);
 
   protected readonly url = signal<string | null>(null);
+  protected readonly visible = signal(false);
   protected readonly cargando = signal(false);
   protected readonly fallo = signal(false);
 
@@ -48,8 +56,19 @@ export class VerificationImage {
     inject(DestroyRef).onDestroy(() => this.liberar());
   }
 
-  protected async abrir(): Promise<void> {
-    if (this.url() !== null || this.cargando()) {
+  /**
+   * Muestra u oculta. **Solo pide los bytes la primera vez.**
+   *
+   * <p>Volver a pedirlos al reabrir dejaría una fila más en la bitácora por cada vez que
+   * alguien esconde y vuelve a mirar, y la bitácora contaría accesos que no lo son.
+   */
+  protected async alternar(): Promise<void> {
+    if (this.url() !== null) {
+      this.visible.update((mostrada) => !mostrada);
+      return;
+    }
+
+    if (this.cargando()) {
       return;
     }
 
@@ -59,6 +78,7 @@ export class VerificationImage {
     try {
       const bytes = await this.store.imagen(this.solicitud(), this.cual());
       this.url.set(URL.createObjectURL(bytes));
+      this.visible.set(true);
     } catch {
       // Caso borde de la historia: el archivo puede faltar por un fallo de despliegue.
       // Se dice, y la solicitud sigue siendo decidible: rechazar por fotos ilegibles es

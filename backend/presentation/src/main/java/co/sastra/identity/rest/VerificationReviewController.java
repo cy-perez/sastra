@@ -51,9 +51,10 @@ import org.springframework.web.bind.annotation.RestController;
  * sitio no se lleva su autorizacion por delante. Es la clase de cosa que no se nota hasta
  * que pasa.
  *
- * <p>Lo que <strong>no</strong> comprueba nadie todavia: que el moderador no sea la misma
- * persona que la solicitud. Ninguna regla de negocio lo prohibe por escrito y no se
- * inventa aqui; esta anotado en HU-002 como decision pendiente.
+ * <p>Que el moderador no sea la misma persona que la solicitud lo impone RN-060, y no
+ * aqui: vive en los casos de uso de aprobar y rechazar, que son los unicos que conocen al
+ * dueno. Sale como 403 con {@code SELLER_SELF_REVIEW_FORBIDDEN}. La bandeja ademas lo
+ * dice antes, con el campo {@code own} de cada fila.
  *
  * <p>Solo existe con {@code FEATURE_SELLER_VERIFICATION} encendida, igual que el lado de
  * quien se verifica.

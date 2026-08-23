@@ -1,13 +1,21 @@
+<!-- Criterio 8: la confirmación de lo que se acaba de hacer. Región viva porque aparece
+     sin que nadie navegue a ella, y quien usa un lector de pantalla no tiene otra señal
+     de que la decisión se aplicó. -->
+@if (confirmacion(); as clave) {
+  <p class="aviso-hecho tipo-cuerpo" role="status">{{ clave | transloco }}</p>
+}
+
 <h1 class="tipo-h1">{{ 'verificationReview.inbox.title' | transloco }}</h1>
 
 @if (consulta.isPending()) {
-  <!-- El esqueleto del sistema y no un "cargando": tres filas del alto que van a tener
-       las de verdad, para que la lista no salte cuando llegue. -->
-  <ul class="lista" aria-busy="true">
-    @for (fila of [1, 2, 3]; track fila) {
+  <!-- El esqueleto se esconde de la accesibilidad: para quien no ve la pantalla es una
+       lista de tres elementos vacíos. Lo que se anuncia es que está cargando. -->
+  <ul class="lista" aria-hidden="true">
+    @for (fila of filasDelEsqueleto; track fila) {
       <li class="solicitud"><span class="esqueleto esqueleto-fila"></span></li>
     }
   </ul>
+  <p class="solo-lectores" role="status">{{ 'verificationReview.inbox.loading' | transloco }}</p>
 } @else if (consulta.isError()) {
   <div class="aviso-de-error tipo-cuerpo">
     <p>
@@ -32,16 +40,17 @@
         <!-- El enlace envuelve toda la fila para que el destino táctil sea la fila
              entera y no solo el nombre. -->
         <a class="enlace-de-fila" [routerLink]="[solicitud.id]">
+          <!-- Subrayado: la tarjeta es casi del color del fondo y su borde no llega al
+               contraste mínimo, así que sin esto lo único que dice «aquí se pulsa» es un
+               borde que casi no se ve. -->
           <span class="titular tipo-titulo-tarjeta">
             {{ solicitud.documentHolderName ?? ('verificationReview.inbox.noName' | transloco) }}
           </span>
 
           <span class="datos tipo-secundario">
-            <!-- La fecha con Intl y la configuración regional activa, no formateada a
-                 mano. `waitingSince` es ISO 8601 en UTC. -->
             <span>{{
               'verificationReview.inbox.waitingSince'
-                | transloco: { tiempo: solicitud.waitingSince | date: 'medium' }
+                | transloco: { tiempo: desdeCuando(solicitud.waitingSince) }
             }}</span>
             <span>{{
               'verificationReview.inbox.attempt' | transloco: { intento: solicitud.attempts }

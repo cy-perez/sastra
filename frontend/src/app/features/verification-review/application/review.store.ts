@@ -64,8 +64,6 @@ export class ReviewStore {
     porAntiguedad(this.inbox.data() ?? []),
   );
 
-  readonly total = computed(() => this.pendientes().length);
-
   /**
    * Aprobar y rechazar. **Ninguna reintenta**, y esa es la decisión importante.
    *
@@ -82,6 +80,7 @@ export class ReviewStore {
     mutationFn: (id: string) => this.api.aprobar(id),
     retry: false,
     onSuccess: () => this.refrescarBandeja(),
+    onError: (fallo: unknown) => this.refrescarSiYaNoEstaPendiente(fallo),
   }));
 
   readonly rejection = injectMutation(() => ({
@@ -89,6 +88,7 @@ export class ReviewStore {
       this.api.rechazar(decision.id, decision.motivo, decision.nota),
     retry: false,
     onSuccess: () => this.refrescarBandeja(),
+    onError: (fallo: unknown) => this.refrescarSiYaNoEstaPendiente(fallo),
   }));
 
   /** Una solicitud concreta, de las que ya están en la bandeja. */
@@ -116,6 +116,17 @@ export class ReviewStore {
   /** Si el fallo es «esto ya no está pendiente», que tiene su propio mensaje. */
   static yaResuelta(fallo: unknown): boolean {
     return fallo instanceof ApiError && fallo.code === 'SELLER_VERIFICATION_INVALID_STATE';
+  }
+
+  /**
+   * Criterio 11, la mitad que se olvida: cuando otra persona ya resolvio la solicitud, la
+   * bandeja que se esta mirando ya no es la que hay. Se refresca sola, o quien revisa
+   * volveria a abrir la siguiente fila fantasma.
+   */
+  private refrescarSiYaNoEstaPendiente(fallo: unknown): void {
+    if (ReviewStore.yaResuelta(fallo)) {
+      this.refrescarBandeja();
+    }
   }
 
   private refrescarBandeja(): void {

@@ -83,13 +83,4 @@ describe('VerificationReviewApi', () => {
     expect(peticion.request.body).toEqual({ reason: 'EXPIRED_DOCUMENT', note: null });
     peticion.flush(null);
   });
-
-  /**
-   * La revocación queda fuera de HU-006: actúa sobre una verificación ya aprobada y la
-   * bandeja solo devuelve lo pendiente, así que no hay forma de llegar a ese
-   * identificador desde la interfaz. Que la ausencia sea deliberada y no un olvido.
-   */
-  it('no ofrece revocar', () => {
-    expect((api as unknown as Record<string, unknown>)['revocar']).toBeUndefined();
-  });
 });

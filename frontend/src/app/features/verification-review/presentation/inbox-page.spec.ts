@@ -33,6 +33,10 @@ describe('InboxPage', () => {
     attempts: 1,
     documentType: 'CC',
     documentNumberLastFour: '2947',
+    // Los completos NO viajan (criterio 11). Se dejan como campos ajenos al tipo para que
+    // la asercion de mas abajo pueda fallar de verdad.
+    documentNumberFull: '1053812947',
+    bankAccountNumberFull: '91500123456',
     documentHolderName: 'Ana Maria Garcia',
     documentSubmitted: true,
     selfieSubmitted: true,
@@ -109,8 +113,10 @@ describe('InboxPage', () => {
       }),
     ]);
 
-    const nombres = [...fixture.nativeElement.querySelectorAll('.titular')].map((n: Element) =>
-      n.textContent?.trim(),
+    // Por el nombre accesible del enlace, no por una clase: renombrar `.titular` no
+    // cambia nada de lo que ve quien usa la pantalla y no puede romper esta prueba.
+    const nombres = [...fixture.nativeElement.querySelectorAll('a')].map((enlace: Element) =>
+      enlace.querySelector('.titular')?.textContent?.trim(),
     );
 
     expect(nombres).toEqual(['Lleva Esperando', 'Recien Llegada']);
@@ -121,7 +127,41 @@ describe('InboxPage', () => {
     const fixture = await montar([]);
 
     expect(fixture.nativeElement.textContent).toContain('No hay nada por revisar');
-    expect(fixture.nativeElement.querySelectorAll('.solicitud')).toHaveLength(0);
+    expect(fixture.nativeElement.querySelectorAll('li')).toHaveLength(0);
+  });
+
+  /**
+   * Criterio 4, la mitad que faltaba: mientras carga se pinta el esqueleto del sistema.
+   *
+   * <p>Y se esconde de la accesibilidad: para quien no ve la pantalla, un esqueleto es
+   * una lista de tres elementos vacios. Lo que se anuncia es que esta cargando.
+   */
+  it('muestra el esqueleto mientras carga, sin anunciarlo como una lista', async () => {
+    const fixture = TestBed.createComponent(InboxPage);
+    await fixture.whenStable();
+    esperarBandeja(TestBed.inject(HttpTestingController));
+    fixture.detectChanges();
+
+    const lista = fixture.nativeElement.querySelector('ul');
+    expect(fixture.nativeElement.querySelectorAll('.esqueleto').length).toBeGreaterThan(0);
+    expect(lista?.getAttribute('aria-hidden')).toBe('true');
+    expect(fixture.nativeElement.textContent).toContain('Cargando');
+  });
+
+  /** El boton de reintentar tiene que reintentar de verdad. */
+  it('vuelve a pedir la bandeja al reintentar', async () => {
+    const fixture = await montar('falla');
+
+    const reintentar = [...fixture.nativeElement.querySelectorAll('button')].find((b: Element) =>
+      b.textContent?.includes('Reintentar'),
+    ) as HTMLButtonElement;
+    reintentar.click();
+    await new Promise((listo) => setTimeout(listo, 0));
+
+    esperarBandeja(TestBed.inject(HttpTestingController)).flush([solicitud()]);
+    await asentar(fixture);
+
+    expect(fixture.nativeElement.textContent).toContain('Ana Maria Garcia');
   });
 
   /** Criterio 4: si falla, se dice y se puede reintentar. */

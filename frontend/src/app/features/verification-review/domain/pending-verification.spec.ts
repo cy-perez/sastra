@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  esperaEnMilisegundos,
   hayDiscrepanciaDeTitular,
   porAntiguedad,
   type PendingVerification,
@@ -87,30 +86,6 @@ describe('pending-verification', () => {
       porAntiguedad(original);
 
       expect(original.map((s) => s.id)).toEqual(['nueva', 'vieja']);
-    });
-  });
-
-  describe('esperaEnMilisegundos', () => {
-    it('mide contra el instante que recibe, no contra el reloj', () => {
-      const espera = esperaEnMilisegundos(
-        solicitud({ waitingSince: '2026-08-20T10:00:00Z' }),
-        new Date('2026-08-22T10:00:00Z'),
-      );
-
-      expect(espera).toBe(2 * 24 * 60 * 60 * 1000);
-    });
-
-    /**
-     * El reloj del navegador puede ir atrasado respecto al del servidor. Una espera
-     * negativa se pintaría como «hace -3 minutos», que es peor que decir «ahora mismo».
-     */
-    it('no devuelve una espera negativa con el reloj del navegador atrasado', () => {
-      const espera = esperaEnMilisegundos(
-        solicitud({ waitingSince: '2026-08-22T10:00:00Z' }),
-        new Date('2026-08-22T09:55:00Z'),
-      );
-
-      expect(espera).toBe(0);
     });
   });
 });

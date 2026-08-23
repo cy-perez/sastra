@@ -92,10 +92,11 @@ export const routes: Routes = [
   {
     // HU-006. La bandeja del moderador y el detalle de una solicitud.
     //
-    // Dos cosas la separan del resto. Va detras de `exigirRol`, el primer guard del
-    // proyecto (ADR-0021), y se declara `RenderMode.Client` en app.routes.server.ts: si
-    // el servidor la pintara, sus titulos viajarian en el HTML de cualquiera que pidiera
-    // la direccion, guard o no, porque el guard corre despues.
+    // Va detras de `exigirRol`, el primer guard del proyecto (ADR-0021). Ese guard es
+    // tambien lo que impide que el titulo de la bandeja viaje en el HTML de cualquiera
+    // que pida la direccion: **deniega en el servidor**, asi que lo que se sirve es la
+    // pagina de "no existe". No lo hace el modo de renderizado, que es Server como el de
+    // todo el sitio.
     //
     // Sin enlace desde ninguna parte, como la de HU-002: quien modera conoce la
     // direccion, y ponerla en la cabecera se la ensenaria a todo el mundo.

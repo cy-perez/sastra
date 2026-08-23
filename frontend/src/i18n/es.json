@@ -70,6 +70,14 @@
     "sellerVerification": {
       "title": "Verifícate para vender · Sastra",
       "description": "Confirma tu identidad para poder publicar y recibir tus pagos."
+    },
+    "moderationInbox": {
+      "title": "Verificaciones pendientes",
+      "description": "Bandeja de revisión de verificaciones de vendedor."
+    },
+    "moderationDetail": {
+      "title": "Revisar verificación",
+      "description": "Detalle de una solicitud de verificación de vendedor."
     }
   },
   "layout": {
@@ -745,6 +753,64 @@
       "errors": {
         "photo": "Falta tu foto."
       }
+    }
+  },
+  "verificationReview": {
+    "inbox": {
+      "title": "Verificaciones pendientes",
+      "waitingSince": "Espera desde {{tiempo}}",
+      "attempt": "Intento {{intento}} de 3",
+      "noName": "Sin nombre todavía",
+      "empty": {
+        "title": "No hay nada por revisar",
+        "body": "Cuando alguien envíe su solicitud, aparece aquí."
+      },
+      "error": {
+        "title": "No pudimos cargar la bandeja",
+        "retry": "Reintentar"
+      }
+    },
+    "detail": {
+      "documentSection": "Documento de identidad",
+      "bankSection": "Cuenta bancaria",
+      "holder": "Titular",
+      "lastFour": "Termina en {{digitos}}",
+      "documentType": "Tipo de documento",
+      "bank": "Entidad",
+      "accountType": "Tipo de cuenta",
+      "holderMismatch": "El titular de la cuenta no coincide con el del documento",
+      "back": "Volver a la bandeja",
+      "notFound": "Esta solicitud ya no está en la bandeja."
+    },
+    "images": {
+      "front": "Frente del documento",
+      "back": "Reverso del documento",
+      "selfie": "Selfie",
+      "reveal": "Ver",
+      "missing": "Esta imagen no está disponible",
+      "notice": "Cada vez que abres una imagen queda registrado que la viste."
+    },
+    "decision": {
+      "approve": "Aprobar",
+      "reject": "Rechazar",
+      "reasonLabel": "Motivo del rechazo",
+      "reasonPlaceholder": "Elige un motivo",
+      "noteLabel": "Nota para la persona (opcional)",
+      "noteHint": "La lee quien envió la solicitud. No escribas información de terceros ni datos de procesos judiciales.",
+      "confirmApprove": "¿Aprobar esta verificación? La persona queda como vendedora verificada y recibe un correo.",
+      "confirmReject": "¿Rechazar esta verificación? La persona recibe un correo con el motivo y podrá corregir si le quedan intentos.",
+      "confirm": "Confirmar",
+      "cancel": "Cancelar",
+      "approved": "Verificación aprobada",
+      "rejected": "Verificación rechazada",
+      "alreadyResolved": "Otra persona ya resolvió esta solicitud."
+    },
+    "reasons": {
+      "ILLEGIBLE_PHOTOS": "Fotos ilegibles",
+      "EXPIRED_DOCUMENT": "Documento vencido",
+      "HOLDER_MISMATCH": "Titular no coincide",
+      "DOCUMENT_ALREADY_VERIFIED": "Documento ya verificado en otra cuenta",
+      "REQUIREMENTS_NOT_MET": "No cumple los requisitos"
     }
   }
 }

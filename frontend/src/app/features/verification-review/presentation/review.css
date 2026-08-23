@@ -1,0 +1,103 @@
+/* Hoja compartida por la bandeja y el detalle: son la misma clase de pantalla y
+   corregir una separacion no puede consistir en repetir el arreglo dos veces.
+
+   Pantallas internas. **Nada de esto lleva el acento ocre**: es el unico de la marca
+   y esta reservado a la accion principal de las pantallas de cara al comprador. Aqui
+   las dos acciones son aprobar y rechazar, y se distinguen por forma y texto, nunca
+   solo por color. */
+
+/* El carril de contenido de la rejilla de <main>. `.contenido > *` de app.css no
+   alcanza a este host: el componente de la ruta lo inserta el router y no recibe el
+   atributo de encapsulacion de App. Sin esto la pagina cae en un carril de sangria y
+   se pinta en una columna de 40px, que es lo que le paso a las informativas y a las
+   legales. */
+:host {
+  display: block;
+  grid-column: content;
+  max-width: var(--medida);
+}
+
+/* ---------- Lista de solicitudes ---------- */
+
+.lista {
+  list-style: none;
+  padding: 0;
+  margin-top: var(--esp-24);
+}
+
+.solicitud + .solicitud {
+  margin-top: var(--esp-12);
+}
+
+/* El enlace envuelve la fila entera: el destino tactil es la fila y no el nombre.
+   En movil esto es una pila de tarjetas y no una tabla con desplazamiento
+   horizontal, que es lo que pide el criterio 14. */
+.enlace-de-fila {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+  min-height: var(--destino-tactil);
+  padding: var(--esp-12) var(--esp-16);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  background: var(--color-superficie);
+  color: var(--color-texto);
+  text-decoration: none;
+}
+
+.enlace-de-fila:hover {
+  border-color: var(--color-borde-control);
+}
+
+.datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-4) var(--esp-16);
+  color: var(--color-texto-suave);
+}
+
+.esqueleto-fila {
+  display: block;
+  height: var(--esp-64);
+}
+
+/* ---------- Discrepancia de titular, RN-012 ---------- */
+
+/* Lleva su propia palabra, no solo el borde: un color no puede ser el unico portador
+   de informacion, y quien revisa muchas al dia necesita leerlo, no deducirlo. */
+.marca-de-discrepancia {
+  align-self: flex-start;
+  padding: var(--esp-4) var(--esp-8);
+  border: 1px solid var(--color-aviso);
+  border-radius: var(--radio-sm);
+  color: var(--color-texto);
+  background: var(--color-superficie);
+}
+
+/* ---------- Estados ---------- */
+
+.aviso-de-error {
+  padding: var(--esp-16);
+  margin-top: var(--esp-24);
+  border: 1px solid var(--color-error);
+  border-left-width: 4px;
+  border-radius: var(--radio-md);
+  background: var(--color-superficie);
+}
+
+.vacio {
+  margin-top: var(--esp-24);
+}
+
+/* ---------- Botones ---------- */
+
+.boton {
+  min-height: var(--destino-tactil);
+  margin-top: var(--esp-12);
+  padding: var(--esp-8) var(--esp-24);
+  border: 1px solid var(--color-borde-control);
+  border-radius: var(--radio-md);
+  background: var(--color-superficie);
+  color: var(--color-texto);
+  cursor: pointer;
+}

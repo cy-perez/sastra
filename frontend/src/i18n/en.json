@@ -70,6 +70,14 @@
     "sellerVerification": {
       "title": "Get verified to sell · Sastra",
       "description": "Confirm your identity so you can publish and get paid."
+    },
+    "moderationInbox": {
+      "title": "Pending verifications",
+      "description": "Seller verification review queue."
+    },
+    "moderationDetail": {
+      "title": "Review verification",
+      "description": "Details of a seller verification application."
     }
   },
   "layout": {
@@ -745,6 +753,64 @@
       "errors": {
         "photo": "Your photo is missing."
       }
+    }
+  },
+  "verificationReview": {
+    "inbox": {
+      "title": "Pending verifications",
+      "waitingSince": "Waiting since {{tiempo}}",
+      "attempt": "Attempt {{intento}} of 3",
+      "noName": "No name yet",
+      "empty": {
+        "title": "Nothing to review",
+        "body": "When someone submits their application, it shows up here."
+      },
+      "error": {
+        "title": "We could not load the queue",
+        "retry": "Try again"
+      }
+    },
+    "detail": {
+      "documentSection": "Identity document",
+      "bankSection": "Bank account",
+      "holder": "Holder",
+      "lastFour": "Ends in {{digitos}}",
+      "documentType": "Document type",
+      "bank": "Institution",
+      "accountType": "Account type",
+      "holderMismatch": "The account holder does not match the document holder",
+      "back": "Back to the queue",
+      "notFound": "This application is no longer in the queue."
+    },
+    "images": {
+      "front": "Front of the document",
+      "back": "Back of the document",
+      "selfie": "Selfie",
+      "reveal": "View",
+      "missing": "This image is not available",
+      "notice": "Every time you open an image, it is recorded that you saw it."
+    },
+    "decision": {
+      "approve": "Approve",
+      "reject": "Reject",
+      "reasonLabel": "Rejection reason",
+      "reasonPlaceholder": "Choose a reason",
+      "noteLabel": "Note for the applicant (optional)",
+      "noteHint": "The applicant reads this. Do not write third-party information or judicial records.",
+      "confirmApprove": "Approve this verification? The applicant becomes a verified seller and gets an email.",
+      "confirmReject": "Reject this verification? The applicant gets an email with the reason and can fix it if they have attempts left.",
+      "confirm": "Confirm",
+      "cancel": "Cancel",
+      "approved": "Verification approved",
+      "rejected": "Verification rejected",
+      "alreadyResolved": "Someone else already resolved this application."
+    },
+    "reasons": {
+      "ILLEGIBLE_PHOTOS": "Illegible photos",
+      "EXPIRED_DOCUMENT": "Expired document",
+      "HOLDER_MISMATCH": "Holder does not match",
+      "DOCUMENT_ALREADY_VERIFIED": "Document already verified on another account",
+      "REQUIREMENTS_NOT_MET": "Does not meet the requirements"
     }
   }
 }

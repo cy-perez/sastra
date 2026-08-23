@@ -7,6 +7,7 @@ import {
   type ContentPageId,
 } from './core/routes/content-routes';
 import { DOCUMENTOS_LEGALES, RUTAS_LEGALES } from './core/routes/legal-routes';
+import { exigirRol } from './core/session/role.guard';
 import { legalContentResolver } from './features/legal/application/legal-content.resolver';
 
 /**
@@ -86,6 +87,33 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/seller-verification/presentation/verification-page').then(
         (m) => m.VerificationPage,
+      ),
+  },
+  {
+    // HU-006. La bandeja del moderador y el detalle de una solicitud.
+    //
+    // Dos cosas la separan del resto. Va detras de `exigirRol`, el primer guard del
+    // proyecto (ADR-0021), y se declara `RenderMode.Client` en app.routes.server.ts: si
+    // el servidor la pintara, sus titulos viajarian en el HTML de cualquiera que pidiera
+    // la direccion, guard o no, porque el guard corre despues.
+    //
+    // Sin enlace desde ninguna parte, como la de HU-002: quien modera conoce la
+    // direccion, y ponerla en la cabecera se la ensenaria a todo el mundo.
+    path: 'moderacion/verificaciones',
+    title: 'meta.moderationInbox.title',
+    data: { descriptionKey: 'meta.moderationInbox.description' },
+    canActivate: [exigirRol('MODERATOR')],
+    loadComponent: () =>
+      import('./features/verification-review/presentation/inbox-page').then((m) => m.InboxPage),
+  },
+  {
+    path: 'moderacion/verificaciones/:id',
+    title: 'meta.moderationDetail.title',
+    data: { descriptionKey: 'meta.moderationDetail.description' },
+    canActivate: [exigirRol('MODERATOR')],
+    loadComponent: () =>
+      import('./features/verification-review/presentation/review-detail-page').then(
+        (m) => m.ReviewDetailPage,
       ),
   },
   {

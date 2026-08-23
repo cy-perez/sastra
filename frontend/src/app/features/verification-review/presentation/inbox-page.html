@@ -1,0 +1,62 @@
+<h1 class="tipo-h1">{{ 'verificationReview.inbox.title' | transloco }}</h1>
+
+@if (consulta.isPending()) {
+  <!-- El esqueleto del sistema y no un "cargando": tres filas del alto que van a tener
+       las de verdad, para que la lista no salte cuando llegue. -->
+  <ul class="lista" aria-busy="true">
+    @for (fila of [1, 2, 3]; track fila) {
+      <li class="solicitud"><span class="esqueleto esqueleto-fila"></span></li>
+    }
+  </ul>
+} @else if (consulta.isError()) {
+  <div class="aviso-de-error tipo-cuerpo">
+    <p>
+      <strong>{{ 'verificationReview.inbox.error.title' | transloco }}</strong>
+    </p>
+    <button type="button" class="boton" (click)="reintentar()">
+      {{ 'verificationReview.inbox.error.retry' | transloco }}
+    </button>
+  </div>
+} @else if (pendientes().length === 0) {
+  <!-- Criterio 3: el estado vacío del sistema, no una tabla sin filas. -->
+  <div class="vacio tipo-cuerpo">
+    <p>
+      <strong>{{ 'verificationReview.inbox.empty.title' | transloco }}</strong>
+    </p>
+    <p>{{ 'verificationReview.inbox.empty.body' | transloco }}</p>
+  </div>
+} @else {
+  <ul class="lista">
+    @for (solicitud of pendientes(); track solicitud.id) {
+      <li class="solicitud">
+        <!-- El enlace envuelve toda la fila para que el destino táctil sea la fila
+             entera y no solo el nombre. -->
+        <a class="enlace-de-fila" [routerLink]="[solicitud.id]">
+          <span class="titular tipo-titulo-tarjeta">
+            {{ solicitud.documentHolderName ?? ('verificationReview.inbox.noName' | transloco) }}
+          </span>
+
+          <span class="datos tipo-secundario">
+            <!-- La fecha con Intl y la configuración regional activa, no formateada a
+                 mano. `waitingSince` es ISO 8601 en UTC. -->
+            <span>{{
+              'verificationReview.inbox.waitingSince'
+                | transloco: { tiempo: solicitud.waitingSince | date: 'medium' }
+            }}</span>
+            <span>{{
+              'verificationReview.inbox.attempt' | transloco: { intento: solicitud.attempts }
+            }}</span>
+          </span>
+
+          @if (discrepa(solicitud)) {
+            <!-- Con texto y no solo con color: un color no puede ser el único portador
+                 de información (RN-012, criterio 7). -->
+            <span class="marca-de-discrepancia tipo-leyenda">
+              {{ 'verificationReview.detail.holderMismatch' | transloco }}
+            </span>
+          }
+        </a>
+      </li>
+    }
+  </ul>
+}

@@ -1,0 +1,15 @@
+<figure class="imagen">
+  <figcaption class="tipo-secundario">{{ etiqueta() }}</figcaption>
+
+  @if (url(); as direccion) {
+    <!-- alt real y no vacío: describe qué es, que es lo que necesita quien no la ve
+         para saber que aquí hay un documento y no un adorno. -->
+    <img [src]="direccion" [alt]="etiqueta()" />
+  } @else if (fallo()) {
+    <p class="tipo-secundario">{{ 'verificationReview.images.missing' | transloco }}</p>
+  } @else {
+    <button type="button" class="boton" [disabled]="cargando()" (click)="abrir()">
+      {{ 'verificationReview.images.reveal' | transloco }}
+    </button>
+  }
+</figure>

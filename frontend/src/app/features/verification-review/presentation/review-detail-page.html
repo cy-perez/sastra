@@ -1,0 +1,170 @@
+@if (solicitud(); as actual) {
+  <h1 class="tipo-h1">
+    {{ actual.documentHolderName ?? ('verificationReview.inbox.noName' | transloco) }}
+  </h1>
+
+  <p class="tipo-secundario">
+    {{ 'verificationReview.inbox.attempt' | transloco: { intento: actual.attempts } }}
+  </p>
+
+  @if (discrepa()) {
+    <!-- Criterio 7. Con texto, no solo con color. -->
+    <p class="marca-de-discrepancia tipo-cuerpo">
+      {{ 'verificationReview.detail.holderMismatch' | transloco }}
+    </p>
+  }
+
+  <section class="seccion">
+    <h2 class="tipo-h2">{{ 'verificationReview.detail.documentSection' | transloco }}</h2>
+    <dl class="datos-de-la-solicitud tipo-cuerpo">
+      <dt>{{ 'verificationReview.detail.documentType' | transloco }}</dt>
+      <dd>{{ actual.documentType ?? '—' }}</dd>
+      <dt>{{ 'verificationReview.detail.holder' | transloco }}</dt>
+      <dd>{{ actual.documentHolderName ?? '—' }}</dd>
+      <!-- Criterio 5: cuatro dígitos, nunca el número completo. Tampoco para el
+           moderador: el criterio 11 de HU-002 no hace excepciones por rol. -->
+      <dd>
+        {{
+          'verificationReview.detail.lastFour'
+            | transloco: { digitos: actual.documentNumberLastFour ?? '—' }
+        }}
+      </dd>
+    </dl>
+  </section>
+
+  <section class="seccion">
+    <h2 class="tipo-h2">{{ 'verificationReview.detail.bankSection' | transloco }}</h2>
+    <dl class="datos-de-la-solicitud tipo-cuerpo">
+      <dt>{{ 'verificationReview.detail.bank' | transloco }}</dt>
+      <dd>{{ actual.bank ?? '—' }}</dd>
+      <dt>{{ 'verificationReview.detail.accountType' | transloco }}</dt>
+      <dd>{{ actual.bankAccountType ?? '—' }}</dd>
+      <dt>{{ 'verificationReview.detail.holder' | transloco }}</dt>
+      <dd>{{ actual.bankAccountHolderName ?? '—' }}</dd>
+      <dd>
+        {{
+          'verificationReview.detail.lastFour'
+            | transloco: { digitos: actual.bankAccountLastFour ?? '—' }
+        }}
+      </dd>
+    </dl>
+  </section>
+
+  <section class="seccion">
+    <!-- Se dice siempre, y no es relleno legal: la bitácora existe y quien revisa
+         tiene derecho a saber que también se le registra a él. -->
+    <p class="tipo-secundario">{{ 'verificationReview.images.notice' | transloco }}</p>
+
+    <div class="imagenes">
+      @for (cual of imagenes; track cual) {
+        <sastra-verification-image
+          [solicitud]="actual.id"
+          [cual]="cual"
+          [etiqueta]="
+            (cual === 'document-front'
+              ? 'verificationReview.images.front'
+              : cual === 'document-back'
+                ? 'verificationReview.images.back'
+                : 'verificationReview.images.selfie'
+            ) | transloco
+          "
+        />
+      }
+    </div>
+  </section>
+
+  <section class="seccion">
+    <label class="campo" for="motivo">
+      {{ 'verificationReview.decision.reasonLabel' | transloco }}
+    </label>
+    <select
+      id="motivo"
+      class="control"
+      [value]="motivoElegido()"
+      (change)="elegirMotivo($any($event.target).value)"
+    >
+      <option value="">{{ 'verificationReview.decision.reasonPlaceholder' | transloco }}</option>
+      @for (motivo of motivos; track motivo) {
+        <option [value]="motivo">
+          {{ 'verificationReview.reasons.' + motivo | transloco }}
+        </option>
+      }
+    </select>
+
+    <label class="campo" for="nota">
+      {{ 'verificationReview.decision.noteLabel' | transloco }}
+    </label>
+    <!-- La ayuda va donde se escribe y no escondida: es la única barrera que tiene esa
+         regla, porque el campo es libre y ninguna validación puede imponerla. -->
+    <p id="ayuda-nota" class="tipo-leyenda">
+      {{ 'verificationReview.decision.noteHint' | transloco }}
+    </p>
+    <textarea
+      id="nota"
+      class="control"
+      rows="3"
+      maxlength="500"
+      aria-describedby="ayuda-nota"
+      [value]="nota()"
+      (input)="nota.set($any($event.target).value)"
+    ></textarea>
+  </section>
+
+  @if (porConfirmar(); as pendiente) {
+    <!-- Criterio 10: se confirma una vez. Notifica por correo y no se deshace. -->
+    <div
+      class="confirmacion"
+      role="group"
+      [attr.aria-label]="'verificationReview.decision.confirm' | transloco"
+    >
+      <p class="tipo-cuerpo">
+        {{
+          (pendiente === 'aprobar'
+            ? 'verificationReview.decision.confirmApprove'
+            : 'verificationReview.decision.confirmReject'
+          ) | transloco
+        }}
+      </p>
+      <button type="button" class="boton" [disabled]="enCurso()" (click)="confirmar()">
+        {{ 'verificationReview.decision.confirm' | transloco }}
+      </button>
+      <button type="button" class="boton" [disabled]="enCurso()" (click)="cancelar()">
+        {{ 'verificationReview.decision.cancel' | transloco }}
+      </button>
+    </div>
+  } @else {
+    <div class="acciones">
+      <button type="button" class="boton" (click)="pedirConfirmacion('aprobar')">
+        {{ 'verificationReview.decision.approve' | transloco }}
+      </button>
+      <!-- Criterio 9: sin motivo elegido no se puede enviar. -->
+      <button
+        type="button"
+        class="boton"
+        [disabled]="!puedeRechazar()"
+        (click)="pedirConfirmacion('rechazar')"
+      >
+        {{ 'verificationReview.decision.reject' | transloco }}
+      </button>
+    </div>
+  }
+
+  @if (yaResuelta()) {
+    <p class="aviso-de-error tipo-cuerpo" role="alert">
+      {{ 'verificationReview.decision.alreadyResolved' | transloco }}
+    </p>
+  } @else if (claveDeError(); as clave) {
+    <p class="aviso-de-error tipo-cuerpo" role="alert">{{ clave | transloco }}</p>
+  }
+} @else if (consulta.isPending()) {
+  <span class="esqueleto esqueleto-fila"></span>
+} @else {
+  <!-- Ya se resolvió, o la dirección es de una que nunca estuvo. -->
+  <p class="tipo-entradilla">{{ 'verificationReview.detail.notFound' | transloco }}</p>
+}
+
+<p class="seccion">
+  <a routerLink="/moderacion/verificaciones">
+    {{ 'verificationReview.detail.back' | transloco }}
+  </a>
+</p>

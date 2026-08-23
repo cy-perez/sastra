@@ -46,6 +46,11 @@ export class ReviewStore {
     queryKey: queryKeys.inbox,
     queryFn: () => this.api.pendientes(),
     staleTime: 0,
+    // Sin reintentos automaticos. La pantalla tiene su boton de reintentar (criterio 4),
+    // y con tres reintentos y espera creciente el fallo tarda segundos en aparecer:
+    // quien revisa se queda mirando un esqueleto sin saber si carga o esta roto. El
+    // reintento manual es la misma accion, con el control de quien la pide.
+    retry: false,
     enabled: this.sesion.isAuthenticated(),
   }));
 

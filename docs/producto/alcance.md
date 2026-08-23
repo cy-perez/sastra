@@ -87,12 +87,13 @@ Es la fase en curso desde el 21 de agosto de 2026.
 - Visor 360º en la ficha de producto (HU-003, pendiente).
 - Publicación de prenda con las cuatro tomas obligatorias y las intermedias.
   Sin historia escrita.
-- Panel de moderación y flujo de aprobación o rechazo con motivo. **Cubierto a
-  medias**: HU-006 escribe la bandeja de verificaciones de vendedor, cuyos
-  endpoints ya están, y es lo que permite encender
-  `FEATURE_SELLER_VERIFICATION`. La moderación de publicaciones —RN-015, la otra
-  mitad de este punto— sigue sin historia y llega con la publicación de prenda.
-  Revocar un sello ya otorgado queda fuera de HU-006 y también sin historia.
+- Panel de moderación y flujo de aprobación o rechazo con motivo. **Hecho a
+  medias**: HU-006 entrega la bandeja de verificaciones de vendedor, y con ella
+  `FEATURE_SELLER_VERIFICATION` ya se puede encender. La moderación de
+  publicaciones —RN-015, la otra mitad de este punto— sigue sin historia y llega
+  con la publicación de prenda. Revocar un sello ya otorgado queda fuera de
+  HU-006 y también sin historia: el endpoint existe, pero no hay forma de llegar
+  a una verificación ya aprobada desde la interfaz.
 - Catálogo, categorías, ficha de producto y favoritos. Sin historia escrita, y
   bloqueado mientras el árbol de categorías siga sin definir.
 - Panel del vendedor con sus publicaciones y su estado. Sin historia escrita.

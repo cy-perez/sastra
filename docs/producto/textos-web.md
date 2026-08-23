@@ -608,6 +608,8 @@ texto es corto y dice qué hace cada cosa. Nada de «¡Listo!» ni de acompañam
 `.title`: Verificaciones pendientes
 `.waitingSince`: Espera desde hace `{{tiempo}}`
 `.attempt`: Intento `{{intento}}` de 3
+`.noName`: Sin nombre todavía — cuando la solicitud aún no tiene documento entregado, que
+es el único caso en que llega sin nombre.
 `.empty.title`: No hay nada por revisar
 `.empty.body`: Cuando alguien envíe su solicitud, aparece aquí.
 `.error.title`: No pudimos cargar la bandeja
@@ -658,6 +660,12 @@ motivo y podrá corregir si le quedan intentos.
 `.approved`: Verificación aprobada
 `.rejected`: Verificación rechazada
 `.alreadyResolved`: Otra persona ya resolvió esta solicitud.
+`.ownApplication`: Esta solicitud es tuya. La revisa otra persona.
+
+`.ownApplication` es el criterio 12 y RN-060, dicho **antes** de que se pulse nada. El
+servidor lo rechaza igual —esconder el botón no es la regla— pero enterarse después de
+pulsar, con un correo ya prometido, no hace falta. Es también el único sitio donde la
+pantalla sabe de quién es una solicitud, y solo eso: si es tuya o no.
 
 `.noteHint` va donde se escribe la nota y no en una ayuda escondida: es la única
 barrera que tiene esa regla, porque el campo es texto libre y ninguna validación

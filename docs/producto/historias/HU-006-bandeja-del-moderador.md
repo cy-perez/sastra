@@ -1,6 +1,6 @@
 # HU-006 — Bandeja del moderador
 
-**Fase:** 2 | **Estado:** pendiente
+**Fase:** 2 | **Estado:** hecha
 **Reglas que aplica:** RN-010, RN-012, RN-013, RN-014, RN-046, RN-059, RN-060
 
 ## Objetivo
@@ -225,6 +225,36 @@ De extremo a extremo, en `e2e-completo/` porque cruza las dos mitades:
 - Criterio 13 sobre lo que llega al navegador.
 
 En `e2e/`, sin API: la ruta responde y no filtra nada en el HTML servido.
+
+## Lo que cambió al implementarla
+
+Tres cosas que la historia no había previsto y que se decidieron con el código delante.
+
+**El rol de moderador se concede también al registrarse**, no solo al arrancar. La
+historia daba por hecho que `SECURITY_BOOTSTRAP_MODERATORS` bastaba, y no basta: solo
+alcanza a cuentas que ya existen, así que no sirve ni para las pruebas —que crean las
+suyas por la interfaz— ni para el orden natural de dar de alta a alguien, que es decidir
+quién modera y después esa persona registrarse.
+
+**La bandeja dice si la solicitud es tuya** (`own`). Sin ese campo, la mitad de interfaz
+del criterio 12 no se podía cumplir: el resto del DTO no dice de quién es cada solicitud,
+a propósito (criterio 11 de HU-002), así que la pantalla no tenía cómo saberlo y quien
+revisa se enteraba después de pulsar. Se manda un booleano y no el identificador del
+dueño: responde lo único que la pantalla necesita sin decir quién es nadie.
+
+**Las rutas se renderizan en servidor.** El plan era `RenderMode.Client`, que es lo
+natural para una pantalla interna, y no funciona: `APP_CONFIG` llega por el estado
+transferido del SSR y sin él la aplicación no arranca. En su lugar el guard **deniega en
+el servidor**, que cumple el criterio 2 igual de bien —lo servido es la página de «no
+existe»— y además evita colgar el SSR esperando una sesión que allí no llega nunca.
+ADR-0021 lo recoge.
+
+Y una cosa que **no** se hizo: RN-060 no se prueba en `e2e-completo/`. Exigiría dejar a
+la cuenta que modera con una solicitud propia enviada, un estado que sobrevive a la
+corrida y hace que la siguiente empiece donde la anterior la dejó. Queda cubierta en el
+caso de uso con sus dos caras, en `SellerVerificationJourneyTest` contra la base de
+verdad, en el controlador con su 403 y su código propio, y en la pantalla que no ofrece
+la acción sobre lo propio.
 
 ## Documentación que trae esta historia
 

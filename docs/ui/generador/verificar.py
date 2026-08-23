@@ -124,6 +124,13 @@ PARES = [
     ("Texto sobre la franja oscura",          "--sobre-fondo-oscuro",  "--fondo-oscuro-marca",     AA_TEXTO),
     ("CTA sobre la franja oscura",            "--color-acento",        "--fondo-oscuro-marca",     AA_GRANDE),
     ("Texto del CTA en la franja oscura",     "--color-sobre-cta",     "--color-acento",           AA_TEXTO),
+    # HU-006, bandeja del moderador. Es una pantalla interna y sus controles no llevan el
+    # acento: la accion principal va rellena en primario y la secundaria con su borde. El
+    # borde es lo unico que identifica al boton secundario como control, asi que es
+    # informacion no textual y va contra el fondo de PAGINA, que es donde se apoya.
+    ("Borde de boton secundario sobre el fondo", "--color-primario",     "--color-fondo",            AA_GRANDE),
+    # El aviso de decision aplicada, al volver a la bandeja.
+    ("Borde de exito sobre el fondo",         "--color-exito",         "--color-fondo",            AA_GRANDE),
 ]
 
 

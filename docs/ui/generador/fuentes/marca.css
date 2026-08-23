@@ -48,6 +48,28 @@
      44px suelto en la cabecera, el pie y las paginas informativas. */
   --destino-tactil: 44px;
 
+  /* Ancho de un formulario. Una linea de campo ancha es incomoda de recorrer con
+     la vista, asi que los formularios del sitio no usan --medida, que es el ancho
+     de LECTURA y es mas largo.
+
+     Estaba solo en la copia publicada y no aqui, asi que la primera republicacion
+     lo borraba. Se descubrio al agregar los tokens de HU-006. */
+  --medida-formulario: 480px;
+
+  /* La imagen de una verificacion, en la bandeja del moderador (HU-006).
+
+     Dos medidas y no una de la escala de espaciado, porque no son espaciado: son el
+     tamano al que se mira una cedula para decidir si se lee. El ancho y el alto minimos
+     reservan el sitio de la tarjeta antes de que la imagen llegue —se pide al abrirla, no
+     al cargar la ficha— para que la pagina no salte cuando aparezca; el alto maximo evita
+     que la selfie, que es vertical, se coma la pantalla entera. */
+  --ancho-min-imagen-revision: 200px;
+  --alto-max-imagen-revision: 260px;
+
+  /* Grosor de la barra lateral de una caja de aviso. Estaba como 4px suelto en el
+     aviso de borrador de los documentos legales y en el de error de la bandeja. */
+  --grosor-barra-aviso: 4px;
+
   /* Impresion. El papel no es una pantalla: no tiene modo claro ni oscuro,
      tiene tinta. Estos dos NO se redefinen en oscuro, y ese es el punto: con
      --color-texto el problema volveria invertido. Tinta sobre papel da 15.1:1. */

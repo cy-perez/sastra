@@ -10,12 +10,14 @@ import co.sastra.identity.model.DisplayName;
 import co.sastra.identity.model.Email;
 import co.sastra.identity.model.PasswordHash;
 import co.sastra.identity.model.RawPassword;
+import co.sastra.identity.model.Role;
 import co.sastra.identity.model.TokenPurpose;
 import co.sastra.identity.model.User;
 import co.sastra.identity.model.UserId;
 import co.sastra.identity.model.UserLocale;
 import co.sastra.identity.model.VerificationToken;
 import co.sastra.identity.port.out.BreachedPasswordChecker;
+import co.sastra.identity.port.out.ConfiguredModerators;
 import co.sastra.identity.port.out.ConsentRepository;
 import co.sastra.identity.port.out.LegalDocuments;
 import co.sastra.identity.port.out.MailSender;
@@ -53,6 +55,7 @@ public class RegisterUserUseCase {
     private final TokenGenerator generadorDeTokens;
     private final MailSender correo;
     private final LegalDocuments documentosLegales;
+    private final ConfiguredModerators moderadoresConfigurados;
     private final Clock reloj;
 
     public RegisterUserUseCase(
@@ -64,6 +67,7 @@ public class RegisterUserUseCase {
             TokenGenerator generadorDeTokens,
             MailSender correo,
             LegalDocuments documentosLegales,
+            ConfiguredModerators moderadoresConfigurados,
             Clock reloj) {
         this.usuarios = usuarios;
         this.consentimientos = consentimientos;
@@ -73,6 +77,7 @@ public class RegisterUserUseCase {
         this.generadorDeTokens = generadorDeTokens;
         this.correo = correo;
         this.documentosLegales = documentosLegales;
+        this.moderadoresConfigurados = moderadoresConfigurados;
         this.reloj = reloj;
     }
 
@@ -114,8 +119,27 @@ public class RegisterUserUseCase {
         }
 
         usuarios.crear(candidato, hash);
+        otorgarModeracionSiEstaConfigurada(candidato, ahora);
         guardarConsentimientos(candidato.id(), comando.ipHash(), ahora);
         emitirYEnviarVerificacion(candidato, ahora);
+    }
+
+    /**
+     * HU-006: los correos declarados moderadores lo son tambien si la cuenta se crea
+     * despues de configurarlos.
+     *
+     * <p>Sin esto, la variable solo serviria para cuentas que ya existen, y el orden
+     * natural de dar de alta a alguien es el contrario: primero se decide quien va a
+     * moderar y despues esa persona crea su cuenta.
+     *
+     * <p>No cambia nada mas del registro: la cuenta nace igual, con el rol de compradora
+     * que le pone el dominio, y sigue necesitando verificar su correo. Con la lista
+     * vacia —lo normal— esto no hace nada.
+     */
+    private void otorgarModeracionSiEstaConfigurada(User candidato, Instant ahora) {
+        if (moderadoresConfigurados.incluye(candidato.email())) {
+            usuarios.otorgarRol(candidato.id(), Role.MODERATOR, ahora);
+        }
     }
 
     private static void exigirLosDosConsentimientos(RegisterUserCommand comando) {

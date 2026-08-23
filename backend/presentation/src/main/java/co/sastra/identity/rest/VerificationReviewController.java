@@ -86,10 +86,12 @@ public class VerificationReviewController {
     @GetMapping
     @PreAuthorize("hasRole('MODERATOR')")
     public List<PendingVerificationResponse> pendientes(
-            @RequestParam(name = "limite", defaultValue = "20") int limite) {
+            @AuthenticationPrincipal Jwt token, @RequestParam(name = "limite", defaultValue = "20") int limite) {
+
+        UserId quienMira = moderadorDe(token);
 
         return casoDeListar.execute(limite).stream()
-                .map(PendingVerificationResponses::de)
+                .map(verificacion -> PendingVerificationResponses.de(verificacion, quienMira))
                 .toList();
     }
 

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -20,11 +21,13 @@ import co.sastra.identity.model.ConsentDocument;
 import co.sastra.identity.model.Email;
 import co.sastra.identity.model.PasswordHash;
 import co.sastra.identity.model.RawPassword;
+import co.sastra.identity.model.Role;
 import co.sastra.identity.model.User;
 import co.sastra.identity.model.UserId;
 import co.sastra.identity.model.UserLocale;
 import co.sastra.identity.model.VerificationToken;
 import co.sastra.identity.port.out.BreachedPasswordChecker;
+import co.sastra.identity.port.out.ConfiguredModerators;
 import co.sastra.identity.port.out.ConsentRepository;
 import co.sastra.identity.port.out.LegalDocuments;
 import co.sastra.identity.port.out.MailSender;
@@ -76,6 +79,13 @@ class RegisterUserUseCaseTest {
     @Mock
     private LegalDocuments documentosLegales;
 
+    /**
+     * HU-006. Por omision no hay ninguno configurado, que es el caso normal: el registro
+     * se comporta igual que antes de que la variable existiera.
+     */
+    @Mock
+    private ConfiguredModerators moderadoresConfigurados;
+
     private RegisterUserUseCase caso;
 
     @BeforeEach
@@ -89,6 +99,7 @@ class RegisterUserUseCaseTest {
                 generadorDeTokens,
                 correo,
                 documentosLegales,
+                moderadoresConfigurados,
                 RELOJ);
     }
 
@@ -121,6 +132,50 @@ class RegisterUserUseCaseTest {
                 UserLocale.ES,
                 LocalDate.of(2026, 8, 17),
                 AHORA);
+    }
+
+    @Test
+    void deberia_no_otorgar_moderacion_cuando_no_hay_ninguno_configurado() {
+        conCaminoFeliz();
+
+        caso.execute(comandoValido());
+
+        // El caso normal: la lista esta vacia y el registro se comporta igual que antes
+        // de que la variable existiera.
+        verify(usuarios, never()).otorgarRol(any(), any(), any());
+    }
+
+    /**
+     * HU-006: un correo declarado moderador lo es tambien si la cuenta se crea despues.
+     *
+     * <p>Sin esto, la variable solo serviria para cuentas que ya existen, y el orden
+     * natural de dar de alta a alguien es el contrario: primero se decide quien va a
+     * moderar y despues esa persona crea su cuenta.
+     */
+    @Test
+    void deberia_otorgar_moderacion_al_registrarse_un_correo_configurado() {
+        conCaminoFeliz();
+        when(moderadoresConfigurados.incluye(new Email("ana@correo.co"))).thenReturn(true);
+
+        caso.execute(comandoValido());
+
+        ArgumentCaptor<User> creado = ArgumentCaptor.forClass(User.class);
+        verify(usuarios).crear(creado.capture(), any());
+        verify(usuarios).otorgarRol(eq(creado.getValue().id()), eq(Role.MODERATOR), any());
+    }
+
+    /** Y nada mas: la cuenta nace igual y sigue teniendo que verificar su correo. */
+    @Test
+    void deberia_registrar_igual_al_moderador_que_a_cualquiera() {
+        conCaminoFeliz();
+        when(moderadoresConfigurados.incluye(new Email("ana@correo.co"))).thenReturn(true);
+
+        caso.execute(comandoValido());
+
+        ArgumentCaptor<User> creado = ArgumentCaptor.forClass(User.class);
+        verify(usuarios).crear(creado.capture(), any());
+        assertThat(creado.getValue().tieneElCorreoVerificado()).isFalse();
+        verify(correo).enviarVerificacionDeCorreo(any(), any());
     }
 
     @Test

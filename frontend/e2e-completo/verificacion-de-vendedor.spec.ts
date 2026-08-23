@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
+import { tomarUnaFoto } from './camara';
 import { enlacesVistos, esperarEnlace, rutaRelativa } from './correo-de-consola';
 
 /**
@@ -77,68 +78,6 @@ async function registrarseYEntrar(page: Page, correo: string): Promise<void> {
 
   await page.goto(rutaRelativa(await esperarEnlace('/verificar-correo', yaVistos)));
   await expect(page.getByRole('link', { name: 'Ana María' })).toBeVisible();
-}
-
-/**
- * Abre la primera camara pendiente de la pagina, espera a que entregue imagen y toma la
- * foto.
- *
- * <p>Siempre la primera pendiente, sin indices fijos: los tres campos de captura estan en
- * la misma pantalla y cada uno que ya tiene foto deja de ofrecer «Abrir la cámara», asi
- * que las posiciones se corren a medida que se avanza.
- *
- * <p>La espera a `videoWidth` no es adorno. `getUserMedia` resuelve antes de que el
- * elemento tenga dimensiones, y capturar en ese hueco no congela nada. El sintoma seria
- * una prueba que falla una vez de cada tantas por algo que no tiene que ver con lo que
- * comprueba.
- *
- * <p>Y lo que se espera al final es que haya <strong>una foto mas</strong>, no que
- * aparezca un boton: si el dispositivo falso diera una imagen que la deteccion de
- * desenfoque rechaza, la pantalla se queda en la camara y esto lo dice.
- */
-async function tomarUnaFoto(page: Page): Promise<void> {
-  const tomadas = page.getByRole('button', { name: 'Tomar otra' });
-  const antes = await tomadas.count();
-
-  await page.getByRole('button', { name: 'Abrir la cámara' }).first().click();
-
-  // Se espera a que haya imagen **y** a que este reproduciendo. Lo primero solo dice que
-  // llegaron los metadatos; un visor enganchado que nadie arranco tiene ancho y esta
-  // congelado, y esa es la diferencia entre ver la camara y ver un cuadro negro.
-  await page.waitForFunction(() => {
-    const video = document.querySelector('video');
-    return video !== null && video.videoWidth > 0 && !video.paused;
-  });
-
-  /*
-   * Se reintenta, y no porque la prueba sea fragil.
-   *
-   * El patron del dispositivo falso tiene zonas de degradado suave, y algunos fotogramas
-   * caen por debajo del umbral de nitidez de verdad. Lo que la pantalla ofrece entonces es
-   * volver a tomarla sin cerrar la camara, y eso es lo que hace una persona; de paso, el
-   * camino de la foto borrosa queda recorrido con una foto borrosa de verdad. Bajar el
-   * umbral para que pase a la primera seria cambiar una regla del producto para acomodar
-   * una prueba.
-   *
-   * Acotado a proposito: si ningun fotograma pasara nunca, esto tiene que fallar y no
-   * girar para siempre.
-   */
-  const nueva = tomadas.nth(antes);
-
-  for (let intento = 0; intento < 15; intento++) {
-    await page.getByRole('button', { name: 'Tomar la foto' }).first().click();
-
-    const acepto = await nueva.waitFor({ state: 'visible', timeout: 1_000 }).then(
-      () => true,
-      () => false,
-    );
-
-    if (acepto) {
-      return;
-    }
-  }
-
-  await expect(tomadas).toHaveCount(antes + 1);
 }
 
 /** Los datos del documento, con sus dos fotos. Criterio 2. */

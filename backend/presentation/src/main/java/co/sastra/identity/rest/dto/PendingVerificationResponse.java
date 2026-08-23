@@ -19,6 +19,11 @@ import org.jspecify.annotations.Nullable;
  *
  * @param id el identificador de la solicitud, que es con lo que el moderador decide
  * @param waitingSince desde cuando espera, para poder atender lo mas viejo primero
+ * @param own si la solicitud es de quien esta mirando la bandeja. RN-060 lo prohibe
+ *     decidir, y sin este dato la interfaz no puede avisarlo antes de que lo intente: el
+ *     resto del tipo no dice de quien es cada solicitud, a proposito (criterio 11). Es un
+ *     booleano y no el identificador del dueno justamente por eso: responde lo unico que
+ *     la pantalla necesita saber, sin decir quien es nadie
  */
 public record PendingVerificationResponse(
         String id,
@@ -32,4 +37,5 @@ public record PendingVerificationResponse(
         @Nullable String bankAccountType,
         @Nullable String bankAccountLastFour,
         @Nullable String bankAccountHolderName,
-        String waitingSince) {}
+        String waitingSince,
+        boolean own) {}

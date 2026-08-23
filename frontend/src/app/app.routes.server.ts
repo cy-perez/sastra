@@ -45,20 +45,17 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'terminos', renderMode: RenderMode.Server },
   { path: 'tratamiento-de-datos', renderMode: RenderMode.Server },
   { path: 'politica-de-cookies', renderMode: RenderMode.Server },
-  // HU-006. Las unicas dos del sitio que NO se renderizan en el servidor.
+  // HU-006, la bandeja del moderador. Se renderizan en servidor como todo lo demas, y
+  // no porque su contenido deba salir de ahi: `exigirRol` DENIEGA en el servidor, asi
+  // que lo que se sirve es la pagina de "no existe" y el titulo de la bandeja no viaja
+  // en el HTML de nadie (criterio 2). Al hidratar, el guard vuelve a correr en el
+  // navegador y quien tenga el rol entra.
   //
-  // No es una optimizacion: el criterio 2 pide que quien no es moderador no se entere de
-  // que la bandeja existe, y el 13 que no salga nada sensible en lo que llega al
-  // navegador. Pintarlas aqui meteria sus titulos en el HTML de cualquiera que pida la
-  // direccion, guard o no, porque el guard corre despues.
-  //
-  // Ademas en el servidor no hay sesion que resolver —el renderizado no tiene la cookie
-  // de nadie—, asi que el guard se quedaria esperando una respuesta que no llega.
-  //
-  // No se pierde nada: son pantallas internas detras de sesion. Lo que ADR-0006 protege
-  // es el posicionamiento del catalogo, que aqui no aplica. ADR-0021.
-  { path: 'moderacion/verificaciones', renderMode: RenderMode.Client },
-  { path: 'moderacion/verificaciones/:id', renderMode: RenderMode.Client },
+  // Se probo `RenderMode.Client`, que seria lo natural para una pantalla interna, y no
+  // sirve: APP_CONFIG llega por el estado transferido del renderizado en servidor, y sin
+  // el la aplicacion no arranca. ADR-0021.
+  { path: 'moderacion/verificaciones', renderMode: RenderMode.Server },
+  { path: 'moderacion/verificaciones/:id', renderMode: RenderMode.Server },
   {
     path: '**',
     renderMode: RenderMode.Server,

@@ -45,6 +45,22 @@ const PUERTO_API = 8081;
  * no cuenta para decidir si dos direcciones son del mismo sitio; el anfitrion, si.
  */
 const BASE_URL = `http://localhost:${PUERTO_WEB}`;
+
+/**
+ * El correo de quien modera. Lo comparten esta configuracion y la suite de HU-006.
+ *
+ * <p><strong>Fijo, no generado.</strong> Se intento con un sufijo de `Date.now()` para
+ * que la cuenta naciera limpia en cada corrida, y no funciona: este archivo se evalua una
+ * vez en el proceso que arranca el backend y otra en cada proceso de trabajo que importa
+ * la constante, asi que el correo configurado y el que usa la prueba salian distintos y
+ * el rol nunca llegaba. El sintoma era una moderadora con sesion abierta a la que el
+ * guard echaba de la bandeja.
+ *
+ * <p>Con un correo fijo la cuenta sobrevive entre corridas, y las pruebas lo asumen: la
+ * primera vez la crean y las siguientes entran. El rol se lo concede el arranque cuando
+ * ya existe, y el registro cuando todavia no.
+ */
+export const MODERADORA = 'quien-modera@sastra.test';
 const API_URL = `http://localhost:${PUERTO_API}`;
 
 /**
@@ -160,6 +176,16 @@ export default defineConfig({
         // HU-002. Sin la bandera, el controlador de verificacion no se crea y sus
         // rutas responden 404: la prueba del recorrido no tendria contra que correr.
         FEATURE_SELLER_VERIFICATION: 'true',
+
+        /**
+         * HU-006: quien va a moderar en esta suite.
+         *
+         * <p>El correo es fijo y la cuenta se crea despues, por la interfaz, como
+         * cualquier otra. Funciona porque el rol se concede tambien al registrarse y no
+         * solo al arrancar, que es ademas el orden natural de dar de alta a alguien:
+         * primero se decide quien modera, despues esa persona crea su cuenta.
+         */
+        SECURITY_BOOTSTRAP_MODERATORS: MODERADORA,
         VERIFICATION_REVIEW_DAYS: '2',
 
         COMPANY_NAME: 'Sastra S.A.S.',

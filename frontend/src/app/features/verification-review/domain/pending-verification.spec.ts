@@ -22,6 +22,7 @@ describe('pending-verification', () => {
     bankAccountLastFour: '3456',
     bankAccountHolderName: 'Ana Maria Garcia',
     waitingSince: '2026-08-20T10:00:00Z',
+    own: false,
     ...cambios,
   });
 

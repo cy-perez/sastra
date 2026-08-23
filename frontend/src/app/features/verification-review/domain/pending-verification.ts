@@ -34,6 +34,17 @@ export interface PendingVerification {
   readonly bankAccountHolderName: string | null;
   /** Desde cuándo espera, en ISO 8601. Es lo que ordena la bandeja. */
   readonly waitingSince: string;
+  /**
+   * Si la solicitud es de quien está mirando. RN-060 le prohíbe decidir sobre ella.
+   *
+   * <p>Lo calcula el servidor y llega como booleano, no como el identificador del dueño:
+   * el resto del modelo no dice de quién es cada solicitud, a propósito (criterio 11), y
+   * esto responde lo único que la pantalla necesita saber sin decir quién es nadie.
+   *
+   * <p>Sin este dato la interfaz no podría cumplir el criterio 12: el servidor rechazaría
+   * igual, pero quien revisa se enteraría después de pulsar.
+   */
+  readonly own: boolean;
 }
 
 /** Las tres imágenes, con el nombre que espera la ruta del endpoint. */

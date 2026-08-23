@@ -1,7 +1,8 @@
-import { inject } from '@angular/core';
+import { isPlatformServer } from '@angular/common';
+import { inject, PLATFORM_ID } from '@angular/core';
 import { toObservable } from '@angular/core/rxjs-interop';
 import { RedirectCommand, Router, type CanActivateFn } from '@angular/router';
-import { filter, map, take, type Observable } from 'rxjs';
+import { filter, map, of, take, type Observable } from 'rxjs';
 
 import { SessionStore } from './session.store';
 
@@ -32,39 +33,51 @@ import { SessionStore } from './session.store';
  * respuesta llegue siempre lo garantiza ese inicializador, que marca la sesion como
  * resuelta tambien cuando no hay ninguna que recuperar.
  *
- * <p>En el servidor esto no corre nunca, y tampoco podria: alli la sesion se queda en
- * `desconocida` para siempre porque el renderizado no tiene la cookie de nadie. Las rutas
- * que usan este guard se declaran `RenderMode.Client` en `app.routes.server.ts`, que
- * ademas es lo que impide que su contenido viaje en el HTML servido.
+ * <p><strong>En el servidor deniega siempre</strong>, y eso no es una limitacion: es lo
+ * que hace que el criterio 2 se cumpla. Alli la sesion se queda en `desconocida` para
+ * siempre —el renderizado no tiene la cookie de nadie— asi que esperar seria colgar el
+ * SSR; y dejar pasar meteria el titulo de la pantalla en el HTML que recibe cualquiera
+ * que pida la direccion. Denegar deja servida la pagina de "no existe", que es
+ * exactamente lo que debe ver quien no tiene el rol.
+ *
+ * <p>Al hidratar, el guard vuelve a correr en el navegador, ahi si espera a la sesion, y
+ * quien tenga el rol entra. El coste es que la pagina de "no existe" se ve un instante
+ * antes de la bandeja. Se acepta: es una herramienta interna, y ese instante es
+ * justamente lo que ve quien no deberia pasar.
+ *
+ * <p>No se usa `RenderMode.Client` para esto, aunque seria lo natural: `APP_CONFIG` llega
+ * por el estado transferido del renderizado en servidor, y una ruta que no se renderiza
+ * alli arranca sin configuracion y la aplicacion no levanta.
  */
 export function exigirRol(rol: string): CanActivateFn {
   return (): Observable<boolean | RedirectCommand> => {
     const sesion = inject(SessionStore);
     const router = inject(Router);
 
+    if (isPlatformServer(inject(PLATFORM_ID))) {
+      return of(denegar(router));
+    }
+
     return toObservable(sesion.status).pipe(
       filter((estado) => estado !== 'desconocida'),
       take(1),
-      map(() => {
-        if (sesion.user()?.roles.includes(rol) === true) {
-          return true;
-        }
-
-        /**
-         * La pagina de "no existe", y **sin cambiar la direccion**.
-         *
-         * <p>No es un ahorro de pantalla: un "no tienes permiso" confirma que detras
-         * hay algo, y el criterio 2 de HU-006 pide que quien no es moderador no se
-         * entere de que la bandeja existe. Es la misma razon por la que el backend
-         * responde 404 a las rutas con la bandera apagada en vez de 403.
-         *
-         * <p>`skipLocationChange` deja la direccion escrita tal cual. Con una
-         * redireccion normal, la barra saltaria a otra cosa y esa sacudida delata que
-         * algo paso; ademas, quien tenga el rol y recargue veria una direccion que ya
-         * no es la suya.
-         */
-        return new RedirectCommand(router.parseUrl('/no-encontrado'), { skipLocationChange: true });
-      }),
+      map(() => (sesion.user()?.roles.includes(rol) === true ? true : denegar(router))),
     );
   };
+}
+
+/**
+ * La pagina de "no existe", y **sin cambiar la direccion**.
+ *
+ * <p>No es un ahorro de pantalla: un "no tienes permiso" confirma que detras hay algo, y
+ * el criterio 2 de HU-006 pide que quien no es moderador no se entere de que la bandeja
+ * existe. Es la misma razon por la que el backend responde 404 a las rutas con la bandera
+ * apagada en vez de 403.
+ *
+ * <p>`skipLocationChange` deja la direccion escrita tal cual. Con una redireccion normal
+ * la barra saltaria a otra cosa, y esa sacudida tambien delata; ademas, quien tenga el
+ * rol y recargue veria una direccion que ya no es la suya.
+ */
+function denegar(router: Router): RedirectCommand {
+  return new RedirectCommand(router.parseUrl('/no-encontrado'), { skipLocationChange: true });
 }

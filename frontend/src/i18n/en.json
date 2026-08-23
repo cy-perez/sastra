@@ -803,7 +803,8 @@
       "cancel": "Cancel",
       "approved": "Verification approved",
       "rejected": "Verification rejected",
-      "alreadyResolved": "Someone else already resolved this application."
+      "alreadyResolved": "Someone else already resolved this application.",
+      "ownApplication": "This is your own application. Someone else reviews it."
     },
     "reasons": {
       "ILLEGIBLE_PHOTOS": "Illegible photos",

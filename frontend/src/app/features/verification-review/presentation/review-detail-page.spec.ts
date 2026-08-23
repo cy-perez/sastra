@@ -42,6 +42,7 @@ describe('ReviewDetailPage', () => {
     bankAccountLastFour: '3456',
     bankAccountHolderName: 'Ana Maria Garcia',
     waitingSince: '2026-08-20T10:00:00Z',
+    own: false,
     ...cambios,
   });
 
@@ -198,6 +199,20 @@ describe('ReviewDetailPage', () => {
 
     expect(backend.match((p) => p.url.includes('/approval'))).toHaveLength(0);
     expect(boton(fixture, 'Aprobar')).toBeDefined();
+  });
+
+  /**
+   * Criterio 12 y RN-060: sobre lo propio no se decide, y se avisa antes de intentarlo.
+   *
+   * <p>El servidor lo rechaza igual —esconder el boton no es la regla— pero enterarse
+   * despues de pulsar, con un correo ya prometido, no hace falta.
+   */
+  it('no ofrece decidir sobre la solicitud propia', async () => {
+    const { fixture } = await montar([solicitud({ own: true })]);
+
+    expect(fixture.nativeElement.textContent).toContain('Esta solicitud es tuya');
+    expect(boton(fixture, 'Aprobar')).toBeUndefined();
+    expect(boton(fixture, 'Rechazar')).toBeUndefined();
   });
 
   /** Criterio 7, en el detalle. Con texto, no solo con color. */

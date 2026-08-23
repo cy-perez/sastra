@@ -1,6 +1,9 @@
 package co.sastra.identity.config;
 
+import co.sastra.identity.model.Email;
+import co.sastra.identity.port.out.ConfiguredModerators;
 import java.util.List;
+import java.util.Locale;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -21,9 +24,27 @@ import org.springframework.validation.annotation.Validated;
  */
 @Validated
 @ConfigurationProperties(prefix = "sastra.security")
-public record ModeratorBootstrapProperties(List<String> moderators) {
+public record ModeratorBootstrapProperties(List<String> moderators) implements ConfiguredModerators {
 
     public ModeratorBootstrapProperties {
         moderators = moderators == null ? List.of() : List.copyOf(moderators);
+    }
+
+    /**
+     * Compara ya normalizado por los dos lados.
+     *
+     * <p>El correo del objeto de valor viene en minusculas y sin espacios (RN-001); el de
+     * la variable de entorno lo escribio una persona y puede traer de todo. Sin normalizar
+     * aqui, un `Moderadora@Sastra.CO` en la configuracion no coincidiria con la cuenta y
+     * esa persona se quedaria sin acceso sin que nada fallara.
+     */
+    @Override
+    public boolean incluye(Email correo) {
+        return moderators.stream()
+                .anyMatch(configurado -> normalizar(configurado).equals(correo.value()));
+    }
+
+    private static String normalizar(String correo) {
+        return correo.trim().toLowerCase(Locale.ROOT);
     }
 }

@@ -3,6 +3,7 @@ package co.sastra.config;
 import co.sastra.identity.config.SessionProperties;
 import co.sastra.identity.port.out.AccessTokenIssuer;
 import co.sastra.identity.port.out.BreachedPasswordChecker;
+import co.sastra.identity.port.out.ConfiguredModerators;
 import co.sastra.identity.port.out.ConsentRepository;
 import co.sastra.identity.port.out.CredentialsRepository;
 import co.sastra.identity.port.out.FinancialInstitutions;
@@ -97,6 +98,7 @@ public class IdentityWiring {
             TokenGenerator generadorDeTokens,
             MailSender correo,
             LegalDocuments documentosLegales,
+            ConfiguredModerators moderadoresConfigurados,
             Clock reloj) {
         return new RegisterUserUseCase(
                 usuarios,
@@ -107,6 +109,7 @@ public class IdentityWiring {
                 generadorDeTokens,
                 correo,
                 documentosLegales,
+                moderadoresConfigurados,
                 reloj);
     }
 

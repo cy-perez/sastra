@@ -133,20 +133,27 @@
       </button>
     </div>
   } @else {
-    <div class="acciones">
-      <button type="button" class="boton" (click)="pedirConfirmacion('aprobar')">
-        {{ 'verificationReview.decision.approve' | transloco }}
-      </button>
-      <!-- Criterio 9: sin motivo elegido no se puede enviar. -->
-      <button
-        type="button"
-        class="boton"
-        [disabled]="!puedeRechazar()"
-        (click)="pedirConfirmacion('rechazar')"
-      >
-        {{ 'verificationReview.decision.reject' | transloco }}
-      </button>
-    </div>
+    @if (esPropia()) {
+      <!-- Criterio 12 y RN-060. No se ofrece decidir, y se dice por que. -->
+      <p class="aviso-de-error tipo-cuerpo">
+        {{ 'verificationReview.decision.ownApplication' | transloco }}
+      </p>
+    } @else {
+      <div class="acciones">
+        <button type="button" class="boton" (click)="pedirConfirmacion('aprobar')">
+          {{ 'verificationReview.decision.approve' | transloco }}
+        </button>
+        <!-- Criterio 9: sin motivo elegido no se puede enviar. -->
+        <button
+          type="button"
+          class="boton"
+          [disabled]="!puedeRechazar()"
+          (click)="pedirConfirmacion('rechazar')"
+        >
+          {{ 'verificationReview.decision.reject' | transloco }}
+        </button>
+      </div>
+    }
   }
 
   @if (yaResuelta()) {

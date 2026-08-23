@@ -3,6 +3,7 @@ package co.sastra.identity.rest.mapper;
 import co.sastra.identity.model.BankAccount;
 import co.sastra.identity.model.IdentityDocument;
 import co.sastra.identity.model.SellerVerification;
+import co.sastra.identity.model.UserId;
 import co.sastra.identity.rest.dto.PendingVerificationResponse;
 
 /**
@@ -13,7 +14,7 @@ public final class PendingVerificationResponses {
 
     private PendingVerificationResponses() {}
 
-    public static PendingVerificationResponse de(SellerVerification verificacion) {
+    public static PendingVerificationResponse de(SellerVerification verificacion, UserId quienMira) {
         IdentityDocument documento = verificacion.document();
         BankAccount cuenta = verificacion.bankAccount();
 
@@ -29,6 +30,9 @@ public final class PendingVerificationResponses {
                 cuenta == null ? null : cuenta.type().name(),
                 cuenta == null ? null : cuenta.number().ultimosCuatro(),
                 cuenta == null ? null : cuenta.holderName().value(),
-                verificacion.updatedAt().toString());
+                verificacion.updatedAt().toString(),
+                // RN-060. Se calcula aqui y no se manda el dueno: la pantalla necesita
+                // saber si es suya, no de quien es.
+                verificacion.userId().equals(quienMira));
     }
 }

@@ -3,6 +3,7 @@ package co.sastra.identity.config;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import co.sastra.identity.model.Email;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -18,6 +19,35 @@ class ModeratorBootstrapPropertiesTest {
     @Test
     void deberia_tratar_la_ausencia_de_la_propiedad_como_lista_vacia() {
         assertThat(new ModeratorBootstrapProperties(null).moderators()).isEmpty();
+    }
+
+    @Test
+    void deberia_reconocer_el_correo_configurado() {
+        ModeratorBootstrapProperties propiedades = new ModeratorBootstrapProperties(List.of("moderadora@sastra.co"));
+
+        assertThat(propiedades.incluye(new Email("moderadora@sastra.co"))).isTrue();
+        assertThat(propiedades.incluye(new Email("otra@sastra.co"))).isFalse();
+    }
+
+    /**
+     * El correo del objeto de valor viene normalizado (RN-001); el de la variable lo
+     * escribio una persona. Sin normalizar los dos lados, un `Moderadora@Sastra.CO` en la
+     * configuracion no coincidiria y esa persona se quedaria sin acceso sin que nada
+     * fallara.
+     */
+    @Test
+    void deberia_reconocerlo_aunque_venga_con_mayusculas_y_espacios() {
+        ModeratorBootstrapProperties propiedades =
+                new ModeratorBootstrapProperties(List.of("  Moderadora@Sastra.CO  "));
+
+        assertThat(propiedades.incluye(new Email("moderadora@sastra.co"))).isTrue();
+    }
+
+    /** Con la lista vacia, que es lo normal, nadie es moderador. */
+    @Test
+    void deberia_no_reconocer_a_nadie_con_la_lista_vacia() {
+        assertThat(new ModeratorBootstrapProperties(null).incluye(new Email("quien@sastra.co")))
+                .isFalse();
     }
 
     /**

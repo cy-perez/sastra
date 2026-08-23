@@ -55,8 +55,18 @@ export class ReviewDetailPage {
   protected readonly motivoElegido = signal<RejectionReason | ''>('');
   protected readonly nota = signal('');
 
+  /**
+   * Criterio 12 y RN-060: sobre lo propio no se decide, y se dice antes de intentarlo.
+   *
+   * <p>El servidor lo rechaza igual —esconder el botón no es la regla— pero enterarse
+   * después de pulsar, con un correo ya prometido, es peor experiencia y no hace falta.
+   */
+  protected readonly esPropia = computed(() => this.solicitud()?.own === true);
+
   /** Criterio 9: sin motivo elegido, la acción no se puede enviar. */
-  protected readonly puedeRechazar = computed(() => this.motivoElegido() !== '');
+  protected readonly puedeRechazar = computed(
+    () => !this.esPropia() && this.motivoElegido() !== '',
+  );
 
   protected readonly enCurso = computed(
     () => this.aprobacion.isPending() || this.rechazo.isPending(),

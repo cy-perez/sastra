@@ -1,5 +1,6 @@
 package co.sastra.identity.usecase;
 
+import co.sastra.identity.dto.GrantedModeratorsResult;
 import co.sastra.identity.model.Email;
 import co.sastra.identity.model.Role;
 import co.sastra.identity.model.User;
@@ -28,6 +29,11 @@ import org.springframework.transaction.annotation.Transactional;
  * y quedarse sin quien apruebe es peor que un rol de mas. Retirar el rol sigue siendo
  * una operacion deliberada.
  *
+ * <p><strong>Solo a cuentas con el correo verificado.</strong> Registrarse demuestra que
+ * alguien sabe escribir una direccion; verificarla demuestra que controla el buzon, y el
+ * rol da acceso a las cedulas de todos los vendedores pendientes. A quien este configurado
+ * y todavia no haya verificado, el rol le llega cuando lo haga.
+ *
  * <p>Es idempotente: {@code otorgarRol} inserta con {@code ON CONFLICT DO NOTHING}, asi
  * que arrancar cien veces deja lo mismo que arrancar una.
  *
@@ -43,38 +49,19 @@ public class GrantConfiguredModeratorsUseCase {
         this.reloj = reloj;
     }
 
-    /**
-     * El resumen de lo que paso, para que quien arranca pueda registrarlo.
-     *
-     * @param otorgados correos que ahora tienen el rol, tuvieran o no antes
-     * @param sinCuenta correos configurados que no corresponden a ninguna cuenta
-     * @param invalidos entradas que ni siquiera son un correo
-     */
-    public record Resultado(List<String> otorgados, List<String> sinCuenta, List<String> invalidos) {
-
-        public Resultado {
-            otorgados = List.copyOf(otorgados);
-            sinCuenta = List.copyOf(sinCuenta);
-            invalidos = List.copyOf(invalidos);
-        }
-
-        public boolean huboAlgoQueDecir() {
-            return !otorgados.isEmpty() || !sinCuenta.isEmpty() || !invalidos.isEmpty();
-        }
-    }
-
     @Transactional
-    public Resultado execute(List<String> correos) {
+    public GrantedModeratorsResult execute(List<String> correos) {
         List<String> otorgados = new ArrayList<>();
         List<String> sinCuenta = new ArrayList<>();
-        List<String> invalidos = new ArrayList<>();
+        List<String> sinVerificar = new ArrayList<>();
+        int invalidos = 0;
         Instant ahora = reloj.instant();
 
         for (String entrada : correos) {
             Optional<Email> correo = interpretar(entrada);
 
             if (correo.isEmpty()) {
-                invalidos.add(entrada);
+                invalidos++;
                 continue;
             }
 
@@ -85,11 +72,20 @@ public class GrantConfiguredModeratorsUseCase {
                 continue;
             }
 
+            // Sin correo verificado no hay rol. Quien no ha abierto su enlace no ha
+            // demostrado que controla ese buzon, y el rol da acceso a las cedulas de
+            // todos los vendedores pendientes. Cuando lo verifique, lo recibe: de eso se
+            // encarga VerifyEmailUseCase.
+            if (!cuenta.get().tieneElCorreoVerificado()) {
+                sinVerificar.add(correo.get().value());
+                continue;
+            }
+
             usuarios.otorgarRol(cuenta.get().id(), Role.MODERATOR, ahora);
             otorgados.add(correo.get().value());
         }
 
-        return new Resultado(otorgados, sinCuenta, invalidos);
+        return new GrantedModeratorsResult(otorgados, sinCuenta, sinVerificar, invalidos);
     }
 
     /**

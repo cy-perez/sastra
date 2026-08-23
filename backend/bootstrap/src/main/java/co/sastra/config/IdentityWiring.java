@@ -98,7 +98,6 @@ public class IdentityWiring {
             TokenGenerator generadorDeTokens,
             MailSender correo,
             LegalDocuments documentosLegales,
-            ConfiguredModerators moderadoresConfigurados,
             Clock reloj) {
         return new RegisterUserUseCase(
                 usuarios,
@@ -109,7 +108,6 @@ public class IdentityWiring {
                 generadorDeTokens,
                 correo,
                 documentosLegales,
-                moderadoresConfigurados,
                 reloj);
     }
 
@@ -119,8 +117,9 @@ public class IdentityWiring {
             VerificationTokenRepository tokens,
             TokenGenerator generadorDeTokens,
             IssueSessionUseCase abrirSesion,
+            ConfiguredModerators moderadoresConfigurados,
             Clock reloj) {
-        return new VerifyEmailUseCase(usuarios, tokens, generadorDeTokens, abrirSesion, reloj);
+        return new VerifyEmailUseCase(usuarios, tokens, generadorDeTokens, abrirSesion, moderadoresConfigurados, reloj);
     }
 
     @Bean

@@ -212,6 +212,14 @@ Vacía —que es lo que hay por omisión— no hace absolutamente nada.
 - **No crea cuentas.** Si el correo no tiene una, se registra un aviso y se sigue.
   Si de aquí pudiera salir una cuenta nueva con rol de moderador, esto sería una
   puerta trasera y no una forma de conceder un rol.
+- **Exige el correo verificado.** Registrarse solo demuestra que alguien sabe
+  escribir una dirección; verificarla demuestra que controla el buzón, y este rol
+  da acceso a las cédulas y selfies de todos los vendedores pendientes. A quien
+  esté configurado y todavía no haya verificado, el rol le llega en cuanto abra su
+  enlace. **Esto importa:** sin la comprobación, quien se adelantara a la persona
+  legítima —el correo de moderación de un marketplace es adivinable— se llevaba el
+  rol sin tocar ese buzón, y entraba con él, porque una cuenta sin verificar entra
+  igual (criterio 13 de HU-001).
 - **No abre sesiones** ni salta ninguna comprobación de autenticación.
 - **No concede `ADMIN`.** Solo `MODERATOR`.
 - **No revoca.** Quitar un correo de la lista no le quita el rol a nadie. Un

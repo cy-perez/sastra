@@ -3,6 +3,7 @@ package co.sastra.identity.usecase;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -23,6 +24,7 @@ import co.sastra.identity.model.User;
 import co.sastra.identity.model.UserId;
 import co.sastra.identity.model.UserLocale;
 import co.sastra.identity.model.VerificationToken;
+import co.sastra.identity.port.out.ConfiguredModerators;
 import co.sastra.identity.port.out.TokenGenerator;
 import co.sastra.identity.port.out.UserRepository;
 import co.sastra.identity.port.out.VerificationTokenRepository;
@@ -58,13 +60,22 @@ class VerifyEmailUseCaseTest {
     @Mock
     private IssueSessionUseCase abrirSesion;
 
+    /** HU-006. Por omision no hay ninguno: el caso normal. */
+    @Mock
+    private ConfiguredModerators moderadoresConfigurados;
+
     private VerifyEmailUseCase caso;
     private User usuario;
 
     @BeforeEach
     void prepararCaso() {
         caso = new VerifyEmailUseCase(
-                usuarios, tokens, generadorDeTokens, abrirSesion, Clock.fixed(AHORA, ZoneOffset.UTC));
+                usuarios,
+                tokens,
+                generadorDeTokens,
+                abrirSesion,
+                moderadoresConfigurados,
+                Clock.fixed(AHORA, ZoneOffset.UTC));
         usuario = User.registrar(
                 UserId.nuevo(),
                 new Email("ana@correo.co"),
@@ -247,5 +258,38 @@ class VerifyEmailUseCaseTest {
         VerifyEmailResult resultado = caso.execute(comando());
 
         assertThat(resultado.yaEstabaVerificado()).isTrue();
+    }
+
+    /**
+     * HU-006 y su correccion de seguridad: el rol de moderador llega al <strong>verificar
+     * el correo</strong>, no al registrarse.
+     *
+     * <p>Registrarse solo demuestra que alguien sabe escribir un correo. Con la concesion
+     * en el registro, quien se adelantara a la persona legitima se llevaba el rol sin
+     * tocar ese buzon, y entraba con el porque el criterio 13 de HU-001 deja entrar sin
+     * verificar. Desde ahi se leen las cedulas de todos los vendedores pendientes.
+     */
+    @Test
+    void deberia_otorgar_moderacion_al_verificar_un_correo_configurado() {
+        conTokenEncontrado(tokenDeVerificacion());
+        when(usuarios.buscarPorId(usuario.id())).thenReturn(Optional.of(usuario));
+        conSesionEmitida();
+        when(moderadoresConfigurados.incluye(new Email("ana@correo.co"))).thenReturn(true);
+
+        caso.execute(comando());
+
+        verify(usuarios).otorgarRol(eq(usuario.id()), eq(Role.MODERATOR), any());
+    }
+
+    /** Y a quien no esta configurado no se le otorga nada, que es el caso normal. */
+    @Test
+    void deberia_no_otorgar_moderacion_a_un_correo_que_no_esta_configurado() {
+        conTokenEncontrado(tokenDeVerificacion());
+        when(usuarios.buscarPorId(usuario.id())).thenReturn(Optional.of(usuario));
+        conSesionEmitida();
+
+        caso.execute(comando());
+
+        verify(usuarios, never()).otorgarRol(any(), any(), any());
     }
 }

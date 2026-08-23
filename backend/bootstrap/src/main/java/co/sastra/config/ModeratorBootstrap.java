@@ -1,6 +1,7 @@
 package co.sastra.config;
 
 import co.sastra.identity.config.ModeratorBootstrapProperties;
+import co.sastra.identity.dto.GrantedModeratorsResult;
 import co.sastra.identity.usecase.GrantConfiguredModeratorsUseCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +46,7 @@ public class ModeratorBootstrap implements ApplicationRunner {
             return;
         }
 
-        GrantConfiguredModeratorsUseCase.Resultado resultado = caso.execute(propiedades.moderators());
+        GrantedModeratorsResult resultado = caso.execute(propiedades.moderators());
 
         if (!resultado.otorgados().isEmpty()) {
             log.info("Rol de moderador otorgado por configuracion a: {}", resultado.otorgados());
@@ -55,9 +56,18 @@ public class ModeratorBootstrap implements ApplicationRunner {
                     "Configurados como moderadores pero sin cuenta en Sastra, no se les otorgo nada: {}",
                     resultado.sinCuenta());
         }
-        if (!resultado.invalidos().isEmpty()) {
+        if (!resultado.sinVerificar().isEmpty()) {
             log.warn(
-                    "Entradas de SECURITY_BOOTSTRAP_MODERATORS que no son un correo, se ignoraron: {}",
+                    "Configurados como moderadores pero sin verificar su correo. Recibiran el rol"
+                            + " cuando abran su enlace: {}",
+                    resultado.sinVerificar());
+        }
+        if (resultado.invalidos() > 0) {
+            // El numero y no los valores: si alguien pega en esta variable el contenido de
+            // otra —una clave, la direccion de un proveedor— esa otra acabaria impresa
+            // entera en el registro de arranque.
+            log.warn(
+                    "{} entrada(s) de SECURITY_BOOTSTRAP_MODERATORS no son un correo y se ignoraron",
                     resultado.invalidos());
         }
     }

@@ -5,9 +5,11 @@ import co.sastra.identity.dto.SessionResult;
 import co.sastra.identity.dto.VerifyEmailCommand;
 import co.sastra.identity.dto.VerifyEmailResult;
 import co.sastra.identity.exception.VerificationTokenInvalidException;
+import co.sastra.identity.model.Role;
 import co.sastra.identity.model.TokenPurpose;
 import co.sastra.identity.model.User;
 import co.sastra.identity.model.VerificationToken;
+import co.sastra.identity.port.out.ConfiguredModerators;
 import co.sastra.identity.port.out.TokenGenerator;
 import co.sastra.identity.port.out.UserRepository;
 import co.sastra.identity.port.out.VerificationTokenRepository;
@@ -30,6 +32,7 @@ public class VerifyEmailUseCase {
     private final VerificationTokenRepository tokens;
     private final TokenGenerator generadorDeTokens;
     private final IssueSessionUseCase abrirSesion;
+    private final ConfiguredModerators moderadoresConfigurados;
     private final Clock reloj;
 
     public VerifyEmailUseCase(
@@ -37,11 +40,13 @@ public class VerifyEmailUseCase {
             VerificationTokenRepository tokens,
             TokenGenerator generadorDeTokens,
             IssueSessionUseCase abrirSesion,
+            ConfiguredModerators moderadoresConfigurados,
             Clock reloj) {
         this.usuarios = usuarios;
         this.tokens = tokens;
         this.generadorDeTokens = generadorDeTokens;
         this.abrirSesion = abrirSesion;
+        this.moderadoresConfigurados = moderadoresConfigurados;
         this.reloj = reloj;
     }
 
@@ -68,6 +73,7 @@ public class VerifyEmailUseCase {
 
         User verificado = usuario.conCorreoVerificado(ahora);
         usuarios.actualizar(verificado);
+        otorgarModeracionSiEstaConfigurada(verificado, ahora);
         tokens.actualizar(token.marcarUsado(ahora));
 
         // Con el usuario ya verificado, no con el de antes: el token de acceso lleva
@@ -76,5 +82,28 @@ public class VerifyEmailUseCase {
                 abrirSesion.execute(new IssueSessionCommand(verificado, comando.userAgent(), comando.ipHash()));
 
         return new VerifyEmailResult(sesion, yaEstabaVerificado);
+    }
+
+    /**
+     * HU-006: los correos declarados moderadores reciben el rol <strong>aqui</strong>, al
+     * verificar, y no al registrarse.
+     *
+     * <p>La diferencia es de seguridad y no de orden. Registrarse solo demuestra que
+     * alguien sabe escribir un correo; verificarlo demuestra que controla el buzon. Con
+     * la concesion en el registro, cualquiera que se adelantara a la persona legitima
+     * —el correo de moderacion de un marketplace es adivinable— se llevaba el rol sin
+     * tocar ese buzon, y entraba con el, porque el criterio 13 de HU-001 deja entrar sin
+     * verificar. Desde ahi se leen las cedulas y las selfies de todos los vendedores
+     * pendientes. Estuvo asi y lo encontro la auditoria de la propia historia.
+     *
+     * <p>Sigue sirviendo para lo que motivo la variable: se configura el correo antes de
+     * que la persona exista, y el rol le llega en cuanto abre su enlace.
+     *
+     * <p>Con la lista vacia —lo normal— esto no hace nada.
+     */
+    private void otorgarModeracionSiEstaConfigurada(User verificado, Instant ahora) {
+        if (moderadoresConfigurados.incluye(verificado.email())) {
+            usuarios.otorgarRol(verificado.id(), Role.MODERATOR, ahora);
+        }
     }
 }

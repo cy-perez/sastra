@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-/** La lista de quien arranca siendo moderador (HU-006). */
+/** La lista de quien arranca siendo moderador y su lectura (HU-006). */
 class ModeratorBootstrapPropertiesTest {
 
     /**
@@ -25,8 +25,10 @@ class ModeratorBootstrapPropertiesTest {
     void deberia_reconocer_el_correo_configurado() {
         ModeratorBootstrapProperties propiedades = new ModeratorBootstrapProperties(List.of("moderadora@sastra.co"));
 
-        assertThat(propiedades.incluye(new Email("moderadora@sastra.co"))).isTrue();
-        assertThat(propiedades.incluye(new Email("otra@sastra.co"))).isFalse();
+        assertThat(new ConfiguredModeratorEmails(propiedades).incluye(new Email("moderadora@sastra.co")))
+                .isTrue();
+        assertThat(new ConfiguredModeratorEmails(propiedades).incluye(new Email("otra@sastra.co")))
+                .isFalse();
     }
 
     /**
@@ -40,13 +42,15 @@ class ModeratorBootstrapPropertiesTest {
         ModeratorBootstrapProperties propiedades =
                 new ModeratorBootstrapProperties(List.of("  Moderadora@Sastra.CO  "));
 
-        assertThat(propiedades.incluye(new Email("moderadora@sastra.co"))).isTrue();
+        assertThat(new ConfiguredModeratorEmails(propiedades).incluye(new Email("moderadora@sastra.co")))
+                .isTrue();
     }
 
     /** Con la lista vacia, que es lo normal, nadie es moderador. */
     @Test
     void deberia_no_reconocer_a_nadie_con_la_lista_vacia() {
-        assertThat(new ModeratorBootstrapProperties(null).incluye(new Email("quien@sastra.co")))
+        assertThat(new ConfiguredModeratorEmails(new ModeratorBootstrapProperties(null))
+                        .incluye(new Email("quien@sastra.co")))
                 .isFalse();
     }
 

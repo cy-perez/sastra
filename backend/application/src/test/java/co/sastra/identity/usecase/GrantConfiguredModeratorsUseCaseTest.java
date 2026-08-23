@@ -8,6 +8,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import co.sastra.identity.dto.GrantedModeratorsResult;
 import co.sastra.identity.model.BirthDate;
 import co.sastra.identity.model.DisplayName;
 import co.sastra.identity.model.Email;
@@ -37,7 +38,7 @@ class GrantConfiguredModeratorsUseCaseTest {
 
     private final GrantConfiguredModeratorsUseCase caso = new GrantConfiguredModeratorsUseCase(usuarios, RELOJ);
 
-    private User cuenta(String correo) {
+    private User cuenta(String correo, boolean verificado) {
         return User.rehidratar(
                 UserId.nuevo(),
                 new Email(correo),
@@ -48,7 +49,7 @@ class GrantConfiguredModeratorsUseCaseTest {
                 null,
                 UserLocale.ES,
                 UserStatus.ACTIVE,
-                AHORA,
+                verificado ? AHORA : null,
                 Set.of(Role.BUYER),
                 AHORA);
     }
@@ -59,19 +60,21 @@ class GrantConfiguredModeratorsUseCaseTest {
      */
     @Test
     void deberia_no_tocar_nada_con_la_lista_vacia() {
-        GrantConfiguredModeratorsUseCase.Resultado resultado = caso.execute(List.of());
+        GrantedModeratorsResult resultado = caso.execute(List.of());
 
-        assertThat(resultado.huboAlgoQueDecir()).isFalse();
+        assertThat(resultado.otorgados()).isEmpty();
+        assertThat(resultado.sinCuenta()).isEmpty();
+        assertThat(resultado.invalidos()).isZero();
         verify(usuarios, never()).buscarPorCorreo(any());
         verify(usuarios, never()).otorgarRol(any(), any(), any());
     }
 
     @Test
     void deberia_otorgar_el_rol_de_moderador_a_la_cuenta_configurada() {
-        User quien = cuenta("moderadora@sastra.co");
+        User quien = cuenta("moderadora@sastra.co", true);
         when(usuarios.buscarPorCorreo(new Email("moderadora@sastra.co"))).thenReturn(Optional.of(quien));
 
-        GrantConfiguredModeratorsUseCase.Resultado resultado = caso.execute(List.of("moderadora@sastra.co"));
+        GrantedModeratorsResult resultado = caso.execute(List.of("moderadora@sastra.co"));
 
         verify(usuarios).otorgarRol(quien.id(), Role.MODERATOR, AHORA);
         assertThat(resultado.otorgados()).containsExactly("moderadora@sastra.co");
@@ -85,7 +88,7 @@ class GrantConfiguredModeratorsUseCaseTest {
      */
     @Test
     void deberia_encontrar_la_cuenta_aunque_el_correo_venga_con_mayusculas() {
-        User quien = cuenta("moderadora@sastra.co");
+        User quien = cuenta("moderadora@sastra.co", true);
         when(usuarios.buscarPorCorreo(new Email("moderadora@sastra.co"))).thenReturn(Optional.of(quien));
 
         caso.execute(List.of("  Moderadora@Sastra.CO  "));
@@ -102,7 +105,7 @@ class GrantConfiguredModeratorsUseCaseTest {
     void deberia_no_crear_la_cuenta_cuando_el_correo_configurado_no_existe() {
         when(usuarios.buscarPorCorreo(any())).thenReturn(Optional.empty());
 
-        GrantConfiguredModeratorsUseCase.Resultado resultado = caso.execute(List.of("fantasma@sastra.co"));
+        GrantedModeratorsResult resultado = caso.execute(List.of("fantasma@sastra.co"));
 
         verify(usuarios, never()).otorgarRol(any(), any(), any());
         assertThat(resultado.sinCuenta()).containsExactly("fantasma@sastra.co");
@@ -116,9 +119,9 @@ class GrantConfiguredModeratorsUseCaseTest {
      */
     @Test
     void deberia_ignorar_una_entrada_que_no_es_un_correo_sin_reventar() {
-        GrantConfiguredModeratorsUseCase.Resultado resultado = caso.execute(List.of("esto-no-es-un-correo"));
+        GrantedModeratorsResult resultado = caso.execute(List.of("esto-no-es-un-correo"));
 
-        assertThat(resultado.invalidos()).containsExactly("esto-no-es-un-correo");
+        assertThat(resultado.invalidos()).isEqualTo(1);
         assertThat(resultado.sinCuenta()).isEmpty();
         verify(usuarios, never()).otorgarRol(any(), any(), any());
     }
@@ -126,10 +129,10 @@ class GrantConfiguredModeratorsUseCaseTest {
     /** Una entrada mala no puede impedir que las buenas se apliquen. */
     @Test
     void deberia_seguir_con_el_resto_despues_de_una_entrada_invalida() {
-        User quien = cuenta("buena@sastra.co");
+        User quien = cuenta("buena@sastra.co", true);
         when(usuarios.buscarPorCorreo(new Email("buena@sastra.co"))).thenReturn(Optional.of(quien));
 
-        GrantConfiguredModeratorsUseCase.Resultado resultado = caso.execute(List.of("@@@", "buena@sastra.co"));
+        GrantedModeratorsResult resultado = caso.execute(List.of("@@@", "buena@sastra.co"));
 
         assertThat(resultado.otorgados()).containsExactly("buena@sastra.co");
         verify(usuarios).otorgarRol(quien.id(), Role.MODERATOR, AHORA);
@@ -141,7 +144,7 @@ class GrantConfiguredModeratorsUseCaseTest {
      */
     @Test
     void deberia_otorgar_solo_el_rol_de_moderador() {
-        User quien = cuenta("moderadora@sastra.co");
+        User quien = cuenta("moderadora@sastra.co", true);
         when(usuarios.buscarPorCorreo(any())).thenReturn(Optional.of(quien));
 
         caso.execute(List.of("moderadora@sastra.co"));
@@ -153,10 +156,27 @@ class GrantConfiguredModeratorsUseCaseTest {
     /** No revoca nunca: quitar un correo de la lista no le quita el rol a nadie. */
     @Test
     void deberia_no_revocar_ningun_rol() {
-        when(usuarios.buscarPorCorreo(any())).thenReturn(Optional.of(cuenta("moderadora@sastra.co")));
+        when(usuarios.buscarPorCorreo(any())).thenReturn(Optional.of(cuenta("moderadora@sastra.co", true)));
 
         caso.execute(List.of("moderadora@sastra.co"));
 
         verify(usuarios, never()).revocarRol(any(), any());
+    }
+
+    /**
+     * <strong>Sin correo verificado no hay rol.</strong> Registrarse demuestra que alguien
+     * sabe escribir una direccion; verificarla demuestra que controla el buzon, y este rol
+     * da acceso a las cedulas de todos los vendedores pendientes.
+     */
+    @Test
+    void deberia_no_otorgar_el_rol_a_una_cuenta_sin_el_correo_verificado() {
+        User quien = cuenta("sin-verificar@sastra.co", false);
+        when(usuarios.buscarPorCorreo(new Email("sin-verificar@sastra.co"))).thenReturn(Optional.of(quien));
+
+        GrantedModeratorsResult resultado = caso.execute(List.of("sin-verificar@sastra.co"));
+
+        verify(usuarios, never()).otorgarRol(any(), any(), any());
+        assertThat(resultado.sinVerificar()).containsExactly("sin-verificar@sastra.co");
+        assertThat(resultado.otorgados()).isEmpty();
     }
 }

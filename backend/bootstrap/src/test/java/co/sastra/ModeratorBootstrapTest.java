@@ -3,6 +3,7 @@ package co.sastra;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import co.sastra.identity.config.ModeratorBootstrapProperties;
+import co.sastra.identity.dto.GrantedModeratorsResult;
 import co.sastra.identity.model.BirthDate;
 import co.sastra.identity.model.DisplayName;
 import co.sastra.identity.model.Email;
@@ -32,7 +33,10 @@ import org.springframework.test.context.ActiveProfiles;
  * —el caso normal, con nadie configurado— dejaria un aviso de "esto no es un correo" en
  * el registro. Un aviso que sale siempre es un aviso que nadie lee.
  */
-@SpringBootTest
+// La propiedad se fija aqui y no se hereda del entorno: la prueba que comprueba como
+// enlaza la variable vacia no puede depender de que quien corre el build no la tenga
+// puesta.
+@SpringBootTest(properties = "SECURITY_BOOTSTRAP_MODERATORS=")
 @ActiveProfiles("local")
 @Import(PostgresTestContainer.class)
 class ModeratorBootstrapTest {
@@ -81,6 +85,8 @@ class ModeratorBootstrapTest {
                 reloj.instant());
 
         usuarios.crear(quien, hasher.hashear(new RawPassword("una-contrasena-larga")));
+        // Verificada: sin correo verificado no hay rol, y eso tiene su propia prueba.
+        usuarios.actualizar(quien.conCorreoVerificado(reloj.instant()));
 
         return quien.id();
     }
@@ -125,7 +131,7 @@ class ModeratorBootstrapTest {
     void deberia_no_crear_ninguna_cuenta_para_un_correo_desconocido() {
         String correo = "fantasma-" + UserId.nuevo().value() + "@sastra.co";
 
-        GrantConfiguredModeratorsUseCase.Resultado resultado = caso.execute(List.of(correo));
+        GrantedModeratorsResult resultado = caso.execute(List.of(correo));
 
         assertThat(resultado.sinCuenta()).containsExactly(correo);
         assertThat(usuarios.buscarPorCorreo(new Email(correo))).isEmpty();

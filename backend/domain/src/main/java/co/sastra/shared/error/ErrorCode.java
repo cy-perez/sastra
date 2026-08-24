@@ -206,6 +206,15 @@ public enum ErrorCode {
     /** La categoria no existe en el arbol, o esta retirada. */
     CATALOG_UNKNOWN_CATEGORY,
 
+    /**
+     * RN-063: un moderador no decide sobre su propia publicacion.
+     *
+     * <p>Codigo propio y 403, por lo mismo que {@link #SELLER_SELF_REVIEW_FORBIDDEN}:
+     * un 403 generico le diria "no eres moderador" a quien lo es, y lo dejaria
+     * buscando un problema de permisos que no existe.
+     */
+    CATALOG_SELF_MODERATION_FORBIDDEN,
+
     /** La peticion no cumple el contrato. El detalle por campo va en {@code errors}. */
     COMMON_VALIDATION_FAILED,
 

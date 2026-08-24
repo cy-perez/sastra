@@ -179,7 +179,12 @@ public class ApiExceptionHandler {
             // RN-011 y RN-013: no puede publicar porque no esta verificado, o porque
             // le revocaron el sello. Tiene sesion valida, asi que no es 401; lo que le
             // falta es una condicion suya, no un permiso sobre este recurso.
-            case SELLER_SELF_REVIEW_FORBIDDEN, CATALOG_SELLER_NOT_VERIFIED -> HttpStatus.FORBIDDEN;
+            case SELLER_SELF_REVIEW_FORBIDDEN,
+                    CATALOG_SELLER_NOT_VERIFIED,
+                    // RN-063, el gemelo de RN-060 en el catalogo: es moderador y la
+                    // publicacion es suya. Codigo propio por lo mismo, para no dejarlo
+                    // buscando un problema de permisos que no tiene.
+                    CATALOG_SELF_MODERATION_FORBIDDEN -> HttpStatus.FORBIDDEN;
             // 409: la peticion es correcta y choca con el estado actual del
             // sistema, que es lo que significa un conflicto.
             //

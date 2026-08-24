@@ -168,6 +168,44 @@ public enum ErrorCode {
      */
     SELLER_SELF_REVIEW_FORBIDDEN,
 
+    /**
+     * RN-011: para publicar hay que estar verificado.
+     *
+     * <p>Cubre tambien al vendedor revocado de RN-013, y a proposito: lo que el
+     * cliente tiene que hacer es lo mismo —completar o rehacer la verificacion— y un
+     * codigo por cada motivo obligaria a la interfaz a distinguir dos caminos que
+     * terminan en la misma pantalla.
+     */
+    CATALOG_SELLER_NOT_VERIFIED,
+
+    /**
+     * RN-061: la accion no corresponde al estado de la publicacion.
+     *
+     * <p>Uno solo para todas las transiciones prohibidas, por lo mismo que
+     * {@link #SELLER_VERIFICATION_INVALID_STATE}: lo que hay que hacer es recargar y
+     * mirar en que punto va, y un codigo por par de estados serian veintitantos
+     * codigos que dicen lo mismo.
+     */
+    CATALOG_LISTING_INVALID_STATE,
+
+    /**
+     * RN-016 y RN-017: faltan tomas, o falta alguna de las cuatro canonicas.
+     *
+     * <p>Cuantas se exigen depende del producto: ocho en general, cuatro si es
+     * tecnologia declarada sellada (RN-065). El codigo es el mismo porque lo que el
+     * vendedor tiene que hacer es lo mismo: subir las que falten.
+     */
+    CATALOG_SHOTS_INCOMPLETE,
+
+    /** RN-064: esa categoria no admite lo usado. Toda la familia de tecnologia. */
+    CATALOG_CONDITION_NOT_ALLOWED,
+
+    /** RN-066: solo la tecnologia declarada sellada admite imagenes de referencia. */
+    CATALOG_REFERENCE_IMAGE_NOT_ALLOWED,
+
+    /** La categoria no existe en el arbol, o esta retirada. */
+    CATALOG_UNKNOWN_CATEGORY,
+
     /** La peticion no cumple el contrato. El detalle por campo va en {@code errors}. */
     COMMON_VALIDATION_FAILED,
 

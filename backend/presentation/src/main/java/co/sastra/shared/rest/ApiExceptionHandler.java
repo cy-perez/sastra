@@ -176,7 +176,10 @@ public class ApiExceptionHandler {
             // 403: tiene credencial valida y hasta el rol correcto, y aun asi no puede
             // hacer esto. RN-060 es el unico caso hoy: el moderador es moderador, pero
             // la solicitud es suya.
-            case SELLER_SELF_REVIEW_FORBIDDEN -> HttpStatus.FORBIDDEN;
+            // RN-011 y RN-013: no puede publicar porque no esta verificado, o porque
+            // le revocaron el sello. Tiene sesion valida, asi que no es 401; lo que le
+            // falta es una condicion suya, no un permiso sobre este recurso.
+            case SELLER_SELF_REVIEW_FORBIDDEN, CATALOG_SELLER_NOT_VERIFIED -> HttpStatus.FORBIDDEN;
             // 409: la peticion es correcta y choca con el estado actual del
             // sistema, que es lo que significa un conflicto.
             //
@@ -187,7 +190,13 @@ public class ApiExceptionHandler {
             case AUTH_EMAIL_TAKEN,
                     SELLER_VERIFICATION_INVALID_STATE,
                     SELLER_VERIFICATION_ATTEMPTS_EXHAUSTED,
-                    SELLER_DOCUMENT_ALREADY_VERIFIED -> HttpStatus.CONFLICT;
+                    SELLER_DOCUMENT_ALREADY_VERIFIED,
+                    // RN-061, y por el mismo motivo que su gemelo de verificacion: la
+                    // peticion esta bien formada y lo que no encaja es en que punto
+                    // esta la publicacion. Es tambien lo que devuelve el criterio 20
+                    // cuando el moderador ya decidio, y el 34 cuando dos escrituras
+                    // concurrentes chocan.
+                    CATALOG_LISTING_INVALID_STATE -> HttpStatus.CONFLICT;
             // 422: se entiende lo que se envio, pero el negocio lo rechaza.
             // Se llama UNPROCESSABLE_CONTENT desde la RFC 9110; el nombre
             // anterior, UNPROCESSABLE_ENTITY, esta obsoleto en Spring 7.
@@ -210,7 +219,19 @@ public class ApiExceptionHandler {
                     // La entidad no esta en el catalogo. Codigo propio y no el de
                     // validacion generica: lo que hay que decirle es que elija de la
                     // lista, no que revise el formulario.
-                    SELLER_UNKNOWN_INSTITUTION -> HttpStatus.UNPROCESSABLE_CONTENT;
+                    SELLER_UNKNOWN_INSTITUTION,
+                    // RN-016, RN-017 y RN-065: faltan tomas. Lo que se envio se
+                    // entiende y el negocio lo rechaza, que es la definicion de 422.
+                    CATALOG_SHOTS_INCOMPLETE,
+                    // RN-064: la categoria elegida no admite lo usado. No es 409
+                    // —nada choca con un estado— sino contenido que no se acepta.
+                    CATALOG_CONDITION_NOT_ALLOWED,
+                    // RN-066: imagenes de referencia solo en tecnologia sellada.
+                    CATALOG_REFERENCE_IMAGE_NOT_ALLOWED,
+                    // La categoria no existe o esta retirada. Codigo propio y no el de
+                    // validacion generica, por lo mismo que la entidad financiera: lo
+                    // que hay que decirle es que elija otra del arbol.
+                    CATALOG_UNKNOWN_CATEGORY -> HttpStatus.UNPROCESSABLE_CONTENT;
             // 415: el contenido no es de un tipo que el servidor sepa manejar. Es
             // exactamente lo que significa, y le dice al cliente que el problema es
             // el formato y no lo que hay dentro. Se decide por los bytes de

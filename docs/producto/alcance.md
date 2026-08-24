@@ -86,14 +86,19 @@ Es la fase en curso desde el 21 de agosto de 2026.
   (HU-003, pendiente).
 - Visor 360º en la ficha de producto (HU-003, pendiente).
 - Publicación de prenda con las cuatro tomas obligatorias y las intermedias.
-  Sin historia escrita.
+  **HU-007, escrita el 24 de agosto de 2026 y pendiente de implementar.** Trae
+  también los endpoints de decisión del moderador sobre publicaciones, y con ella
+  quedaron cerradas las reglas que faltaban: RN-061, RN-062 y RN-063. Su único
+  prerrequisito duro es el árbol de categorías, que sigue sin definir.
 - Panel de moderación y flujo de aprobación o rechazo con motivo. **Hecho a
   medias**: HU-006 entrega la bandeja de verificaciones de vendedor, y con ella
   `FEATURE_SELLER_VERIFICATION` ya se puede encender. La moderación de
-  publicaciones —RN-015, la otra mitad de este punto— sigue sin historia y llega
-  con la publicación de prenda. Revocar un sello ya otorgado queda fuera de
-  HU-006 y también sin historia: el endpoint existe, pero no hay forma de llegar
-  a una verificación ya aprobada desde la interfaz.
+  publicaciones —RN-015, la otra mitad de este punto— tiene ya sus reglas y sus
+  endpoints en HU-007; lo que falta es la bandeja con la que se usan, que se
+  separó a propósito con el mismo corte que hubo entre HU-002 y HU-006 y todavía
+  no tiene historia. Revocar un sello ya otorgado queda fuera de HU-006 y también
+  sin historia: el endpoint existe, pero no hay forma de llegar a una
+  verificación ya aprobada desde la interfaz.
 - Catálogo, categorías, ficha de producto y favoritos. Sin historia escrita, y
   bloqueado mientras el árbol de categorías siga sin definir.
 - Panel del vendedor con sus publicaciones y su estado. Sin historia escrita.
@@ -128,7 +133,7 @@ Se documentan aquí para no reabrirlas por accidente:
 |---|---|
 | Días hábiles que tarda el desembolso en llegar a la cuenta del vendedor | Se define en Fase 3 con asesoría. La retención sí está definida: hasta que el comprador confirma o vence la ventana (RN-034) |
 | Separar la política de devoluciones de los términos y condiciones | Sin decidir. Requiere variable de versión propia |
-| Árbol de categorías del catálogo | Sin definir. "Dama" y "Caballero" no son categorías del proyecto: nadie las ha decidido |
+| Árbol de categorías del catálogo | Sin definir. "Dama" y "Caballero" no son categorías del proyecto: nadie las ha decidido. **Dejó de ser solo una decisión aplazada: es el prerrequisito duro de HU-007**, y cada categoría tiene que declarar su sistema de talla y su grupo de medida |
 | Facturación electrónica de la comisión ante la DIAN | Se define en Fase 3 |
 | Vendedores con figura de empresa | Fuera de alcance por ahora |
 | Pago contraentrega | Descartado por ahora |

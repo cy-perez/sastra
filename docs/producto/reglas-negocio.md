@@ -90,7 +90,12 @@ Cada regla tiene identificador. Úsalo en el código y en las pruebas:
 - **RN-019** Resolución mínima de 900 x 1200 px por toma. Por debajo, el
   formulario no deja continuar.
 - **RN-020** El precio se expresa en pesos colombianos, sin decimales, mínimo
-  10.000 y máximo 20.000.000. Fuera de ese rango exige revisión manual.
+  10.000 y máximo 20.000.000. Fuera de ese rango exige revisión manual, que es
+  distinto de estar prohibido: el formulario **no bloquea** —cuando una regla
+  quiere bloquear lo dice con todas sus letras, como hace RN-019— sino que la
+  publicación queda marcada para revisión más atenta y el moderador la ve
+  destacada. La aclaración se decidió el 24 de agosto de 2026, al escribir
+  HU-007, porque la frase sola admitía las dos lecturas.
 - **RN-021** El vendedor declara condición, talla y medidas reales en
   centímetros. Las medidas son obligatorias: son la causa número uno de
   devolución en moda de segunda mano.
@@ -100,6 +105,63 @@ Cada regla tiene identificador. Úsalo en el código y en las pruebas:
 - **RN-024** Publicaciones prohibidas: réplicas o falsificaciones, ropa interior
   usada, artículos que no sean moda o accesorios, prendas con daño no declarado.
 - **RN-025** Existencia siempre igual a 1. Una prenda, una publicación.
+- **RN-061** Transiciones válidas de la publicación, sobre los siete estados del
+  glosario:
+
+  | Desde | Hacia | Quién lo provoca |
+  |---|---|---|
+  | — | `DRAFT` | El vendedor crea la publicación |
+  | `DRAFT` | `DRAFT` | Guarda o corrige un dato. Se guarda el avance y se retoma donde iba |
+  | `DRAFT` | `PENDING_REVIEW` | Envía a revisión con todo completo |
+  | `DRAFT` | `ARCHIVED` | Descarta el borrador |
+  | `PENDING_REVIEW` | `DRAFT` | El vendedor retira la solicitud antes de que se decida |
+  | `PENDING_REVIEW` | `PUBLISHED` | El moderador aprueba |
+  | `PENDING_REVIEW` | `REJECTED` | El moderador rechaza con motivo |
+  | `REJECTED` | `DRAFT` | El vendedor retoma para corregir (RN-022) |
+  | `REJECTED` | `ARCHIVED` | El vendedor desiste |
+  | `PUBLISHED` | `PENDING_REVIEW` | El vendedor edita contenido moderable (RN-062) |
+  | `PUBLISHED` | `PAUSED` | El vendedor pausa |
+  | `PUBLISHED` | `SOLD` | El sistema, con el pago aprobado (RN-035) |
+  | `PUBLISHED` | `ARCHIVED` | El vendedor archiva, o el moderador la baja por RN-024 |
+  | `PAUSED` | `PUBLISHED` | El vendedor reanuda |
+  | `PAUSED` | `PENDING_REVIEW` | El vendedor edita contenido moderable (RN-062) |
+  | `PAUSED` | `ARCHIVED` | El vendedor archiva, o el moderador la baja por RN-024 |
+
+  Ninguna otra transición existe. `SOLD` y `ARCHIVED` son terminales: de la
+  primera lo dice RN-023 y de la segunda, que archivar es la forma de retirar algo
+  para siempre. Reanudar una publicación pausada **no** pasa por moderación,
+  porque pausar no cambió nada de lo que se aprobó.
+
+  A diferencia de RN-059, de `PENDING_REVIEW` **sí** se vuelve atrás por voluntad
+  de quien envió: allí no se puede porque una cédula ya vista no se retira, y aquí
+  lo único que se retira es la foto de una prenda. Si el moderador ya decidió, la
+  decisión se mantiene y quien retira recibe un conflicto.
+
+  Como en RN-045, ninguna transición se pierde: cada una queda registrada con
+  fecha, actor y motivo.
+
+- **RN-062** Editar una publicación visible la devuelve a moderación solo si
+  cambia lo que describe la prenda. Son campos moderables el título, la
+  descripción, la marca, la categoría, la condición, la talla, las medidas, el
+  color y cualquiera de las tomas: cambiar uno la manda a `PENDING_REVIEW` y deja
+  de ser visible hasta que se apruebe otra vez. No lo son el precio ni el peso y
+  las dimensiones de envío: cambiarlos no altera lo que un moderador aprobó y la
+  publicación sigue visible.
+
+  Es la lectura conjunta de RN-015 y RN-030, que sueltas se contradicen: la
+  primera exige moderación antes de ser visible y la segunda da por hecho que el
+  precio cambia en una publicación viva. Se modera lo que describe la prenda, no
+  lo que cuesta. Congelar el precio al crear el pedido, que es lo que protege al
+  comprador, lo sigue haciendo RN-030.
+
+- **RN-063** Un moderador no puede aprobar ni rechazar su propia publicación.
+  Quien revisa y quien es revisado tienen que ser dos personas, y la comprobación
+  es del servidor.
+
+  Es RN-060 aplicada al catálogo y por el mismo motivo: la moderación es lo que
+  responde ante el comprador de que lo publicado es lo que dice ser, y una
+  publicación que su propio dueño aprueba no responde por nada. Un moderador sí
+  puede vender —nada lo prohíbe—; lo que no puede es decidir sobre lo suyo.
 
 ## Precio y comisión
 

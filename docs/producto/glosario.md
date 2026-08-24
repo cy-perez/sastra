@@ -41,9 +41,14 @@ panel que los usa llega en Fase 4 (`docs/producto/alcance.md`).
 | Moderación | `Moderation` | Revisión de una publicación antes de que sea visible. Sin excepciones (RN-015). |
 | Condición | `Condition` | Nuevo, como nuevo, buen estado, con detalles. El vendedor declara una de las cuatro; no hay una quinta. |
 | De segunda | `SecondHand` | Todo lo que no es nuevo, es decir las otras tres condiciones. Es el par comercial de "nuevo" en menús, filtros y textos. |
-| Categoría | `Category` | Árbol de clasificación de la prenda. |
+| Borrador | `Draft` | Publicación que el vendedor todavía está armando. No es visible para nadie más y se guarda incompleta. |
+| Categoría | `Category` | Árbol de clasificación de la prenda. Cada categoría declara su sistema de talla y su grupo de medida. |
 | Talla | `Size` | Talla declarada, según el sistema de la categoría. |
+| Sistema de talla | `SizeSystem` | Qué escala usa una categoría: por letra, numérica, en pulgadas de cintura, de calzado o única. Lista cerrada en HU-007. |
 | Medidas | `Measurements` | Medidas reales en centímetros tomadas por el vendedor. |
+| Grupo de medida | `MeasurementGroup` | Qué medidas son obligatorias para una categoría. Una camisa y un zapato no se miden igual, y sin agrupar habría que pedirlas todas o ninguna. Lista cerrada en HU-007. |
+| Color | `Color` | Color declarado, de lista cerrada. Es filtro de catálogo, y en texto libre un filtro no filtra. |
+| Motivo de rechazo de publicación | `ListingRejectionReason` | Lista cerrada con la que el moderador rechaza una publicación (RN-022). **No es** el `RejectionReason` de la verificación de vendedor: son dos listas distintas para dos decisiones distintas. |
 | Toma | `Shot` | Una fotografía individual del conjunto de captura. |
 | Tomas canónicas | `CanonicalShots` | Frontal, lateral derecha, lateral izquierda y posterior. |
 | Secuencia 360 | `SpinSequence` | Conjunto ordenado de tomas que alimenta el visor giratorio. |
@@ -146,7 +151,9 @@ ella, solo que sin poder hacer nada más que reenviar el correo (RN-002).
 pendiente por pedidos sin resolver (RN-009), y en Fase 1 no hay pedidos.
 
 **Publicación:** `DRAFT`, `PENDING_REVIEW`, `PUBLISHED`, `REJECTED`, `PAUSED`,
-`SOLD`, `ARCHIVED`.
+`SOLD`, `ARCHIVED`. Sus transiciones son RN-061. `PAUSED` lo pone y lo quita el
+vendedor sin pasar por moderación; `ARCHIVED` lo pueden poner el vendedor y el
+moderador, y es terminal como `SOLD`.
 
 **Pedido:** `CREATED`, `PAYMENT_PENDING`, `PAID`, `PREPARING`, `SHIPPED`,
 `DELIVERED`, `RELEASED`, `CANCELLED`.

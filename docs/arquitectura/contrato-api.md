@@ -8,7 +8,12 @@ Base: `/api/v1`. JSON en UTF-8. Fechas en ISO 8601 con zona UTC.
 - Jerarquía solo cuando el recurso hijo no existe sin el padre:
   `/sellers/{sellerId}/products`.
 - Sin verbos en la ruta. La única excepción son acciones que no son un recurso:
-  `/auth/login`, `/auth/refresh`, `/listings/{id}/submit-for-review`.
+  `/auth/login` y `/auth/refresh`. Cuando la acción se puede nombrar como
+  sustantivo, se nombra así y el método hace el resto: `POST` y `DELETE` sobre
+  `/verifications/{id}/approval`, `/listings/{id}/submission` o
+  `/listings/{id}/pause`. Aquí figuraba `/listings/{id}/submit-for-review` como
+  ejemplo y se corrigió el 24 de agosto de 2026: esa ruta nunca existió y el
+  código no usa verbos en ninguna.
 - La versión va en la ruta desde el primer día. Un cambio incompatible crea
   `/api/v2`; agregar un campo opcional no lo es.
 

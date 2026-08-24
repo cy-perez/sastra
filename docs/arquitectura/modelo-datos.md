@@ -147,18 +147,34 @@ que funciona por sí solo no puede registrar quién lo usó (ADR-0018).
 `brand`, `condition`, `size_system`, `size_value`, `measurements` (`jsonb`),
 `color`, `price`, `weight_grams`, `length_cm`, `width_cm`, `height_cm`,
 `created_at`, `updated_at`.
+Qué claves lleva `measurements` no es libre: lo determina el
+`measurement_group` de la categoría, y el dominio valida que estén todas y sean
+números positivos en centímetros (RN-021). `size_system` se copia de la categoría
+al crear el producto, para que cambiar la categoría después no reinterprete una
+talla ya declarada. `brand` es texto libre y opcional; `color` es lista cerrada.
 
 **listings**: `id`, `product_id`, `status`, `published_at`, `sold_at`,
-`moderated_by`, `moderated_at`, `rejection_reason`, `version`.
+`moderated_by`, `moderated_at`, `rejection_reason`, `rejection_note`,
+`requires_attention`, `attention_reason`, `version`.
 La publicación se separa del producto para que el ciclo de moderación no
 contamine los datos de la prenda.
+`requires_attention` y `attention_reason` son la marca de revisión más atenta:
+la pone un precio fuera del rango de RN-020 o una toma cargada desde galería en
+vez de capturada (HU-003 criterio 8). No cambia el estado ni bloquea nada; solo
+hace que el moderador la vea destacada.
+`version` es el bloqueo optimista, y no es decorativo: el vendedor y el moderador
+escriben sobre la misma fila a la vez con normalidad.
 
 **product_images**: `id`, `product_id`, `object_key`, `position` (0 a 7),
 `angle_degrees`, `is_canonical`, `width`, `height`, `bytes`, `content_type`.
 Restricción única sobre (`product_id`, `position`).
 
 **categories**: `id`, `parent_id`, `slug`, `name_es`, `name_en`, `size_system`,
-`position`.
+`measurement_group`, `active`, `position`.
+`size_system` y `measurement_group` son las dos listas cerradas de HU-007: la
+categoría decide con qué escala se declara la talla y qué medidas son
+obligatorias. `active` permite retirar una categoría del formulario sin tocar las
+publicaciones que ya la tienen.
 
 **moderation_events**: `id`, `listing_id`, `actor_id`, `action`, `reason`,
 `notes`, `created_at`.

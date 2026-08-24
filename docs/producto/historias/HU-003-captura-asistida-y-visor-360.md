@@ -94,9 +94,15 @@ prenda, captura desde aplicación nativa.
   worker, sensores con `DeviceOrientationEvent` y su solicitud de permiso en iOS.
 - Requiere HTTPS también en desarrollo; el entorno local debe servirse con
   certificado.
-- Subida directa al almacenamiento con URL firmada emitida por el backend. El
-  backend valida tipo, tamaño y proporción al confirmar, y nunca confía en lo que
-  declara el cliente.
+- **Subida por el backend, no por URL firmada.** Esta línea decía lo contrario y
+  quedó desactualizada: ADR-0018 es posterior y descartó la URL firmada
+  precisamente porque obliga a validar sobre un archivo que ya existe en el
+  almacén. El backend recibe los bytes, decide el tipo real por la cabecera,
+  quita el EXIF y comprueba proporción y dimensiones antes de guardar, y nunca
+  confía en lo que declara el cliente. El contrato concreto de subida está en
+  HU-007. La URL firmada se reconsidera solo si esta historia mide que ocho tomas
+  por el backend salen lentas o caras, que es la condición de revisión que el
+  propio ADR-0018 anota.
 - Se genera derivada en formato moderno para el catálogo y se conserva el
   original.
 

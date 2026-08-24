@@ -1,7 +1,8 @@
 # Sastra — Instrucciones para el agente
 
-Marketplace colombiano de moda nueva y usada. La plataforma cobra 5% al vendedor
-sobre el valor del producto y actúa como respaldo de la transacción.
+Marketplace colombiano de moda nueva y de segunda, y de tecnología nueva. Lo
+usado se vende solo en moda (RN-064). La plataforma cobra 5% al vendedor sobre el
+valor del producto y actúa como respaldo de la transacción.
 
 Este archivo es la única fuente de reglas que aplica a todo el repositorio. Es
 corto a propósito. Los detalles viven en `docs/` y se leen bajo demanda.

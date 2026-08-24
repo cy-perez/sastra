@@ -45,6 +45,20 @@ colgada, además, es más alta que ancha: 3:4 la encuadra mejor que 1:1.
 - El recorte a 3:4 se hace en el cliente antes de subir, y el backend lo verifica
   al confirmar: nunca se confía en lo que declara el cliente.
 
+## Excepción posterior
+
+**24 de agosto de 2026, al admitir tecnología en el catálogo.** Esta ADR se
+escribió cuando Sastra vendía solo moda y su razonamiento sigue en pie para toda
+prenda. No se sostiene para un producto de tecnología que se vende sellado: ocho
+fotos de una caja cerrada no informan más que cuatro, y girar un empaque no se
+parece en nada a ver el producto.
+
+La excepción es RN-065 y es estrecha a propósito: solo la tecnología **declarada
+sellada** baja a cuatro tomas canónicas y pierde el visor. La tecnología no
+sellada se fotografía con las ocho, como cualquier otra cosa. La decisión de esta
+ADR no se revoca ni se sustituye; se le reconoce un caso que no existía cuando se
+tomó.
+
 ## Cuándo revisar
 
 Con datos reales de abandono en el asistente de captura, o si se mide que el

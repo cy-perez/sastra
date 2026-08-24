@@ -270,10 +270,11 @@ ninguna parte (HU-005, criterio 17).
   de reclamo en moda de segunda.
 - Si la prenda no corresponde a lo publicado o llega con un daño que no
   declaraste, asumes el flete de regreso y el comprador recibe su reintegro.
-- No se publican réplicas ni falsificaciones, ropa interior usada, artículos que
-  no sean moda o accesorios, ni prendas con daño no declarado.
+- No se publican réplicas ni falsificaciones, ropa interior usada, productos que
+  no sean moda ni tecnología, ni prendas con daño no declarado.
+- La tecnología se vende **solo nueva**. Lo usado se vende únicamente en moda.
 
-Reglas: RN-021, RN-024, RN-055.
+Reglas: RN-021, RN-024, RN-055, RN-064.
 
 *Nota de redacción:* esta sección parece un obstáculo y es lo contrario: atrae al
 vendedor serio y ahuyenta al que genera los reclamos. Un marketplace de segunda
@@ -427,9 +428,15 @@ y recorta a la misma proporción. De ahí salen las cuatro vistas obligatorias
 Sí. Sastra tiene catálogo de nuevo y de segunda, y cada publicación indica su
 condición. (RN-024 para lo que no se puede publicar)
 
+**¿Puedo vender tecnología?** (`.tech`)
+Sí, y solo nueva: celulares, computadores, televisores y demás se publican sin
+uso. Lo de segunda se vende únicamente en moda. Si el producto está sellado, se
+publica con cuatro fotos del empaque y puedes añadir imágenes de referencia del
+fabricante, que salen siempre marcadas como tales. (RN-064, RN-065, RN-066)
+
 **¿Qué no puedo publicar?** (`.forbidden`)
-Réplicas o falsificaciones, ropa interior usada, artículos que no sean moda o
-accesorios, y prendas con daño que no declares. (RN-024)
+Réplicas o falsificaciones, ropa interior usada, tecnología usada, productos que
+no sean moda ni tecnología, y prendas con daño que no declares. (RN-024, RN-064)
 
 **¿Por qué revisan mi publicación?** (`.moderation`)
 Porque un catálogo limpio es lo que hace que valga la pena comprar aquí. Toda
@@ -729,10 +736,44 @@ de productos prohibidos existe (RN-024), la ventana de reclamo y el reintegro
 existen (RN-050 a RN-058), y quién confirma la entrega está decidido (RN-034: el
 comprador).
 
+## Tecnología en el catálogo — pendiente de redacción
+
+El catálogo admite tecnología nueva desde el 24 de agosto de 2026 (RN-064 a
+RN-067). Las reglas están escritas; **el texto del sitio, en su mayor parte, no**,
+y hasta que lo esté no se toca `src/i18n`: inventar copia de cara al público en un
+archivo de traducciones es exactamente lo que este documento existe para evitar.
+
+Lo que ya se corrigió aquí es lo que había quedado **falso**: la lista de
+productos prohibidos en «Qué asumes como vendedor» y en las preguntas frecuentes,
+más la pregunta nueva sobre tecnología.
+
+Lo que falta escribir:
+
+- [ ] **El descriptor de marca dice «Compra y vende moda con respaldo»** y el
+      catálogo ya no es solo moda. Aparece en la portada, en el pie, en el título
+      para buscadores y en `docs/marca/`, que este proyecto no modifica por su
+      cuenta. Es una decisión de marca, no de redacción, y arrastra el logo
+      horizontal y el manual. **Es el pendiente más grande de esta lista.**
+- [ ] Los tres pasos de la portada y el recorrido de `/como-funciona` hablan solo
+      de prendas, tallas y medidas. Hay que decidir si se generalizan o si se
+      separan los dos recorridos.
+- [ ] Los nombres visibles de las siete categorías de tecnología, en los dos
+      idiomas.
+- [ ] El rótulo de las imágenes de referencia en la ficha y en el carrusel, que
+      RN-066 exige en los dos idiomas y que todavía no tiene texto.
+- [ ] Cómo se enuncia la garantía del fabricante en la ficha sin usar la palabra
+      Respaldo ni parecerse a ella (RN-067). **No se escribe hasta que pase
+      revisión de abogado**, igual que los tres documentos legales.
+
 ## Decisiones de producto
 
-- [ ] Árbol de categorías del catálogo. "Dama" y "Caballero" no son categorías
-      del proyecto: nadie las ha decidido y no se pueden escribir en un menú.
+- [ ] Especificaciones de tecnología: pulgadas, capacidad, memoria, modelo. Hoy
+      no hay dónde guardarlas y el catálogo de tecnología no se puede filtrar por
+      nada que le importe a quien compra un dispositivo.
+- [x] Árbol de categorías del catálogo. **Decidido el 24 de agosto de 2026** en
+      `docs/producto/categorias.md`: seis familias y treinta y una categorías, por
+      tipo de producto. "Dama" y "Caballero" siguen sin ser categorías del
+      proyecto. Faltan los nombres visibles en inglés.
 - [ ] Plazo máximo de despacho del vendedor.
 - [ ] Si hay límite de publicaciones activas por vendedor.
 - [ ] Si se le exige al vendedor entregar la prenda limpia.
@@ -765,6 +806,12 @@ comprador).
       que no depende de que el vendedor colabore—, pero el Estatuto del
       Consumidor impone deberes propios a quien opera una plataforma de comercio
       electrónico. Es el punto que un abogado debe revisar primero.
+- [ ] **La garantía legal de un producto de tecnología nuevo.** La Ley 1480 de
+      2011 la impone sobre todo producto nuevo, y RN-067 dice que responde el
+      vendedor y no Sastra. Que la regla lo diga no basta: hay que comprobar que
+      es sostenible para una plataforma que además cobra comisión, y redactar
+      cómo se enuncia sin rozar la palabra Respaldo. **Bloquea abrir la venta de
+      tecnología**, no el resto del sitio.
 
 ## Traducción
 

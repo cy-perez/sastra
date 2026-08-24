@@ -85,11 +85,16 @@ Es la fase en curso desde el 21 de agosto de 2026.
 - Asistente de captura de fotos con overlay, nivelador y recorte en cliente
   (HU-003, pendiente).
 - Visor 360º en la ficha de producto (HU-003, pendiente).
-- Publicación de prenda con las cuatro tomas obligatorias y las intermedias.
+- Publicación de producto con las cuatro tomas obligatorias y las intermedias, en
+  las dos familias: moda —nueva y de segunda— y **tecnología, solo nueva**
+  (RN-064). La tecnología se agregó al alcance el 24 de agosto de 2026 y entra en
+  esta fase porque HU-007 todavía no tiene código: meterla ahora cuesta menos que
+  reabrir el catálogo después. Moverla a una fase posterior es cambiar esta línea.
   **HU-007, escrita el 24 de agosto de 2026 y pendiente de implementar.** Trae
   también los endpoints de decisión del moderador sobre publicaciones, y con ella
-  quedaron cerradas las reglas que faltaban: RN-061, RN-062 y RN-063. Su único
-  prerrequisito duro es el árbol de categorías, que sigue sin definir.
+  quedaron cerradas las reglas que faltaban: RN-061, RN-062 y RN-063. Su
+  prerrequisito duro era el árbol de categorías, aprobado el 24 de agosto de 2026
+  en `docs/producto/categorias.md`. Ya no tiene nada que la bloquee.
 - Panel de moderación y flujo de aprobación o rechazo con motivo. **Hecho a
   medias**: HU-006 entrega la bandeja de verificaciones de vendedor, y con ella
   `FEATURE_SELLER_VERIFICATION` ya se puede encender. La moderación de
@@ -99,8 +104,9 @@ Es la fase en curso desde el 21 de agosto de 2026.
   no tiene historia. Revocar un sello ya otorgado queda fuera de HU-006 y también
   sin historia: el endpoint existe, pero no hay forma de llegar a una
   verificación ya aprobada desde la interfaz.
-- Catálogo, categorías, ficha de producto y favoritos. Sin historia escrita, y
-  bloqueado mientras el árbol de categorías siga sin definir.
+- Catálogo, categorías, ficha de producto y favoritos. Sin historia escrita. Ya no
+  está bloqueado —el árbol se aprobó—, pero espera a que HU-007 exista: sin
+  publicaciones no hay catálogo que mostrar.
 - Panel del vendedor con sus publicaciones y su estado. Sin historia escrita.
 
 ## Fase 3 — transacción
@@ -133,7 +139,7 @@ Se documentan aquí para no reabrirlas por accidente:
 |---|---|
 | Días hábiles que tarda el desembolso en llegar a la cuenta del vendedor | Se define en Fase 3 con asesoría. La retención sí está definida: hasta que el comprador confirma o vence la ventana (RN-034) |
 | Separar la política de devoluciones de los términos y condiciones | Sin decidir. Requiere variable de versión propia |
-| Árbol de categorías del catálogo | Sin definir. "Dama" y "Caballero" no son categorías del proyecto: nadie las ha decidido. **Dejó de ser solo una decisión aplazada: es el prerrequisito duro de HU-007**, y cada categoría tiene que declarar su sistema de talla y su grupo de medida |
+| Árbol de categorías del catálogo | **Decidido el 24 de agosto de 2026**, en `docs/producto/categorias.md`: seis familias y treinta y una categorías, por tipo de producto y sin eje de género, incluida la familia de tecnología. "Dama" y "Caballero" siguen sin ser categorías del proyecto |
 | Facturación electrónica de la comisión ante la DIAN | Se define en Fase 3 |
 | Vendedores con figura de empresa | Fuera de alcance por ahora |
 | Pago contraentrega | Descartado por ahora |

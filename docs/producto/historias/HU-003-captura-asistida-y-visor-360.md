@@ -36,6 +36,13 @@ carga de la secuencia, carrusel y visor giratorio en la ficha.
 No entra: eliminación de fondo, corrección de color, reconocimiento del tipo de
 prenda, captura desde aplicación nativa.
 
+**Tampoco entra la tecnología sellada.** Desde que el catálogo admite tecnología
+—24 de agosto de 2026—, una publicación sellada exige cuatro tomas del empaque y
+no las ocho, no ofrece visor giratorio, y admite imágenes de referencia que no
+las toma nadie con esta cámara (RN-065, RN-066). El asistente de ocho pasos no
+aplica ahí. Lo que sí se reutiliza es el recorte a 3:4 y la normalización, que son
+los mismos para cualquier foto del catálogo.
+
 ## Criterios de aceptación — captura
 
 1. El asistente guía ocho pasos obligatorios con barra de progreso y nombre de

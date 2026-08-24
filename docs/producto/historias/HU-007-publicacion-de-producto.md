@@ -1,4 +1,4 @@
-# HU-007 — Publicación de prenda
+# HU-007 — Publicación de producto
 
 **Fase:** 2 | **Estado:** pendiente
 **Reglas que aplica:** RN-011, RN-013, RN-015 a RN-025, RN-029, RN-030,
@@ -6,9 +6,12 @@ RN-061, RN-062, RN-063
 
 ## Objetivo
 
-Un vendedor verificado describe su prenda, sube las ocho tomas y la envía a
-revisión; un moderador la aprueba o la rechaza con motivo, y solo entonces la
-publicación es visible.
+Un vendedor verificado describe su producto, sube sus tomas y lo envía a revisión;
+un moderador la aprueba o la rechaza con motivo, y solo entonces la publicación es
+visible.
+
+Cubre las dos familias que Sastra admite: moda, nueva y de segunda, y tecnología,
+solo nueva (RN-064).
 
 ## Por qué ahora
 
@@ -32,7 +35,7 @@ antes de escribir los criterios, porque cinco de ellas deciden el esquema.
 - **Editar el contenido de una publicación viva la devuelve a revisión; cambiar
   el precio no.** RN-015 dice que todo pasa por moderación antes de ser visible y
   RN-030 da por hecho que el precio cambia en una publicación viva. Es la única
-  lectura que satisface las dos: se modera lo que describe la prenda, no lo que
+  lectura que satisface las dos: se modera lo que describe el producto, no lo que
   cuesta.
 - **`PAUSED` es del vendedor; `ARCHIVED` es de los dos.** El vendedor pausa,
   reanuda y archiva; el moderador puede archivar una publicación ya visible que
@@ -58,7 +61,7 @@ antes de escribir los criterios, porque cinco de ellas deciden el esquema.
 
 ## Alcance
 
-Entra: borrador de publicación, datos de la prenda, subida y validación de las
+Entra: borrador de publicación, datos del producto, subida y validación de las
 ocho tomas, envío a revisión, decisión del moderador con motivo, edición, pausa,
 reanudación y archivo, y el listado propio con el que el vendedor llega a sus
 borradores.
@@ -104,6 +107,8 @@ historia son dos.
    la respuesta es 400 con `VALIDATION_*` sobre el campo `color`.
 9. Dada una condición que no es una de las cuatro del glosario, cuando se envía,
    entonces la respuesta es 400. No hay una quinta y el backend no la acepta.
+   Cuáles de las cuatro admite la publicación lo decide su categoría: ver los
+   criterios de tecnología.
 10. Dado el grupo de medida que declara la categoría elegida, cuando falta una de
     las medidas obligatorias de ese grupo, o no es un número positivo en
     centímetros, entonces la respuesta es 422 y no se puede enviar a revisión
@@ -195,10 +200,53 @@ historia son dos.
     intentan cambiar su estado, entonces la segunda falla con 409 por bloqueo
     optimista sobre `version` y no se pierde ninguna decisión.
 
+## Criterios de aceptación — tecnología
+
+La familia de tecnología entró el 24 de agosto de 2026 y solo se vende nueva.
+Estos criterios son los únicos que la distinguen de la moda; en todo lo demás una
+publicación de tecnología se comporta igual.
+
+35. Dada una categoría con `allows_used` en falso —toda la familia de
+    tecnología—, cuando el vendedor declara una condición distinta de nueva,
+    entonces la respuesta es 422 `CATALOG_CONDITION_NOT_ALLOWED` y no se guarda.
+    La comprobación es del dominio: esconder las tres opciones en el formulario no
+    es la regla, porque el endpoint se puede llamar sin pasar por él (RN-064).
+36. Dada una publicación de moda, cuando el vendedor intenta declararla sellada o
+    declarar meses de garantía, entonces la respuesta es 422. Los dos campos solo
+    existen en tecnología.
+37. Dada una publicación de tecnología declarada sellada, cuando se envía a
+    revisión, entonces se le exigen exactamente cuatro tomas del vendedor, las
+    cuatro canónicas del empaque, y **no** las ocho de RN-017. La ficha no ofrece
+    visor giratorio (RN-065).
+38. Dada una publicación de tecnología **no** declarada sellada, cuando se envía a
+    revisión, entonces se le exigen las ocho tomas como a cualquier otra y no
+    admite imágenes de referencia.
+39. Dada una publicación que no es tecnología sellada, cuando el vendedor sube una
+    imagen de referencia, entonces la respuesta es 422
+    `CATALOG_REFERENCE_IMAGE_NOT_ALLOWED` (RN-066).
+40. Dada una publicación de tecnología sellada sin ninguna toma propia, cuando se
+    envía a revisión con solo imágenes de referencia, entonces la respuesta es 422
+    `CATALOG_SHOTS_INCOMPLETE`. Una imagen de referencia nunca cuenta como toma:
+    sin una foto real no hay prueba de que el producto exista.
+41. Dada una ficha con imágenes de referencia, cuando se muestra, entonces cada
+    una va rotulada como referencia en el carrusel y en la ficha, en los dos
+    idiomas, y ninguna aparece como fotograma frontal (RN-066).
+42. Dado un dispositivo con garantía del fabricante, cuando el vendedor declara
+    los meses, entonces la ficha dice que responde el vendedor y no Sastra
+    (RN-067). Ningún texto de esta historia llama Respaldo a esa garantía ni al
+    revés.
+
 ## Casos borde
 
 - **El moderador aprueba mientras el vendedor edita.** Lo resuelve el criterio
   34: gana quien llegue primero y el otro recibe 409 con el estado actual.
+- **El vendedor cambia una publicación de una categoría de moda a una de
+  tecnología** con condición «con detalles» ya declarada. El cambio se rechaza con
+  el criterio 35: la categoría nueva no admite esa condición, y no se corrige la
+  condición por su cuenta.
+- **Una publicación de tecnología sellada pasa a no sellada** después de subir
+  imágenes de referencia. Las imágenes de referencia se borran con la
+  declaración, y la publicación pasa a exigir las ocho tomas.
 - **La categoría desaparece del árbol** después de publicada. La publicación
   conserva la que tenía; la categoría se marca inactiva y no se puede elegir en
   borradores nuevos. No se reasigna nada de forma automática.
@@ -223,7 +271,7 @@ historia son dos.
 - **Consecuencia que hay que aceptar a conciencia:** una toma de un borrador ya
   está en el almacén público antes de que la publicación sea visible. No está
   enlazada en ninguna parte y su clave no es adivinable, pero quien tenga la
-  dirección la ve. Es aceptable porque es la foto de una prenda que el vendedor
+  dirección la ve. Es aceptable porque es la foto de un producto que el vendedor
   va a publicar; no lo sería para nada del almacén reservado, y por eso la cédula
   y la selfie no pasan por aquí.
 - **El EXIF se quita siempre.** Una toma publicada con su EXIF dice dónde vive el
@@ -248,10 +296,19 @@ centímetros y admiten un decimal.
 | `BOTTOM` | Parte inferior | Cintura, cadera, tiro, largo |
 | `FULL_BODY` | Prenda entera | Pecho, cintura, cadera, largo |
 | `FOOTWEAR` | Calzado | Largo de plantilla interna |
-| `ACCESSORY` | Accesorio | Alto, ancho, profundidad |
+| `ACCESSORY_VOLUME` | Accesorio con volumen | Alto, ancho, profundidad |
+| `ACCESSORY_FLAT` | Accesorio plano | Largo, ancho |
+| `DEVICE` | Dispositivo | Alto, ancho, profundidad |
 
 `FULL_BODY` y no `DRESS` porque cubre vestido, enterizo y overol; llamarlo
 vestido obligaría a inventar un grupo más para los otros dos.
+
+**El accesorio son dos grupos y no uno.** Alto, ancho y profundidad describen un
+bolso y no describen una correa. La historia proponía un solo `ACCESSORY` y se
+partió al dibujar el árbol, en `docs/producto/categorias.md`, que también anota la
+arruga conocida de los sombreros.
+
+Qué grupo declara cada categoría está en `docs/producto/categorias.md`.
 
 ### Sistemas de talla — `SizeSystem`
 
@@ -267,6 +324,13 @@ vestido obligaría a inventar un grupo más para los otros dos.
 Son la lista mínima defendible para poder escribir criterios verificables, no una
 decisión de producto ya tomada. Corregirlos no cambia el esquema: `size_system` y
 `size_value` lo soportan igual.
+
+**Una categoría admite más de un sistema, no uno solo.** Sin eje de género, unos
+jeans se venden en talla numérica y en pulgadas de cintura, así que la categoría
+declara la lista de sistemas admisibles —`categories.size_systems`, en plural— y
+el vendedor elige uno, que es el que queda en `products.size_system`. Salió al
+aprobar el árbol; el criterio 6 se lee con eso: la talla es obligatoria y su
+sistema tiene que ser uno de los que admite la categoría elegida.
 
 ### Colores — `Color`
 
@@ -284,7 +348,7 @@ Lista cerrada. Cada uno sale de una regla; ninguno es decorativo.
 
 | Código | Visible | De dónde sale |
 |---|---|---|
-| `PHOTOS_UNUSABLE` | Las fotos no permiten ver la prenda | RN-016, RN-018, RN-019 |
+| `PHOTOS_UNUSABLE` | Las fotos no permiten ver el producto | RN-016, RN-018, RN-019 |
 | `PHOTOS_MISMATCH` | Las fotos no corresponden a lo descrito | RN-021, RN-050 |
 | `MEASUREMENTS_UNRELIABLE` | Las medidas faltan o no son creíbles | RN-021 |
 | `CONDITION_MISDECLARED` | La condición declarada no es la que se ve | RN-021, RN-050 |
@@ -350,9 +414,9 @@ pase por moderación.
   |---|---|---|
   | `POST /api/v1/listings` | Vendedor verificado | Crea el borrador |
   | `GET /api/v1/listings/{id}` | Dueño, moderador, o cualquiera si está publicada | Lee una publicación |
-  | `PATCH /api/v1/listings/{id}` | Dueño | Guarda datos de la prenda |
-  | `POST /api/v1/listings/{id}/images` | Dueño | Sube una toma, multipart |
-  | `DELETE /api/v1/listings/{id}/images/{imageId}` | Dueño | Borra una toma |
+  | `PATCH /api/v1/listings/{id}` | Dueño | Guarda datos del producto |
+  | `POST /api/v1/listings/{id}/images` | Dueño | Sube una toma, multipart. El cuerpo lleva el `kind` |
+  | `DELETE /api/v1/listings/{id}/images/{imageId}` | Dueño | Borra una toma o una imagen de referencia |
   | `POST /api/v1/listings/{id}/submission` | Dueño | Envía a revisión |
   | `DELETE /api/v1/listings/{id}/submission` | Dueño | Retira la solicitud |
   | `POST /api/v1/listings/{id}/approval` | Moderador | Aprueba |
@@ -367,15 +431,16 @@ pase por moderación.
   manda el código: la línea ya está corregida.
 - **Códigos de error nuevos**, prefijo `CATALOG_`: `CATALOG_SELLER_NOT_VERIFIED`,
   `CATALOG_LISTING_INVALID_STATE`, `CATALOG_SHOTS_INCOMPLETE`,
-  `CATALOG_LISTING_NOT_EDITABLE`, `CATALOG_SELF_MODERATION_FORBIDDEN` y
-  `CATALOG_UNKNOWN_CATEGORY`. Se agregan al enum del backend y al archivo de
+  `CATALOG_LISTING_NOT_EDITABLE`, `CATALOG_SELF_MODERATION_FORBIDDEN`,
+  `CATALOG_UNKNOWN_CATEGORY`, `CATALOG_CONDITION_NOT_ALLOWED` y
+  `CATALOG_REFERENCE_IMAGE_NOT_ALLOWED`. Se agregan al enum del backend y al archivo de
   traducción del frontend **en el mismo commit**. Los `FILE_*` ya existen y se
   reutilizan tal cual.
 - **Frontend:** `features/listing`, con su dominio, su infraestructura y sus
   páginas, siguiendo el corte de `features/seller-verification`. El guard de rol
   de ADR-0021 se reutiliza para las rutas de moderación.
 - Las claves de Transloco van bajo `listing.*`. El texto todavía no existe:
-  `textos-web.md` no tiene sección de publicación de prenda y hay que escribirla
+  `textos-web.md` no tiene sección de publicación de producto y hay que escribirla
   antes de implementar la interfaz.
 - Bloqueo optimista con la columna `version` de `listings`, que el modelo de datos
   ya contempla.
@@ -384,8 +449,14 @@ pase por moderación.
 
 - **Dominio**, sin Spring: la máquina de estados completa de la tabla de
   transiciones, incluida cada transición inválida; la regla de las ocho tomas y
-  las cuatro canónicas; el conjunto de medidas obligatorias por grupo; el rango de
-  precio y la marca de atención.
+  las cuatro canónicas, con su excepción de cuatro para la tecnología sellada; el
+  conjunto de medidas obligatorias por grupo; el rango de precio y la marca de
+  atención; y que una categoría sin `allows_used` rechace las tres condiciones de
+  segunda.
+- **Dominio, tecnología**: que una imagen de referencia nunca cuente como toma,
+  que solo se admita en tecnología sellada, y que al dejar de estar sellada la
+  publicación vuelva a exigir ocho tomas. Estas tres son las que impiden que una
+  publicación se arme con fotos del fabricante.
 - **Aplicación**: que un vendedor no verificado no pueda crear, que uno revocado
   no pueda crear pero conserve lo publicado, y que editar contenido devuelva a
   revisión mientras editar precio no.
@@ -432,17 +503,23 @@ para que quien implemente no lo vuelva a abrir.
 
 **Bloquea la implementación:**
 
-- **El árbol de categorías**, con el grupo de medida y el sistema de talla de cada
-  una. Sin al menos un árbol mínimo no hay formulario que llenar. Es la decisión
-  aplazada de `alcance.md` y es el único prerrequisito duro de esta historia.
-- **Los valores de talla** de la tabla de referencia, que hay que confirmar con
-  alguien que venda ropa en Colombia. Corregirlos no cambia el esquema.
-- **La sección «Publicación de prenda — Fase 2» de `textos-web.md`**, de donde
-  salen las claves `listing.*`. Sin ella no se puede escribir la interfaz, porque
-  ningún texto visible se escribe en la plantilla.
+- **La sección «Publicación de producto — Fase 2» de `textos-web.md`**, de donde
+  salen las claves `listing.*`. Bloquea la interfaz, no el backend: ningún texto
+  visible se escribe en la plantilla. La migración, el dominio y los endpoints se
+  pueden hacer sin ella.
+
+El árbol de categorías **ya no bloquea**: se aprobó el 24 de agosto de 2026 y está
+en `docs/producto/categorias.md`, con el grupo de medida y los sistemas de talla
+de cada una de sus veinticuatro categorías. Al dibujarlo cambiaron dos cosas de
+esta historia, ya aplicadas: `categories.size_systems` es plural, y el grupo
+`ACCESSORY` se partió en `ACCESSORY_VOLUME` y `ACCESSORY_FLAT`.
 
 **No bloquea, pero conviene decidirlo antes de encender la bandera:**
 
+- **Los valores de talla** de la tabla de referencia, que hay que confirmar con
+  alguien que venda ropa en Colombia. Corregirlos no toca el esquema.
+- **Los nombres visibles de las veinticuatro categorías en inglés**, que van en la
+  migración que las siembra.
 - **`LISTING_REVIEW_DAYS`**, o la decisión de no prometer plazo. Mientras no se
   decida, la interfaz no promete nada.
 - **Si hay límite de publicaciones activas por vendedor**, ya anotado como

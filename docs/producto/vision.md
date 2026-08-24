@@ -2,22 +2,34 @@
 
 ## Qué es
 
-Sastra es el mercado colombiano donde cualquier persona compra y vende moda,
-nueva y usada, con la plataforma como respaldo de la transacción.
+Sastra es el mercado colombiano donde cualquier persona compra y vende **moda,
+nueva y de segunda, y tecnología nueva**, con la plataforma como respaldo de la
+transacción.
+
+Lo usado se vende solo en moda. Un celular o un televisor de segunda no entran, y
+el motivo está en RN-064: en moda el desgaste se ve en la foto y se declara con
+medidas, y en tecnología lo que falla no se fotografía. Un catálogo de tecnología
+de segunda es un catálogo de disputas, y el respaldo no lo puede sostener.
 
 La promesa es **seguridad**, no precio bajo. Todo el sistema de marca sale de
 ahí: el nombre suena a sastre, el símbolo es una puntada que une dos partes, y
 el descriptor es "Compra y vende moda con respaldo". Nada en el producto debe
 comunicar ganga.
 
+**El descriptor de marca se quedó corto y no se cambia aquí.** Dice «moda» y el
+catálogo ya no es solo moda. Cambiarlo es una decisión de marca, vive en
+`docs/marca/`, que este proyecto no toca por su cuenta, y arrastra el logo
+horizontal, el manual y las etiquetas del sitio. Queda anotado como pendiente en
+`textos-web.md`.
+
 ## Para quién
 
-**Vendedor.** Persona natural que quiere vender prendas que ya no usa o que
-produce en pequeña escala. Vende desde el celular. Su fricción principal es
-publicar bien: fotos, medidas, precio. Su miedo es que le paguen y no le
-respondan, o entregar y no recibir.
+**Vendedor.** Persona natural que quiere vender prendas que ya no usa, que produce
+en pequeña escala, o tecnología nueva que no va a abrir. Vende desde el celular.
+Su fricción principal es publicar bien: fotos, medidas, precio. Su miedo es que le
+paguen y no le respondan, o entregar y no recibir.
 
-**Comprador.** Persona que busca una prenda concreta o navega por gusto. Su
+**Comprador.** Persona que busca un producto concreto o navega por gusto. Su
 miedo es pagar y no recibir, o recibir algo distinto a la foto. Compra desde el
 celular en la mayoría de los casos.
 
@@ -40,14 +52,20 @@ Sastra no toca el dinero: la pasarela recauda y divide el pago. Ver `ADR-0005`.
    catálogo limpio es el activo del sitio.
 3. **Fotos consistentes y vista 360º.** El asistente de captura fuerza encuadre
    y proporción; con esas mismas tomas se arma una vista giratoria. Es lo que
-   más se parece a ver la prenda en persona y es difícil de copiar.
+   más se parece a ver la prenda en persona y es difícil de copiar. No aplica a
+   la tecnología sellada, que se publica con cuatro tomas del empaque y sus
+   imágenes de referencia rotuladas (RN-065, RN-066).
 4. **Vendedores verificados.** Identidad, selfie y cuenta bancaria validada.
 
 ## Qué NO es
 
 - No es una red social. No hay muro, ni seguidores, ni comentarios públicos.
 - No es un outlet ni un sitio de liquidación.
-- No es dropshipping ni venta al por mayor.
+- No es dropshipping ni venta al por mayor. La tecnología nueva entra por persona
+  natural y con existencia 1, como todo lo demás (RN-010, RN-025). Quien quiera
+  vender veinte unidades del mismo modelo no tiene aquí la herramienta, y
+  vendedores con figura de empresa siguen fuera de alcance.
+- No vende tecnología de segunda. Solo moda admite lo usado (RN-064).
 - No es una billetera: Sastra no custodia dinero de terceros.
 - No compite por precio. Compite por confianza.
 

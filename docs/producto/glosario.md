@@ -36,17 +36,23 @@ panel que los usa llega en Fase 4 (`docs/producto/alcance.md`).
 
 | Español | Código | Definición |
 |---|---|---|
-| Prenda, producto | `Product` | Artículo publicado. Unidad de venta. Existencia siempre 1. |
+| Producto | `Product` | Lo que se publica y se vende. Unidad de venta, existencia siempre 1. Es el término general y cubre las dos familias que Sastra admite: moda y tecnología. |
+| Prenda | `Garment` | Producto de moda. Se dice «prenda» **solo** en moda; en un texto que hable de las dos cosas se dice producto. |
+| Dispositivo | `Device` | Producto de tecnología: celular, computador, televisor y demás. Solo se vende nuevo (RN-064). |
+| Sellado | `Sealed` | Dispositivo que conserva el empaque de fábrica sin abrir. Se declara, habilita las imágenes de referencia y rebaja las tomas exigidas a las cuatro del empaque (RN-065). Recibir abierto lo declarado sellado es producto no conforme. |
+| Imagen de referencia | `ReferenceImage` | Foto del producto que no tomó el vendedor, normalmente del fabricante. Solo existe en tecnología sellada, nunca sustituye a las tomas reales y siempre va rotulada como referencia (RN-066). |
+| Garantía del fabricante | `ManufacturerWarranty` | Meses de garantía que el dispositivo trae de fábrica. La declara el vendedor y responde el vendedor. **No es el Respaldo** y las dos palabras no se mezclan (RN-067). |
 | Publicación | `Listing` | El producto junto a su estado de moderación y visibilidad. |
 | Moderación | `Moderation` | Revisión de una publicación antes de que sea visible. Sin excepciones (RN-015). |
-| Condición | `Condition` | Nuevo, como nuevo, buen estado, con detalles. El vendedor declara una de las cuatro; no hay una quinta. |
-| De segunda | `SecondHand` | Todo lo que no es nuevo, es decir las otras tres condiciones. Es el par comercial de "nuevo" en menús, filtros y textos. |
+| Condición | `Condition` | Nuevo, como nuevo, buen estado, con detalles. El vendedor declara una de las cuatro; no hay una quinta. **Cuáles admite depende de la familia:** moda las cuatro, tecnología solo nueva (RN-064). |
+| De segunda | `SecondHand` | Todo lo que no es nuevo, es decir las otras tres condiciones. Es el par comercial de "nuevo" en menús, filtros y textos. Solo aplica a moda. |
 | Borrador | `Draft` | Publicación que el vendedor todavía está armando. No es visible para nadie más y se guarda incompleta. |
-| Categoría | `Category` | Árbol de clasificación de la prenda. Cada categoría declara su sistema de talla y su grupo de medida. |
-| Talla | `Size` | Talla declarada, según el sistema de la categoría. |
-| Sistema de talla | `SizeSystem` | Qué escala usa una categoría: por letra, numérica, en pulgadas de cintura, de calzado o única. Lista cerrada en HU-007. |
+| Categoría | `Category` | Árbol de clasificación de la prenda. Cada categoría declara sus sistemas de talla admisibles y su grupo de medida. El árbol vive en `docs/producto/categorias.md`. |
+| Familia | `CategoryFamily` | Primer nivel del árbol: parte superior, parte inferior, prenda entera, calzado y accesorios. No se publica en una familia, sino en una categoría suya. |
+| Talla | `Size` | Talla declarada, en uno de los sistemas que admite la categoría. |
+| Sistema de talla | `SizeSystem` | Qué escala se usa: por letra, numérica, en pulgadas de cintura, de calzado o única. Una categoría admite más de una y el vendedor elige. Lista cerrada en HU-007. |
 | Medidas | `Measurements` | Medidas reales en centímetros tomadas por el vendedor. |
-| Grupo de medida | `MeasurementGroup` | Qué medidas son obligatorias para una categoría. Una camisa y un zapato no se miden igual, y sin agrupar habría que pedirlas todas o ninguna. Lista cerrada en HU-007. |
+| Grupo de medida | `MeasurementGroup` | Qué medidas son obligatorias para una categoría. Una camisa, un zapato y un bolso no se miden igual, y sin agrupar habría que pedirlas todas o ninguna. Lista cerrada en HU-007. |
 | Color | `Color` | Color declarado, de lista cerrada. Es filtro de catálogo, y en texto libre un filtro no filtra. |
 | Motivo de rechazo de publicación | `ListingRejectionReason` | Lista cerrada con la que el moderador rechaza una publicación (RN-022). **No es** el `RejectionReason` de la verificación de vendedor: son dos listas distintas para dos decisiones distintas. |
 | Toma | `Shot` | Una fotografía individual del conjunto de captura. |
@@ -54,8 +60,16 @@ panel que los usa llega en Fase 4 (`docs/producto/alcance.md`).
 | Secuencia 360 | `SpinSequence` | Conjunto ordenado de tomas que alimenta el visor giratorio. |
 | Visor 360 | `SpinViewer` | Componente que simula el giro de la prenda. |
 
-Una prenda es única: si el vendedor tiene dos iguales, son dos publicaciones.
+Un producto es único: si el vendedor tiene dos iguales, son dos publicaciones.
 Esto simplifica todo el modelo y es fiel al negocio de segunda mano.
+
+**Producto, prenda y dispositivo no son sinónimos y el error de usarlos como si
+lo fueran no es cosmético.** Casi todo el texto del sitio se escribió cuando
+Sastra vendía solo moda y dice «prenda» donde hoy corresponde «producto». Una
+regla que diga «prenda» cuando aplica a las dos familias deja la tecnología fuera
+sin que nadie lo note, y un texto que diga «producto» donde la regla es solo de
+moda promete algo que no se cumple. La palabra elegida es la que decide a qué se
+aplica la frase.
 
 ## Transacción
 
@@ -84,14 +98,14 @@ Esto simplifica todo el modelo y es fiel al negocio de segunda mano.
 
 | No decir | Decir |
 |---|---|
-| Artículo, item (en español) | Prenda o producto |
+| Artículo, item (en español) | Producto; prenda si es moda, dispositivo si es tecnología |
 | Tienda, catálogo del vendedor | Perfil del vendedor |
 | Usuario final, cliente | Comprador |
 | Barato, ganga, oferta, descuento | Precio, valor |
 | Stock, inventario | Publicación, prenda |
 | Wallet, saldo, billetera | Desembolso |
 | Escrow, custodia, fideicomiso | Respaldo, retención del pago |
-| Garantía, seguro | Respaldo |
+| Garantía, seguro, para nombrar lo que ofrece Sastra | Respaldo. «Garantía del fabricante» sí se dice, referida a un dispositivo y a lo que responde su vendedor, nunca a lo que responde Sastra (RN-067) |
 | Compra protegida, protección, te protegemos | Respaldo, compra con respaldo |
 | Usado, de segunda mano, prelovado, vintage (como nombre de la categoría) | De segunda |
 | Plata, billete | Dinero, pago, valor |

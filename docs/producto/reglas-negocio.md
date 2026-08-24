@@ -80,10 +80,12 @@ Cada regla tiene identificador. Úsalo en el código y en las pruebas:
 - **RN-015** Toda publicación pasa por moderación antes de ser visible. Sin
   excepciones ni listas blancas.
 - **RN-016** Se exigen cuatro tomas canónicas: frontal, lateral derecha, lateral
-  izquierda y posterior. Sin las cuatro no se puede enviar a revisión.
+  izquierda y posterior. Sin las cuatro no se puede enviar a revisión. En
+  tecnología declarada sellada son las cuatro del empaque (RN-065).
 - **RN-017** Para la secuencia 360 se capturan **ocho** tomas a 45 grados. Las
   cuatro canónicas son las de 0, 90, 180 y 270 grados: se extraen de la misma
-  secuencia, no se toman aparte.
+  secuencia, no se toman aparte. **Única excepción:** la tecnología declarada
+  sellada, que se queda en las cuatro canónicas y no ofrece visor (RN-065).
 - **RN-018** Todas las tomas se recortan a proporción 3:4 en el cliente antes de
   subirlas, con el producto centrado. Es la proporción del catálogo y no es
   negociable: si cada foto llega con la suya, la rejilla se rompe.
@@ -98,13 +100,72 @@ Cada regla tiene identificador. Úsalo en el código y en las pruebas:
   HU-007, porque la frase sola admitía las dos lecturas.
 - **RN-021** El vendedor declara condición, talla y medidas reales en
   centímetros. Las medidas son obligatorias: son la causa número uno de
-  devolución en moda de segunda mano.
+  devolución en moda de segunda mano. Qué talla se pide lo decide la categoría:
+  la tecnología usa talla única, porque un televisor no tiene talla, y sus
+  medidas son las del aparato.
 - **RN-022** Una publicación rechazada indica siempre el motivo y qué corregir.
   Se puede editar y reenviar a revisión.
 - **RN-023** Una publicación vendida no se edita ni se reactiva.
 - **RN-024** Publicaciones prohibidas: réplicas o falsificaciones, ropa interior
-  usada, artículos que no sean moda o accesorios, prendas con daño no declarado.
-- **RN-025** Existencia siempre igual a 1. Una prenda, una publicación.
+  usada, productos que no sean moda ni tecnología, prendas con daño no declarado,
+  y cualquier producto de tecnología que no sea nuevo (RN-064).
+- **RN-025** Existencia siempre igual a 1. Un producto, una publicación.
+- **RN-064** Sastra vende dos cosas y con distinta condición admisible:
+
+  | Familia | Condiciones admisibles |
+  |---|---|
+  | Moda | Nuevo, como nuevo, buen estado, con detalles |
+  | Tecnología | **Solo nuevo** |
+
+  Lo usado se vende únicamente en moda. Un celular, un televisor o un computador
+  de segunda no se publican en Sastra, y la comprobación no es de la interfaz: el
+  dominio rechaza cualquier condición distinta de nueva en una categoría de
+  tecnología.
+
+  La razón es que las dos ventas no se parecen. En moda, el desgaste se ve en la
+  foto y se declara con medidas: el comprador juzga mirando. En tecnología, lo
+  que falla no se fotografía —la batería, el sensor, la pantalla que se apaga a
+  los dos meses— y ninguna toma a 45 grados lo muestra. Sin capacidad de probar
+  el aparato, un catálogo de tecnología de segunda es un catálogo de disputas, y
+  el respaldo que promete Sastra no lo puede sostener.
+
+- **RN-065** Un producto de tecnología puede declararse **sellado**, y esa
+  declaración es lo único que habilita las imágenes de referencia (RN-066). Una
+  publicación de tecnología sellada exige las cuatro tomas canónicas **del
+  empaque tal como está en poder del vendedor**, y no las ocho de RN-017 ni el
+  visor giratorio: no hay nada que girar y ocho fotos de una caja no le dicen
+  nada a nadie.
+
+  Recibir abierto lo que se declaró sellado es producto no conforme (RN-050).
+
+  Un producto de tecnología que no se declara sellado se fotografía como
+  cualquier otro: ocho tomas y sin imágenes de referencia.
+
+- **RN-066** Las imágenes de referencia son fotos del producto que no tomó el
+  vendedor, y se rigen por tres límites que no se negocian:
+
+  1. **Solo en tecnología declarada sellada.** En moda no existen. El sitio
+     promete que lo que se ve es la pieza exacta que se recibe, y una foto de
+     catálogo en una prenda de segunda convierte esa frase en publicidad
+     engañosa.
+  2. **Nunca sustituyen a las tomas reales.** Se suman a las cuatro del empaque,
+     y una publicación hecha solo de imágenes de referencia no se puede enviar a
+     revisión. Sin una foto real no hay prueba de que el producto exista.
+  3. **Siempre rotuladas como referencia**, en la ficha y en el carrusel, en los
+     dos idiomas. Un comprador tiene que poder distinguir de un vistazo qué foto
+     tomó el vendedor y cuál es del fabricante.
+
+- **RN-067** Si un producto de tecnología trae garantía del fabricante, el
+  vendedor declara que la trae y por cuántos meses. **Quien responde por esa
+  garantía es el vendedor**, no Sastra, y así se dice en la ficha.
+
+  Sastra ofrece el Respaldo y nada más: el pago retenido y la ventana de reclamo
+  de RN-050 a RN-058. La garantía legal que la Ley 1480 de 2011 fija para un
+  producto nuevo existe además de eso y no la sustituye ninguna regla de aquí.
+
+  **Esta regla necesita revisión de abogado antes de abrir la venta de
+  tecnología**, y hasta entonces ningún texto del sitio la enuncia. Es la misma
+  condición que ya bloquea los tres documentos legales.
 - **RN-061** Transiciones válidas de la publicación, sobre los siete estados del
   glosario:
 
@@ -240,8 +301,9 @@ Colombia lo que se anuncia es exigible. El flujo operativo que las ejecuta
 estados y las pantallas de ese flujo se definen allí y no aquí.
 
 - **RN-050** Producto no conforme es el que no corresponde a lo publicado
-  —modelo, talla declarada, medidas, condición o marca distintos— o el que llega
-  con un daño que no se declaró (RN-021, RN-024). **No** son producto no
+  —modelo, talla declarada, medidas, condición o marca distintos—, el que llega
+  con un daño que no se declaró (RN-021, RN-024), y el de tecnología que llega
+  abierto habiéndose declarado sellado (RN-065). **No** son producto no
   conforme: que la talla no siente como se esperaba, que el color se vea distinto
   en pantalla, ni el simple arrepentimiento. Para eso está el derecho de retracto
   (RN-057), que es otra cosa.

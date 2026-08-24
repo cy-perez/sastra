@@ -146,12 +146,16 @@ que funciona por sí solo no puede registrar quién lo usó (ADR-0018).
 **products**: `id`, `seller_id`, `title`, `description`, `category_id`,
 `brand`, `condition`, `size_system`, `size_value`, `measurements` (`jsonb`),
 `color`, `price`, `weight_grams`, `length_cm`, `width_cm`, `height_cm`,
-`created_at`, `updated_at`.
+`is_sealed`, `manufacturer_warranty_months`, `created_at`, `updated_at`.
+`is_sealed` y `manufacturer_warranty_months` solo tienen sentido en tecnología y
+van en nulo en moda. El primero habilita las imágenes de referencia y rebaja las
+tomas exigidas a cuatro (RN-065); el segundo es la garantía que declara el
+vendedor y por la que responde el vendedor (RN-067).
 Qué claves lleva `measurements` no es libre: lo determina el
 `measurement_group` de la categoría, y el dominio valida que estén todas y sean
-números positivos en centímetros (RN-021). `size_system` se copia de la categoría
-al crear el producto, para que cambiar la categoría después no reinterprete una
-talla ya declarada. `brand` es texto libre y opcional; `color` es lista cerrada.
+números positivos en centímetros (RN-021). `size_system` es el que el vendedor
+eligió de entre los que admite la categoría, y se guarda en el producto para que
+cambiar la categoría después no reinterprete una talla ya declarada. `brand` es texto libre y opcional; `color` es lista cerrada.
 
 **listings**: `id`, `product_id`, `status`, `published_at`, `sold_at`,
 `moderated_by`, `moderated_at`, `rejection_reason`, `rejection_note`,
@@ -165,16 +169,31 @@ hace que el moderador la vea destacada.
 `version` es el bloqueo optimista, y no es decorativo: el vendedor y el moderador
 escriben sobre la misma fila a la vez con normalidad.
 
-**product_images**: `id`, `product_id`, `object_key`, `position` (0 a 7),
+**product_images**: `id`, `product_id`, `kind`, `object_key`, `position` (0 a 7),
 `angle_degrees`, `is_canonical`, `width`, `height`, `bytes`, `content_type`.
-Restricción única sobre (`product_id`, `position`).
+Restricción única sobre (`product_id`, `kind`, `position`).
+`kind` distingue la toma que hizo el vendedor de la **imagen de referencia** que
+no hizo (RN-066). No es un detalle de presentación: el visor 360 y el conteo de
+tomas obligatorias solo miran las del vendedor, y la ficha tiene que rotular las
+otras. Con una sola clase de imagen, una publicación de ocho fotos del fabricante
+pasaría todas las validaciones.
 
-**categories**: `id`, `parent_id`, `slug`, `name_es`, `name_en`, `size_system`,
-`measurement_group`, `active`, `position`.
-`size_system` y `measurement_group` son las dos listas cerradas de HU-007: la
-categoría decide con qué escala se declara la talla y qué medidas son
-obligatorias. `active` permite retirar una categoría del formulario sin tocar las
-publicaciones que ya la tienen.
+**categories**: `id`, `parent_id`, `slug`, `name_es`, `name_en`, `size_systems`,
+`measurement_group`, `allows_used`, `active`, `position`.
+`allows_used` es lo que impide vender tecnología de segunda (RN-064): en falso, la
+única condición admisible es nueva. Vive en la categoría y no en una constante del
+código porque es un dato del árbol, y el árbol se siembra con una migración.
+El árbol aprobado está en `docs/producto/categorias.md` y se siembra con una
+migración, como las entidades financieras de `V7`: son datos, van a crecer y
+ninguna enumeración de Java las lista.
+`size_systems` es **plural**: una misma categoría admite más de una escala —unos
+jeans se venden en talla numérica y en pulgadas de cintura— y el vendedor elige
+una de las admisibles, que es la que queda en `products.size_system`.
+`measurement_group` decide qué medidas son obligatorias.
+`active` permite retirar una categoría del formulario sin tocar las publicaciones
+que ya la tienen.
+`name_es` y `name_en` se quedan en la tabla: los nombres de categoría los traduce
+el servidor por `Accept-Language`, que es lo que `contrato-api.md` ya decía.
 
 **moderation_events**: `id`, `listing_id`, `actor_id`, `action`, `reason`,
 `notes`, `created_at`.
@@ -230,8 +249,11 @@ El identificador único del proveedor es lo que garantiza idempotencia.
 - La suma `product_amount + shipping_amount` debe igualar `total_amount`.
 - `commission_amount` debe ser el 5% de `product_amount` redondeado al peso.
   Se guarda calculado, no se recalcula al leer.
-- Una publicación en `PUBLISHED` exige exactamente ocho imágenes y cuatro
-  canónicas.
+- Una publicación en `PUBLISHED` exige exactamente ocho imágenes del vendedor y
+  cuatro canónicas. **Excepción única:** la tecnología con `is_sealed` en cierto
+  exige cuatro y solo cuatro, todas canónicas (RN-065). Las imágenes de
+  referencia no cuentan para ninguno de los dos conteos y no pueden ser las
+  únicas de una publicación.
 - Un pedido no puede referenciar un producto que ya está vendido en otro pedido
   pagado. Se resuelve con bloqueo al confirmar el pago, no con una consulta
   previa optimista.

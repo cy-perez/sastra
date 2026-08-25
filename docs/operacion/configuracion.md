@@ -22,16 +22,16 @@ correo, ningún NIT, ningún porcentaje de comisión.
 | Variable | Ejemplo | Obligatoria |
 |---|---|---|
 | `SPRING_PROFILES_ACTIVE` | `local`, `dev`, `prod` | sí |
-| `DB_URL` | `jdbc:postgresql://localhost:5432/sastra` | sí |
-| `DB_USERNAME` | `sastra` | sí |
+| `DB_URL` | `jdbc:postgresql://localhost:5432/sendik` | sí |
+| `DB_USERNAME` | `sendik` | sí |
 | `DB_PASSWORD` | | sí |
 | `SERVER_PORT` | `8080` | no, 8080 por omisión |
-| `JWT_ISSUER` | `https://api.sastra.co` | sí |
+| `JWT_ISSUER` | `https://api.sendik.co` | sí |
 | `JWT_SECRET` | clave de 256 bits como mínimo | sí |
 | `JWT_ACCESS_TTL` | `PT15M` | sí |
 | `JWT_REFRESH_TTL` | `P30D` | sí |
 | `JWT_REFRESH_GRACE` | `PT10S` | no, `PT10S` por omisión |
-| `SESSION_COOKIE_NAME` | `sastra_refresh` | no, `sastra_refresh` por omisión |
+| `SESSION_COOKIE_NAME` | `sendik_refresh` | no, `sendik_refresh` por omisión |
 | `SESSION_COOKIE_PATH` | `/api/v1/auth` | no, `/api/v1/auth` por omisión |
 | `SESSION_COOKIE_SECURE` | `true` | no, `true` por omisión |
 | `RATE_LIMIT_CREDENTIALS_MAX` | `10` | no, `10` por omisión |
@@ -39,15 +39,15 @@ correo, ningún NIT, ningún porcentaje de comisión.
 | `RATE_LIMIT_SESSION_MAX` | `60` | no, `60` por omisión |
 | `RATE_LIMIT_SESSION_WINDOW` | `PT1M` | no, `PT1M` por omisión |
 | `RATE_LIMIT_MAX_KEYS` | `50000` | no, `50000` por omisión |
-| `APP_BASE_URL` | `https://sastra.co` | sí |
-| `APP_API_BASE_URL` | `https://api.sastra.co` | sí |
+| `APP_BASE_URL` | `https://sendik.co` | sí |
+| `APP_API_BASE_URL` | `https://api.sendik.co` | sí |
 | `APP_TIME_ZONE` | `America/Bogota` | no, `America/Bogota` por omisión |
 | `CORS_ALLOWED_ORIGINS` | lista separada por comas | sí |
 | `COMMISSION_RATE` | `0.05` | sí |
 | `CLAIM_WINDOW_DAYS` | `3` | Fase 3 |
 | `MAIL_PROVIDER` | `resend` o `console` | no, `resend` por omisión |
 | `MAIL_PROVIDER_API_KEY` | clave de Resend, ver ADR-0012 | sí |
-| `MAIL_FROM` | `hola@sastra.co` | sí |
+| `MAIL_FROM` | `hola@sendik.co` | sí |
 | `MAIL_API_URL` | `https://api.resend.com/emails` | no |
 | `MAIL_VERIFICATION_PATH` | `/verificar-correo` | no |
 | `MAIL_PASSWORD_RESET_PATH` | `/restablecer-contrasena` | no |
@@ -59,9 +59,9 @@ correo, ningún NIT, ningún porcentaje de comisión.
 | `PASSWORD_BREACH_CHECK_TIMEOUT` | `PT2S` | no |
 | `PASSWORD_BREACH_API_URL` | `https://api.pwnedpasswords.com/range` | no |
 | `STORAGE_PROVIDER` | `local` o `gcs` | no, `local` por omisión |
-| `STORAGE_PUBLIC_BUCKET` | `sastra-publico` | sí, con `gcs` |
-| `STORAGE_RESTRICTED_BUCKET` | `sastra-reservado` | sí, con `gcs` |
-| `STORAGE_PROJECT_ID` | `sastra-col` | no |
+| `STORAGE_PUBLIC_BUCKET` | `sendik-publico` | sí, con `gcs` |
+| `STORAGE_RESTRICTED_BUCKET` | `sendik-reservado` | sí, con `gcs` |
+| `STORAGE_PROJECT_ID` | `sendik-col` | no |
 | `VERIFICATION_REVIEW_DAYS` | `2` | no, `2` por omisión |
 | `WOMPI_PUBLIC_KEY` | | Fase 3 |
 | `WOMPI_PRIVATE_KEY` | | Fase 3 |
@@ -72,7 +72,7 @@ correo, ningún NIT, ningún porcentaje de comisión.
 | `TYPESENSE_PORT` | `8108` | Fase 3 |
 | `TYPESENSE_API_KEY` | | Fase 3 |
 | `CARRIER_*_API_KEY` | uno por transportadora | Fase 3 |
-| `COMPANY_NAME` | `Sastra` | sí |
+| `COMPANY_NAME` | `Sendik` | sí |
 | `COMPANY_TAX_ID` | `1054994043-1` | sí |
 | `COMPANY_ADDRESS` | | sí |
 | `SUPPORT_EMAIL` | | sí |
@@ -303,7 +303,7 @@ comprobación está en `StorageProperties` y existe porque es el error que no av
 con un solo cubo todo funciona igual, y la cédula de la primera persona que se
 verifique queda en un cubo con lectura pública (RN-046). Los nombres son variables y
 no constantes del código porque el nombre de un cubo es único en todo Google: si
-`sastra-publico` estuviera tomado, el cubo se llama de otra forma y eso no puede
+`sendik-publico` estuviera tomado, el cubo se llama de otra forma y eso no puede
 exigir tocar el código.
 
 **Con `gcs` no hace falta ninguna clave.** Las credenciales son las de aplicación por
@@ -339,7 +339,7 @@ base de datos. Viven en el mismo `.env` por comodidad, y en la nube no existen.
 
 | Variable | Ejemplo |
 |---|---|
-| `DB_NAME` | `sastra` |
+| `DB_NAME` | `sendik` |
 | `DB_PORT` | `5432` |
 
 El backend siempre se conecta por `DB_URL`. Si se cambia `DB_PORT`, hay que
@@ -354,17 +354,17 @@ para `dev` y para `prod`.
 
 | Variable | Ejemplo | Obligatoria |
 |---|---|---|
-| `API_BASE_URL` | `https://api.sastra.co/api/v1` | sí |
-| `NG_ALLOWED_HOSTS` | `sastra.co,www.sastra.co` | sí |
+| `API_BASE_URL` | `https://api.sendik.co/api/v1` | sí |
+| `NG_ALLOWED_HOSTS` | `sendik.co,www.sendik.co` | sí |
 | `DEFAULT_LOCALE` | `es` | no, `es` por omisión |
 | `AVAILABLE_LOCALES` | `es,en` | no, `es,en` por omisión |
 | `PORT` | `4000` | no, 4000 por omisión |
 | `SENTRY_DSN` | opcional | no |
 | `ENABLE_DEVTOOLS` | `false` en producción | no |
-| `COMPANY_NAME` | `Sastra S.A.S.` | no, el pie lo omite si falta |
+| `COMPANY_NAME` | `Sendik S.A.S.` | no, el pie lo omite si falta |
 | `COMPANY_TAX_ID` | `1054994043-1` | no, el pie lo omite si falta |
 | `COMPANY_ADDRESS` | `Medellín, Colombia` | no, el pie lo omite si falta |
-| `SUPPORT_EMAIL` | `hola@sastra.co` | no, el pie lo omite si falta |
+| `SUPPORT_EMAIL` | `hola@sendik.co` | no, el pie lo omite si falta |
 | `COMMISSION_RATE` | `0.05` | no, RN-026 por omisión |
 | `CLAIM_WINDOW_DAYS` | `3` | no, RN-051 por omisión |
 

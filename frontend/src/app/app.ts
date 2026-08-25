@@ -11,7 +11,7 @@ import { SiteFooter } from './shared/ui/layout/site-footer';
  * cabecera ofrece el hueco con ng-content y aqui se decide que va dentro.
  */
 @Component({
-  selector: 'sastra-root',
+  selector: 'sendik-root',
   imports: [RouterOutlet, SiteHeader, SiteFooter, SessionMenu, VerificationNotice],
   templateUrl: './app.html',
   styleUrl: './app.css',

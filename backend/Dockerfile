@@ -48,19 +48,19 @@ FROM eclipse-temurin:25-jre-noble
 # Sin privilegios. Cloud Run no lo exige, y una aplicacion que no necesita ser
 # root no debe serlo: si alguien consigue ejecutar algo dentro, la diferencia
 # importa.
-RUN groupadd --system sastra && useradd --system --gid sastra --create-home sastra
+RUN groupadd --system sendik && useradd --system --gid sendik --create-home sendik
 
 WORKDIR /aplicacion
 
 # En orden de menos a mas volatil, que es lo que hace util el cache de capas: las
 # dependencias solo cambian cuando cambia una version, y el codigo propio en cada
 # commit.
-COPY --from=construccion --chown=sastra:sastra /extraido/dependencies/ ./
-COPY --from=construccion --chown=sastra:sastra /extraido/spring-boot-loader/ ./
-COPY --from=construccion --chown=sastra:sastra /extraido/snapshot-dependencies/ ./
-COPY --from=construccion --chown=sastra:sastra /extraido/application/ ./
+COPY --from=construccion --chown=sendik:sendik /extraido/dependencies/ ./
+COPY --from=construccion --chown=sendik:sendik /extraido/spring-boot-loader/ ./
+COPY --from=construccion --chown=sendik:sendik /extraido/snapshot-dependencies/ ./
+COPY --from=construccion --chown=sendik:sendik /extraido/application/ ./
 
-USER sastra
+USER sendik
 
 # Documenta el puerto por omision. El de verdad lo decide Cloud Run con PORT y lo
 # lee el arranque de abajo.

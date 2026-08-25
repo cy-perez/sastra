@@ -20,6 +20,27 @@ test.use({ locale: 'es-CO' });
 const desbordaHorizontalmente = (page: Page): Promise<boolean> =>
   page.locator('html').evaluate((raiz) => raiz.scrollWidth > raiz.clientWidth);
 
+/**
+ * Contraste WCAG entre dos colores que devuelve getComputedStyle, o sea en
+ * formato `rgb(r, g, b)`. Se calcula aqui y no se compara con un valor esperado
+ * porque lo que importa es el umbral, no el color concreto: si manana cambia el
+ * tono de la franja, el caso sigue diciendo la verdad.
+ */
+const canal = (v: number): number => {
+  const c = v / 255;
+  return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+};
+
+const luminancia = (color: string): number => {
+  const [r, g, b] = (color.match(/\d+/g) ?? ['0', '0', '0']).slice(0, 3).map(Number);
+  return 0.2126 * canal(r) + 0.7152 * canal(g) + 0.0722 * canal(b);
+};
+
+const contraste = (uno: string, otro: string): number => {
+  const [alto, bajo] = [luminancia(uno), luminancia(otro)].sort((a, b) => b - a);
+  return (alto + 0.05) / (bajo + 0.05);
+};
+
 test.describe('portada', () => {
   test('el boton principal lleva al registro', async ({ page }) => {
     await page.goto('/');
@@ -126,36 +147,48 @@ test.describe('portada', () => {
   });
 
   /**
-   * El anillo de foco se dibuja alrededor del boton, que esta relleno de ocre.
-   * Lo que tiene que contrastar es anillo contra ocre, no anillo contra la
-   * franja: un anillo ocre sobre boton ocre es el fallo real, y comparandolo
-   * con el fondo del hero pasaria desapercibido.
+   * Lo que tiene que contrastar es el anillo contra el color sobre el que esta
+   * DIBUJADO, y con `outline-offset` ese color no es el relleno del boton: es el
+   * fondo de la franja, que se ve por el hueco de 2px entre los dos.
    *
-   * <p>Sin .franja-oscura, que redefine --color-foco, el anillo es tinta y el
-   * boton esta sobre tinta. El criterio 17 pide ademas 3px.
+   * <p>Antes este caso comparaba anillo contra relleno. Servia mientras el boton
+   * iba en ocre y el riesgo real era que el anillo saliera del mismo tono. Con
+   * Sendik el boton dentro de la franja se invierte a relleno claro y el anillo
+   * tambien es claro, asi que esa comparacion marcaba un fallo donde no lo hay:
+   * entre los dos blancos queda el hueco de tinta y el anillo se lee de sobra.
+   * Comprobar el par equivocado es peor que no comprobar, porque obliga a
+   * cambiar el diseno para contentar a la prueba.
+   *
+   * <p>Se comprueban las tres cosas de las que depende que se vea: contraste del
+   * anillo contra la franja, grosor de 3px (criterio 17) y un desplazamiento no
+   * nulo, que es justo lo que permite que anillo y relleno compartan color.
    */
   test('el foco del boton principal es visible y mide 3px', async ({ page }) => {
     await page.goto('/');
     const cta = await tabularHastaElCta(page);
 
-    const { anillo, relleno, grosor } = await cta.evaluate((elemento) => {
+    const { anillo, grosor, desplazamiento, franja } = await cta.evaluate((elemento) => {
       const estilo = getComputedStyle(elemento);
+      const contenedor = elemento.closest('.franja-tinta');
       return {
         anillo: estilo.outlineColor,
-        relleno: estilo.backgroundColor,
         grosor: estilo.outlineWidth,
+        desplazamiento: estilo.outlineOffset,
+        franja: contenedor ? getComputedStyle(contenedor).backgroundColor : null,
       };
     });
 
-    expect(anillo).not.toBe(relleno);
+    expect(franja).not.toBeNull();
+    expect(contraste(anillo, franja as string)).toBeGreaterThanOrEqual(3);
     expect(grosor).toBe('3px');
+    expect(desplazamiento).not.toBe('0px');
   });
 
   test('el pie muestra los datos de la empresa y el canal de contacto', async ({ page }) => {
     await page.goto('/');
     const pie = page.locator('footer');
 
-    await expect(pie).toContainText('Sastra S.A.S.');
+    await expect(pie).toContainText('Sendik S.A.S.');
     await expect(pie).toContainText('000000000-0');
     await expect(pie.getByRole('link', { name: 'soporte@example.test' })).toHaveAttribute(
       'href',

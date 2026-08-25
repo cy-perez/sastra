@@ -44,7 +44,7 @@ texto baja de 16px.
 - Un componente nuevo empieza eligiendo rol, no tamaño.
 - Falta un rol es una señal legítima para ampliar el sistema, no una excusa para
   saltárselo.
-- Los tres pesos disponibles son 400, 500 y 700. Un diseño que pida otro se
+- Los tres pesos disponibles son 400, 500 y 600. Un diseño que pida otro se
   ajusta al sistema.
 - Queda pendiente medir los `size-adjust` del bloque de respaldo contra los
   archivos reales, o eliminarlo. Está anotado en `docs/ui/README.md`.
@@ -54,3 +54,20 @@ texto baja de 16px.
 Si aparece un cuarto peso justificado, si el catálogo exige una densidad de texto
 que la escala actual no cubre, o si al medir los respaldos resulta que el ajuste
 no aporta.
+
+## Actualización
+
+**25 de agosto de 2026, con el cambio de identidad a Sendik (ADR-0022).** La
+decisión de esta ADR —el tipo se aplica por rol y no por tamaño— no cambia; sí
+cambian las familias y un peso.
+
+- Salen **Instrument Sans** e **IBM Plex Mono**, entran **Inter** y **Archivo**,
+  ambas variables. La familia monoespaciada desaparece: existía solo para que los
+  precios alinearan en columna, y el manual de Sendik resuelve ese caso con
+  `font-variant-numeric: tabular-nums` sobre la familia de texto. Dos familias
+  cumplen el mismo trabajo con una descarga menos.
+- El peso fuerte pasa de **700 a 600**: es el único que la marca define para
+  Archivo, y el máximo que usa Inter. Siguen siendo tres.
+- Los roles no cambian de nombre. Un componente escrito contra `.tipo-h2` o
+  `.precio` sigue siendo correcto sin tocarlo, que es precisamente lo que esta
+  ADR buscaba al separar el rol del tamaño.

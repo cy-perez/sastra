@@ -13,35 +13,45 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#14162B" />
 
-    <!-- Solo dos fuentes se precargan. Precargarlas todas compite con las fotos
-         de producto y retrasa la pagina. El atributo crossorigin es obligatorio
-         aunque sean del mismo dominio: sin el, el navegador las baja dos veces.
+    <!-- Las dos fuentes del sistema, y son solo dos: Inter para todo el texto y
+         Archivo para los titulares. Ambas son variables, asi que un archivo por
+         subconjunto cubre el rango de pesos entero.
+
+         Se precarga solo el subconjunto LATINO de cada una, que es el que usa
+         todo el sitio en los dos idiomas. El latino extendido se declara en
+         fuentes.css con su unicode-range y el navegador solo lo baja si aparece
+         un caracter que lo necesite; precargarlo seria pedir 97 KB que casi
+         nunca se pintan y competir con las fotos de producto.
+
+         El atributo crossorigin es obligatorio aunque sean del mismo dominio:
+         sin el, el navegador las baja dos veces.
          Detalle en public/fuentes/LEEME.md -->
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="/fuentes/inter-latin.woff2" />
     <link
       rel="preload"
       as="font"
       type="font/woff2"
       crossorigin
-      href="/fuentes/instrument-sans-400.woff2"
+      href="/fuentes/archivo-latin.woff2"
     />
-    <link rel="preload" as="font" type="font/woff2" crossorigin href="/fuentes/archivo-700.woff2" />
 
     <!-- Metadatos que no cambian con el idioma. El titulo, la descripcion y
          og:locale los pone la aplicacion en cada ruta, traducidos: viven en
          core/seo, no aqui. -->
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Sastra" />
+    <meta property="og:site_name" content="Sendik" />
     <meta property="og:image" content="/og-image.png" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="/twitter-card.png" />
   </head>
   <!-- Sin clase de rol. La familia y el tamano base los pone tipografia.css
        sobre el propio elemento. Poner aqui .tipo-cuerpo parecia equivalente y no
-       lo era: esa clase trae max-width de 68 caracteres, y en el body encogia el
+       lo era: esa clase trae max-width de 70 caracteres, y en el body encogia el
        documento entero, de modo que el ancho maximo de contenido no llegaba a
        aplicarse nunca. -->
   <body>
-    <sastra-root></sastra-root>
+    <sendik-root></sendik-root>
   </body>
 </html>

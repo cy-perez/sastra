@@ -10,7 +10,7 @@ despliegue del sitio —dominio y hospedaje— se hace cuando el proyecto esté 
 completo posible. Hasta entonces se trabaja y se prueba en local, integrado contra
 los servicios de GCP que hagan falta **en su capa gratuita**: son cuentas reales
 contra las que se prueba de verdad, no simulaciones, y cuestan cero. Los servicios
-de pago —el dominio `sastra.co`, la instancia mínima siempre activa, Cloud SQL, el
+de pago —el dominio `sendik.co`, la instancia mínima siempre activa, Cloud SQL, el
 balanceador— se contratan justo antes del lanzamiento inicial.
 
 El motivo es el costo de tener algo en pie que nadie usa. Un despliegue vivo pide
@@ -56,7 +56,7 @@ lanzar se configura una instancia mínima siempre activa.
 | Balanceador y certificado | Load Balancer con certificado administrado | 18 a 25 USD |
 | Búsqueda | Typesense administrado o en instancia propia | 0 a 25 USD |
 | Correo | Plan de pago según volumen | 0 a 20 USD |
-| Dominio | `sastra.co` | Anual |
+| Dominio | `sendik.co` | Anual |
 
 Rango realista de arranque: 60 a 150 USD al mes. Cifras orientativas de agosto de
 2026; hay que confirmarlas con la calculadora de precios antes de comprometer

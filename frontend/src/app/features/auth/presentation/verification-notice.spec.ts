@@ -15,7 +15,7 @@ import { VerificationNotice } from './verification-notice';
 
 /** Criterio 13 de HU-001. */
 describe('VerificationNotice', () => {
-  const API = 'https://api.pruebas.sastra.co/api/v1';
+  const API = 'https://api.pruebas.sendik.co/api/v1';
 
   const sesionCon = (emailVerified: boolean): Session => ({
     accessToken: 'un-token',

@@ -25,7 +25,7 @@ proveedor transaccional. Costo cercano a cero.
 
 **Etapa de lanzamiento:** todo en GCP. Frontend en Cloud Run tras un balanceador
 con CDN, base de datos en Cloud SQL, secretos en Secret Manager, dominio
-`sastra.co` con certificado administrado.
+`sendik.co` con certificado administrado.
 
 ## Motivo
 

@@ -4,7 +4,7 @@
  */
 
 /** Se guarda en cookie y no en localStorage porque el servidor tiene que poder leerlo. */
-export const LOCALE_COOKIE = 'sastra_locale';
+export const LOCALE_COOKIE = 'sendik_locale';
 
 /** Un ano: la eleccion de idioma no deberia caducar en mitad de una visita. */
 export const LOCALE_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;

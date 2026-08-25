@@ -9,12 +9,27 @@
      una parada de mas para quien navega con teclado. -->
 <header class="cabecera">
   <div class="contenedor barra">
-    <!-- El nombre accesible vive en el enlace. Las dos imagenes llevan alt
-         vacio para que el lector de pantalla no anuncie "Sastra" dos veces;
-         marca.css alterna cual se ve segun el tema. -->
+    <!-- El nombre accesible vive en el enlace. Las cuatro imagenes llevan alt
+         vacio para que el lector de pantalla no anuncie "Sendik" cuatro veces;
+         marca.css alterna claro/oscuro segun el tema y esta hoja alterna
+         lockup/isotipo segun el ancho.
+
+         El lockup tiene un minimo de 130px de ancho (manual de marca): por
+         debajo, el corte del simbolo se cierra y la palabra se empasta. A 34px
+         de alto mide 169px, asi que en escritorio cabe holgado; en movil se
+         reduce al isotipo para dejarle el ancho al buscador, que es la accion
+         mas usada de la cabecera en un marketplace. -->
     <a class="logo-sitio" routerLink="/" [attr.aria-label]="'layout.logoAlt' | transloco">
-      <img class="logo-claro" src="/logo-horizontal.svg" alt="" width="184" height="34" />
-      <img class="logo-oscuro" src="/logo-mono-negativo.svg" alt="" width="184" height="34" />
+      <img class="logo-claro lockup" src="/logo-horizontal.svg" alt="" width="169" height="34" />
+      <img
+        class="logo-oscuro lockup"
+        src="/logo-mono-negativo.svg"
+        alt=""
+        width="169"
+        height="34"
+      />
+      <img class="logo-claro isotipo" src="/isotipo.svg" alt="" width="32" height="32" />
+      <img class="logo-oscuro isotipo" src="/isotipo-negativo.svg" alt="" width="32" height="32" />
     </a>
 
     <!-- Solo se ve por debajo de 640px. aria-expanded es lo que le dice al lector

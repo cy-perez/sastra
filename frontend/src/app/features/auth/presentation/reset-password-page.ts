@@ -36,7 +36,7 @@ import { TextField } from '../../../shared/ui/form/text-field';
  * vista previa de enlace en WhatsApp no puede gastarlo.
  */
 @Component({
-  selector: 'sastra-reset-password-page',
+  selector: 'sendik-reset-password-page',
   imports: [ReactiveFormsModule, TranslocoPipe, RouterLink, TextField, SubmitButton],
   templateUrl: './reset-password-page.html',
   styleUrl: './reset-password-page.css',

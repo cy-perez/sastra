@@ -10,7 +10,7 @@ Un vendedor verificado describe su producto, sube sus tomas y lo envía a revisi
 un moderador la aprueba o la rechaza con motivo, y solo entonces la publicación es
 visible.
 
-Cubre las dos familias que Sastra admite: moda, nueva y de segunda, y tecnología,
+Cubre las dos familias que Sendik admite: moda, nueva y de segunda, y tecnología,
 solo nueva (RN-064).
 
 ## Por qué ahora
@@ -232,7 +232,7 @@ publicación de tecnología se comporta igual.
     una va rotulada como referencia en el carrusel y en la ficha, en los dos
     idiomas, y ninguna aparece como fotograma frontal (RN-066).
 42. Dado un dispositivo con garantía del fabricante, cuando el vendedor declara
-    los meses, entonces la ficha dice que responde el vendedor y no Sastra
+    los meses, entonces la ficha dice que responde el vendedor y no Sendik
     (RN-067). Ningún texto de esta historia llama Respaldo a esa garantía ni al
     revés.
 
@@ -352,7 +352,7 @@ Lista cerrada. Cada uno sale de una regla; ninguno es decorativo.
 | `PHOTOS_MISMATCH` | Las fotos no corresponden a lo descrito | RN-021, RN-050 |
 | `MEASUREMENTS_UNRELIABLE` | Las medidas faltan o no son creíbles | RN-021 |
 | `CONDITION_MISDECLARED` | La condición declarada no es la que se ve | RN-021, RN-050 |
-| `PROHIBITED_ITEM` | Artículo no permitido en Sastra | RN-024 |
+| `PROHIBITED_ITEM` | Artículo no permitido en Sendik | RN-024 |
 | `SUSPECTED_COUNTERFEIT` | Se sospecha réplica o falsificación | RN-024 |
 | `PRICE_OUT_OF_RANGE` | El precio está fuera de lo razonable | RN-020 |
 
@@ -386,7 +386,8 @@ pase por moderación.
 - Estados obligatorios de cada pantalla: cargando, vacío —«todavía no tienes
   publicaciones»—, error de red con reintento, y error de validación por campo.
 - Colores y medidas por variable de `tokens.css`; el texto por clase de rol de
-  `tipografia.css`. El acento ocre aparece una vez por pantalla, como relleno del
+  `tipografia.css`. El acento bronce aparece una vez por pantalla, en la insignia
+  de vendedor verificado, nunca como relleno del
   botón principal, y nunca como color de texto.
 - La rejilla de las ocho tomas usa la proporción 3:4 de RN-018, que es la misma
   del catálogo.
@@ -394,8 +395,8 @@ pase por moderación.
 
 ## Notas técnicas
 
-- **Módulo nuevo de dominio** `co.sastra.catalog`, con el mismo corte por capas
-  que `co.sastra.identity`. El dominio no importa Spring ni JPA.
+- **Módulo nuevo de dominio** `co.sendik.catalog`, con el mismo corte por capas
+  que `co.sendik.identity`. El dominio no importa Spring ni JPA.
 - **Migración `V9__catalog.sql`**, nueva. Crea `categories`, `products`,
   `listings`, `product_images` y `moderation_events` según
   `docs/arquitectura/modelo-datos.md`, con los índices que ese documento exige:

@@ -6,7 +6,7 @@
   <h2 class="tipo-h2">{{ 'auth.account.profile.title' | transloco }}</h2>
   <p class="tipo-cuerpo">{{ 'auth.account.profile.body' | transloco }}</p>
 
-  <sastra-profile-form />
+  <sendik-profile-form />
 </section>
 
 <!-- Criterio 21. Bloque propio y no un campo mas del formulario del perfil: la
@@ -16,7 +16,7 @@
   <h2 class="tipo-h2">{{ 'auth.account.avatar.title' | transloco }}</h2>
   <p class="tipo-cuerpo">{{ 'auth.account.avatar.body' | transloco }}</p>
 
-  <sastra-avatar-form />
+  <sendik-avatar-form />
 </section>
 
 <!-- Criterio 21. Aparte del perfil porque no termina al guardar: termina cuando
@@ -25,7 +25,7 @@
   <h2 class="tipo-h2">{{ 'auth.account.email.title' | transloco }}</h2>
   <p class="tipo-cuerpo">{{ 'auth.account.email.body' | transloco }}</p>
 
-  <sastra-email-change-form />
+  <sendik-email-change-form />
 </section>
 
 <!-- Criterio 17 -->
@@ -109,7 +109,7 @@
         <p class="error tipo-cuerpo" role="alert">{{ error | transloco }}</p>
       }
 
-      <sastra-text-field
+      <sendik-text-field
         fieldId="confirmacion"
         type="email"
         autocomplete="off"
@@ -122,7 +122,7 @@
       <!-- Sin deshabilitar. Un boton deshabilitado no dice por que lo esta, y
            quien usa lector de pantalla se queda sin saberlo; se valida al enviar,
            como en el resto de los formularios del sitio. -->
-      <sastra-submit-button
+      <sendik-submit-button
         labelKey="auth.account.close.confirm"
         [loading]="cierreDeCuenta.isPending()"
       />

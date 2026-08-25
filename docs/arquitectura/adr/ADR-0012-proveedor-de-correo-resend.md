@@ -9,7 +9,7 @@ el aviso de intento de registro sobre un correo ya existente, el bloqueo por
 intentos fallidos y la recuperación de contraseña dependen de ello.
 
 Las restricciones son las de la etapa de prototipo descrita en ADR-0009: una
-sola persona desarrollando, presupuesto cero, y el dominio `sastra.co` todavía
+sola persona desarrollando, presupuesto cero, y el dominio `sendik.co` todavía
 sin comprar. `docs/operacion/entornos.md` dejaba la elección abierta entre
 «Resend o Brevo» y esa indefinición ya bloquea trabajo.
 

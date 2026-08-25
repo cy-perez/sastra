@@ -2,7 +2,7 @@
 // errores a ProblemDetail. No decide nada de negocio.
 
 plugins {
-    id("sastra.spring-conventions")
+    id("sendik.spring-conventions")
 }
 
 dependencies {

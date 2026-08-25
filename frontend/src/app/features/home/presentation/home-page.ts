@@ -24,7 +24,7 @@ interface Confianza {
  * pedir el carril a sangre completa.
  */
 @Component({
-  selector: 'sastra-home-page',
+  selector: 'sendik-home-page',
   imports: [RouterLink, TranslocoPipe],
   templateUrl: './home-page.html',
   styleUrl: './home-page.css',

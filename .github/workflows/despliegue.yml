@@ -115,7 +115,7 @@ jobs:
 
       - name: Construir y publicar la imagen
         env:
-          IMAGEN: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/sastra/backend
+          IMAGEN: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/sendik/backend
         run: |
           docker build -t "$IMAGEN:${{ needs.destino.outputs.etiqueta }}" backend
           docker push "$IMAGEN:${{ needs.destino.outputs.etiqueta }}"
@@ -127,7 +127,7 @@ jobs:
       # el cambio conviven la revisión vieja y la nueva.
       - name: Desplegar la revisión
         env:
-          IMAGEN: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/sastra/backend
+          IMAGEN: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/sendik/backend
         run: |
           gcloud run deploy ${{ vars.CLOUD_RUN_SERVICE }} \
             --image "$IMAGEN:${{ needs.destino.outputs.etiqueta }}" \
@@ -154,12 +154,12 @@ jobs:
             --set-env-vars "LEGAL_PRIVACY_VERSION=${{ vars.LEGAL_PRIVACY_VERSION }}" \
             --set-env-vars "STORAGE_PROVIDER=${{ vars.STORAGE_PROVIDER }}" \
             --set-env-vars "STORAGE_PUBLIC_BASE_URL=${{ vars.STORAGE_PUBLIC_BASE_URL }}" \
-            --set-secrets "DB_URL=sastra-db-url:latest" \
-            --set-secrets "DB_USERNAME=sastra-db-username:latest" \
-            --set-secrets "DB_PASSWORD=sastra-db-password:latest" \
-            --set-secrets "JWT_SECRET=sastra-jwt-secret:latest" \
-            --set-secrets "JWT_ISSUER=sastra-jwt-issuer:latest" \
-            --set-secrets "MAIL_PROVIDER_API_KEY=sastra-mail-api-key:latest"
+            --set-secrets "DB_URL=sendik-db-url:latest" \
+            --set-secrets "DB_USERNAME=sendik-db-username:latest" \
+            --set-secrets "DB_PASSWORD=sendik-db-password:latest" \
+            --set-secrets "JWT_SECRET=sendik-jwt-secret:latest" \
+            --set-secrets "JWT_ISSUER=sendik-jwt-issuer:latest" \
+            --set-secrets "MAIL_PROVIDER_API_KEY=sendik-mail-api-key:latest"
 
       # Que el despliegue termine sin error no significa que la aplicación
       # responda: comprobarlo aquí es lo que convierte un despliegue roto en un

@@ -1,4 +1,4 @@
-# Sastra — Instrucciones para el agente
+# Sendik — Instrucciones para el agente
 
 Marketplace colombiano de moda nueva y de segunda, y de tecnología nueva. Lo
 usado se vende solo en moda (RN-064). La plataforma cobra 5% al vendedor sobre el
@@ -81,8 +81,16 @@ ajustes de modo oscuro van en `frontend/src/styles/marca.css`.
   `frontend/src/styles/tipografia.css`, que es la única fuente de verdad del tipo.
 - Si falta un color o una medida, el sistema está incompleto: se agrega con
   nombre en `marca.css` y se documenta.
-- El acento ocre `--color-acento` aparece **una vez por pantalla**, siempre como
-  relleno con texto oscuro encima. Nunca como color de texto sobre fondo claro.
+- El acento bronce `--color-acento` aparece **una vez por pantalla** y siempre
+  en lo mismo: la insignia de vendedor verificado, como línea de 2px y un icono.
+  Nunca como relleno grande, nunca como color de texto. **El botón principal va
+  en tinta, no en bronce.**
+- El bronce tiene **dos tonos y no se cruzan**: `#8A6428` solo sobre fondo claro
+  y `#B4884A` solo sobre fondo oscuro. Cruzarlos da 2.97:1. `tokens.css` alterna
+  el correcto por modo; dentro de `.franja-tinta`, que es oscura en los dos
+  modos, lo hace `marca.css`.
+- La firma gráfica es el corte del isotipo, repetido fuera del logo como
+  `.regla-corte`. Una sola vez por pieza.
 
 ## Seguridad
 

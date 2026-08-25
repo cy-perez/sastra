@@ -1,4 +1,4 @@
-/* .btn-cta trae de marca.css el relleno ocre y el color del texto. Aqui va solo
+/* .btn-primario trae de marca.css el relleno en tinta y el color del texto. Aqui va solo
    la caja: marca.css define el aspecto del boton, no su tamano. */
 .boton-envio {
   display: inline-flex;

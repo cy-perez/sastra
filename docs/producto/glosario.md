@@ -22,8 +22,8 @@ se anuncie en el idioma que se anuncie.
 | Comprador | `Buyer` | Rol del usuario cuando compra. |
 | Vendedor | `Seller` | Rol del usuario cuando publica y vende. Persona natural. |
 | Vendedor verificado | `VerifiedSeller` | Vendedor que superó identidad, selfie y validación bancaria. Muestra sello. |
-| Moderador | `Moderator` | Persona de Sastra que aprueba o rechaza publicaciones y verificaciones de vendedor. Es el único rol que ve la cédula y la selfie de alguien, y solo a través de un endpoint que registra cada lectura (RN-046, ADR-0018). |
-| Administrador | `Admin` | Persona de Sastra con acceso a la operación completa: configuración, cuentas y resolución de disputas. No es un moderador con más permisos: el moderador decide sobre lo que se publica y sobre quién queda verificado, y nada más. |
+| Moderador | `Moderator` | Persona de Sendik que aprueba o rechaza publicaciones y verificaciones de vendedor. Es el único rol que ve la cédula y la selfie de alguien, y solo a través de un endpoint que registra cada lectura (RN-046, ADR-0018). |
+| Administrador | `Admin` | Persona de Sendik con acceso a la operación completa: configuración, cuentas y resolución de disputas. No es un moderador con más permisos: el moderador decide sobre lo que se publica y sobre quién queda verificado, y nada más. |
 
 Un usuario tiene una sola cuenta. Ser vendedor no es otra cuenta: es un rol
 adicional que se activa al completar la verificación.
@@ -36,7 +36,7 @@ panel que los usa llega en Fase 4 (`docs/producto/alcance.md`).
 
 | Español | Código | Definición |
 |---|---|---|
-| Producto | `Product` | Lo que se publica y se vende. Unidad de venta, existencia siempre 1. Es el término general y cubre las dos familias que Sastra admite: moda y tecnología. |
+| Producto | `Product` | Lo que se publica y se vende. Unidad de venta, existencia siempre 1. Es el término general y cubre las dos familias que Sendik admite: moda y tecnología. |
 | Prenda | `Garment` | Producto de moda. Se dice «prenda» **solo** en moda; en un texto que hable de las dos cosas se dice producto. |
 | Dispositivo | `Device` | Producto de tecnología: celular, computador, televisor y demás. Solo se vende nuevo (RN-064). |
 | Sellado | `Sealed` | Dispositivo que conserva el empaque de fábrica sin abrir. Se declara, habilita las imágenes de referencia y rebaja las tomas exigidas a las cuatro del empaque (RN-065). Recibir abierto lo declarado sellado es producto no conforme. |
@@ -65,7 +65,7 @@ Esto simplifica todo el modelo y es fiel al negocio de segunda mano.
 
 **Producto, prenda y dispositivo no son sinónimos y el error de usarlos como si
 lo fueran no es cosmético.** Casi todo el texto del sitio se escribió cuando
-Sastra vendía solo moda y dice «prenda» donde hoy corresponde «producto». Una
+Sendik vendía solo moda y dice «prenda» donde hoy corresponde «producto». Una
 regla que diga «prenda» cuando aplica a las dos familias deja la tecnología fuera
 sin que nadie lo note, y un texto que diga «producto» donde la regla es solo de
 moda promete algo que no se cumple. La palabra elegida es la que decide a qué se
@@ -75,12 +75,12 @@ aplica la frase.
 
 | Español | Código | Definición |
 |---|---|---|
-| Respaldo | `Backing` | Que Sastra responde por la transacción: el pago no llega al vendedor hasta que el comprador confirma la entrega, y hay una ventana para reportar si lo recibido no es lo publicado. Es la promesa central del producto y la única palabra que la nombra: nunca "compra protegida", "garantía" ni "seguro". |
+| Respaldo | `Backing` | Que Sendik responde por la transacción: el pago no llega al vendedor hasta que el comprador confirma la entrega, y hay una ventana para reportar si lo recibido no es lo publicado. Es la promesa central del producto y la única palabra que la nombra: nunca "compra protegida", "garantía" ni "seguro". |
 | Pedido | `Order` | Compra de uno o varios productos a un mismo vendedor. |
 | Ítem de pedido | `OrderItem` | Un producto dentro del pedido. |
 | Pago | `Payment` | Intento de cobro a través de la pasarela. |
-| División del pago | `PaymentSplit` | Reparto entre vendedor y comisión de Sastra. |
-| Retención del pago | `PaymentHold` | Estado en que el pago, ya recaudado por la pasarela, todavía no es del vendedor. Sastra no lo custodia: lo retiene la pasarela (RN-031). |
+| División del pago | `PaymentSplit` | Reparto entre vendedor y comisión de Sendik. |
+| Retención del pago | `PaymentHold` | Estado en que el pago, ya recaudado por la pasarela, todavía no es del vendedor. Sendik no lo custodia: lo retiene la pasarela (RN-031). |
 | Liberación del pago | `PaymentRelease` | Fin de la retención. Ocurre cuando el comprador confirma la entrega, o cuando vence la ventana de reclamo sin que confirme ni reporte, y habilita el desembolso (RN-034). |
 | Comisión | `Commission` | 5% sobre el valor del producto, a cargo del vendedor. |
 | Desembolso | `Payout` | Traslado del dinero al vendedor una vez liberado. |
@@ -105,7 +105,7 @@ aplica la frase.
 | Stock, inventario | Publicación, prenda |
 | Wallet, saldo, billetera | Desembolso |
 | Escrow, custodia, fideicomiso | Respaldo, retención del pago |
-| Garantía, seguro, para nombrar lo que ofrece Sastra | Respaldo. «Garantía del fabricante» sí se dice, referida a un dispositivo y a lo que responde su vendedor, nunca a lo que responde Sastra (RN-067) |
+| Garantía, seguro, para nombrar lo que ofrece Sendik | Respaldo. «Garantía del fabricante» sí se dice, referida a un dispositivo y a lo que responde su vendedor, nunca a lo que responde Sendik (RN-067) |
 | Compra protegida, protección, te protegemos | Respaldo, compra con respaldo |
 | Usado, de segunda mano, prelovado, vintage (como nombre de la categoría) | De segunda |
 | Plata, billete | Dinero, pago, valor |
@@ -113,7 +113,7 @@ aplica la frase.
 Las filas de dinero importan especialmente: el producto no promete precio bajo,
 no custodia fondos de terceros y no vende un seguro. El lenguaje tiene que ser
 coherente con eso, y las palabras de las dos últimas filas además tienen lectura
-regulatoria en Colombia: describen figuras financieras que Sastra no ejerce
+regulatoria en Colombia: describen figuras financieras que Sendik no ejerce
 (RN-031).
 
 ## Verificación del vendedor

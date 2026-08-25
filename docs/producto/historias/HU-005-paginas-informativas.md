@@ -8,13 +8,13 @@ RN-050 a RN-058
 ## Objetivo
 
 Quien duda antes de registrarse encuentra explicado, en páginas propias y
-enlazables, cómo funciona la compra y la venta, quién está detrás de Sastra, qué
+enlazables, cómo funciona la compra y la venta, quién está detrás de Sendik, qué
 se pregunta todo el mundo y cómo comunicarse con la empresa.
 
 ## Alcance
 
 Entra: cuatro páginas nuevas —cómo funciona (con las dos caras, comprador y
-vendedor), sobre Sastra, preguntas frecuentes y contacto— con su ruta, su título
+vendedor), sobre Sendik, preguntas frecuentes y contacto— con su ruta, su título
 y descripción de buscador, y su texto en español e inglés. Entra también la
 **navegación principal del encabezado y su menú móvil**, que vienen de HU-004:
 allí no se podían construir porque no había ninguna página a la que llevar, y un
@@ -34,7 +34,7 @@ decida, y hasta entonces marcado como fuera de alcance.
 
 **Rutas y renderizado**
 
-1. Dado un visitante, cuando abre `/como-funciona`, `/sobre-sastra`,
+1. Dado un visitante, cuando abre `/como-funciona`, `/sobre-sendik`,
    `/preguntas-frecuentes` o `/contacto`, entonces recibe la página
    correspondiente con un `h1` propio y distinto en cada una.
 2. Dadas las cuatro páginas, cuando se solicita el HTML al servidor sin ejecutar
@@ -71,9 +71,9 @@ decida, y hasta entonces marcado como fuera de alcance.
    rotulado como tal (RN-038), sin anunciar plazos de entrega: no hay regla que
    los respalde y en Colombia lo anunciado es exigible.
 
-**Sobre Sastra**
+**Sobre Sendik**
 
-10. Dada `/sobre-sastra`, cuando se renderiza, entonces explica la promesa de
+10. Dada `/sobre-sendik`, cuando se renderiza, entonces explica la promesa de
     respaldo y qué diferencia a la plataforma, y muestra razón social, NIT y
     dirección tomados de la configuración.
 11. Dada la página, cuando se lee, entonces ningún texto comunica ganga,
@@ -153,16 +153,18 @@ decida, y hasta entonces marcado como fuera de alcance.
 
 ## Diseño
 
-- Ancho máximo de contenido 1200px, con la columna de texto por debajo de eso:
+- Ancho máximo de contenido 1140px, con la columna de texto por debajo de eso:
   una línea de 200 caracteres no se lee.
 - Tipo por clases de rol: `.tipo-h1`, `.tipo-h2`, `.tipo-entradilla`,
   `.tipo-cuerpo`, `.nota`. Ningún `font-size` propio.
-- Separación entre secciones con `.regla-puntada`, el único elemento decorativo
-  del sistema.
-- Estas páginas **no llevan acento ocre**: el acento aparece una vez por
+- Separación entre secciones por espaciado. **Sin regla de corte propia**
+  (cambio de ADR-0022): es el único elemento decorativo del sistema y el manual
+  de Sendik lo limita a una vez por pieza; esa vez es el borde superior del pie.
+  Antes /como-funciona llegaba a mostrar tres en la misma pantalla.
+- Estas páginas **no llevan llamada a la acción**: aparece una vez por
   pantalla y aquí la acción que importa es leer. Si una página termina con una
-  llamada a registrarse, esa es la única y va como relleno con texto oscuro
-  encima.
+  llamada a registrarse, esa es la única y va rellena en tinta. El bronce no
+  entra: está reservado a la insignia de vendedor verificado.
 - Preguntas frecuentes con `details`/`summary` nativos antes que ARIA: el
   contenido queda en el documento aunque esté plegado, que es lo que resuelve
   los criterios 14 y 16 sin escribir estado.
@@ -174,7 +176,7 @@ decida, y hasta entonces marcado como fuera de alcance.
 Sin backend nuevo: ni endpoints, ni tablas, ni migraciones.
 
 Rutas nuevas, en español y con carga diferida como el resto:
-`/como-funciona`, `/sobre-sastra`, `/preguntas-frecuentes`, `/contacto`. Sus
+`/como-funciona`, `/sobre-sendik`, `/preguntas-frecuentes`, `/contacto`. Sus
 direcciones van en un módulo de `core` junto a `core/routes/legal-routes.ts`,
 por el mismo motivo: las necesitan la tabla de rutas, el pie y la portada, y
 ninguno de esos tres puede importar de una funcionalidad.
@@ -217,7 +219,7 @@ HU-004, que no renderiza el enlace si la ruta no existe.
 - Vocabulario: una prueba sobre los dos árboles de traducción que falle si
   aparece alguna de las palabras prohibidas del glosario —custodia, escrow,
   garantía, seguro, compra protegida, plata, ganga— o si un texto dice que
-  Sastra guarda el dinero. Es la misma guarda que HU-004 pide para la portada,
+  Sendik guarda el dinero. Es la misma guarda que HU-004 pide para la portada,
   extendida al sitio informativo, y cubre el error más repetido al redactar
   estas páginas (RN-031).
 - Rutas: las cuatro resuelven, declaran título y descripción, y ninguna cae en
@@ -249,7 +251,7 @@ evasiva en los criterios 16 y 17; ahora son política, porque el sitio las
 anuncia y en Colombia lo anunciado es exigible.
 
 Queda un punto para abogado, no para producto: **qué responsabilidad tiene
-Sastra frente al comprador si el reintegro falla**. RN-054 lo mitiga —el dinero
+Sendik frente al comprador si el reintegro falla**. RN-054 lo mitiga —el dinero
 todavía está retenido en la pasarela, así que no depende de que el vendedor
 colabore—, pero el Estatuto del Consumidor impone deberes propios a quien opera
 una plataforma de comercio electrónico y esa frase la tiene que revisar quien

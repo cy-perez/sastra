@@ -42,7 +42,7 @@ todas las pruebas que había:
 
 ## Objetivo
 
-Una persona puede crear su cuenta en Sastra, verificar su correo, entrar, salir y
+Una persona puede crear su cuenta en Sendik, verificar su correo, entrar, salir y
 recuperar el acceso si olvida la contraseña.
 
 ## Alcance
@@ -134,7 +134,8 @@ dejar el modelo abierto a varios métodos de autenticación.
 
 - Formularios según la guía visual: campo con etiqueta visible, error con
   `aria-describedby`, foco de 3px.
-- Un solo botón con acento ocre por pantalla.
+- Un solo botón principal por pantalla, relleno en tinta. El bronce no es de
+  los botones: está reservado a la insignia de vendedor verificado.
 - Las pantallas de correo enviado y de error usan los estados vacío y error ya
   definidos en `marca.css`.
 - En móvil, teclado adecuado por tipo de campo y sin desplazamiento horizontal.

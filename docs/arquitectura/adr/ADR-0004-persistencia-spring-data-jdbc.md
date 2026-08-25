@@ -26,7 +26,7 @@ para consultas de lectura complejas.
 
 ## Motivo
 
-El modelo de Sastra encaja con agregados pequeños y bien delimitados: un usuario,
+El modelo de Sendik encaja con agregados pequeños y bien delimitados: un usuario,
 una publicación con sus ocho imágenes, un pedido con sus ítems. Nada de eso
 necesita un grafo de objetos con carga perezosa.
 

@@ -31,7 +31,7 @@ import { formatearComision } from './business-figures';
  * comentario de cada grupo, no en pantalla.
  */
 @Component({
-  selector: 'sastra-faq-page',
+  selector: 'sendik-faq-page',
   imports: [TranslocoPipe],
   templateUrl: './faq-page.html',
   styleUrl: './content-page.css',

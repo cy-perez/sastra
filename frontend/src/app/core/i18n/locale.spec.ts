@@ -29,7 +29,7 @@ describe('resolveLocale', () => {
   // fuera al reves, cambiar de idioma no serviria de nada.
   it('la eleccion guardada gana sobre la cabecera del navegador', () => {
     const locale = resolveLocale({
-      cookieHeader: 'sastra_locale=es',
+      cookieHeader: 'sendik_locale=es',
       acceptLanguage: 'en-US,en;q=0.9',
       availableLocales: AVAILABLE,
       defaultLocale: 'en',
@@ -40,7 +40,7 @@ describe('resolveLocale', () => {
 
   it('ignora una cookie con un idioma que no se ofrece', () => {
     const locale = resolveLocale({
-      cookieHeader: 'sastra_locale=pt',
+      cookieHeader: 'sendik_locale=pt',
       acceptLanguage: 'en',
       availableLocales: AVAILABLE,
       defaultLocale: 'es',
@@ -89,9 +89,9 @@ describe('parseAcceptLanguage', () => {
 
 describe('parseCookies', () => {
   it('lee varias cookies y decodifica el valor', () => {
-    expect(parseCookies('a=1; sastra_locale=es; b=hola%20mundo')).toEqual({
+    expect(parseCookies('a=1; sendik_locale=es; b=hola%20mundo')).toEqual({
       a: '1',
-      sastra_locale: 'es',
+      sendik_locale: 'es',
       b: 'hola mundo',
     });
   });
@@ -116,7 +116,7 @@ describe('buildLocaleCookie', () => {
   it('limita la cookie al sitio y le da un ano de vida', () => {
     const cookie = buildLocaleCookie('en');
 
-    expect(cookie).toContain('sastra_locale=en');
+    expect(cookie).toContain('sendik_locale=en');
     expect(cookie).toContain('Path=/');
     expect(cookie).toContain('SameSite=Lax');
     expect(cookie).toContain('Max-Age=31536000');

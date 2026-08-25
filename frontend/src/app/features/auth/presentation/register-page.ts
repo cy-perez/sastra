@@ -33,7 +33,7 @@ import { TextField } from '../../../shared/ui/form/text-field';
  * que haya terminado de equivocarse.
  */
 @Component({
-  selector: 'sastra-register-page',
+  selector: 'sendik-register-page',
   imports: [ReactiveFormsModule, TranslocoPipe, TextField, CheckboxField, SubmitButton],
   templateUrl: './register-page.html',
   styleUrl: './register-page.css',

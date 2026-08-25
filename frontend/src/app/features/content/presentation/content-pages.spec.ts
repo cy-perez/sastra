@@ -30,7 +30,7 @@ beforeEach(() => {
 });
 
 const EMPRESA_COMPLETA: AppConfig['company'] = {
-  name: 'Sastra S.A.S.',
+  name: 'Sendik S.A.S.',
   taxId: '000000000-0',
   address: 'Medellin, Colombia',
   supportEmail: 'soporte@example.test',
@@ -45,7 +45,7 @@ const SIN_EMPRESA: AppConfig['company'] = {
 
 /** Igual que el de test-providers.ts, pero componible sin tocar el inyector. */
 const CONFIG_BASE: AppConfig = {
-  apiBaseUrl: 'https://api.pruebas.sastra.co/api/v1',
+  apiBaseUrl: 'https://api.pruebas.sendik.co/api/v1',
   defaultLocale: 'es',
   availableLocales: ['es', 'en'],
   enableDevtools: false,
@@ -61,7 +61,7 @@ describe('paginas informativas', () => {
   // el parametro, porque no puede saber cual de las cuatro le llega.
   const PAGINAS: readonly [string, Type<unknown>][] = [
     ['como funciona', HowItWorksPage],
-    ['sobre Sastra', AboutPage],
+    ['sobre Sendik', AboutPage],
     ['preguntas frecuentes', FaqPage],
     ['contacto', ContactPage],
   ];
@@ -178,9 +178,12 @@ describe('cifras interpoladas en el texto', () => {
 });
 
 /**
- * El acento ocre aparece una vez por pantalla (CLAUDE.md) y en el sitio
- * informativo la accion que importa es leer: solo /como-funciona termina
- * llamando a registrarse, y esa llamada es su unico acento.
+ * En el sitio informativo la accion que importa es leer: solo /como-funciona
+ * termina llamando a registrarse, y esa es su unica llamada a la accion.
+ *
+ * El boton va en tinta, no en bronce. El manual de Sendik reserva el bronce
+ * para lo verificado y lo garantizado —la insignia de vendedor verificado— y
+ * dice explicitamente que el boton principal va en tinta.
  */
 describe('la llamada a registrarse', () => {
   const montar = async (Pagina: Type<unknown>) => {
@@ -192,27 +195,27 @@ describe('la llamada a registrarse', () => {
     return fixture.nativeElement as HTMLElement;
   };
 
-  it('como funciona cierra con un solo boton de acento, y lleva al registro', async () => {
+  it('como funciona cierra con un solo boton principal, y lleva al registro', async () => {
     const raiz = await montar(HowItWorksPage);
-    const cta = raiz.querySelectorAll<HTMLAnchorElement>('.btn-cta');
+    const cta = raiz.querySelectorAll<HTMLAnchorElement>('.btn-primario');
 
     expect(cta).toHaveLength(1);
     expect(cta[0]?.getAttribute('href')).toBe('/registro');
   });
 
   /**
-   * Las otras tres no llevan acento. Que aparezca en dos sitios de la misma
-   * pantalla es la erosion que el sistema visual quiere evitar, y empieza
-   * siempre por copiar el cierre de una pagina a otra.
+   * Las otras tres no llevan llamada a la accion. Que aparezca en dos sitios de
+   * la misma pantalla es la erosion que el sistema visual quiere evitar, y
+   * empieza siempre por copiar el cierre de una pagina a otra.
    */
   it.each([
-    ['sobre Sastra', AboutPage],
+    ['sobre Sendik', AboutPage],
     ['preguntas frecuentes', FaqPage],
     ['contacto', ContactPage],
-  ] as [string, Type<unknown>][])('%s no lleva acento ocre', async (_nombre, Pagina) => {
+  ] as [string, Type<unknown>][])('%s no lleva llamada a la accion', async (_nombre, Pagina) => {
     const raiz = await montar(Pagina);
 
-    expect(raiz.querySelectorAll('.btn-cta')).toHaveLength(0);
+    expect(raiz.querySelectorAll('.btn-primario')).toHaveLength(0);
   });
 });
 
@@ -247,7 +250,7 @@ describe('AboutPage, datos de empresa', () => {
     const raiz = await montar(EMPRESA_COMPLETA);
     const datos = raiz.querySelector('address');
 
-    expect(datos?.textContent).toContain('Sastra S.A.S.');
+    expect(datos?.textContent).toContain('Sendik S.A.S.');
     expect(datos?.textContent).toContain('000000000-0');
     expect(datos?.textContent).toContain('Medellin, Colombia');
     // La etiqueta del NIT es texto traducido, no una cadena de la plantilla.
@@ -272,7 +275,7 @@ describe('AboutPage, datos de empresa', () => {
 
     expect(datos).not.toBeNull();
     expect(datos?.textContent).toContain('000000000-0');
-    expect(datos?.textContent).not.toContain('Sastra S.A.S.');
+    expect(datos?.textContent).not.toContain('Sendik S.A.S.');
     expect(datos?.textContent).not.toContain('Medellin');
     expect(datos?.querySelectorAll('.dato')).toHaveLength(1);
   });

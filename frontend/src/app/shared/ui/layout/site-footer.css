@@ -5,7 +5,7 @@
 
 /* La regla ya trae su propio margen vertical desde marca.css; aqui solo se
    quita el superior para que quede pegada al borde de la franja. */
-.pie .regla-puntada {
+.pie .regla-corte {
   margin-top: 0;
 }
 
@@ -39,7 +39,7 @@
    El rol es .tipo-cuerpo y no .tipo-secundario a proposito: ese ultimo fija
    --color-texto-suave, que sobre la franja oscura da 2.7:1 y no pasa. Los
    enlaces si pueden llevarlo porque marca.css los recolorea con
-   `.franja-oscura a`; un <address> no es un enlace y se quedaria ilegible. El
+   `.franja-tinta a`; un <address> no es un enlace y se quedaria ilegible. El
    matiz de "dato secundario" lo da la opacidad, que conserva el contraste. */
 .datos {
   display: flex;

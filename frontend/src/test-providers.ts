@@ -15,7 +15,7 @@ import { BundledTranslationLoader } from './app/core/i18n/bundled-translation-lo
  * Ninguna prueba sale a la red: el cliente HTTP es siempre el de pruebas.
  */
 const testConfig: AppConfig = {
-  apiBaseUrl: 'https://api.pruebas.sastra.co/api/v1',
+  apiBaseUrl: 'https://api.pruebas.sendik.co/api/v1',
   defaultLocale: 'es',
   availableLocales: ['es', 'en'],
   enableDevtools: false,
@@ -26,7 +26,7 @@ const testConfig: AppConfig = {
   // Datos de empresa completos por omision, que es el caso normal. La prueba que
   // comprueba el pie incompleto sobrescribe APP_CONFIG en su propio TestBed.
   company: {
-    name: 'Sastra S.A.S.',
+    name: 'Sendik S.A.S.',
     taxId: '000000000-0',
     address: 'Medellin, Colombia',
     supportEmail: 'soporte@example.test',

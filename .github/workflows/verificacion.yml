@@ -137,15 +137,15 @@ jobs:
       postgres:
         image: postgres:17-alpine
         env:
-          POSTGRES_DB: sastra
-          POSTGRES_USER: sastra
-          POSTGRES_PASSWORD: sastra
+          POSTGRES_DB: sendik
+          POSTGRES_USER: sendik
+          POSTGRES_PASSWORD: sendik
         ports:
           - 5432:5432
         # Sin esto, el backend arranca antes que la base y Flyway falla por una
         # causa que no es la real.
         options: >-
-          --health-cmd "pg_isready -U sastra -d sastra"
+          --health-cmd "pg_isready -U sendik -d sendik"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
@@ -188,9 +188,9 @@ jobs:
       - name: Pruebas de extremo a extremo completas
         working-directory: frontend
         env:
-          DB_URL: jdbc:postgresql://localhost:5432/sastra
-          DB_USERNAME: sastra
-          DB_PASSWORD: sastra
+          DB_URL: jdbc:postgresql://localhost:5432/sendik
+          DB_USERNAME: sendik
+          DB_PASSWORD: sendik
         run: npm run e2e:completo
 
       # El registro del backend incluido: cuando una de estas pruebas falla, casi

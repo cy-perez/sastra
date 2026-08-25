@@ -1,74 +1,74 @@
 {
   "meta": {
-    "siteName": "Sastra",
+    "siteName": "Sendik",
     "home": {
-      "title": "Sastra",
+      "title": "Sendik",
       "description": "Compra y vende moda con respaldo."
     },
     "notFound": {
       "title": "Página no encontrada",
-      "description": "La dirección que abriste no existe en Sastra."
+      "description": "La dirección que abriste no existe en Sendik."
     },
     "register": {
       "title": "Crear cuenta",
-      "description": "Crea tu cuenta en Sastra para comprar y vender moda con respaldo."
+      "description": "Crea tu cuenta en Sendik para comprar y vender moda con respaldo."
     },
     "verify": {
       "title": "Verificar correo",
-      "description": "Confirma tu correo para activar tu cuenta en Sastra."
+      "description": "Confirma tu correo para activar tu cuenta en Sendik."
     },
     "login": {
       "title": "Entrar",
-      "description": "Entra a tu cuenta de Sastra para comprar y vender moda con respaldo."
+      "description": "Entra a tu cuenta de Sendik para comprar y vender moda con respaldo."
     },
     "legal": {
       "terms": {
         "title": "Términos y condiciones",
-        "description": "Condiciones de uso de Sastra."
+        "description": "Condiciones de uso de Sendik."
       },
       "privacy": {
         "title": "Política de tratamiento de datos",
-        "description": "Cómo trata Sastra tus datos personales y qué derechos tienes."
+        "description": "Cómo trata Sendik tus datos personales y qué derechos tienes."
       },
       "cookies": {
         "title": "Política de cookies",
-        "description": "Qué cookies usa Sastra y para qué."
+        "description": "Qué cookies usa Sendik y para qué."
       }
     },
     "forgot": {
       "title": "Recuperar contraseña",
-      "description": "Pide un enlace para poner una contraseña nueva en Sastra."
+      "description": "Pide un enlace para poner una contraseña nueva en Sendik."
     },
     "reset": {
       "title": "Nueva contraseña",
-      "description": "Pon una contraseña nueva para tu cuenta de Sastra."
+      "description": "Pon una contraseña nueva para tu cuenta de Sendik."
     },
     "account": {
       "title": "Mi cuenta",
-      "description": "Tus sesiones abiertas, tus datos y el cierre de tu cuenta en Sastra."
+      "description": "Tus sesiones abiertas, tus datos y el cierre de tu cuenta en Sendik."
     },
     "confirmEmail": {
       "title": "Confirmar correo nuevo",
-      "description": "Termina el cambio de correo de tu cuenta de Sastra."
+      "description": "Termina el cambio de correo de tu cuenta de Sendik."
     },
     "howItWorks": {
       "title": "Cómo funciona",
-      "description": "Cómo se compra y cómo se vende en Sastra: vendedores verificados, publicaciones revisadas y el pago retenido hasta que el comprador confirma la entrega."
+      "description": "Cómo se compra y cómo se vende en Sendik: vendedores verificados, publicaciones revisadas y el pago retenido hasta que el comprador confirma la entrega."
     },
     "about": {
-      "title": "Qué es Sastra",
-      "description": "Sastra reúne la moda nueva y de segunda que hoy se vende dispersa en redes, con vendedores verificados y el pago retenido hasta la entrega."
+      "title": "Qué es Sendik",
+      "description": "Sendik reúne la moda nueva y de segunda que hoy se vende dispersa en redes, con vendedores verificados y el pago retenido hasta la entrega."
     },
     "faq": {
       "title": "Preguntas frecuentes",
-      "description": "Cómo comprar y vender en Sastra: verificación de vendedores, publicaciones revisadas, pago retenido, comisión y medios de pago."
+      "description": "Cómo comprar y vender en Sendik: verificación de vendedores, publicaciones revisadas, pago retenido, comisión y medios de pago."
     },
     "contact": {
       "title": "Contacto",
-      "description": "Cómo comunicarte con Sastra y cómo ejercer tus derechos sobre tus datos personales."
+      "description": "Cómo comunicarte con Sendik y cómo ejercer tus derechos sobre tus datos personales."
     },
     "sellerVerification": {
-      "title": "Verifícate para vender · Sastra",
+      "title": "Verifícate para vender · Sendik",
       "description": "Confirma tu identidad para poder publicar y recibir tus pagos."
     },
     "moderationInbox": {
@@ -83,7 +83,7 @@
   "layout": {
     "skipToContent": "Saltar al contenido",
     "home": "Inicio",
-    "logoAlt": "Sastra, ir al inicio",
+    "logoAlt": "Sendik, ir al inicio",
     "theme": {
       "toDark": "Cambiar a modo oscuro",
       "toLight": "Cambiar a modo claro"
@@ -94,9 +94,9 @@
       "en": "English"
     },
     "footer": {
-      "tagline": "Compra y vende moda con respaldo.",
+      "tagline": "Compra y vende de forma ágil y segura.",
       "legalLabel": "Documentos legales",
-      "logoAlt": "Sastra",
+      "logoAlt": "Sendik",
       "contactLabel": "Contacto",
       "company": {
         "taxId": "NIT"
@@ -114,7 +114,7 @@
       "close": "Cerrar el menú",
       "pages": {
         "howItWorks": "Cómo funciona",
-        "about": "Sobre Sastra",
+        "about": "Sobre Sendik",
         "faq": "Preguntas frecuentes",
         "contact": "Contacto"
       }
@@ -183,7 +183,7 @@
       "AUTH_RESET_TOKEN_INVALID": "Este enlace ya no sirve. Puede que lo hayas usado antes.",
       "AUTH_RESET_TOKEN_EXPIRED": "Este enlace venció. Los enlaces para cambiar la contraseña duran 30 minutos.",
       "AUTH_CLOSE_CONFIRMATION_MISMATCH": "Lo que escribiste no coincide con tu correo.",
-      "AUTH_EMAIL_TAKEN": "Esa dirección ya tiene una cuenta en Sastra. Pide el cambio con otra.",
+      "AUTH_EMAIL_TAKEN": "Esa dirección ya tiene una cuenta en Sendik. Pide el cambio con otra.",
       "FILE_TYPE_UNSUPPORTED": "Ese archivo no es una imagen JPG o PNG. Vuelve a exportarla e inténtalo otra vez.",
       "FILE_TOO_LARGE": "La imagen pesa demasiado. Prueba con una más ligera.",
       "FILE_DIMENSIONS_TOO_SMALL": "La imagen es muy pequeña y se vería borrosa. Sube una más grande.",
@@ -237,7 +237,7 @@
       "hints": {
         "displayName": "Así te verán quienes visiten tus publicaciones.",
         "password": "Diez caracteres como mínimo. Una frase larga es más segura que una palabra con símbolos.",
-        "birthDate": "Sastra es solo para mayores de 18 años."
+        "birthDate": "Sendik es solo para mayores de 18 años."
       },
       "strength": {
         "label": "Fortaleza:",
@@ -316,7 +316,7 @@
       },
       "sent": {
         "title": "Revisa tu correo",
-        "body": "Si ese correo tiene una cuenta en Sastra, le enviamos un enlace para cambiar la contraseña. El enlace vence en {{minutos}} minutos y sirve una sola vez.",
+        "body": "Si ese correo tiene una cuenta en Sendik, le enviamos un enlace para cambiar la contraseña. El enlace vence en {{minutos}} minutos y sirve una sola vez.",
         "spam": "Si no lo ves, revisa la carpeta de no deseados."
       },
       "remembered": "¿Ya la recordaste?",
@@ -350,7 +350,7 @@
       "title": "Mi cuenta",
       "profile": {
         "title": "Tus datos",
-        "body": "Solo el nombre se ve en Sastra. La ciudad y el teléfono son opcionales y puedes quitarlos cuando quieras.",
+        "body": "Solo el nombre se ve en Sendik. La ciudad y el teléfono son opcionales y puedes quitarlos cuando quieras.",
         "loading": "Cargando tus datos",
         "done": "Guardado.",
         "submit": "Guardar cambios",
@@ -433,7 +433,7 @@
     },
     "confirmEmail": {
       "title": "Confirma tu correo nuevo",
-      "subtitle": "Pulsa el botón para terminar el cambio. Desde ese momento entrarás a Sastra con esta dirección.",
+      "subtitle": "Pulsa el botón para terminar el cambio. Desde ese momento entrarás a Sendik con esta dirección.",
       "submit": "Confirmar el cambio",
       "goToAccount": "Ir a mi cuenta",
       "missing": {
@@ -448,8 +448,8 @@
     }
   },
   "howItWorks": {
-    "title": "Cómo funciona Sastra",
-    "intro": "Comprar o vender moda por internet en Colombia suele significar transferirle a un desconocido y esperar, o despachar y esperar. Sastra se pone en medio con reglas iguales para los dos lados.",
+    "title": "Cómo funciona Sendik",
+    "intro": "Comprar o vender moda por internet en Colombia suele significar transferirle a un desconocido y esperar, o despachar y esperar. Sendik se pone en medio con reglas iguales para los dos lados.",
     "buyer": {
       "title": "Si vas a comprar",
       "steps": {
@@ -459,7 +459,7 @@
         },
         "pay": {
           "title": "Pagas producto más envío",
-          "body": "El envío se cotiza con las transportadoras y el valor es aproximado; lo ves antes de confirmar. La comisión de Sastra no se te suma: la asume el vendedor."
+          "body": "El envío se cotiza con las transportadoras y el valor es aproximado; lo ves antes de confirmar. La comisión de Sendik no se te suma: la asume el vendedor."
         },
         "hold": {
           "title": "El pago queda retenido",
@@ -538,9 +538,9 @@
     }
   },
   "about": {
-    "title": "Por qué existe Sastra",
+    "title": "Por qué existe Sendik",
     "intro": "En Colombia se compra y se vende muchísima ropa de segunda, pero ocurre en grupos de Facebook, en historias de Instagram y en chats de WhatsApp. El comprador transfiere y espera. El vendedor despacha y espera. Los dos asumen un riesgo que nadie está cubriendo.",
-    "gathers": "Sastra reúne esa oferta dispersa en un solo catálogo y pone cuatro cosas que en un chat no existen: vendedores verificados con documento de identidad, cada publicación revisada antes de aparecer, fotos que muestran la prenda desde ocho ángulos, y un pago que no llega al vendedor hasta que el comprador confirma que recibió lo que se publicó.",
+    "gathers": "Sendik reúne esa oferta dispersa en un solo catálogo y pone cuatro cosas que en un chat no existen: vendedores verificados con documento de identidad, cada publicación revisada antes de aparecer, fotos que muestran la prenda desde ocho ángulos, y un pago que no llega al vendedor hasta que el comprador confirma que recibió lo que se publicó.",
     "notUs": "No fabricamos ropa ni la revendemos, y no tocamos el dinero: lo recauda y lo retiene la pasarela de pagos. Somos el lugar donde una persona le compra a otra con reglas claras para las dos.",
     "company": {
       "title": "Quién responde",
@@ -558,7 +558,7 @@
       },
       "whoGetsPaid": {
         "q": "¿A quién le pago?",
-        "a": "El pago lo recauda y lo retiene la pasarela, no Sastra. El vendedor no lo recibe mientras la prenda viaja."
+        "a": "El pago lo recauda y lo retiene la pasarela, no Sendik. El vendedor no lo recibe mientras la prenda viaja."
       },
       "release": {
         "q": "¿Cuándo se le paga al vendedor?",
@@ -574,7 +574,7 @@
       },
       "shippingCost": {
         "q": "¿Cuánto cuesta el envío?",
-        "a": "Depende del destino, del peso y del tamaño. Se cotiza con las transportadoras y lo ves antes de pagar. Es un valor aproximado. El envío lo paga el comprador y la comisión de Sastra no se te suma."
+        "a": "Depende del destino, del peso y del tamaño. Se cotiza con las transportadoras y lo ves antes de pagar. Es un valor aproximado. El envío lo paga el comprador y la comisión de Sendik no se te suma."
       },
       "payment": {
         "q": "¿Cómo puedo pagar?",
@@ -605,7 +605,7 @@
       },
       "new": {
         "q": "¿Puedo vender productos nuevos?",
-        "a": "Sí. Sastra tiene catálogo de nuevo y de segunda, y cada publicación indica su condición."
+        "a": "Sí. Sendik tiene catálogo de nuevo y de segunda, y cada publicación indica su condición."
       },
       "forbidden": {
         "q": "¿Qué no puedo publicar?",

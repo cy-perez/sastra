@@ -82,8 +82,11 @@ app.use((_request, response, next) => {
  *
  * <ul>
  *   <li><strong>`/fuentes/`</strong> se cachea un anio y ademas `immutable`: el
- *   nombre del archivo lleva la familia y el grosor, asi que un cambio de fuente
- *   es un archivo distinto y el navegador no tiene por que revalidar nunca.
+ *   nombre del archivo lleva la familia, asi que un cambio de tipografia es un
+ *   archivo distinto y el navegador no tiene por que revalidar nunca. Con las
+ *   variables ya no lleva el grosor —un solo archivo cubre el rango entero— pero
+ *   el razonamiento no cambia: lo que identifica al archivo sigue siendo su
+ *   nombre, y sustituir una familia significa otro nombre.
  *   <li><strong>`/legal/`</strong> se cachea cinco minutos y no un anio, que es lo
  *   que le daria la regla general por estar en la misma carpeta. Un cambio de
  *   version de los terminos o de la politica de datos tiene que llegar pronto:
@@ -203,7 +206,7 @@ if (isMainModule(import.meta.url) || process.env['pm_id']) {
     if (error) {
       throw error;
     }
-    console.log(`Servidor de Sastra escuchando en http://localhost:${port}`);
+    console.log(`Servidor de Sendik escuchando en http://localhost:${port}`);
   });
 }
 

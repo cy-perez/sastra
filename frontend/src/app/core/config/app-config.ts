@@ -72,7 +72,7 @@ export interface BusinessFigures {
 }
 
 export interface AppConfig {
-  /** Base de la API, incluida la version. Ejemplo: https://api.sastra.co/api/v1 */
+  /** Base de la API, incluida la version. Ejemplo: https://api.sendik.co/api/v1 */
   readonly apiBaseUrl: string;
   readonly defaultLocale: string;
   readonly availableLocales: readonly string[];
@@ -83,10 +83,10 @@ export interface AppConfig {
   readonly business: BusinessFigures;
 }
 
-export const APP_CONFIG = new InjectionToken<AppConfig>('sastra.app-config');
+export const APP_CONFIG = new InjectionToken<AppConfig>('sendik.app-config');
 
 /**
  * Clave con la que la configuracion viaja del servidor al navegador. Solo lleva
  * valores publicos: nada de aqui es secreto ni personal.
  */
-export const APP_CONFIG_STATE_KEY = makeStateKey<AppConfig>('sastra.app-config');
+export const APP_CONFIG_STATE_KEY = makeStateKey<AppConfig>('sendik.app-config');

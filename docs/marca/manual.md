@@ -1,201 +1,190 @@
-# Manual de marca — Sastra
+# Manual de marca — Sendik
 
 ## Idea
 
-Sastra es el mercado colombiano donde cualquiera compra y vende moda, nueva y
-usada, con la plataforma como respaldo de la transaccion.
+Sendik es el marketplace colombiano donde cualquier persona compra y vende moda
+—calzado, ropa, bolsos— nueva y usada, y tecnología solo nueva. No compite por
+catálogo: compite por **confianza**. Vendedor verificado y pago integrado
+(Wompi: PSE, Nequi, tarjetas, Bancolombia a la mano; y Addi) son el producto
+real, y la identidad tiene que decir eso antes de que nadie lea una línea.
 
-El nombre suena a **sastre**, y de ahi sale todo el sistema. Una **puntada** es
-lo que une dos piezas separadas: exactamente lo que Sastra hace entre quien
-vende y quien compra. Y ancla la marca en el mundo de la ropa y el arreglo, no
-en el de la ganga. Es la diferencia que importa: la promesa de Sastra es
-**seguridad**, no *barato*.
+La marca es seria y premium, pero no corporativa: si pareciera un banco, la
+persona que quiere vender unos tenis de su clóset sentiría que el sitio no es
+para ella. La seriedad se consigue por disciplina geométrica y por lo que se
+deja fuera, no por solemnidad.
 
-## La firma: la puntada
+## Eslogan
 
-El isotipo es una **S geometrica construida con dos arcos identicos girados 180
-grados**, de trazo constante 17 sobre un lienzo de 120. Las dos mitades
-simetricas son las dos partes de la transaccion, unidas en la cintura: eso es
-la costura.
+**Compra y vende de forma ágil y segura.**
 
-La marca es **solida, sin interrupciones**. Se probaron dos variantes con la
-cintura cortada por un tajo diagonal —una en el isotipo y otra dentro de las S
-del logotipo— y ambas se descartaron: el corte penalizaba la legibilidad en
-pequeno y sobre la tipografia leia como glifo roto. La version aprobada es la
-solida.
+Va debajo del logotipo, en Inter regular, gris `#6A6E80` sobre fondo claro o
+blanco sobre fondo oscuro, ajustado al ancho exacto de la palabra SENDIK. No se
+escribe en mayúsculas, no se pone en bronce y no se cambia la redacción. Está
+listo en `logo-con-eslogan.svg` y su versión negativa.
 
-La puntada sigue viva como **elemento del sistema**: la **regla divisoria** de
-guion 16 y hueco 9 que separa secciones en la web, en los banners y en las
-piezas de redes. Ese ritmo es lo que hace que todas las piezas se reconozcan
-como de la misma familia. Es el unico elemento decorativo de la marca y no
-conviene sustituirlo por una linea continua.
+## El símbolo y por qué es este
 
-## Logo: variantes y cuando usar cada una
+El isotipo es una **S construida con dos ganchos idénticos**: el de abajo es
+exactamente el de arriba girado 180°. Entre los dos hay un corte.
 
-| Archivo | Uso |
+Esa es la idea entera del negocio en una forma: son **la misma pieza dos veces**,
+porque en Sendik la misma persona es vendedora y compradora. El corte es el
+momento del traspaso — el punto donde uno entrega y el otro recibe, que es
+justo donde la plataforma se para a verificar y a garantizar el pago.
+
+**El corte es la firma de la marca.** Se repite fuera del logo como recurso
+gráfico: la línea interrumpida que separa secciones (`.regla-corte` en
+`tokens.css`), el borde superior del sello de vendedor verificado, la manera de
+cortar una imagen. Regla: **una sola vez por pieza**.
+
+### Qué se descartó y por qué
+
+- **Bolsa, carrito, etiqueta, tienda y escudo**: es el promedio de lo que hay en
+  el rubro y no dice nada de lo que hace distinta a Sendik.
+- **Versión bicolor del isotipo** (un gancho bronce, uno tinta): se probó y se
+  descartó porque los dos ganchos se despegan visualmente y la S deja de leerse
+  como letra. El logo es monocromo.
+- **Corte aplicado también a la S de la palabra**: se probó y se descartó porque
+  exige máscaras SVG, que se rompen al exportar a PNG y no las soporta el formato
+  de íconos de Android. La palabra queda limpia; el corte vive en el símbolo.
+- **Versión "metalizada" con degradado dorado**: no es la marca. Un logo que
+  necesita degradado para verse bien falla en el sello de caucho, en la factura,
+  en el bordado y en la serigrafía a una tinta. Si alguien te entrega un archivo
+  de Sendik con degradado, está mal: los archivos correctos usan un solo color
+  plano y así están verificados en este paquete.
+
+## Logo: variantes y cuándo usar cada una
+
+| Archivo | Cuándo |
 |---|---|
-| `logo-principal.svg` | La composicion preferida. Igual al horizontal. |
-| `logo-horizontal.svg` | Barra de navegacion, cabeceras, firmas de correo. **Es el que mas vas a usar.** |
-| `logo-vertical.svg` | Espacios cuadrados: fichas, sellos, pie de pagina centrado. |
-| `isotipo.svg` | Solo el simbolo. Avatar de redes, icono de app, favicon, marca de agua. |
-| `isotipo-negativo.svg` | El simbolo en blanco, para fondos oscuros. |
-| `isotipo-app.svg` | El simbolo con el aire que exige Apple (arte al 80% del lienzo). Solo para generar iconos de app. |
-| `logo-mono-positivo.svg` | Un solo color oscuro. Sello, factura, grabado laser, serigrafia a un color. |
-| `logo-mono-negativo.svg` | Un solo color claro. Fondos oscuros, fotos, modo oscuro, vinilo de vehiculo. |
+| `logo-principal.svg` | Uso por defecto. Cabecera del sitio, facturas, documentos |
+| `logo-horizontal.svg` | Idéntico al principal — mismo archivo con el nombre que suele pedir un desarrollador para la barra de navegación |
+| `logo-con-eslogan.svg` | Cuando la marca aún no es conocida: portada, pauta, primera diapositiva, firma de correo |
+| `logo-con-eslogan-negativo.svg` | Lo mismo sobre fondo oscuro o sobre foto |
+| `logo-vertical.svg` | Espacios cuadrados: pendones, pauta cuadrada, sellos |
+| `logo-mono-positivo.svg` | Un solo color oscuro: sello de caucho, grabado láser, serigrafía a una tinta |
+| `logo-mono-negativo.svg` | Un solo color claro: fondos oscuros, fotos, modo oscuro |
+| `isotipo.svg` | Solo el símbolo: avatar de redes, base del ícono de app, marca de agua |
+| `isotipo-negativo.svg` | El símbolo sobre fondo oscuro |
+| `icono-app.svg` | Ícono de aplicación (símbolo blanco sobre teja tinta, a sangre) |
+| `favicon.svg` | Favicon vectorial con esquinas redondeadas |
+| `banner.svg` | Tarjeta social 1200×630, base de `og:image` |
 
-### Area de respeto
+Como el logo es monocromo por diseño, `logo-principal` y `logo-mono-positivo`
+son gráficamente iguales. No es un descuido: se entregan con los dos nombres
+porque las imprentas y los desarrolladores piden cosas distintas.
 
-Deja libre, en los cuatro lados, **la mitad del ancho del isotipo**. Nada entra
-ahi: ni texto, ni fotos, ni bordes de caja.
+## Área de respeto y tamaño mínimo
 
-### Tamano minimo
-
-Probado, no inventado:
-
-| | Pantalla | Impreso |
-|---|---|---|
-| Lockup horizontal | 24 px de alto | 14 mm de ancho |
-| Isotipo solo | 16 px | 6 mm |
-
-Por debajo de 24 px de alto, **no uses el lockup: usa el isotipo solo**. El
-isotipo es el mismo archivo a cualquier tamano: al ser solido no necesita una
-version simplificada aparte, y se sostiene hasta los 16 px del favicon.
+- **Área de respeto**: un cuarto del alto del isotipo por los cuatro costados
+  (27 unidades sobre el lienzo de 120). Nada entra ahí: ni texto, ni otro logo,
+  ni el borde de la pantalla o del papel.
+- **Tamaño mínimo del logo completo**: 130 px de ancho en pantalla, 30 mm
+  impreso. Probado: por debajo de eso el corte del símbolo se cierra y la
+  palabra empieza a empastarse.
+- **Con eslogan**: mínimo 200 px de ancho. Por debajo, el eslogan no se lee y hay
+  que usar `logo-principal.svg`.
+- **Tamaño mínimo del isotipo solo**: 16 px. Para favicon usar
+  `dist/web/favicon.ico`, que ya va simplificado y con el trazo engrosado.
 
 ## Usos prohibidos
 
-- No deformar ni estirar. Escala siempre proporcional.
-- No rotar. La S vive en vertical.
-- No recolorear fuera de la paleta. Nunca degradados dentro del logo.
-- No anadir sombras, contornos, biseles ni brillos.
-- No poner sobre fotos ocupadas sin una capa de tinta al 70% detras.
-- No reencuadrar el lockup ni cambiar la distancia entre simbolo y palabra.
-- No abrir cortes, huecos ni ranuras dentro de la S.
-- No escribir el nombre en minusculas ni con otra tipografia.
+No deformar ni estirar · no rotar · no recolorear fuera de la paleta · **no añadir
+degradados, sombras ni contornos** · no poner el logo tinta sobre fondo oscuro
+(usar el negativo) · no reencuadrar ni cambiar la separación entre símbolo y
+palabra · no cambiar la redacción del eslogan · no rellenar el corte del símbolo ·
+no meter el logo dentro de una caja o círculo que no esté en este manual · no usar
+el bronce `#B4884A` sobre fondo claro.
 
 ## Color
 
-| Rol | HEX | RGB | Sobre que fondo |
+| Rol | HEX | RGB | Dónde puede ir |
 |---|---|---|---|
-| Tinta (primario) | `#16192A` | 22, 25, 42 | Sobre hueso 17.0:1 · sobre hilo 7.3:1 |
-| Tinta oscuro | `#0C0F1B` | 12, 15, 27 | Hover y fondo en modo oscuro |
-| Tinta suave | `#2B3145` | 43, 49, 69 | Tarjetas en modo oscuro |
-| Hilo (acento) | `#D69A3C` | 214, 154, 60 | **Solo como relleno**, con texto tinta encima |
-| Hilo oscuro | `#8A5A12` | 138, 90, 18 | Texto ocre sobre claro: 5.9:1 |
-| Hueso (fondo) | `#F7F5F1` | 247, 245, 241 | Fondo de pagina |
+| Primario (tinta) | `#14162B` | 20, 22, 43 | Todo. Sobre blanco 17.81:1, sobre fondo 16.50:1 (AAA) |
+| Primario oscuro | `#0A0B18` | 10, 11, 24 | Hover/pressed; superficie base en modo oscuro |
+| Acento bronce | `#B4884A` | 180, 136, 74 | **Solo sobre fondo oscuro** (5.56:1 sobre tinta) |
+| Acento bronce oscuro | `#8A6428` | 138, 100, 40 | **Solo sobre fondo claro** (4.95:1 sobre `#F6F6F8`) |
+| Fondo | `#F6F6F8` | 246, 246, 248 | Fondo de página |
 | Superficie | `#FFFFFF` | 255, 255, 255 | Tarjetas de producto |
-| Texto suave | `#5B6072` | 91, 96, 114 | Sobre hueso 5.7:1 |
-| Borde | `#E3DFD7` | 227, 223, 215 | Divisores de 1px |
-| Verificado | `#1F7A55` | 31, 122, 85 | Sobre blanco 5.3:1 |
-| Alerta | `#B3402A` | 179, 64, 42 | Sobre blanco 5.7:1 |
+| Texto suave | `#6A6E80` | 106, 110, 128 | Talla, estado del artículo, eslogan (5.05:1 sobre blanco) |
+| Borde | `#E3E4EA` | 227, 228, 234 | Divisores de 1 px |
+| Éxito | `#1E7A5A` | 30, 122, 90 | Pago aprobado, entrega confirmada (5.27:1) |
+| Error | `#B3261E` | 179, 38, 30 | Pago rechazado (6.54:1) |
 
-**La regla del acento:** el hilo aparece **una vez por pantalla**, en el boton
-que quieres que la persona toque. Si esta en cinco sitios, no destaca ninguno.
+**La regla del acento**: el bronce aparece **una sola vez por pantalla**, y
+siempre en el mismo sitio conceptual — lo verificado, lo garantizado. Si aparece
+en tres lugares deja de significar algo. El botón principal de compra va en
+tinta, no en bronce.
 
-**El error a evitar:** `#D69A3C` como texto sobre fondo claro da 2.5:1 y es
-ilegible para mucha gente. Para texto ocre sobre claro, `#8A5A12`.
+**Ojo con el bronce sobre fondo claro**: `#B4884A` da 2.97:1 sobre el fondo de
+página, por debajo del mínimo accesible. En claro se usa `#8A6428` sin
+excepción. Están separados en los tokens justamente para que no se confundan.
 
-## Tipografia
+## Tipografía
 
-| Uso | Familia | Licencia | Donde bajarla |
+| Uso | Familia | Licencia | Dónde bajarla |
 |---|---|---|---|
-| Display y logotipo | **Archivo** | SIL OFL | fonts.google.com/specimen/Archivo |
-| Interfaz y cuerpo | **Instrument Sans** | SIL OFL | fonts.google.com/specimen/Instrument+Sans |
-| Precios y codigos | **IBM Plex Mono** | SIL OFL | fonts.google.com/specimen/IBM+Plex+Mono |
+| Display: logotipo, titulares, precios grandes | **Archivo** (peso 600) | SIL OFL 1.1 | fonts.google.com/specimen/Archivo |
+| Texto: cuerpo, interfaz, formularios, eslogan | **Inter** (400 / 500 / 600) | SIL OFL 1.1 | fonts.google.com/specimen/Inter |
 
-Las tres son de licencia libre: **no le cuestan nada al negocio, ni ahora ni
-cuando crezca**, y se pueden empaquetar dentro de la app sin permiso de nadie.
+Ambas son gratuitas y de uso comercial libre, incluido el bordado y la imprenta.
+No hay que pagar licencia por ninguna.
 
-El logotipo usa Archivo instanciada en **ancho 90 y peso 620**, en caja alta con
-tracking de 0.08 em. Ese corte no existe descargable: ya viene convertido a
-curvas en los SVG, asi que no necesitas la fuente para usar el logo.
+- Escala en px: 12 · 14 · 16 · 20 · 26 · 34 · 46 · 62
+- Interlineado: 1.1 en titulares, 1.55 en texto
+- Titulares en mayúscula siempre con `letter-spacing: 0.06em`. Apretados se ven
+  baratos, y ese es exactamente el efecto contrario al que busca la marca.
+- **Precios y tablas**: `font-variant-numeric: tabular-nums`. En un marketplace
+  las columnas de cifras que no alinean se leen como descuido.
 
-Usa IBM Plex Mono para los precios: las cifras se alinean en columna y una lista
-de productos se lee mucho mas rapido.
+El logotipo y el eslogan ya están convertidos a curvas: los archivos no dependen
+de que nadie tenga las fuentes instaladas.
 
-## Aplicacion: donde va cada archivo
+## Geometría del sistema
 
-### Web
+- Unidad de espaciado: **8 px** (con medio paso de 4). Todos los márgenes son
+  múltiplos.
+- Radio de esquina: **4 px** en botones y campos, 8 px en tarjetas. Bajo a
+  propósito: el radio grande lee amable y blando, y esta marca necesita leer
+  fiable.
+- Íconos de interfaz: retícula 24, área viva 20, trazo **2 px**, terminaciones
+  **rectas** (`butt` / `miter`), nunca redondeadas. Es la misma decisión que los
+  cortes rectos del isotipo, y mezclar terminaciones es lo que hace que un set
+  de íconos se vea amateur.
 
-Sube a la **raiz del sitio** (junto al `index.html`) todo lo que hay en
-`dist/web/`: `favicon.ico`, `favicon.svg`, `apple-touch-icon.png`, los
-`favicon-*.png`, `icon-192.png`, `icon-512.png`, `icon-512-maskable.png` y
-`site.webmanifest`.
+## Aplicación: qué archivo va dónde
 
-Luego pega en el `<head>` de tu HTML el contenido de
-`dist/web/head-snippet.html`.
+**Sitio web** — sube todo el contenido de `dist/web/` a la raíz del dominio
+(donde vive `index.html`), y pega en el `<head>` lo que hay en
+`dist/web/head-snippet.html`. Eso cubre el favicon en la pestaña, el ícono al
+guardar en pantalla de inicio y la instalación como PWA.
+En la cabecera del sitio usa `marca/logo-principal.svg` con `<img>`.
 
-Para el logo del sitio usa `marca/logo-horizontal.svg` directamente con
-`<img src="/logo-horizontal.svg" alt="Sastra">`. Es vectorial: pesa 4 KB y se ve
-nitido en cualquier pantalla.
+**Compartir en redes / WhatsApp** — `dist/social/og-image.png` es la imagen que
+aparece cuando alguien pega un enlace de Sendik. Va referenciada en el `<head>`
+con `<meta property="og:image">`.
 
-Para la regla divisoria de la firma, la clase `.regla-puntada` ya viene escrita
-en `tokens.css`.
+**App iOS** — la carpeta `dist/app/ios/` va al Asset Catalog del proyecto en
+Xcode (AppIcon). Ya están sin transparencia, que es requisito de App Store: un
+ícono con fondo transparente hace que rechacen la app.
 
-### App movil
+**App Android** — cada `dist/app/android/mipmap-*/` va a la carpeta del mismo
+nombre dentro de `app/src/main/res/`. `ic_launcher_foreground.png` es la capa
+frontal del ícono adaptativo; el color de fondo de esa capa es `#14162B`.
+`play-store-512.png` se sube al formulario de Google Play, no al proyecto.
 
-**iOS:** arrastra la carpeta `dist/app/ios/` al Asset Catalog de Xcode
-(`Assets.xcassets` → AppIcon). Ninguno tiene transparencia, que es lo que exige
-App Store.
+**Imprenta** (tarjetas, etiquetas, empaque, pendones) — entrega siempre el SVG,
+nunca el PNG. Si la imprenta pide un solo color, es `logo-mono-positivo.svg`.
+Si va sobre fondo oscuro o sobre foto, `logo-mono-negativo.svg`.
 
-**Android:** copia cada carpeta `dist/app/android/mipmap-*` dentro de
-`app/src/main/res/`. Despues crea `res/mipmap-anydpi-v26/ic_launcher.xml` con:
+**Desarrollo** — `tokens.css` se pega tal cual en el CSS global; `tokens.json`
+es el mismo sistema para herramientas de diseño. No hay que inventar ningún
+color ni tamaño que no esté ahí.
 
-```xml
-<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <background android:drawable="@color/ic_launcher_background"/>
-    <foreground android:mipmap="@mipmap/ic_launcher_foreground"/>
-</adaptive-icon>
-```
+## Antes de dar por buena cualquier pieza nueva
 
-y en `res/values/colors.xml` anade
-`<color name="ic_launcher_background">#16192A</color>`.
-
-`dist/app/android/play-store-512.png` es el que sube a la ficha de Play Store.
-
-**React Native:** los SVG no funcionan de forma nativa. Instala
-`react-native-svg` y convierte los archivos con `svgr`, o usa los PNG de
-`dist/raster/`.
-
-### Redes sociales
-
-En `dist/social/` esta cada pieza compuesta para su lienzo, a sangre:
-
-| Archivo | Donde |
-|---|---|
-| `og-image.png` | Etiqueta `og:image`: la imagen que aparece cuando comparten un link en WhatsApp o Facebook |
-| `twitter-card.png` | Etiqueta `twitter:image` |
-| `instagram-post.png` | Publicacion cuadrada |
-| `instagram-story.png` | Historia y reel de portada |
-| `linkedin-banner.png` | Portada de la pagina de empresa |
-| `facebook-cover.png` | Portada de la pagina |
-
-Para el **avatar** de Instagram, TikTok, Facebook y WhatsApp Business usa
-`dist/app/android/play-store-512.png`: es el isotipo blanco sobre tinta, cuadrado
-y sin transparencia, que es lo que piden todas esas plataformas.
-
-### Impreso, empaque y letrero
-
-Manda a la imprenta los **SVG**, nunca los PNG. Para bordado, vinilo de corte,
-sello o serigrafia a un color usa `logo-mono-positivo.svg` o
-`logo-mono-negativo.svg` segun el fondo.
-
-## Sistema de iconos de interfaz
-
-Si mas adelante dibujas iconos para la app, respeta estas cinco reglas o se vera
-amateur:
-
-- Reticula de **24 × 24**, area viva de 20 × 20.
-- Trazo de **1.75 px, el mismo en todos**.
-- Terminaciones rectas (`butt`) y uniones en angulo (`miter`), como los
-  extremos del isotipo.
-- `stroke="currentColor"` para que hereden el color y funcionen solos en modo
-  claro, oscuro y deshabilitado.
-- Radio de esquina de 4 px, el mismo del sistema.
-
-## Descriptor
-
-El descriptor que acompana al logo en las piezas es
-**"Compra y vende moda con respaldo"**. Es una propuesta de trabajo, no una
-marca registrada: dice la promesa (respaldo) y la categoria (moda) sin prometer
-precio. Cambialo si encuentras uno mejor, pero manten la estructura: **verbo +
-categoria + promesa**.
+1. ¿El bronce aparece una sola vez?
+2. ¿Los márgenes son múltiplos de 8?
+3. ¿Se lee en blanco y negro puro, sin degradados?
+4. ¿Respeta el área de respeto del logo?
+5. Quita un elemento. Si la pieza no empeoró, déjalo fuera.

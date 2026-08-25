@@ -67,7 +67,7 @@ describe('CaptureField', () => {
   @Component({
     imports: [CaptureField],
     changeDetection: ChangeDetectionStrategy.OnPush,
-    template: `<sastra-capture-field
+    template: `<sendik-capture-field
       [encuadre]="'documento'"
       labelKey="sellerVerification.documentForm.front"
       (capturada)="recibida.set($event)"

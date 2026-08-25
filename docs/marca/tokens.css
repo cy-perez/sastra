@@ -1,62 +1,98 @@
-/* Sastra — tokens de marca. Pegar en el CSS global del sitio o de la app.
-   Los mismos valores estan en tokens.json. */
-:root {
-  --color-tinta: #16192A;
-  --color-tinta-oscuro: #0C0F1B;
-  --color-tinta-suave: #2B3145;
-  --color-hilo: #D69A3C;
-  --color-hilo-oscuro: #8A5A12;
-  --color-fondo: #F7F5F1;
-  --color-superficie: #FFFFFF;
-  --color-texto: #16192A;
-  --color-texto-suave: #5B6072;
-  --color-borde: #E3DFD7;
-  --color-verificado: #1F7A55;
-  --color-alerta: #B3402A;
+/* Tokens de marca Sendik — pegar en el CSS global del sitio o de la app.
+   Los mismos valores están en tokens.json para herramientas de diseño.
+   Contraste verificado con WCAG: ver tokens.json → contraste_verificado. */
 
+:root {
+  color-scheme: light dark;
+
+  /* Color */
+  --color-primario: #14162B;         /* tinta */
+  --color-primario-oscuro: #0A0B18;  /* hover / pressed */
+  --color-acento: #B4884A;           /* bronce — SOLO sobre fondo oscuro */
+  --color-acento-oscuro: #8A6428;    /* bronce — SOLO sobre fondo claro */
+  --color-fondo: #F6F6F8;
+  --color-superficie: #FFFFFF;
+  --color-texto: #14162B;
+  --color-texto-suave: #6A6E80;
+  --color-borde: #E3E4EA;
+  --color-exito: #1E7A5A;
+  --color-error: #B3261E;
+
+  /* Tipografía */
   --fuente-display: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --fuente-texto: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --fuente-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  --fuente-texto: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
 
   --texto-xs: 0.75rem;   --texto-sm: 0.875rem;  --texto-base: 1rem;
   --texto-lg: 1.25rem;   --texto-xl: 1.625rem;  --texto-2xl: 2.125rem;
   --texto-3xl: 2.875rem; --texto-4xl: 3.875rem;
 
+  --peso-regular: 400; --peso-medio: 500; --peso-fuerte: 600;
+  --interlineado-titular: 1.1; --interlineado-texto: 1.55;
+  --tracking-titular: 0.06em;
+
+  /* Geometría — unidad de 8, radio bajo (marca seria, no blanda) */
   --espacio-1: 4px;  --espacio-2: 8px;  --espacio-3: 12px; --espacio-4: 16px;
   --espacio-6: 24px; --espacio-8: 32px; --espacio-12: 48px; --espacio-16: 64px;
 
-  --radio-sm: 4px; --radio-md: 8px; --radio-lg: 14px; --radio-full: 9999px;
+  --radio-sm: 4px; --radio-md: 8px; --radio-lg: 12px; --radio-full: 9999px;
 
-  --icono-trazo: 1.75;
-}
-
-/* El CTA: relleno ocre con texto tinta. 7.3:1. Nunca texto ocre sobre claro. */
-.boton-principal {
-  background: var(--color-hilo);
-  color: var(--color-tinta);
-  border-radius: var(--radio-md);
-  font-family: var(--fuente-texto);
-  font-weight: 700;
-}
-
-/* La firma de marca como divisor: guion 16, hueco 9 */
-.regla-puntada {
-  height: 2px;
-  border: 0;
-  background-image: linear-gradient(to right,
-    var(--color-hilo) 0 16px, transparent 16px 25px);
-  background-size: 25px 2px;
-  background-repeat: repeat-x;
+  --icono-trazo: 2;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-fondo: #0C0F1B;
-    --color-superficie: #2B3145;
-    --color-texto: #F2F1EE;
-    --color-texto-suave: #A0A5B5;
-    --color-borde: #343B52;
-    --color-verificado: #4FBE8E;
-    --color-alerta: #E8735A;
+    --color-fondo: #0A0B18;
+    --color-superficie: #14162B;
+    --color-texto: #FFFFFF;
+    --color-texto-suave: #A2A6B8;
+    --color-borde: #2A2D42;
+    --color-acento-oscuro: #B4884A;  /* en oscuro, el bronce claro es el legible */
+    --color-exito: #4FBF92;
+    --color-error: #F2837C;
   }
+}
+
+/* Precios y cualquier columna de cifras: que aliñen verticalmente */
+.precio, .tabla-cifras {
+  font-family: var(--fuente-texto);
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--peso-medio);
+}
+
+/* Titulares en mayúscula: sin tracking abierto se ven apretados y baratos */
+.titular {
+  font-family: var(--fuente-display);
+  font-weight: var(--peso-fuerte);
+  line-height: var(--interlineado-titular);
+  letter-spacing: var(--tracking-titular);
+  text-transform: uppercase;
+}
+
+/* Eslogan: Inter regular, nunca en mayúsculas ni en bronce */
+.eslogan {
+  font-family: var(--fuente-texto);
+  font-weight: var(--peso-regular);
+  color: var(--color-texto-suave);
+}
+
+/* Íconos de interfaz: terminaciones rectas, igual que los cortes del isotipo */
+.icono {
+  width: 24px; height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: var(--icono-trazo);
+  stroke-linecap: butt;
+  stroke-linejoin: miter;
+}
+
+/* La firma de la marca: la línea interrumpida. Usar como divisor de sección,
+   nunca más de una vez por pantalla. */
+.regla-corte {
+  height: 4px;
+  border: 0;
+  background: repeating-linear-gradient(
+    to right,
+    var(--color-acento-oscuro) 0 96px,
+    transparent 96px 118px
+  );
 }

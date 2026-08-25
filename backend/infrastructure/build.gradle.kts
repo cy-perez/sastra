@@ -2,7 +2,7 @@
 // configuracion tipada. Todo lo sucio y todo lo reemplazable.
 
 plugins {
-    id("sastra.spring-conventions")
+    id("sendik.spring-conventions")
 }
 
 dependencies {
@@ -34,7 +34,7 @@ dependencies {
     api(libs.spring.security.oauth2.jose)
 
     // Cloud Storage: los dos almacenes de archivos de ADR-0018. Solo se carga con
-    // `sastra.storage.provider=gcs`; con `local` los beans no se crean y la
+    // `sendik.storage.provider=gcs`; con `local` los beans no se crean y la
     // libreria no se toca.
     implementation(libs.google.cloud.storage)
 
@@ -69,7 +69,7 @@ val clasesConPruebaPropia = the<SourceSetContainer>()
     .output
     .classesDirs
     .asFileTree
-    .matching { exclude("co/sastra/identity/persistence/**") }
+    .matching { exclude("co/sendik/identity/persistence/**") }
 
 tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
     classDirectories.setFrom(clasesConPruebaPropia)

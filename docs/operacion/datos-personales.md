@@ -1,11 +1,11 @@
 # Tratamiento de datos personales
 
-Sastra guarda datos que la ley colombiana clasifica como sensibles: numero de
+Sendik guarda datos que la ley colombiana clasifica como sensibles: numero de
 documento, imagen del rostro, cuenta bancaria y direccion de residencia. Aplica
 la **Ley 1581 de 2012** y el Decreto 1074 de 2015. Este documento es la regla
 operativa; no sustituye asesoria juridica.
 
-Responsable del tratamiento: Sastra, NIT 1054994043-1, Medellin, Colombia.
+Responsable del tratamiento: Sendik, NIT 1054994043-1, Medellin, Colombia.
 
 ## Principio de partida
 
@@ -122,5 +122,5 @@ la autorizacion. Operativamente:
 - Registro de bases de datos ante la SIC, si se superan los umbrales aplicables.
 - Politica de tratamiento de datos y terminos de uso redactados y publicados.
 - Aviso de privacidad en el formulario de registro y en el de verificacion.
-- Contrato de encargo con cada proveedor que procese datos por cuenta de Sastra:
+- Contrato de encargo con cada proveedor que procese datos por cuenta de Sendik:
   pasarela, correo, almacenamiento, buscador.

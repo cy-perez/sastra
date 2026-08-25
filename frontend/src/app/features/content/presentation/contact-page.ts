@@ -18,7 +18,7 @@ import { SessionStore } from '../../../core/session/session.store';
  * importa de otra funcionalidad (frontend/CLAUDE.md).
  */
 @Component({
-  selector: 'sastra-contact-page',
+  selector: 'sendik-contact-page',
   imports: [RouterLink, TranslocoPipe],
   templateUrl: './contact-page.html',
   styleUrl: './content-page.css',

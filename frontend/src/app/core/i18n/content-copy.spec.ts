@@ -64,7 +64,7 @@ describe('texto de las paginas informativas', () => {
   /**
    * Los numeros escritos con letra se cuelan por debajo del patron de arriba.
    * Los diez y quince dias habiles de la Ley 1581 son la excepcion legitima: no
-   * los decide Sastra, los fija la ley, y el titular tiene derecho a saberlos.
+   * los decide Sendik, los fija la ley, y el titular tiene derecho a saberlos.
    */
   it('solo enuncia con letra los plazos que fija la ley de datos', () => {
     const conLetra = incumplen(
@@ -84,7 +84,7 @@ describe('texto de las paginas informativas', () => {
 
   /**
    * Las palabras que el glosario prohibe. Las cuatro primeras describen figuras
-   * financieras que Sastra no ejerce y tienen lectura regulatoria en Colombia
+   * financieras que Sendik no ejerce y tienen lectura regulatoria en Colombia
    * (RN-031); las demas contradicen la promesa del producto, que es seguridad y
    * no precio.
    */
@@ -123,12 +123,12 @@ describe('texto de las paginas informativas', () => {
   });
 
   /**
-   * La frase que nunca puede escribirse. Sastra no guarda el dinero: lo recauda
+   * La frase que nunca puede escribirse. Sendik no guarda el dinero: lo recauda
    * y lo retiene la pasarela (RN-031, RN-033). Es la misma guarda que HU-004
    * pide para la portada, extendida al sitio informativo.
    */
-  it('no dice que Sastra guarde el dinero', () => {
-    expect(incumplen(/sastra\s+(guarda|retiene|custodia|holds|keeps)/i)).toEqual([]);
+  it('no dice que Sendik guarde el dinero', () => {
+    expect(incumplen(/sendik\s+(guarda|retiene|custodia|holds|keeps)/i)).toEqual([]);
   });
 
   /**

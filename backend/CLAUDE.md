@@ -31,8 +31,8 @@ Lo común vive en `buildSrc`, en dos plugins de convención:
 
 | Plugin | Qué configura | Quién lo aplica |
 |---|---|---|
-| `sastra.java-conventions` | Toolchain 25, `-Xlint:all -Werror -parameters`, JUnit 5, Spotless, JaCoCo | los cinco módulos |
-| `sastra.spring-conventions` | La plataforma de versiones de Spring Boot | los cuatro que no son `domain` |
+| `sendik.java-conventions` | Toolchain 25, `-Xlint:all -Werror -parameters`, JUnit 5, Spotless, JaCoCo | los cinco módulos |
+| `sendik.spring-conventions` | La plataforma de versiones de Spring Boot | los cuatro que no son `domain` |
 
 `domain` no recibe **ni el BOM**. Una plataforma no aporta clases, pero
 declararla en el módulo que debe estar limpio confunde a quien lo lea después.
@@ -45,27 +45,27 @@ El JDK no se instala a mano: `gradle/gradle-daemon-jvm.properties` fija Temurin
 
 ## Estructura de paquetes
 
-Raíz: `co.sastra.<contexto>`. Los contextos actuales son `identity`, `catalog`,
+Raíz: `co.sendik.<contexto>`. Los contextos actuales son `identity`, `catalog`,
 `order`, `payment`, `shipping`, `shared`.
 
 ```
-domain/co/sastra/identity/
+domain/co/sendik/identity/
   model/          entidades y objetos de valor
   event/          eventos de dominio
   exception/      excepciones de negocio
   service/        lógica que no cabe en una sola entidad
 
-application/co/sastra/identity/
+application/co/sendik/identity/
   usecase/        un caso de uso por clase, un método público
   port/out/       interfaces que la infraestructura implementa
   dto/            comandos y resultados de casos de uso
 
-infrastructure/co/sastra/identity/
+infrastructure/co/sendik/identity/
   persistence/    repositorios, entidades de tabla y mapeadores
   client/         clientes HTTP externos
   config/         beans de infraestructura
 
-presentation/co/sastra/identity/
+presentation/co/sendik/identity/
   rest/           controladores
   rest/dto/       cuerpos de petición y respuesta, con validación
   rest/mapper/    conversión entre DTO de API y DTO de aplicación
@@ -208,13 +208,13 @@ su autorización y nada queda abierto por omisión.
   `org.testcontainers.postgresql.PostgreSQLContainer`, sin parámetro de tipo, no
   `org.testcontainers.containers.PostgreSQLContainer<?>` de la versión 1.
 - La inyección por constructor ya está activada en las pruebas
-  (`spring.test.constructor.autowire.mode=all`, en `sastra.spring-conventions`).
+  (`spring.test.constructor.autowire.mode=all`, en `sendik.spring-conventions`).
   Una prueba de Spring recibe sus dependencias por constructor, igual que el
   código de producción.
 
 ### Sobre `ArchitectureTest`
 
-- Sus patrones se anclan a `co.sastra..`. Sin anclar, `..client..` también casa
+- Sus patrones se anclan a `co.sendik..`. Sin anclar, `..client..` también casa
   con `org.springframework.web.client` y la regla acusa a quien no debe.
 - Es el único archivo `.java` exento del hook `revisar-convenciones.mjs`, porque
   tiene que nombrar las API prohibidas para poder prohibirlas. La exención va por

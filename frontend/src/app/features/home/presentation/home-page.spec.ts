@@ -56,16 +56,16 @@ describe('HomePage', () => {
   });
 
   /**
-   * RN-031: el recaudo lo hace la pasarela y Sastra no recibe ni custodia dinero
+   * RN-031: el recaudo lo hace la pasarela y Sendik no recibe ni custodia dinero
    * de terceros. La portada no puede decir lo contrario, ni con un verbo suelto.
    *
    * <p>El glosario lo deja escrito en su lista de palabras que no se usan:
-   * escrow, custodia y fideicomiso describen figuras financieras que Sastra no
+   * escrow, custodia y fideicomiso describen figuras financieras que Sendik no
    * ejerce, y tienen lectura regulatoria en Colombia. "Guardamos tu pago" y
    * "nosotros retenemos el dinero" son la misma afirmacion en lenguaje llano, y
    * es lo que decia esta pantalla antes de la revision.
    */
-  it('no dice que Sastra guarde ni custodie el dinero', async () => {
+  it('no dice que Sendik guarde ni custodie el dinero', async () => {
     const fixture = await render();
     const texto = (fixture.nativeElement as HTMLElement).textContent ?? '';
 
@@ -78,21 +78,26 @@ describe('HomePage', () => {
     const fixture = await render();
     const titulo = fixture.nativeElement.querySelector('h1') as HTMLElement;
 
-    expect(titulo.closest('.franja-oscura')).not.toBeNull();
+    expect(titulo.closest('.franja-tinta')).not.toBeNull();
   });
 
   /**
-   * Criterio 2. El acento ocre aparece una sola vez por pantalla, siempre como
-   * relleno. Se cuenta por clase porque el criterio nombra la clase: lo que se
-   * cuenta es una decision de marca, no un rol.
+   * Criterio 2. Una sola llamada a la accion por pantalla, siempre como relleno.
+   * Se cuenta por clase porque el criterio nombra la clase: lo que se cuenta es
+   * una decision de marca, no un rol.
+   *
+   * <p>El relleno es tinta, no bronce. El manual de Sendik reserva el bronce
+   * para lo verificado y lo garantizado, y dentro de la franja el boton se
+   * invierte a relleno claro con tinta encima, porque un boton en tinta sobre
+   * fondo de tinta no se veria.
    *
    * <p>Aqui se cuenta dentro de la portada; que tampoco haya otro en la cabecera
    * ni en el pie se comprueba sobre la pagina completa en e2e/portada.spec.ts.
    */
-  it('pinta exactamente un elemento con el acento ocre', async () => {
+  it('pinta exactamente una llamada a la accion', async () => {
     const fixture = await render();
 
-    expect(fixture.nativeElement.querySelectorAll('.btn-cta')).toHaveLength(1);
+    expect(fixture.nativeElement.querySelectorAll('.btn-primario')).toHaveLength(1);
   });
 
   /**
@@ -111,10 +116,10 @@ describe('HomePage', () => {
     expect(cta?.getAttribute('href')).toBe('/registro');
   });
 
-  it('el boton principal es el que lleva el acento', async () => {
+  it('el boton principal es el que lleva el relleno', async () => {
     const fixture = await render();
 
-    expect(enlace(fixture.nativeElement, 'Crear cuenta')?.classList).toContain('btn-cta');
+    expect(enlace(fixture.nativeElement, 'Crear cuenta')?.classList).toContain('btn-primario');
   });
 
   /** Criterio 4: publicar es gratis y solo se cobra al vender. */
@@ -179,18 +184,24 @@ describe('HomePage', () => {
     expect(destinos).not.toContain('/como-funciona');
   });
 
-  /** Criterio 7: el unico elemento decorativo del sistema, entre los dos bloques. */
-  it('separa los pasos de las tarjetas con la regla de puntada', async () => {
+  /**
+   * Criterio 7, reinterpretado con la marca Sendik. La portada YA NO lleva regla
+   * de corte propia.
+   *
+   * <p>El corte del isotipo es la firma de la marca y el manual es explicito:
+   * «una sola vez por pieza». En el sitio esa vez es el borde superior del pie,
+   * que sale en todas las pantallas —es donde la maqueta del kit la coloca, entre
+   * el ultimo bloque y el pie—. Con una regla propia aqui, la portada mostraba
+   * dos y dejaba de cumplir la regla justo en la pantalla mas visible.
+   *
+   * <p>Lo que el criterio queria —que los dos bloques se lean separados— lo da el
+   * espaciado de .bloque. La separacion no se pierde; lo que se quita es
+   * gastar la firma de la marca dos veces en la misma pantalla. Ver ADR-0022.
+   */
+  it('no repite la regla de corte: la unica de la pantalla es la del pie', async () => {
     const fixture = await render();
-    const regla = fixture.nativeElement.querySelector('hr.regla-puntada') as HTMLElement;
-    const pasos = region(fixture.nativeElement, 'Cómo funciona');
-    const confianza = region(fixture.nativeElement, 'Por qué es seguro');
 
-    // Va detras del bloque de pasos y delante del de confianza.
-    expect(regla.compareDocumentPosition(pasos) & Node.DOCUMENT_POSITION_PRECEDING).toBeTruthy();
-    expect(
-      regla.compareDocumentPosition(confianza) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
+    expect(fixture.nativeElement.querySelectorAll('hr.regla-corte')).toHaveLength(0);
   });
 
   /** Criterio 8: retencion del pago, vendedores verificados y publicaciones moderadas. */

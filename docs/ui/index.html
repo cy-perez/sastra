@@ -3,20 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kit de interfaz — Sastra</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;700&family=Instrument+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;700&display=swap" rel="stylesheet">
+<title>Kit de interfaz — Sendik</title>
+<link rel="stylesheet" href="fuentes.css">
 <link rel="stylesheet" href="tokens.css">
-<link rel="stylesheet" href="tipografia.css">
-<link rel="stylesheet" href="marca.css">
 <style>
 *{box-sizing:border-box}
 body{margin:0;font-family:var(--fuente-texto);background:var(--color-fondo);
      color:var(--color-texto);line-height:1.55;-webkit-font-smoothing:antialiased}
 .env{max-width:var(--ancho-max);margin:0 auto;padding:0 var(--esp-24)}
 h1,h2,h3{font-family:var(--fuente-display);line-height:1.15;margin:0 0 var(--esp-12)}
-h1{font-size:var(--tipo-h1)} h2{font-size:var(--tipo-h3)} h3{font-size:var(--texto-lg)}
+h1{font-size:var(--texto-3xl)} h2{font-size:var(--texto-xl)} h3{font-size:var(--texto-lg)}
 code{font-family:ui-monospace,monospace;font-size:var(--texto-xs);
      background:var(--color-primario-suave);padding:2px 6px;border-radius:var(--radio-sm)}
 section.doc{padding:var(--esp-48) 0;border-top:1px solid var(--color-borde)}
@@ -29,21 +25,33 @@ table{width:100%;border-collapse:collapse;font-size:var(--texto-sm)}
 th,td{text-align:left;padding:var(--esp-8) var(--esp-12);border-bottom:1px solid var(--color-borde)}
 tr.falla td{background:color-mix(in srgb,var(--color-error) 12%,transparent)}
 .nota{color:var(--color-texto-suave);font-size:var(--texto-sm);max-width:62ch}
+.muestra-texto{background:#FFD400;color:#111;font-size:11px;font-weight:700;
+  padding:2px 8px;border-radius:var(--radio-completo);display:inline-block;
+  text-transform:uppercase;letter-spacing:.04em}
 
-/* --- componentes --- */
+/* --- iconos: reticula 24, trazo 2, terminaciones rectas (butt/miter) --- */
+.icono{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;
+  stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter}
+.icono-lg{width:24px;height:24px}
+
+/* --- componentes base --- */
 .btn{font:inherit;font-weight:600;border:1px solid transparent;cursor:pointer;
      padding:12px 20px;border-radius:var(--radio-md);min-height:44px;
-     display:inline-flex;align-items:center;gap:8px;transition:background .15s,transform .05s}
+     display:inline-flex;align-items:center;justify-content:center;gap:8px;
+     transition:background .15s,transform .05s}
 .btn:focus-visible{outline:3px solid var(--color-foco);outline-offset:2px}
 .btn-primario{background:var(--color-primario);color:var(--color-sobre-primario)}
 .btn-primario:hover{background:var(--color-primario-hover)}
 .btn-primario:active{background:var(--color-primario-pressed);transform:translateY(1px)}
 .btn-secundario{background:transparent;color:var(--color-primario);border-color:var(--color-primario)}
 .btn-secundario:hover{background:var(--color-primario-suave)}
-.btn-texto{background:transparent;color:var(--color-primario);padding:12px 8px}
+.btn-texto{background:transparent;color:var(--color-primario);padding:12px 8px;min-height:auto}
 .btn-texto:hover{text-decoration:underline}
 .btn:disabled{background:var(--color-deshabilitado);color:var(--color-superficie);
               border-color:transparent;cursor:not-allowed}
+.btn-icono{width:44px;height:44px;padding:0;border-radius:var(--radio-completo);
+  background:transparent;border-color:transparent;color:var(--color-texto)}
+.btn-icono:hover{background:var(--color-primario-suave)}
 .campo{display:block;margin-bottom:var(--esp-16);max-width:420px}
 .campo label{display:block;font-size:var(--texto-sm);font-weight:600;margin-bottom:6px}
 .campo input,.campo textarea,.campo select{width:100%;font:inherit;padding:11px 12px;
@@ -56,85 +64,159 @@ tr.falla td{background:color-mix(in srgb,var(--color-error) 12%,transparent)}
 .tarjeta{background:var(--color-superficie);border:1px solid var(--color-borde);
          border-radius:var(--radio-lg);padding:var(--esp-24);box-shadow:var(--sombra-sm)}
 .aviso{border-left:4px solid;border-radius:var(--radio-sm);padding:var(--esp-12) var(--esp-16);
-       margin-bottom:var(--esp-12);background:var(--color-superficie)}
+       margin-bottom:var(--esp-12);background:var(--color-superficie);display:flex;gap:10px;align-items:flex-start}
 .aviso-exito{border-color:var(--color-exito)} .aviso-aviso{border-color:var(--color-aviso)}
 .aviso-error{border-color:var(--color-error)}
+.aviso .icono{margin-top:2px}
+.aviso-exito .icono{color:var(--color-exito)} .aviso-aviso .icono{color:var(--color-aviso)}
+.aviso-error .icono{color:var(--color-error)}
 .etiqueta{display:inline-block;font-size:var(--texto-xs);font-weight:700;padding:3px 10px;
   border-radius:var(--radio-completo);background:var(--color-primario-suave);color:var(--color-primario)}
 
+/* --- precio: numeros tabulares, familia de texto no de display (el manual pide
+     'Archivo' solo para titulares/precios GRANDES; en tarjeta el precio es texto) --- */
+.precio{font-variant-numeric:tabular-nums;font-weight:600}
+.precio-grande{font-family:var(--fuente-display);font-variant-numeric:tabular-nums;
+  font-weight:600;font-size:var(--texto-2xl)}
+
+/* --- chip de condicion (nuevo / usado) --- */
+.chip-condicion{display:inline-flex;align-items:center;font-size:11px;font-weight:700;
+  padding:3px 9px;border-radius:var(--radio-sm);text-transform:uppercase;letter-spacing:.04em}
+.chip-nuevo{background:color-mix(in srgb,var(--color-exito) 14%,var(--color-superficie));color:var(--color-exito)}
+.chip-usado{background:var(--color-fondo);color:var(--color-texto-suave);border:1px solid var(--color-borde)}
+
+/* --- insignia de vendedor verificado: el bronce aparece aqui, una vez, como
+     linea superior + icono. Nunca como relleno grande (regla de marca). --- */
+.insignia-verificado{display:inline-flex;align-items:center;gap:6px;font-size:var(--texto-xs);
+  font-weight:600;color:var(--color-texto-suave);border-top:2px solid var(--color-acento);
+  padding-top:6px}
+.insignia-verificado .icono{width:16px;height:16px;color:var(--color-acento)}
+
+/* --- tarjeta de producto --- */
+.rejilla-productos{display:grid;gap:var(--esp-16);grid-template-columns:repeat(4,1fr)}
+.tarjeta-producto{background:var(--color-superficie);border:1px solid var(--color-borde);
+  border-radius:var(--radio-lg);overflow:hidden;display:flex;flex-direction:column}
+.tp-imagen{aspect-ratio:1/1;background:
+  repeating-linear-gradient(45deg,var(--color-fondo) 0 10px,var(--color-superficie) 10px 20px);
+  position:relative;display:flex;align-items:center;justify-content:center}
+.tp-imagen .tp-medida{position:absolute;bottom:8px;left:8px;font-size:10px;
+  color:var(--color-texto-suave);background:var(--color-superficie);padding:2px 6px;
+  border-radius:var(--radio-sm);border:1px solid var(--color-borde)}
+.tp-favorito{position:absolute;top:8px;right:8px;width:32px;height:32px;border-radius:var(--radio-completo);
+  background:var(--color-superficie);border:1px solid var(--color-borde);display:flex;
+  align-items:center;justify-content:center;color:var(--color-texto)}
+.tp-condicion{position:absolute;top:8px;left:8px}
+.tp-cuerpo{padding:var(--esp-12) var(--esp-16) var(--esp-16);display:flex;flex-direction:column;gap:6px;flex:1}
+.tp-titulo{font-size:var(--texto-sm);font-weight:500;margin:0;
+  overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.tp-vendedor{font-size:var(--texto-xs);color:var(--color-texto-suave)}
+.tp-precio-fila{display:flex;align-items:baseline;gap:8px;margin-top:2px}
+.tp-precio-antes{font-size:var(--texto-xs);color:var(--color-texto-suave);text-decoration:line-through;
+  font-variant-numeric:tabular-nums}
+.tp-cta{margin-top:auto;padding-top:8px}
+.tp-cta .btn{width:100%;min-height:38px;padding:8px 12px;font-size:var(--texto-sm)}
+
+/* --- chips de categoria --- */
+.chips-categoria{display:flex;gap:var(--esp-8);overflow-x:auto;padding-bottom:4px;
+  scrollbar-width:none}
+.chips-categoria::-webkit-scrollbar{display:none}
+.chip-cat{flex:none;font-size:var(--texto-sm);font-weight:500;padding:9px 16px;
+  border-radius:var(--radio-completo);border:1px solid var(--color-borde);background:var(--color-superficie);
+  color:var(--color-texto);white-space:nowrap;min-height:40px;display:inline-flex;align-items:center}
+.chip-cat[aria-current]{background:var(--color-primario);border-color:var(--color-primario);
+  color:var(--color-sobre-primario)}
+
+/* --- franja de confianza --- */
+.franja-confianza{background:var(--color-fondo);color:var(--color-texto-suave);border-bottom:1px solid var(--color-borde)}
+.franja-confianza .env{display:flex;flex-wrap:wrap;gap:var(--esp-16) var(--esp-24);
+  padding-top:var(--esp-8);padding-bottom:var(--esp-8);font-size:var(--texto-xs);font-weight:500}
+.franja-confianza .item{display:inline-flex;align-items:center;gap:6px}
+.franja-confianza .icono{width:16px;height:16px}
+
+/* --- medios de pago (footer) --- */
+.medios-pago{display:flex;flex-wrap:wrap;gap:8px;margin-top:var(--esp-12)}
+.medio-pago{font-size:11px;font-weight:600;border:1px solid rgba(255,255,255,.25);
+  border-radius:var(--radio-sm);padding:5px 10px;color:inherit}
+
+/* --- la firma de marca: linea interrumpida, UNA sola vez por pieza --- */
+.regla-corte{height:3px;border:0;margin:0;
+  background:repeating-linear-gradient(to right,var(--color-acento) 0 40px,transparent 40px 52px)}
+
 /* --- maqueta --- */
 .maqueta{border:1px solid var(--color-borde);border-radius:var(--radio-lg);overflow:hidden;
-         margin-top:var(--esp-16)}
-.mk-header{background:var(--color-superficie);border-bottom:1px solid var(--color-borde);
-  padding:var(--esp-12) var(--esp-24);display:flex;align-items:center;gap:var(--esp-24)}
-.mk-nav{display:flex;gap:var(--esp-24);margin-left:auto;font-size:var(--texto-sm);font-weight:500}
-.mk-nav a{color:var(--color-texto);text-decoration:none;padding:8px 0;border-bottom:2px solid transparent}
+         margin-top:var(--esp-16);background:var(--color-fondo)}
+.mk-header{position:sticky;top:0;z-index:5;background:var(--color-superficie);
+  border-bottom:1px solid var(--color-borde)}
+.mk-header .env{display:flex;align-items:center;gap:var(--esp-24);padding:14px var(--esp-24);min-height:72px}
+.mk-buscar{flex:1;max-width:480px;position:relative}
+.mk-buscar input{width:100%;min-height:44px;border:1px solid var(--color-borde-control);
+  border-radius:var(--radio-md);padding:10px 14px 10px 42px;font:inherit;font-size:var(--texto-sm);
+  background:var(--color-fondo);color:var(--color-texto)}
+.mk-buscar .icono{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--color-texto-suave)}
+.mk-nav{display:flex;gap:var(--esp-24);font-size:var(--texto-sm);font-weight:500}
+.mk-nav a{color:var(--color-texto);text-decoration:none;padding:8px 0;border-bottom:2px solid transparent;
+  display:inline-flex;align-items:center;gap:4px}
 .mk-nav a:hover,.mk-nav a[aria-current]{border-bottom-color:var(--color-primario);color:var(--color-primario)}
+.mk-acciones{display:flex;align-items:center;gap:4px;margin-left:auto}
+.mk-carrito{position:relative}
+.mk-carrito .contador{position:absolute;top:2px;right:2px;background:var(--color-error);color:#fff;
+  font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:var(--radio-completo);
+  display:flex;align-items:center;justify-content:center;padding:0 3px}
 .logotexto{font-family:var(--fuente-display);font-weight:700;font-size:var(--texto-lg)}
-.mk-hero{background:var(--color-primario);color:var(--color-sobre-primario);
-         padding:var(--esp-64) var(--esp-24);text-align:center}
-.mk-hero h2{font-size:var(--texto-2xl);margin-bottom:var(--esp-12)}
-.mk-hero p{max-width:52ch;margin:0 auto var(--esp-24);opacity:.92}
-.mk-hero .btn-primario{background:var(--color-superficie);color:var(--color-primario)}
-.mk-body{padding:var(--esp-48) var(--esp-24);background:var(--color-fondo)}
-.mk-footer{background:var(--color-texto);color:var(--color-fondo);padding:var(--esp-32) var(--esp-24);
-           font-size:var(--texto-sm);display:grid;gap:var(--esp-24);
-           grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
-.mk-footer a{color:var(--color-fondo);opacity:.85;text-decoration:none;display:block;padding:4px 0}
+/* El logo cambia con el modo: la variante mono-negativa es la que se ve legible
+   sobre fondo oscuro (ver manual de marca, "Usos prohibidos"). */
+.logo-oscuro{display:none}
+[data-tema="oscuro"] .logo-claro{display:none}
+[data-tema="oscuro"] .logo-oscuro{display:inline-block}
+.mk-categorias{background:var(--color-superficie);border-bottom:1px solid var(--color-borde);padding:10px 0}
+.mk-hero{background:var(--color-tinta);color:var(--color-sobre-tinta);
+         padding:var(--esp-48) var(--esp-24) var(--esp-32);text-align:center}
+.mk-hero h2{font-size:var(--texto-2xl);margin-bottom:var(--esp-8)}
+.mk-hero p{max-width:52ch;margin:0 auto var(--esp-24);opacity:.85}
+.mk-hero-buscar{max-width:520px;margin:0 auto}
+.mk-hero-buscar .mk-buscar{max-width:none}
+.mk-hero-buscar input{background:var(--color-superficie);border-color:transparent;color:var(--color-texto)}
+.mk-body{padding:var(--esp-32) var(--esp-24)}
+.mk-seccion-titulo{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:var(--esp-16)}
+.mk-seccion-titulo h3{margin:0}
+.mk-diferenciadores{display:grid;gap:var(--esp-24);grid-template-columns:repeat(3,1fr);
+  padding:var(--esp-16) 0 var(--esp-8)}
+.mk-diferenciadores .item{display:flex;gap:12px}
+.mk-diferenciadores .icono{width:24px;height:24px;color:var(--color-primario);flex:none;margin-top:2px}
+.mk-diferenciadores h4{margin:0 0 4px;font-family:var(--fuente-display);font-size:var(--texto-base);font-weight:600}
+.mk-diferenciadores p{margin:0;font-size:var(--texto-sm);color:var(--color-texto-suave)}
+.mk-footer{background:var(--color-tinta);color:var(--color-sobre-tinta)}
+.mk-footer .env{padding:var(--esp-32) var(--esp-24);font-size:var(--texto-sm);display:grid;gap:var(--esp-24);
+           grid-template-columns:repeat(4,1fr)}
+.mk-footer a{color:var(--color-sobre-tinta);opacity:.85;text-decoration:none;display:block;padding:6px 0;min-height:32px}
 .mk-footer a:hover{opacity:1;text-decoration:underline}
+.mk-footer .marca-col b{font-family:var(--fuente-display);font-size:var(--texto-lg)}
+.mk-copyright{border-top:1px solid rgba(255,255,255,.15);padding:14px var(--esp-24);
+  font-size:var(--texto-xs);opacity:.7;text-align:center}
+.mk-menu-movil{display:none}
 .barra{position:sticky;top:0;z-index:9;background:var(--color-superficie);
   border-bottom:1px solid var(--color-borde);padding:var(--esp-12) 0}
 .barra .env{display:flex;align-items:center;gap:var(--esp-16)}
-@media (max-width:640px){
-  .mk-nav{display:none}
-  .mk-hero{padding:var(--esp-32) var(--esp-16)}
-}
 
-/* --- solo para esta guia, no van al proyecto --- */
-.telefonos{display:flex;gap:var(--esp-24);flex-wrap:wrap;margin-top:var(--esp-16)}
-.telefono{width:320px;border:1px solid var(--color-borde);border-radius:var(--radio-lg);
-  overflow:hidden;background:var(--color-fondo);box-shadow:var(--sombra-sm)}
-.telefono .rotulo{font-size:var(--texto-xs);font-weight:700;padding:6px var(--esp-12);
-  background:var(--color-primario-suave);color:var(--color-texto)}
-.rejilla-prod{display:grid;gap:var(--esp-16);
-  grid-template-columns:repeat(auto-fill,minmax(11.875rem,1fr))}
-.mk-header .buscador{margin-left:var(--esp-16)}
-/* Hero y footer usan la franja oscura de marca, no el primario: asi no se
-   invierten a claro en modo oscuro y el logo blanco del footer se sigue viendo. */
-/* La plantilla pinta hero y footer con --color-texto, que en modo oscuro se
-   invierte a claro. Su <style> carga despues de marca.css, asi que hay que
-   volver a fijarlo aqui. En el proyecto real basta la clase .franja-oscura. */
-.mk-hero,.mk-footer{background:var(--fondo-oscuro-marca);color:var(--sobre-fondo-oscuro)}
-.mk-footer a,.mk-footer b{color:var(--sobre-fondo-oscuro)}
-.mk-footer b{display:block;margin-bottom:var(--esp-8)}
-.mk-footer b{display:block;margin-bottom:var(--esp-8)}
-/* Destinos tactiles de 44px. Los enlaces de navegacion y de pie de pagina son
-   donde mas se incumple: quedan como una lista de enlaces pegados donde nadie atina. */
-.mk-nav a{min-height:44px;display:flex;align-items:center}
-.mk-footer a{min-height:44px;display:flex;align-items:center;padding:0}
-.barra .env>button{min-height:44px!important}
-/* Muestras del logo: el fondo es fijo en los dos modos. Una muestra existe para
-   enseñar el logo sobre su fondo previsto, no para seguir el tema de la pagina. */
-.espec{text-align:center;border-radius:var(--radio-lg);padding:var(--esp-24);
-  border:1px solid var(--color-borde)}
-.espec-claro{background:#F7F5F1;color:#16192A}
-.espec-oscuro{background:#16192A;color:#F2F1EE}
-.espec .nota{color:inherit;opacity:.75}
-.tabla-envoltura{overflow-x:auto}
-.tabla-envoltura table{min-width:420px}
-.tabla-envoltura:focus-visible{outline:3px solid var(--color-foco);outline-offset:2px}
 @media (max-width:640px){
-  .telefono{width:100%}
-  .barra .env{flex-wrap:wrap;gap:var(--esp-8)}
-  .barra .env>strong{display:none}
-  .rejilla-prod{grid-template-columns:repeat(auto-fill,minmax(9.375rem,1fr));gap:var(--esp-12)}
+  .mk-nav,.mk-header .mk-buscar{display:none}
+  .mk-header .env{padding:10px var(--esp-16);min-height:56px;flex-wrap:wrap}
+  .mk-menu-movil{display:flex;align-items:center;gap:4px;margin-left:auto}
+  .mk-buscar-movil{order:3;flex-basis:100%;margin-top:10px}
+  .mk-buscar-movil .mk-buscar{max-width:none}
+  .mk-diferenciadores{grid-template-columns:1fr}
+  .rejilla-productos{grid-template-columns:repeat(2,1fr)}
+  .mk-footer .env{grid-template-columns:repeat(2,1fr);gap:var(--esp-24) var(--esp-16)}
+  h1{font-size:var(--texto-2xl)}
+  .mk-hero{padding:var(--esp-32) var(--esp-16) var(--esp-24)}
 }
+@media (min-width:641px){ .mk-buscar-movil,.mk-menu-movil{display:none} }
 </style>
 </head>
 <body>
 
 <div class="barra"><div class="env">
-  <span class="logo-sitio" role="img" aria-label="Sastra"><img class="logo-claro" src="logo-horizontal.svg" alt="" style="height:34px"><img class="logo-oscuro" src="logo-mono-negativo.svg" alt="" style="height:34px"></span>
+  <img class="logo-claro" src="logo-horizontal.svg" alt="Logo de Sendik" style="height:34px"><img class="logo-oscuro" src="logo-mono-negativo.svg" alt="Logo de Sendik" style="height:34px">
   <strong>Kit de interfaz</strong>
   <button class="btn btn-secundario" style="margin-left:auto;min-height:38px;padding:8px 14px"
           onclick="document.documentElement.dataset.tema=document.documentElement.dataset.tema==='oscuro'?'claro':'oscuro'">
@@ -145,521 +227,366 @@ tr.falla td{background:color-mix(in srgb,var(--color-error) 12%,transparent)}
 <div class="env">
 
 <section class="doc" style="border-top:none">
-  <h1>Sastra</h1>
-  <p class="nota">Guia visual de la interfaz web. Parte de la identidad ya
-  aprobada: <b>ningun color de aqui es nuevo</b>, cada uno es un color del manual
-  puesto en su rol de interfaz. Todo sale de <code>tokens.css</code> mas
-  <code>marca.css</code>: si cambia un token, cambia el sitio entero.</p>
-  <p class="nota"><b>Pruebalo:</b> pulsa &laquo;Cambiar modo&raquo; arriba y reduce
-  el ancho de la ventana por debajo de 640px. Los problemas de una maqueta se ven,
-  no se deducen.</p>
-  <hr class="regla-puntada" style="margin:var(--esp-24) 0 0">
+  <h1>Sendik</h1>
+  <p class="nota">Guia visual del sitio — marketplace de moda y tecnologia nueva y
+  usada. Todo lo que se ve aqui sale de <code>tokens.css</code>: si cambia un
+  token, cambia el sitio entero. Prueba el modo oscuro y reduce el ancho de la
+  ventana para ver el comportamiento en movil. Los textos, precios y nombres de
+  producto de esta guia son <span class="muestra-texto">de muestra</span> —
+  reemplazalos por los definitivos antes de publicar.</p>
 </section>
 
 <section class="doc">
   <h2>Paleta</h2>
-  <p class="nota">Cada color tiene un rol. El acento se usa en un solo elemento
-  por pantalla: si esta en todas partes, deja de destacar nada.</p>
-  <div class="rejilla"><div class="ficha"><div class="muestra" style="background:#16192A"></div><b>primario</b><code>#16192A</code></div><div class="ficha"><div class="muestra" style="background:#131625"></div><b>primario-hover</b><code>#131625</code></div><div class="ficha"><div class="muestra" style="background:#D69A3C"></div><b>acento</b><code>#D69A3C</code></div><div class="ficha"><div class="muestra" style="background:#F7F5F1"></div><b>fondo</b><code>#F7F5F1</code></div><div class="ficha"><div class="muestra" style="background:#FFFFFF"></div><b>superficie</b><code>#FFFFFF</code></div><div class="ficha"><div class="muestra" style="background:#16192A"></div><b>texto</b><code>#16192A</code></div><div class="ficha"><div class="muestra" style="background:#5B6072"></div><b>texto-suave</b><code>#5B6072</code></div><div class="ficha"><div class="muestra" style="background:#E3DFD7"></div><b>borde</b><code>#E3DFD7</code></div><div class="ficha"><div class="muestra" style="background:#1F7A55"></div><b>exito</b><code>#1F7A55</code></div><div class="ficha"><div class="muestra" style="background:#8A5A12"></div><b>aviso</b><code>#8A5A12</code></div><div class="ficha"><div class="muestra" style="background:#B3402A"></div><b>error</b><code>#B3402A</code></div></div>
+  <p class="nota">Cada color tiene un rol. El bronce (acento) se usa en un solo
+  elemento por pantalla y siempre en el mismo sitio conceptual: lo verificado, lo
+  garantizado — nunca como color de un boton de compra.</p>
+  <div class="rejilla"><div class="ficha"><div class="muestra" style="background:#14162B"></div><b>primario</b><code>#14162B</code></div><div class="ficha"><div class="muestra" style="background:#121326"></div><b>primario-hover</b><code>#121326</code></div><div class="ficha"><div class="muestra" style="background:#8A6428"></div><b>acento</b><code>#8A6428</code></div><div class="ficha"><div class="muestra" style="background:#F6F6F8"></div><b>fondo</b><code>#F6F6F8</code></div><div class="ficha"><div class="muestra" style="background:#FFFFFF"></div><b>superficie</b><code>#FFFFFF</code></div><div class="ficha"><div class="muestra" style="background:#14162B"></div><b>texto</b><code>#14162B</code></div><div class="ficha"><div class="muestra" style="background:#6A6E80"></div><b>texto-suave</b><code>#6A6E80</code></div><div class="ficha"><div class="muestra" style="background:#E3E4EA"></div><b>borde</b><code>#E3E4EA</code></div><div class="ficha"><div class="muestra" style="background:#1E7A5A"></div><b>exito</b><code>#1E7A5A</code></div><div class="ficha"><div class="muestra" style="background:#9C4A12"></div><b>aviso</b><code>#9C4A12</code></div><div class="ficha"><div class="muestra" style="background:#B3261E"></div><b>error</b><code>#B3261E</code></div></div>
 </section>
 
 <section class="doc">
   <h2>Contraste</h2>
   <p class="nota">Verificado contra WCAG 2.1. Las filas marcadas no se pueden entregar asi.</p>
-  <div class="tabla-envoltura" tabindex="0" role="region" aria-label="Tabla con desplazamiento horizontal"><table><thead><tr><th>Par</th><th>Frente</th><th>Fondo</th><th>Ratio</th><th>Nivel</th></tr></thead>
-  <tbody><tr class='ok'><td>Texto principal sobre fondo</td><td><code>#16192A</code></td><td><code>#F7F5F1</code></td><td>15.98:1</td><td>AAA</td></tr><tr class='ok'><td>Texto sobre tarjeta</td><td><code>#16192A</code></td><td><code>#FFFFFF</code></td><td>17.4:1</td><td>AAA</td></tr><tr class='ok'><td>Texto secundario sobre fondo</td><td><code>#5B6072</code></td><td><code>#F7F5F1</code></td><td>5.74:1</td><td>AA</td></tr><tr class='ok'><td>Texto del boton principal</td><td><code>#FFFFFF</code></td><td><code>#16192A</code></td><td>17.4:1</td><td>AAA</td></tr><tr class='ok'><td>Primario como texto o icono sobre fondo</td><td><code>#16192A</code></td><td><code>#F7F5F1</code></td><td>15.98:1</td><td>AAA (texto grande)</td></tr><tr class='ok'><td>Texto sobre acento</td><td><code>#111111</code></td><td><code>#D69A3C</code></td><td>7.69:1</td><td>AAA</td></tr><tr class='ok'><td>Mensaje de error sobre fondo</td><td><code>#B3402A</code></td><td><code>#F7F5F1</code></td><td>5.24:1</td><td>AA</td></tr><tr class='ok'><td>Borde de campo de formulario</td><td><code>#95938E</code></td><td><code>#FFFFFF</code></td><td>3.07:1</td><td>AA (texto grande)</td></tr></tbody></table></div>
+  <table><thead><tr><th>Par</th><th>Frente</th><th>Fondo</th><th>Ratio</th><th>Nivel</th></tr></thead>
+  <tbody><tr class='ok'><td>Texto principal sobre fondo</td><td><code>#14162B</code></td><td><code>#F6F6F8</code></td><td>16.5:1</td><td>AAA</td></tr><tr class='ok'><td>Texto sobre tarjeta</td><td><code>#14162B</code></td><td><code>#FFFFFF</code></td><td>17.81:1</td><td>AAA</td></tr><tr class='ok'><td>Texto secundario sobre fondo</td><td><code>#6A6E80</code></td><td><code>#F6F6F8</code></td><td>4.68:1</td><td>AA</td></tr><tr class='ok'><td>Texto del boton principal</td><td><code>#FFFFFF</code></td><td><code>#14162B</code></td><td>17.81:1</td><td>AAA</td></tr><tr class='ok'><td>Primario como texto o icono sobre fondo</td><td><code>#14162B</code></td><td><code>#F6F6F8</code></td><td>16.5:1</td><td>AAA (texto grande)</td></tr><tr class='ok'><td>Texto sobre acento</td><td><code>#FFFFFF</code></td><td><code>#8A6428</code></td><td>5.34:1</td><td>AA</td></tr><tr class='ok'><td>Mensaje de error sobre fondo</td><td><code>#B3261E</code></td><td><code>#F6F6F8</code></td><td>6.06:1</td><td>AA</td></tr><tr class='ok'><td>Borde de campo de formulario</td><td><code>#86868B</code></td><td><code>#FFFFFF</code></td><td>3.62:1</td><td>AA (texto grande)</td></tr></tbody></table>
 </section>
 
 <section class="doc">
   <h2>Tipografia</h2>
-  <p class="nota">Titulares en <b>Archivo</b>, texto e interfaz en
-  <b>Instrument Sans</b>. El cuerpo nunca baja de 16px: por debajo, el navegador
-  movil hace zoom solo al enfocar un campo.</p>
-  <div class="tabla-envoltura" tabindex="0" role="region" aria-label="Tabla con desplazamiento horizontal"><table><thead><tr><th>Token</th><th>Tamano</th><th>Muestra</th></tr></thead>
-  <tbody><tr><td><code>--texto-xs</code></td><td>12px</td><td style="font-size:12px;line-height:1.25;font-family:var(--fuente-display)">Ag</td></tr><tr><td><code>--texto-sm</code></td><td>14px</td><td style="font-size:14px;line-height:1.25;font-family:var(--fuente-display)">Ag</td></tr><tr><td><code>--texto-base</code></td><td>16px</td><td style="font-size:16px;line-height:1.25;font-family:var(--fuente-display)">Ag</td></tr><tr><td><code>--texto-lg</code></td><td>20px</td><td style="font-size:20px;line-height:1.25;font-family:var(--fuente-display)">Ag</td></tr><tr><td><code>--texto-xl</code></td><td>26px</td><td style="font-size:26px;line-height:1.25;font-family:var(--fuente-display)">Ag</td></tr><tr><td><code>--texto-2xl</code></td><td>34px</td><td style="font-size:34px;line-height:1.25;font-family:var(--fuente-display)">Ag</td></tr><tr><td><code>--texto-3xl</code></td><td>46px</td><td style="font-size:46px;line-height:1.25;font-family:var(--fuente-display)">Ag</td></tr><tr><td><code>--texto-4xl</code></td><td>62px</td><td style="font-size:62px;line-height:1.25;font-family:var(--fuente-display)">Ag</td></tr></tbody></table></div>
-</section>
+  
+  <p class="nota">Titulares y precios grandes en <b>Archivo</b>, texto e
+  interfaz en <b>Inter</b>. Las muestras de abajo se ven en la
+  tipografia real: si no la ves aplicada, es que no cargo — revisa el enlace de
+  instalacion.</p>
 
+  <h3 style="margin-top:24px">Familias</h3>
+  <table><thead><tr><th>Rol</th><th>Familia</th><th>Pesos</th><th>Licencia</th></tr></thead>
+  <tbody><tr><td>display</td><td style="font-family:var(--fuente-display);font-size:22px;font-weight:700">Archivo</td><td><code>600</code></td><td>SIL OFL 1.1</td></tr><tr><td>texto</td><td style="font-family:var(--fuente-texto);font-size:22px;font-weight:400">Inter</td><td><code>400, 500, 600</code></td><td>SIL OFL 1.1</td></tr></tbody></table>
 
-<section class="doc">
-  <h2>Tipografía: roles y uso</h2>
-  <p class="nota"><b>Se aplica el rol, no el tamaño.</b> El nivel de encabezado lo
-  decide la estructura del documento (un H1 por página, sin saltarse niveles); el
-  tamaño lo decide la clase. Por eso un <code>&lt;h2&gt;</code> puede llevar
-  <code>.tipo-h3</code> sin romper nada para un lector de pantalla, y nunca hay
-  que bajar de nivel de encabezado solo para que algo se vea más pequeño.</p>
-  <div class="tabla-envoltura" tabindex="0" role="region"
-       aria-label="Tabla de roles tipográficos, con desplazamiento horizontal">
-  <table style="min-width:720px">
-    <thead><tr><th>Clase y rol</th><th>Escritorio</th><th>Móvil</th>
-    <th>Familia</th><th>Muestra</th></tr></thead>
-    <tbody><tr><td><code>.tipo-display</code><br><span class='nota'>Titular de portada</span></td><td>62px</td><td>34px</td><td>Archivo<br><span class='nota'>700 · int. 1.05</span></td><td class='tipo-display' style='max-width:none'>Compra y vende moda</td></tr><tr><td><code>.tipo-h1</code><br><span class='nota'>Titular de página</span></td><td>46px</td><td>30px</td><td>Archivo<br><span class='nota'>700 · int. 1.1</span></td><td class='tipo-h1' style='max-width:none'>Chaquetas de mujer</td></tr><tr><td><code>.tipo-h2</code><br><span class='nota'>Título de sección</span></td><td>34px</td><td>26px</td><td>Archivo<br><span class='nota'>700 · int. 1.15</span></td><td class='tipo-h2' style='max-width:none'>Recién publicado</td></tr><tr><td><code>.tipo-h3</code><br><span class='nota'>Subtítulo</span></td><td>26px</td><td>22px</td><td>Archivo<br><span class='nota'>500 · int. 1.2</span></td><td class='tipo-h3' style='max-width:none'>Cómo funciona el pago</td></tr><tr><td><code>.tipo-titulo-tarjeta</code><br><span class='nota'>Título de tarjeta</span></td><td>16px</td><td>16px</td><td>Instrument Sans<br><span class='nota'>500 · int. 1.35</span></td><td class='tipo-titulo-tarjeta' style='max-width:none'>Chaqueta de cuero negra talla M</td></tr><tr><td><code>.tipo-entradilla</code><br><span class='nota'>Entradilla</span></td><td>20px</td><td>18px</td><td>Instrument Sans<br><span class='nota'>400 · int. 1.5</span></td><td class='tipo-entradilla' style='max-width:none'>Guardamos tu pago hasta que confirmes.</td></tr><tr><td><code>.tipo-cuerpo</code><br><span class='nota'>Cuerpo</span></td><td>16px</td><td>16px</td><td>Instrument Sans<br><span class='nota'>400 · int. 1.55</span></td><td class='tipo-cuerpo' style='max-width:none'>El vendedor recibe el dinero cuando confirmas.</td></tr><tr><td><code>.tipo-secundario</code><br><span class='nota'>Secundario</span></td><td>14px</td><td>14px</td><td>Instrument Sans<br><span class='nota'>400 · int. 1.5</span></td><td class='tipo-secundario' style='max-width:none'>Publicado hace 2 días · Medellín</td></tr><tr><td><code>.tipo-leyenda</code><br><span class='nota'>Leyenda y legal</span></td><td>12px</td><td>12px</td><td>Instrument Sans<br><span class='nota'>400 · int. 1.45</span></td><td class='tipo-leyenda' style='max-width:none'>Precios en pesos colombianos, IVA incluido.</td></tr><tr><td><code>.tipo-etiqueta-boton</code><br><span class='nota'>Etiqueta de botón</span></td><td>16px</td><td>16px</td><td>Instrument Sans<br><span class='nota'>700 · int. 1</span></td><td class='tipo-etiqueta-boton' style='max-width:none'>Publicar prenda</td></tr><tr><td><code>.precio</code><br><span class='nota'>Precio</span></td><td>20px</td><td>20px</td><td>IBM Plex Mono<br><span class='nota'>700 · int. 1.2</span></td><td class='precio' style='max-width:none'>$ 189.000</td></tr><tr><td><code>.precio-antes</code><br><span class='nota'>Precio anterior</span></td><td>14px</td><td>14px</td><td>IBM Plex Mono<br><span class='nota'>400 · int. 1.2</span></td><td class='precio-antes' style='max-width:none'>$ 240.000</td></tr><tr><td><code>.codigo-pedido</code><br><span class='nota'>Código de pedido</span></td><td>14px</td><td>14px</td><td>IBM Plex Mono<br><span class='nota'>400 · int. 1.4</span></td><td class='codigo-pedido' style='max-width:none'>SAS-2K48-9R</td></tr></tbody>
-  </table></div>
+  <h3 style="margin-top:24px">Como se instala</h3>
+  <p class="nota">En el <code>&lt;head&gt;</code>, antes de la hoja de estilos del sitio.
+  La ficha completa, con la alternativa autoalojada, esta en <code>tipografia.md</code>.</p>
+  <pre style="background:var(--color-primario-suave);padding:14px;border-radius:8px;
+  overflow-x:auto;font-size:13px"><code>&lt;link rel=&quot;stylesheet&quot; href=&quot;https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Archivo:wght@600&amp;display=swap&quot;&gt;</code></pre>
 
-  <h3>Los titulares son fluidos, el cuerpo no</h3>
-  <p class="nota">Los titulares interpolan entre 360px y 1280px de ancho con
-  <code>clamp()</code>: un titular de 62px ocupa media pantalla en un celular, y
-  uno de 34px se ve flojo en escritorio. <b>Estira y encoge la ventana</b> y mira
-  el titular de aquí abajo.</p>
-  <div class="tarjeta" style="margin-top:var(--esp-16)">
-    <p class="tipo-display" style="margin:0 0 var(--esp-12)">Compra y vende moda con respaldo</p>
-    <p class="tipo-entradilla" style="margin:0">Guardamos tu pago hasta que confirmes que
-    la prenda llegó como la viste. [muestra]</p>
-  </div>
-  <p class="nota"><b>El cuerpo se queda fijo en 16px.</b> Por debajo, el navegador
-  móvil hace zoom solo al enfocar un campo y descuadra la maqueta. Y la escala usa
-  <code>rem + vw</code>, nunca <code>vw</code> solo: con <code>vw</code> solo el
-  titular deja de responder al zoom del navegador.</p>
-
-  <h3>Por qué tres familias y no dos</h3>
-  <div class="rejilla" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
-    <div class="tarjeta">
-      <p style="font-family:var(--fuente-display);font-size:var(--texto-2xl);font-weight:700;margin:0 0 8px">Archivo</p>
-      <p class="nota" style="margin:0">Titulares. Condensada y de asta firme: sostiene
-      los tamaños grandes sin volverse decorativa. Es la del logotipo, así que el
-      titular y la marca riman.</p>
-    </div>
-    <div class="tarjeta">
-      <p style="font-family:var(--fuente-texto);font-size:var(--texto-2xl);font-weight:500;margin:0 0 8px">Instrument Sans</p>
-      <p class="nota" style="margin:0">Interfaz y cuerpo. Neutra y de altura de x
-      generosa, que es lo que se lee cómodo a 16px en un celular.</p>
-    </div>
-    <div class="tarjeta">
-      <p style="font-family:var(--fuente-mono);font-size:var(--texto-xl);font-weight:700;margin:0 0 8px">IBM Plex Mono</p>
-      <p class="nota" style="margin:0">Cifras. La tercera familia se justifica solo
-      por esto: numerales tabulares para que los precios se alineen en columna.</p>
-    </div>
-  </div>
-  <p class="nota">La regla general es dos familias como máximo. La tercera entra
-  porque hay cifras que alinear, y ese es el único motivo que la justifica.</p>
-
-  <h3>Numerales tabulares: para qué sirven de verdad</h3>
-  <p class="nota">Con cifras tabulares todos los dígitos ocupan lo mismo y las
-  columnas cuadran. Sin ellas, una lista de precios se lee en zigzag. Compara:</p>
-  <p class="nota">Las dos columnas usan <b>la misma familia y el mismo tamaño</b>;
-  lo único que cambia es <code>font-variant-numeric</code>. Mira dónde caen los
-  puntos de millar.</p>
-  <div class="rejilla" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
-    <div class="tarjeta">
-      <p class="tipo-secundario" style="margin:0 0 8px"><b>tabular-nums</b> — así se entrega</p>
-      <div style="font-family:var(--fuente-texto);font-variant-numeric:tabular-nums;
-                  text-align:right;max-width:170px;line-height:1.9;font-size:var(--texto-lg)">
-        $ 1.189.000<br>$ 189.000<br>$ 111.000<br>$ 58.000</div>
-    </div>
-    <div class="tarjeta">
-      <p class="tipo-secundario" style="margin:0 0 8px"><b>proportional-nums</b> — el defecto</p>
-      <div style="font-family:var(--fuente-texto);font-variant-numeric:proportional-nums;
-                  text-align:right;max-width:170px;line-height:1.9;font-size:var(--texto-lg)">
-        $ 1.189.000<br>$ 189.000<br>$ 111.000<br>$ 58.000</div>
-    </div>
-  </div>
-  <p class="nota">Con numerales proporcionales el <b>1</b> es más angosto que los
-  demás dígitos, así que las columnas se desalinean y la lista se lee en zigzag.
-  <b>IBM Plex Mono ya es tabular por construcción</b>, que es exactamente por lo
-  que entra como tercera familia: los precios del catálogo salen alineados sin
-  tener que pedirlo.</p>
-
-  <h3>Ancho de lectura</h3>
-  <p class="nota">Entre 60 y 75 caracteres por línea. Más largo y el ojo pierde el
-  renglón al saltar; más corto y se lee a tirones. El token
-  <code>--medida</code> vale <code>68ch</code> y lo aplican
-  <code>.tipo-cuerpo</code>, <code>.tipo-entradilla</code> y <code>.medida</code>.</p>
-  <div class="tarjeta">
-    <p class="tipo-cuerpo" style="margin:0">Sastra es el mercado donde cualquiera
-    compra y vende moda, nueva y usada, con la plataforma como respaldo de la
-    transacción. El pago queda retenido hasta que quien compra confirma que
-    recibió la prenda, y solo entonces se libera hacia quien vende. [muestra]</p>
-  </div>
-  <p class="nota">Esta caja llega al límite y no lo pasa, por ancha que se ponga
-  la ventana. Sin <code>max-width</code>, en un monitor grande esta línea mediría
-  más de 150 caracteres.</p>
-
-  <h3>Cómo se cargan las fuentes</h3>
-  <p class="nota"><b>Para empezar</b>, con Google Fonts basta y es lo que ya trae
-  esta guía en el <code>&lt;head&gt;</code>. Pesa poco y no hay que administrar
-  archivos.</p>
-  <p class="nota"><b>Para producción conviene autoalojarlas</b>: quita una
-  conexión a un tercero, mejora el tiempo de carga y evita depender de un
-  servicio externo. Descarga los <code>.woff2</code>, súbelos junto al sitio y
-  precarga solo los dos que se ven de entrada:</p>
-  <pre style="background:var(--color-primario-suave);padding:var(--esp-16);
-       border-radius:var(--radio-md);overflow-x:auto;font-size:var(--texto-sm)"><code>&lt;link rel="preload" as="font" type="font/woff2" crossorigin
-      href="/fuentes/instrument-sans-400.woff2"&gt;
-&lt;link rel="preload" as="font" type="font/woff2" crossorigin
-      href="/fuentes/archivo-700.woff2"&gt;</code></pre>
-  <p class="nota"><b>Precarga solo esos dos.</b> Precargarlo todo compite por el
-  ancho de banda con las fotos de producto y termina retrasando la página, que es
-  justo lo contrario de lo que se busca.</p>
-  <p class="nota"><b>Pesos: tres y no más.</b> 400, 500 y 700. Cada peso extra es
-  una descarga más, y en celular con datos móviles eso se nota.</p>
-  <div class="aviso aviso-aviso" style="margin-top:var(--esp-16);max-width:68ch">
-    <b>&#9888; Un pendiente honesto.</b> <code>tipografia.css</code> trae un bloque
-    de respaldo con <code>size-adjust</code> para que la página no salte cuando la
-    fuente real reemplaza a la del sistema. <b>Esos tres valores son un punto de
-    partida y no están medidos</b> contra los archivos reales. Mídelos antes de
-    publicar o borra el bloque: un ajuste inventado empeora el salto en vez de
-    arreglarlo.
-  </div>
+  <h3 style="margin-top:24px">Escala y jerarquia</h3>
+  <p class="nota">El cuerpo nunca baja de 16px: por debajo, el navegador movil hace
+  zoom solo al enfocar un campo y descuadra la maqueta.</p>
+  <table><thead><tr><th>Token</th><th>Tamano</th><th>Donde se usa</th><th>Muestra</th></tr></thead>
+  <tbody><tr><td><code>--texto-xs</code></td><td>12px</td><td>Leyendas, legales</td><td style="font-size:12px;line-height:1.2;font-family:var(--fuente-texto);font-weight:400">Texto de muestra</td></tr><tr><td><code>--texto-sm</code></td><td>14px</td><td>Secundario, etiquetas</td><td style="font-size:14px;line-height:1.2;font-family:var(--fuente-texto);font-weight:400">Texto de muestra</td></tr><tr><td><code>--texto-base</code></td><td>16px</td><td>Cuerpo de texto</td><td style="font-size:16px;line-height:1.2;font-family:var(--fuente-texto);font-weight:400">Texto de muestra</td></tr><tr><td><code>--texto-lg</code></td><td>20px</td><td>Entradilla</td><td style="font-size:20px;line-height:1.2;font-family:var(--fuente-texto);font-weight:400">Diseño con carácter</td></tr><tr><td><code>--texto-xl</code></td><td>26px</td><td>H3 · subtitulo</td><td style="font-size:26px;line-height:1.2;font-family:var(--fuente-display);font-weight:700">Diseño con carácter</td></tr><tr><td><code>--texto-2xl</code></td><td>34px</td><td>H2 · titulo de seccion</td><td style="font-size:34px;line-height:1.2;font-family:var(--fuente-display);font-weight:700">Diseño con carácter</td></tr><tr><td><code>--texto-3xl</code></td><td>46px</td><td>H1 · titular de portada</td><td style="font-size:40px;line-height:1.2;font-family:var(--fuente-display);font-weight:700">Diseño con carácter</td></tr><tr><td><code>--texto-4xl</code></td><td>62px</td><td>Titular grande</td><td style="font-size:40px;line-height:1.2;font-family:var(--fuente-display);font-weight:700">Diseño con carácter</td></tr></tbody></table>
 </section>
 
 <section class="doc">
   <h2>Botones y estados</h2>
   <p class="nota">Area tactil minima de 44px de alto. El foco visible no se
-  elimina nunca: es como navega quien usa teclado.</p>
+  elimina nunca: es como navega quien usa teclado. Un solo boton principal
+  (relleno) por pantalla — en las tarjetas de producto ese lugar lo ocupa
+  "Anadir al carrito", asi que la cabecera usa el secundario para "Vender".</p>
   <p>
-    <button class="btn btn-cta">Publicar prenda</button>
-    <button class="btn btn-primario">Comprar ahora</button>
-    <button class="btn btn-secundario">Guardar</button>
-    <button class="btn btn-texto">Ver medidas</button>
-    <button class="btn btn-primario" disabled>Publicando...</button>
+    <button class="btn btn-primario">Anadir al carrito</button>
+    <button class="btn btn-secundario">Vender en Sendik</button>
+    <button class="btn btn-texto">Ver todas las condiciones</button>
+    <button class="btn btn-primario" disabled>Procesando pago…</button>
   </p>
-  <p class="nota"><b>Cuatro jerarquias y en este orden.</b> El ocre
-  (<code>btn-cta</code>) es el unico color de acento de la marca y aparece
-  <b>una sola vez por pantalla</b>: si esta en cinco sitios, no destaca ninguno.
-  El tinta (<code>btn-primario</code>) es para la accion principal de cada
-  bloque. El ocre nunca se usa como color de texto: sobre fondo claro da 2.3:1
-  y es ilegible.</p>
   <p class="nota">Pasa el cursor, manten pulsado y navega con la tecla Tab para
   ver los cuatro estados.</p>
 </section>
 
 <section class="doc">
   <h2>Formularios</h2>
-  <p class="nota">Formulario de publicar una prenda. La etiqueta va siempre
-  visible encima del campo: el texto de ejemplo dentro desaparece al escribir y
-  la gente olvida que iba ahi.</p>
   <div class="campo">
-    <label for="t">Titulo de la prenda</label>
-    <input id="t" placeholder="Chaqueta de cuero negra talla M">
-    <div class="ayuda">Marca, prenda, color y talla. Es lo que la gente busca.</div>
-  </div>
-  <div class="campo">
-    <label for="e">Estado</label>
-    <select id="e">
-      <option>Nueva con etiqueta</option>
-      <option>Como nueva</option>
-      <option>Buen estado</option>
-      <option>Con senales de uso</option>
-    </select>
+    <label for="n">Titulo de la publicacion</label>
+    <input id="n" placeholder="Ej. Tenis urbanos talla 40, poco uso">
   </div>
   <div class="campo error">
-    <label for="p">Precio</label>
-    <input id="p" value="ochenta mil" aria-invalid="true" aria-describedby="ep">
-    <div class="ayuda" id="ep">
-      &#9888; Escribe el precio en numeros, sin puntos ni signos. Ejemplo: 89000
-    </div>
+    <label for="c">Precio de venta (COP)</label>
+    <input id="c" value="0" aria-invalid="true" aria-describedby="ec">
+    <div class="ayuda" id="ec">El precio tiene que ser mayor a $0 para poder publicar</div>
   </div>
-  <div class="campo">
-    <label for="m">Medidas <span style="font-weight:400;color:var(--color-texto-suave)">(opcional)</span></label>
-    <input id="m" placeholder="Largo 62 cm, pecho 48 cm">
-  </div>
-  <p class="nota">Tres cosas que este formulario resuelve y casi ninguno resuelve:
-  el error <b>no depende solo del color</b> (lleva simbolo, texto y borde mas
-  grueso, para quien no distingue rojo y verde); se marca <b>lo opcional</b>, no
-  lo obligatorio, porque intimida menos; y el boton de envio <b>no se
-  deshabilita</b> mientras se escribe, se valida al enviar y se explica que falta.</p>
+  <p class="nota">El error dice que paso y como arreglarlo, y no depende solo del
+  color: lleva texto y borde mas grueso, para quien no distingue rojo y verde.</p>
 </section>
 
 <section class="doc">
-  <h2>Tarjetas, avisos y etiquetas</h2>
-  <p class="nota">La tarjeta de producto es el componente que mas veces se
-  repite en el sitio, asi que es donde mas se nota una decision floja. Cuatro
-  reglas: <b>foto siempre en 3:4</b> (si cada una trae su proporcion, la rejilla
-  queda descuadrada), <b>precio en monoespaciada</b> con cifras tabulares para
-  que las columnas cuadren y la lista se recorra rapido, <b>el estado de la
-  prenda visible</b> porque en ropa usada es la primera pregunta, y <b>toda la
-  tarjeta es clicable</b>, no solo el titulo.</p>
-  <h3>Tarjeta de producto</h3>
-  <div class="rejilla-prod">
-    <article class="tarjeta-producto">
-      <div class="foto">Foto 3:4</div>
-      <div class="cuerpo">
-        <span class="chip">Como nueva</span>
-        <h4><a href="#">Chaqueta de cuero negra talla M</a></h4>
-        <div><span class="precio">$ 189.000</span><span class="precio-antes">$ 240.000</span></div>
-        <div class="vendedor"><span class="sello sello-verificado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="butt" stroke-linejoin="miter"><path d="M20 6 9 17l-5-5"/></svg>Verificado</span> <span>&middot; Ana M.</span></div>
+  <h2>Tarjeta de producto, condicion e insignia de vendedor</h2>
+  <p class="nota">La pieza que mas se repite en el sitio. Proporcion de imagen
+  fija 1:1, 800×800px minimo, fondo neutro o foto del producto real — nunca
+  texto dentro de la imagen. El chip de condicion va siempre visible, sin que
+  haya que abrir el producto para saberlo.</p>
+  <div class="rejilla-productos" style="margin-top:16px">
+    <div class="tarjeta-producto">
+      <div class="tp-imagen">
+        <span class="chip-condicion chip-usado tp-condicion">Usado</span>
+        <button class="tp-favorito" aria-label="Guardar en favoritos" type="button">
+          <svg class="icono" viewBox="0 0 24 24"><path d="M12 20 4.6 13c-2-2-2-5.3 0-7.2 2-1.9 5-1.7 6.7.4l.7.9.7-.9c1.7-2.1 4.7-2.3 6.7-.4 2 1.9 2 5.2 0 7.2z"/></svg>
+        </button>
+        <span class="tp-medida">800×800</span>
       </div>
-    </article>
-    <article class="tarjeta-producto">
-      <div class="foto">Foto 3:4</div>
-      <div class="cuerpo">
-        <span class="chip">Nueva con etiqueta</span>
-        <h4><a href="#">Vestido midi estampado talla S</a></h4>
-        <div><span class="precio">$ 72.000</span></div>
-        <div class="vendedor"><span class="sello sello-verificado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="butt" stroke-linejoin="miter"><path d="M20 6 9 17l-5-5"/></svg>Verificado</span> <span>&middot; Taller Luz</span></div>
+      <div class="tp-cuerpo">
+        <p class="tp-titulo">Tenis urbanos talla 40 — poco uso</p>
+        <span class="tp-vendedor">María G.</span>
+        <div class="insignia-verificado">
+          <svg class="icono" viewBox="0 0 24 24"><path d="M5 12.5 10 17 19 7"/></svg>
+          Vendedor verificado
+        </div>
+        <div class="tp-precio-fila">
+          <span class="precio">$128.000</span>
+          <span class="tp-precio-antes">$180.000</span>
+        </div>
+        <div class="tp-cta"><button class="btn btn-primario">Anadir al carrito</button></div>
       </div>
-    </article>
-    <article class="tarjeta-producto">
-      <div class="foto">Foto 3:4</div>
-      <div class="cuerpo">
-        <span class="chip">Buen estado</span>
-        <h4><a href="#">Jeans rectos talla 30</a></h4>
-        <div><span class="precio">$ 58.000</span></div>
-        <div class="vendedor"><span style="color:var(--color-texto-suave)">Sin verificar</span> <span>&middot; Carlos R.</span></div>
-      </div>
-    </article>
-    <article class="tarjeta-producto">
-      <div class="foto">Foto 3:4</div>
-      <div class="cuerpo">
-        <span class="chip">Como nueva</span>
-        <h4><a href="#">Blazer de lana beige talla L</a></h4>
-        <div><span class="precio">$ 134.000</span><span class="precio-antes">$ 160.000</span></div>
-        <div class="vendedor"><span class="sello sello-verificado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="butt" stroke-linejoin="miter"><path d="M20 6 9 17l-5-5"/></svg>Verificado</span> <span>&middot; Sara G.</span></div>
-      </div>
-    </article>
-  </div>
-
-  <h3 style="margin-top:var(--esp-32)">Avisos</h3>
-  <div class="rejilla" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
-    <div>
-      <div class="aviso aviso-exito"><b>&#10003; Pago liberado.</b>
-        Confirmaste que recibiste la prenda. El dinero ya salio hacia Ana M.</div>
-      <div class="aviso aviso-aviso"><b>&#9888; Falta una foto.</b>
-        Las publicaciones con tres o mas fotos se venden mucho mas.</div>
-      <div class="aviso aviso-error"><b>&#10005; Publicacion rechazada.</b>
-        No se permiten replicas de marca. Puedes editarla y volver a enviarla.</div>
     </div>
+    <div class="tarjeta-producto">
+      <div class="tp-imagen">
+        <span class="chip-condicion chip-nuevo tp-condicion">Nuevo</span>
+        <button class="tp-favorito" aria-label="Guardar en favoritos" type="button">
+          <svg class="icono" viewBox="0 0 24 24"><path d="M12 20 4.6 13c-2-2-2-5.3 0-7.2 2-1.9 5-1.7 6.7.4l.7.9.7-.9c1.7-2.1 4.7-2.3 6.7-.4 2 1.9 2 5.2 0 7.2z"/></svg>
+        </button>
+        <span class="tp-medida">800×800</span>
+      </div>
+      <div class="tp-cuerpo">
+        <p class="tp-titulo">Audifonos inalambricos con estuche de carga</p>
+        <span class="tp-vendedor">TecnoDirecto</span>
+        <div class="insignia-verificado">
+          <svg class="icono" viewBox="0 0 24 24"><path d="M5 12.5 10 17 19 7"/></svg>
+          Vendedor verificado
+        </div>
+        <div class="tp-precio-fila"><span class="precio">$249.900</span></div>
+        <div class="tp-cta"><button class="btn btn-primario">Anadir al carrito</button></div>
+      </div>
+    </div>
+    <div class="tarjeta-producto">
+      <div class="tp-imagen">
+        <span class="chip-condicion chip-usado tp-condicion">Usado</span>
+        <button class="tp-favorito" aria-label="Guardar en favoritos" type="button">
+          <svg class="icono" viewBox="0 0 24 24"><path d="M12 20 4.6 13c-2-2-2-5.3 0-7.2 2-1.9 5-1.7 6.7.4l.7.9.7-.9c1.7-2.1 4.7-2.3 6.7-.4 2 1.9 2 5.2 0 7.2z"/></svg>
+        </button>
+        <span class="tp-medida">800×800</span>
+      </div>
+      <div class="tp-cuerpo">
+        <p class="tp-titulo">Bolso de cuero mediano, color camel</p>
+        <span class="tp-vendedor">Camila R.</span>
+        <div class="tp-precio-fila"><span class="precio">$95.000</span></div>
+        <div class="tp-cta"><button class="btn btn-secundario">Anadir al carrito</button></div>
+      </div>
+    </div>
+    <div class="tarjeta-producto">
+      <div class="tp-imagen">
+        <span class="chip-condicion chip-nuevo tp-condicion">Nuevo</span>
+        <button class="tp-favorito" aria-label="Guardar en favoritos" type="button">
+          <svg class="icono" viewBox="0 0 24 24"><path d="M12 20 4.6 13c-2-2-2-5.3 0-7.2 2-1.9 5-1.7 6.7.4l.7.9.7-.9c1.7-2.1 4.7-2.3 6.7-.4 2 1.9 2 5.2 0 7.2z"/></svg>
+        </button>
+        <span class="tp-medida">800×800</span>
+      </div>
+      <div class="tp-cuerpo">
+        <p class="tp-titulo">Chaqueta impermeable talla M</p>
+        <span class="tp-vendedor">Jorge L.</span>
+        <div class="tp-precio-fila"><span class="precio">$134.000</span></div>
+        <div class="tp-cta"><button class="btn btn-secundario">Anadir al carrito</button></div>
+      </div>
+    </div>
+  </div>
+  <p class="nota" style="margin-top:12px">La tercera y cuarta tarjeta muestran un
+  vendedor sin verificar: sin la linea de bronce ni el texto de insignia. No se
+  oculta ni se penaliza visualmente — simplemente no lleva la senal de confianza.
+  El bronce no lleva relleno de fondo en ningun caso: es linea + icono, una sola
+  vez por tarjeta.</p>
+</section>
+
+<section class="doc">
+  <h2>Avisos y etiquetas</h2>
+  <div class="rejilla" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
     <div>
-      <p class="nota">Cada aviso empieza por un simbolo y dice <b>que paso y que
-      hacer</b>, no solo que algo fallo. Ninguno depende del color para
-      entenderse: quitale el color a los tres y siguen leyendose distinto.</p>
-      <p class="nota">El verde es el color de <b>respaldo</b> de Sastra: verificado,
-      pago liberado, envio entregado. Es la promesa de la marca hecha interfaz, asi
-      que no se usa para nada decorativo.</p>
+      <div class="aviso aviso-exito">
+        <svg class="icono" viewBox="0 0 24 24"><path d="M5 12.5 10 17 19 7"/></svg>
+        <div><b>Pago aprobado.</b> El vendedor ya recibio la confirmacion.</div>
+      </div>
+      <div class="aviso aviso-aviso">
+        <svg class="icono" viewBox="0 0 24 24"><path d="M12 8v5M12 16.5v.01M4 19h16L12 5 4 19z"/></svg>
+        <div><b>Publicacion en revision.</b> La vera solo tu hasta que se apruebe.</div>
+      </div>
+      <div class="aviso aviso-error">
+        <svg class="icono" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        <div><b>Pago rechazado.</b> Intenta con otro medio o revisa los datos.</div>
+      </div>
     </div>
   </div>
 </section>
 
 <section class="doc">
   <h2>Maqueta: header, body y footer</h2>
-  <p class="nota">Asi se compone el sistema en las tres regiones. Los textos
-  marcados <b>[muestra]</b> son de relleno y los reemplaza el copy definitivo.</p>
+  <p class="nota">Compuesta para un marketplace: la busqueda es la accion mas
+  usada del header, por eso ocupa el espacio principal en escritorio y una fila
+  propia en movil, donde el logo se reduce al isotipo. El bronce aparece una
+  sola vez en toda la maqueta: en la insignia de vendedor verificado.</p>
   <div class="maqueta">
+
     <header class="mk-header">
-      <span class="logo-sitio" role="img" aria-label="Sastra"><img class="logo-claro" src="logo-horizontal.svg" alt="" style="height:34px"><img class="logo-oscuro" src="logo-mono-negativo.svg" alt="" style="height:34px"></span>
-      <div class="buscador">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-             stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-        <input placeholder="Buscar prendas, marcas o tallas" aria-label="Buscar">
+      <div class="env">
+        <img class="logo-claro" src="logo-horizontal.svg" alt="Logo de Sendik" style="height:34px"><img class="logo-oscuro" src="logo-mono-negativo.svg" alt="Logo de Sendik" style="height:34px">
+        <nav class="mk-nav">
+          <a href="#">Calzado</a><a href="#">Ropa</a><a href="#">Bolsos</a><a href="#">Tecnologia</a>
+        </nav>
+        <div class="mk-buscar">
+          <svg class="icono" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="M14.5 14.5 20 20"/></svg>
+          <input placeholder="Buscar tenis, bolsos, celulares…" aria-label="Buscar productos">
+        </div>
+        <div class="mk-acciones">
+          <button class="btn btn-secundario" style="min-height:38px;padding:8px 16px">Vender</button>
+          <button class="btn-icono" aria-label="Favoritos">
+            <svg class="icono icono-lg" viewBox="0 0 24 24"><path d="M12 20 4.6 13c-2-2-2-5.3 0-7.2 2-1.9 5-1.7 6.7.4l.7.9.7-.9c1.7-2.1 4.7-2.3 6.7-.4 2 1.9 2 5.2 0 7.2z"/></svg>
+          </button>
+          <button class="btn-icono" aria-label="Mi cuenta">
+            <svg class="icono icono-lg" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20c1.5-4 4-6 7.5-6s6 2 7.5 6"/></svg>
+          </button>
+          <button class="btn-icono mk-carrito" aria-label="Carrito, 2 productos">
+            <svg class="icono icono-lg" viewBox="0 0 24 24"><path d="M4 8h16l-1.5 11h-13L4 8z"/><path d="M8 8V6a4 4 0 0 1 8 0v2"/></svg>
+            <span class="contador">2</span>
+          </button>
+          <div class="mk-menu-movil">
+            <button class="btn-icono" aria-label="Abrir menu">
+              <svg class="icono icono-lg" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="mk-buscar-movil">
+          <div class="mk-buscar">
+            <svg class="icono" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="M14.5 14.5 20 20"/></svg>
+            <input placeholder="Buscar tenis, bolsos, celulares…" aria-label="Buscar productos">
+          </div>
+        </div>
       </div>
-      <nav class="mk-nav">
-        <a href="#" aria-current="page">Explorar</a><a href="#">Mujer</a>
-        <a href="#">Hombre</a><a href="#">Como funciona</a>
-      </nav>
-      <button class="btn btn-cta" style="padding:10px 16px">Publicar prenda</button>
     </header>
-    <div class="mk-hero franja-oscura">
-      <h2>Compra y vende moda con respaldo</h2>
-      <p>Guardamos tu pago hasta que confirmes que la prenda llego como la viste.
-      [muestra]</p>
-      <button class="btn btn-cta">Publicar prenda</button>
-      <p class="tipo-secundario" style="color:inherit;margin:var(--esp-16) 0 0">
-        Publicar es gratis &middot; Cobramos solo cuando vendes</p>
+
+    <div class="franja-confianza">
+      <div class="env">
+        <span class="item">
+          <svg class="icono" viewBox="0 0 24 24"><path d="M5 12.5 10 17 19 7"/></svg>
+          Vendedores verificados
+        </span>
+        <span class="item">
+          <svg class="icono" viewBox="0 0 24 24"><rect x="4" y="9" width="16" height="10" rx="1"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/></svg>
+          Pago protegido con Wompi y Addi
+        </span>
+        <span class="item">
+          <svg class="icono" viewBox="0 0 24 24"><path d="M4 8h16l-1.5 11h-13L4 8z"/><path d="M8 8V6a4 4 0 0 1 8 0v2"/></svg>
+          Cualquiera compra, cualquiera vende
+        </span>
+      </div>
     </div>
+
+    <nav class="mk-categorias">
+      <div class="env">
+        <div class="chips-categoria">
+          <span class="chip-cat" aria-current="true">Todo</span>
+          <span class="chip-cat">Calzado</span>
+          <span class="chip-cat">Ropa</span>
+          <span class="chip-cat">Bolsos</span>
+          <span class="chip-cat">Tecnologia (nuevo)</span>
+        </div>
+      </div>
+    </nav>
+
+    <div class="mk-hero">
+      <h2>Compra y vende moda y tecnologia de forma agil y segura</h2>
+      <p>Miles de personas compran y venden todos los dias. Publica en minutos o
+      encuentra lo que buscas con pago protegido.</p>
+      <div class="mk-hero-buscar">
+        <div class="mk-buscar">
+          <svg class="icono" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="M14.5 14.5 20 20"/></svg>
+          <input placeholder="¿Que estas buscando hoy?" aria-label="Buscar productos">
+        </div>
+      </div>
+    </div>
+
     <div class="mk-body">
-      <h3 style="margin-bottom:var(--esp-16)">Recien publicado</h3>
-      <div class="rejilla-prod">
-      <article class="tarjeta-producto">
-      <div class="foto">Foto 3:4</div>
-      <div class="cuerpo">
-        <span class="chip">Como nueva</span>
-        <h4><a href="#">Chaqueta de cuero negra talla M</a></h4>
-        <div><span class="precio">$ 189.000</span><span class="precio-antes">$ 240.000</span></div>
-        <div class="vendedor"><span class="sello sello-verificado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="butt" stroke-linejoin="miter"><path d="M20 6 9 17l-5-5"/></svg>Verificado</span> <span>&middot; Ana M.</span></div>
+      <div class="mk-seccion-titulo">
+        <h3>Recien publicados</h3>
+        <a href="#" class="btn btn-texto" style="padding:0">Ver todo</a>
       </div>
-    </article>
-      <article class="tarjeta-producto">
-      <div class="foto">Foto 3:4</div>
-      <div class="cuerpo">
-        <span class="chip">Nueva con etiqueta</span>
-        <h4><a href="#">Vestido midi estampado talla S</a></h4>
-        <div><span class="precio">$ 72.000</span></div>
-        <div class="vendedor"><span class="sello sello-verificado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="butt" stroke-linejoin="miter"><path d="M20 6 9 17l-5-5"/></svg>Verificado</span> <span>&middot; Taller Luz</span></div>
+      <div class="rejilla-productos">
+        <div class="tarjeta-producto">
+          <div class="tp-imagen"><span class="chip-condicion chip-usado tp-condicion">Usado</span></div>
+          <div class="tp-cuerpo">
+            <p class="tp-titulo">Tenis urbanos talla 40</p>
+            <div class="tp-precio-fila"><span class="precio">$128.000</span></div>
+          </div>
+        </div>
+        <div class="tarjeta-producto">
+          <div class="tp-imagen"><span class="chip-condicion chip-nuevo tp-condicion">Nuevo</span></div>
+          <div class="tp-cuerpo">
+            <p class="tp-titulo">Audifonos inalambricos</p>
+            <div class="tp-precio-fila"><span class="precio">$249.900</span></div>
+          </div>
+        </div>
+        <div class="tarjeta-producto">
+          <div class="tp-imagen"><span class="chip-condicion chip-usado tp-condicion">Usado</span></div>
+          <div class="tp-cuerpo">
+            <p class="tp-titulo">Bolso de cuero camel</p>
+            <div class="tp-precio-fila"><span class="precio">$95.000</span></div>
+          </div>
+        </div>
+        <div class="tarjeta-producto">
+          <div class="tp-imagen"><span class="chip-condicion chip-nuevo tp-condicion">Nuevo</span></div>
+          <div class="tp-cuerpo">
+            <p class="tp-titulo">Chaqueta impermeable M</p>
+            <div class="tp-precio-fila"><span class="precio">$134.000</span></div>
+          </div>
+        </div>
       </div>
-    </article>
-      <article class="tarjeta-producto">
-      <div class="foto">Foto 3:4</div>
-      <div class="cuerpo">
-        <span class="chip">Como nueva</span>
-        <h4><a href="#">Blazer de lana beige talla L</a></h4>
-        <div><span class="precio">$ 134.000</span><span class="precio-antes">$ 160.000</span></div>
-        <div class="vendedor"><span class="sello sello-verificado"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="butt" stroke-linejoin="miter"><path d="M20 6 9 17l-5-5"/></svg>Verificado</span> <span>&middot; Sara G.</span></div>
-      </div>
-    </article>
-      </div>
-      <hr class="regla-puntada">
-      <div class="rejilla" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
-        <div class="tarjeta"><h3>El pago queda retenido</h3>
-          <p class="nota">Sastra guarda el dinero y lo libera cuando confirmas que
-          recibiste la prenda. [muestra]</p></div>
-        <div class="tarjeta"><h3>Vendedores verificados</h3>
-          <p class="nota">Cedula y celular validados antes de la primera venta.
-          [muestra]</p></div>
-        <div class="tarjeta"><h3>Devolucion en 3 dias</h3>
-          <p class="nota">Si la prenda no es como se describio, se devuelve.
-          [muestra]</p></div>
+
+      <div class="mk-diferenciadores">
+        <div class="item">
+          <svg class="icono" viewBox="0 0 24 24"><path d="M5 12.5 10 17 19 7"/></svg>
+          <div><h4>Compra segura</h4><p>Verificamos a quien vende antes de que publique.</p></div>
+        </div>
+        <div class="item">
+          <svg class="icono" viewBox="0 0 24 24"><rect x="4" y="9" width="16" height="10" rx="1"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/></svg>
+          <div><h4>Paga como quieras</h4><p>PSE, Nequi, tarjeta, Bancolombia a la mano o Addi.</p></div>
+        </div>
+        <div class="item">
+          <svg class="icono" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20c1.5-4 4-6 7.5-6s6 2 7.5 6"/></svg>
+          <div><h4>Todos pueden vender</h4><p>Publica en minutos y cobra directo a tu cuenta.</p></div>
+        </div>
       </div>
     </div>
-    <footer class="mk-footer franja-oscura">
-      <div>
-        <img src="logo-mono-negativo.svg" alt="Sastra" style="height:28px;display:block;margin-bottom:var(--esp-12)">
-        <span style="opacity:.85">Sastra S.A.S.<br>NIT 900.000.000-0<br>
-        Calle 00 #00-00, Medellin, Colombia [muestra]</span>
+
+    <hr class="regla-corte">
+
+    <footer class="mk-footer">
+      <div class="env">
+        <div class="marca-col">
+          <b>Sendik</b><br>
+          <span style="opacity:.75">NIT 900.000.000-0<br>Bogota, Colombia</span>
+          <div class="medios-pago">
+            <span class="medio-pago">PSE</span><span class="medio-pago">Nequi</span>
+            <span class="medio-pago">Tarjeta</span><span class="medio-pago">Bancolombia a la mano</span>
+            <span class="medio-pago">Addi</span>
+          </div>
+        </div>
+        <div><a href="#">Calzado</a><a href="#">Ropa</a><a href="#">Bolsos</a><a href="#">Tecnologia</a></div>
+        <div><a href="#">Vender en Sendik</a><a href="#">Vendedor verificado</a><a href="#">Ayuda</a></div>
+        <div><a href="#">Politica de datos</a><a href="#">Terminos y condiciones</a><a href="#">WhatsApp</a></div>
       </div>
-      <div><b>Comprar</b><a href="#">Explorar</a><a href="#">Mujer</a><a href="#">Hombre</a></div>
-      <div><b>Vender</b><a href="#">Publicar prenda</a><a href="#">Como funciona</a><a href="#">Comisiones</a></div>
-      <div><b>Legal</b><a href="#">Politica de tratamiento de datos</a>
-        <a href="#">Terminos y condiciones</a><a href="#">Politica de devoluciones</a></div>
-      <div><b>Contacto</b><a href="#">WhatsApp</a><a href="#">Instagram</a><a href="#">Ayuda</a>
-        <div style="margin-top:var(--esp-12);opacity:.85;font-size:var(--texto-xs)">
-          Pagos: PSE &middot; Nequi &middot; Tarjetas &middot; Contraentrega</div>
-      </div>
+      <div class="mk-copyright">© 2026 Sendik. Todos los derechos reservados.</div>
     </footer>
   </div>
   <p class="nota" style="margin-top:16px">Reduce la ventana por debajo de 640px:
-  la navegacion se oculta y el hero baja de tamano. Abajo esta lo que la
-  sustituye, resuelto en el diseno y no dejado al criterio de quien programa.</p>
-  <h3 style="margin-top:var(--esp-32)">El logo en el header</h3>
-  <p class="nota">En escritorio va el <b>lockup horizontal a 34px</b> de alto.
-  En movil, el <b>isotipo solo</b>: el manual fija 24px como minimo del lockup y
-  en una barra de 60px con buscador al lado no cabe legible. En el footer y en
-  modo oscuro va la <b>version monocroma negativa</b>; el logo en tinta sobre
-  fondo tinta desaparece, y ese es el error clasico de esta pantalla.</p>
-  <div style="display:flex;gap:var(--esp-24);align-items:center;flex-wrap:wrap;margin-top:var(--esp-16)">
-    <div class="espec espec-claro">
-      <img src="logo-horizontal.svg" alt="Lockup horizontal de Sastra" style="height:34px">
-      <div class="nota" style="margin-top:8px">Escritorio &middot; 34px</div></div>
-    <div class="espec espec-claro">
-      <img src="isotipo.svg" alt="Isotipo de Sastra" style="height:32px">
-      <div class="nota" style="margin-top:8px">Movil &middot; 32px</div></div>
-    <div class="espec espec-oscuro">
-      <img src="logo-mono-negativo.svg" alt="Logo monocromo negativo de Sastra" style="height:28px">
-      <div class="nota" style="margin-top:8px">Footer y modo oscuro</div></div>
-  </div>
-</section>
-
-<section class="doc">
-  <h2>Movil: lo que hay que dejar decidido</h2>
-  <p class="nota">Si esto no se decide en el diseno, lo improvisa quien programa
-  y cada pantalla sale distinta.</p>
-  <div class="telefonos">
-    <div class="telefono">
-      <div class="rotulo">Header en movil</div>
-      <div style="display:flex;align-items:center;gap:8px;padding:var(--esp-12);
-                  background:var(--color-superficie);border-bottom:1px solid var(--color-borde)">
-        <img src="isotipo.svg" alt="Sastra" style="height:28px">
-        <div class="buscador" style="min-height:44px;padding:0 12px">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-          <input placeholder="Buscar" aria-label="Buscar" style="min-height:44px;font-size:16px">
-        </div>
-        <button class="btn btn-texto" aria-label="Abrir menu"
-                style="min-width:44px;min-height:44px;padding:0;justify-content:center">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               stroke-width="1.75" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
-        </button>
-      </div>
-      <div style="padding:var(--esp-16);font-size:var(--texto-sm)" class="nota">
-        Entra el isotipo, no el lockup. El buscador se queda: en un catalogo es la
-        navegacion de verdad. Las categorias pasan al menu.
-      </div>
-    </div>
-    <div class="telefono">
-      <div class="rotulo">Menu abierto</div>
-      <div style="background:var(--color-superficie);padding:var(--esp-16);min-height:220px">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--esp-16)">
-          <img src="isotipo.svg" alt="Sastra" style="height:26px">
-          <button class="btn btn-texto" aria-label="Cerrar menu"
-                  style="min-width:44px;min-height:44px;padding:0;justify-content:center">&#10005;</button>
-        </div>
-        <a href="#" style="display:block;padding:12px 0;min-height:44px;font-size:var(--texto-lg);
-           color:var(--color-texto);text-decoration:none;border-bottom:1px solid var(--color-borde)">Explorar</a>
-        <a href="#" style="display:block;padding:12px 0;min-height:44px;font-size:var(--texto-lg);
-           color:var(--color-texto);text-decoration:none;border-bottom:1px solid var(--color-borde)">Mujer</a>
-        <a href="#" style="display:block;padding:12px 0;min-height:44px;font-size:var(--texto-lg);
-           color:var(--color-texto);text-decoration:none;border-bottom:1px solid var(--color-borde)">Hombre</a>
-        <a href="#" style="display:block;padding:12px 0;min-height:44px;font-size:var(--texto-lg);
-           color:var(--color-texto);text-decoration:none">Como funciona</a>
-      </div>
-    </div>
-    <div class="telefono">
-      <div class="rotulo">Ficha de producto</div>
-      <div style="background:var(--color-superficie)">
-        <div style="aspect-ratio:3/4;background:var(--color-primario-suave);display:grid;
-                    place-items:center;color:var(--color-texto-suave);font-size:var(--texto-xs)">Foto 3:4</div>
-        <div style="padding:var(--esp-16)">
-          <span class="chip">Como nueva</span>
-          <p style="margin:8px 0 4px;font-size:var(--texto-base);font-weight:500;line-height:1.35">Chaqueta de cuero negra talla M</p>
-          <div><span class="precio">$ 189.000</span><span class="precio-antes">$ 240.000</span></div>
-        </div>
-        <div class="barra-inferior">
-          <button class="btn btn-secundario" aria-label="Guardar"
-                  style="flex:0 0 auto;min-width:44px;padding:0 14px">&#9825;</button>
-          <button class="btn btn-cta">Comprar</button>
-        </div>
-      </div>
-    </div>
-  </div>
-  <p class="nota" style="margin-top:var(--esp-16)"><b>Decidido y por escrito:</b>
-  el header en movil se queda fijo con isotipo, buscador y menu; el menu abre a
-  pantalla completa con enlaces de 44px y boton de cierre de 44px; en la ficha de
-  producto el boton de comprar se vuelve <b>barra fija abajo</b>, porque es la
-  unica accion que importa en esa pantalla y las esquinas superiores son
-  incomodas con una mano. En el resto del sitio no hay barra fija: ocupa espacio
-  permanente y no se justifica.</p>
-</section>
-
-<section class="doc">
-  <h2>Carga, vacio y error</h2>
-  <p class="nota">Los tres estados que casi nunca se disenan y siempre aparecen.
-  Un catalogo vacio sin mensaje parece un sitio roto.</p>
-  <div class="rejilla" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
-    <div>
-      <h3>Cargando</h3>
-      <div class="rejilla-prod" style="grid-template-columns:1fr 1fr">
-        <div class="tarjeta-producto"><div class="esqueleto" style="aspect-ratio:3/4"></div>
-          <div class="cuerpo"><div class="esqueleto" style="height:12px;width:70%;margin-bottom:8px"></div>
-          <div class="esqueleto" style="height:16px;width:45%"></div></div></div>
-        <div class="tarjeta-producto"><div class="esqueleto" style="aspect-ratio:3/4"></div>
-          <div class="cuerpo"><div class="esqueleto" style="height:12px;width:60%;margin-bottom:8px"></div>
-          <div class="esqueleto" style="height:16px;width:50%"></div></div></div>
-      </div>
-      <p class="nota">Esqueleto con la forma del contenido, no un circulo girando:
-      se percibe mas rapido y la maqueta no salta al llegar los datos.</p>
-    </div>
-    <div>
-      <h3>Sin resultados</h3>
-      <div class="vacio">
-        <p style="margin:0 0 var(--esp-12);color:var(--color-texto)">
-          <b>No hay chaquetas talla M por menos de $50.000</b></p>
-        <p style="margin:0 0 var(--esp-16)">Prueba a subir el precio o quitar la talla.</p>
-        <button class="btn btn-secundario">Quitar filtros</button>
-      </div>
-      <p class="nota">Dice <b>por que</b> no hay nada y ofrece el siguiente paso.</p>
-      <h3 style="margin-top:var(--esp-24)">No cargo</h3>
-      <div class="aviso aviso-error"><b>&#10005; No pudimos cargar el catalogo.</b>
-        Revisa tu conexion. <button class="btn btn-texto" style="padding:4px 0">Reintentar</button></div>
-    </div>
-  </div>
+  la navegacion y la busqueda del header se ocultan detras del isotipo, el
+  menu y una segunda fila de busqueda a ancho completo. La rejilla de
+  productos pasa de 4 a 2 columnas y el footer de 4 a 2.</p>
 </section>
 
 <section class="doc">
   <h2>Como se usa</h2>
   <ol class="nota">
-    <li>Copia <code>tokens.css</code> y <code>marca.css</code> al proyecto y
-        enlazalos en ese orden, antes de tus estilos.</li>
-    <li><code>tokens.css</code> es generado: <b>no lo edites a mano</b>. Si hay que
-        cambiar un color, se cambia en <code>tokens.json</code> y se vuelve a generar,
-        porque los estados (hover, pressed, foco, borde de campo) se recalculan solos.</li>
-    <li><code>marca.css</code> si se edita: ahi viven los componentes propios de
-        Sastra y las correcciones de modo oscuro.</li>
-    <li>Usa siempre las variables, <b>nunca un HEX suelto</b> en el codigo. Si
-        necesitas un color que no esta, el sistema esta incompleto: anadelo con nombre.</li>
-    <li>Carga las tres tipografias desde Google Fonts o autoalojadas. Las tres son
-        SIL OFL: no cuestan nada ahora ni cuando el negocio crezca.</li>
-    <li>Modo oscuro: <code>data-tema="oscuro"</code> en el elemento
-        <code>&lt;html&gt;</code>. Para respetar la preferencia del sistema:
-        <code>document.documentElement.dataset.tema =
-        matchMedia('(prefers-color-scheme: dark)').matches ? 'oscuro' : 'claro'</code>.</li>
+    <li>Copia <code>tokens.css</code> al proyecto y enlazalo antes de tus estilos.</li>
+    <li>Usa siempre las variables, nunca un HEX suelto en el codigo.</li>
+    <li>Para modo oscuro basta con <code>data-tema="oscuro"</code> en el html.</li>
+    <li>Si cambia un color de marca, edita <code>tokens.json</code> y vuelve a
+        generar el kit: los estados y el modo oscuro se recalculan solos.</li>
+    <li>Los textos, precios y nombres de esta guia son de muestra. Los
+        definitivos salen de <code>copywriter-web</code>.</li>
   </ol>
 </section>
 

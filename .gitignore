@@ -16,7 +16,7 @@ out/
 
 # ...pero nunca dentro del codigo fuente. `out` y `bin` son carpetas de salida
 # de los IDE, y sin anclar se comen cualquier carpeta que se llame igual: la
-# convencion de puertos de este proyecto es application/co/sastra/<contexto>/
+# convencion de puertos de este proyecto es application/co/sendik/<contexto>/
 # port/out (backend/CLAUDE.md), y por eso los doce puertos de identity nunca
 # habian entrado al repositorio. Compilaba en la maquina de quien los escribio y
 # no compilaba en ninguna otra.

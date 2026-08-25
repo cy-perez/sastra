@@ -15,7 +15,7 @@ import {
 } from '../../../core/routes/legal-routes';
 
 @Component({
-  selector: 'sastra-site-footer',
+  selector: 'sendik-site-footer',
   imports: [RouterLink, TranslocoPipe],
   templateUrl: './site-footer.html',
   styleUrl: './site-footer.css',

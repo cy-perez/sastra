@@ -19,7 +19,7 @@ import { CaptureField } from './capture-field';
  * <p>Los tres tipos son los del glosario y no hay pasaporte, porque no se pidió.
  */
 @Component({
-  selector: 'sastra-document-capture-form',
+  selector: 'sendik-document-capture-form',
   imports: [ReactiveFormsModule, TranslocoPipe, TextField, SubmitButton, CaptureField],
   templateUrl: './document-capture-form.html',
   styleUrl: './bank-account-form.css',

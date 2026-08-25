@@ -6,7 +6,7 @@ import { parseCookies } from '../i18n/locale';
  */
 export type Theme = 'light' | 'dark';
 
-export const THEME_COOKIE = 'sastra_theme';
+export const THEME_COOKIE = 'sendik_theme';
 export const THEME_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
 
 /**

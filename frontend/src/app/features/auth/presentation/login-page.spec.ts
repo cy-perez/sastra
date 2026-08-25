@@ -19,7 +19,7 @@ import { LoginPage } from './login-page';
  * quien usa el sitio, y no se rompe al maquetar.
  */
 describe('LoginPage', () => {
-  const API = 'https://api.pruebas.sastra.co/api/v1';
+  const API = 'https://api.pruebas.sendik.co/api/v1';
 
   const SESION = {
     accessToken: 'token-de-acceso',

@@ -1,5 +1,5 @@
 {
-  "name": "sastra-frontend",
+  "name": "sendik-frontend",
   "version": "0.1.0",
   "private": true,
   "packageManager": "npm@12.0.2",
@@ -11,7 +11,7 @@
     "start": "node --env-file-if-exists=../.env node_modules/@angular/cli/bin/ng.js serve",
     "build": "node --env-file-if-exists=../.env node_modules/@angular/cli/bin/ng.js build",
     "watch": "node --env-file-if-exists=../.env node_modules/@angular/cli/bin/ng.js build --watch --configuration development",
-    "serve:ssr": "node --env-file-if-exists=../.env dist/sastra/server/server.mjs",
+    "serve:ssr": "node --env-file-if-exists=../.env dist/sendik/server/server.mjs",
     "test": "ng test",
     "e2e": "playwright test",
     "e2e:completo": "playwright test --config playwright.completo.config.ts",

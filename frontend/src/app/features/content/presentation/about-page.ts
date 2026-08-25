@@ -4,7 +4,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
 import { APP_CONFIG } from '../../../core/config/app-config';
 
 /**
- * Sobre Sastra. HU-005, criterios 10 y 11.
+ * Sobre Sendik. HU-005, criterios 10 y 11.
  *
  * <p>Muestra razon social, NIT y direccion desde la configuracion, nunca escritos
  * en la plantilla, y cada dato se omite por separado si falta: un despliegue sin
@@ -14,7 +14,7 @@ import { APP_CONFIG } from '../../../core/config/app-config';
  * suenan a relleno (docs/producto/textos-web.md).
  */
 @Component({
-  selector: 'sastra-about-page',
+  selector: 'sendik-about-page',
   imports: [TranslocoPipe],
   templateUrl: './about-page.html',
   styleUrl: './content-page.css',

@@ -97,7 +97,7 @@ describe('SiteFooter', () => {
     const fixture = await render();
     const datos = fixture.nativeElement.querySelector('address') as HTMLElement;
 
-    expect(datos.textContent).toContain('Sastra S.A.S.');
+    expect(datos.textContent).toContain('Sendik S.A.S.');
     expect(datos.textContent).toContain('000000000-0');
     expect(datos.textContent).toContain('Medellin, Colombia');
   });
@@ -108,7 +108,7 @@ describe('SiteFooter', () => {
    */
   it('omite cada dato de empresa que falte sin perder los demas', async () => {
     conEmpresa({
-      name: 'Sastra S.A.S.',
+      name: 'Sendik S.A.S.',
       taxId: null,
       address: null,
       supportEmail: 'soporte@example.test',
@@ -116,7 +116,7 @@ describe('SiteFooter', () => {
     const fixture = await render();
     const datos = fixture.nativeElement.querySelector('address') as HTMLElement;
 
-    expect(datos.textContent).toContain('Sastra S.A.S.');
+    expect(datos.textContent).toContain('Sendik S.A.S.');
     expect(datos.textContent).not.toContain('NIT');
     expect(datos.textContent).not.toContain('null');
   });
@@ -147,7 +147,7 @@ describe('SiteFooter', () => {
 
   // Sin correo configurado no se pinta una columna de contacto vacia: se calla.
   it('no pinta la columna de contacto si no hay correo configurado', async () => {
-    conEmpresa({ name: 'Sastra S.A.S.', taxId: null, address: null, supportEmail: null });
+    conEmpresa({ name: 'Sendik S.A.S.', taxId: null, address: null, supportEmail: null });
     const fixture = await render();
 
     expect(fixture.nativeElement.querySelector('a[href^="mailto:"]')).toBeNull();
@@ -166,7 +166,7 @@ describe('SiteFooter', () => {
       const pie = fixture.nativeElement.querySelector('footer') as HTMLElement;
       const logo = pie.querySelector('img') as HTMLImageElement;
       return {
-        franja: pie.classList.contains('franja-oscura'),
+        franja: pie.classList.contains('franja-tinta'),
         logo: logo.getAttribute('src'),
       };
     };
@@ -187,6 +187,6 @@ describe('SiteFooter', () => {
     const fixture = await render();
     const logo = fixture.nativeElement.querySelector('footer img') as HTMLImageElement;
 
-    expect(logo.getAttribute('alt')).toBe('Sastra');
+    expect(logo.getAttribute('alt')).toBe('Sendik');
   });
 });

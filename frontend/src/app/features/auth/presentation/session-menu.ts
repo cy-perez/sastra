@@ -13,12 +13,13 @@ import { AuthStore } from '../application/auth.store';
  * ella desde app.html, que es el unico sitio con permiso para juntar las dos
  * cosas.
  *
- * <p>Sin acento ocre: el ocre aparece una sola vez por pantalla y le corresponde
- * a la accion principal del contenido, no a un control de la cabecera que sale
- * en todas.
+ * <p>Sin llamada a la accion rellena: hay una sola por pantalla y le
+ * corresponde a la accion principal del contenido, no a un control de la
+ * cabecera que sale en todas. Tampoco lleva el bronce, que en Sendik es solo de
+ * lo verificado.
  */
 @Component({
-  selector: 'sastra-session-menu',
+  selector: 'sendik-session-menu',
   imports: [RouterLink, TranslocoPipe],
   templateUrl: './session-menu.html',
   styleUrl: './session-menu.css',

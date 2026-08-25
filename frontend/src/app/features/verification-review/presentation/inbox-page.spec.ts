@@ -16,12 +16,12 @@ import { InboxPage } from './inbox-page';
 
 /** La bandeja del moderador. HU-006, criterios 1, 3, 4 y 7. */
 describe('InboxPage', () => {
-  const API = 'https://api.pruebas.sastra.co/api/v1';
+  const API = 'https://api.pruebas.sendik.co/api/v1';
 
   const SESION: Session = {
     accessToken: 'un-token',
     user: {
-      email: 'moderadora@sastra.co',
+      email: 'moderadora@sendik.co',
       displayName: 'Quien Modera',
       emailVerified: true,
       roles: ['MODERATOR'],

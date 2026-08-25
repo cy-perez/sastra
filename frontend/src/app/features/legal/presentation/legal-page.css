@@ -16,7 +16,7 @@
    con ViewEncapsulation.None: ahi Angular no transforma :host, que fuera de un
    shadow root no coincide con nada. Copiar el bloque de content-page.css tal
    cual no habria hecho nada. */
-sastra-legal-page {
+sendik-legal-page {
   display: block;
   grid-column: content;
 }

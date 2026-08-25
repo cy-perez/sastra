@@ -17,7 +17,7 @@ Lo que sí se hace desde ya es **crear las cuentas de GCP que se necesiten en ca
 gratuita** para probar en local contra los servicios de verdad: Cloud Storage para
 las imágenes es el primer caso, y llegarán los que hagan falta. De esta lista, eso
 es el paso 1 (el proyecto), el paso 3 (los dos cubos) y la cuenta de servicio
-`sastra-backend` del paso 5, que es la identidad con la que el backend lee y
+`sendik-backend` del paso 5, que es la identidad con la que el backend lee y
 escribe en los cubos y la que da credenciales a la máquina de desarrollo. Nada de
 eso cuesta.
 
@@ -32,7 +32,7 @@ la nube no es estar en la nube. Se prueba contra Cloud Storage real desde la
 máquina de desarrollo, con una cuenta gratuita y un bucket de pruebas, y nada de
 eso implica un sitio publicado, un dominio comprado ni una instancia encendida.
 
-Los servicios de pago —el dominio `sastra.co`, la instancia mínima siempre activa,
+Los servicios de pago —el dominio `sendik.co`, la instancia mínima siempre activa,
 Cloud SQL, el balanceador con certificado— se contratan justo antes del
 lanzamiento inicial, no antes.
 
@@ -72,13 +72,13 @@ ejecución no puede contener una contraseña.
 
 ## 1. Google Cloud
 
-Crea el proyecto y anota su identificador. **El del proyecto es `sastra-col`**, y
+Crea el proyecto y anota su identificador. **El del proyecto es `sendik-col`**, y
 hoy es uno solo para todo: separar `dev` y `prod` en dos proyectos es una decisión
 del lanzamiento, y mientras no haya nada desplegado no habría qué separar.
 
 ```bash
-gcloud projects create sastra-col --name="Sastra"
-gcloud config set project sastra-col
+gcloud projects create sendik-col --name="Sendik"
+gcloud config set project sendik-col
 
 gcloud services enable \
   run.googleapis.com \
@@ -90,10 +90,10 @@ gcloud services enable \
 El repositorio de imágenes, en `us-east1` (la región la decide `entornos.md`):
 
 ```bash
-gcloud artifacts repositories create sastra \
+gcloud artifacts repositories create sendik \
   --repository-format=docker \
   --location=us-east1 \
-  --description="Imágenes de Sastra"
+  --description="Imágenes de Sendik"
 ```
 
 ## 2. La base de datos
@@ -125,16 +125,16 @@ que no se sirven por ninguna dirección pública (RN-046).
 ### Los dos cubos
 
 ```bash
-PROYECTO=sastra-col
+PROYECTO=sendik-col
 REGION=us-east1
 
 # El público. Acceso uniforme a nivel de cubo, no ACL por objeto: con ACL, un solo
 # objeto mal marcado queda expuesto o inaccesible y nadie lo nota.
-gcloud storage buckets create gs://sastra-publico   --project=$PROYECTO --location=$REGION --uniform-bucket-level-access
+gcloud storage buckets create gs://sendik-publico   --project=$PROYECTO --location=$REGION --uniform-bucket-level-access
 
 # El reservado. Mismo comando y una diferencia que es todo el punto: este nunca
 # recibe el permiso de lectura pública del paso siguiente.
-gcloud storage buckets create gs://sastra-reservado   --project=$PROYECTO --location=$REGION --uniform-bucket-level-access
+gcloud storage buckets create gs://sendik-reservado   --project=$PROYECTO --location=$REGION --uniform-bucket-level-access
 ```
 
 Misma región que Cloud Run. Un cubo en otra región se paga en latencia en cada
@@ -143,38 +143,38 @@ imagen del catálogo y en tráfico entre regiones.
 ### Lectura pública, solo en uno
 
 ```bash
-gcloud storage buckets add-iam-policy-binding gs://sastra-publico   --member=allUsers --role=roles/storage.objectViewer
+gcloud storage buckets add-iam-policy-binding gs://sendik-publico   --member=allUsers --role=roles/storage.objectViewer
 ```
 
 `allUsers` da miedo escrito así y es lo correcto **para este cubo**: son las imágenes
 de un catálogo, tienen que verse sin credenciales. Lo que protege lo demás es que
-este comando no se ejecuta nunca sobre `sastra-reservado`. Que sean dos cubos y no
+este comando no se ejecuta nunca sobre `sendik-reservado`. Que sean dos cubos y no
 dos carpetas del mismo es exactamente lo que permite eso.
 
 Conviene comprobarlo después, porque es el error que no avisa:
 
 ```bash
 # Debe decir allUsers.
-gcloud storage buckets get-iam-policy gs://sastra-publico --format=json | grep allUsers
+gcloud storage buckets get-iam-policy gs://sendik-publico --format=json | grep allUsers
 
 # Y aquí no debe decir nada. Si dice algo, la cédula de alguien es pública.
-gcloud storage buckets get-iam-policy gs://sastra-reservado --format=json | grep allUsers
+gcloud storage buckets get-iam-policy gs://sendik-reservado --format=json | grep allUsers
 ```
 
 ### Los permisos de la aplicación
 
-La cuenta que ejecuta (`sastra-backend`, del paso siguiente) necesita distinto
+La cuenta que ejecuta (`sendik-backend`, del paso siguiente) necesita distinto
 permiso en cada cubo, y ahí está la diferencia que importa:
 
 ```bash
-CUENTA=serviceAccount:sastra-backend@$PROYECTO.iam.gserviceaccount.com
+CUENTA=serviceAccount:sendik-backend@$PROYECTO.iam.gserviceaccount.com
 
 # Público: crear y borrar objetos.
-gcloud storage buckets add-iam-policy-binding gs://sastra-publico   --member=$CUENTA --role=roles/storage.objectAdmin
+gcloud storage buckets add-iam-policy-binding gs://sendik-publico   --member=$CUENTA --role=roles/storage.objectAdmin
 
 # Reservado: lo mismo, y nada más. No se le da `admin` sobre el cubo, así que no
 # puede cambiar su política de acceso ni hacerlo público por error.
-gcloud storage buckets add-iam-policy-binding gs://sastra-reservado   --member=$CUENTA --role=roles/storage.objectAdmin
+gcloud storage buckets add-iam-policy-binding gs://sendik-reservado   --member=$CUENTA --role=roles/storage.objectAdmin
 ```
 
 ### Borrado y versiones
@@ -199,7 +199,7 @@ cat > ciclo.json <<'JSON'
   ]
 }
 JSON
-gcloud storage buckets update gs://sastra-publico --lifecycle-file=ciclo.json
+gcloud storage buckets update gs://sendik-publico --lifecycle-file=ciclo.json
 ```
 
 ### CORS: no hace falta
@@ -214,14 +214,14 @@ y solo para el cubo público y solo para el dominio del sitio.
 | Variable | Valor | Obligatoria |
 |---|---|---|
 | `STORAGE_PROVIDER` | `gcs` | sí, para usar Cloud Storage |
-| `STORAGE_PUBLIC_BUCKET` | `sastra-publico` | sí, con `gcs` |
-| `STORAGE_RESTRICTED_BUCKET` | `sastra-reservado` | sí, con `gcs` |
-| `STORAGE_PUBLIC_BASE_URL` | `https://storage.googleapis.com/sastra-publico` | sí |
-| `STORAGE_PROJECT_ID` | `sastra-col` | no |
+| `STORAGE_PUBLIC_BUCKET` | `sendik-publico` | sí, con `gcs` |
+| `STORAGE_RESTRICTED_BUCKET` | `sendik-reservado` | sí, con `gcs` |
+| `STORAGE_PUBLIC_BASE_URL` | `https://storage.googleapis.com/sendik-publico` | sí |
+| `STORAGE_PROJECT_ID` | `sendik-col` | no |
 | `STORAGE_LOCAL_PATH` | no se usa con `gcs` | no |
 
 Los nombres de los cubos son variables y no constantes del código porque un nombre
-de cubo es único en todo Google: si `sastra-publico` estuviera tomado, el cubo se
+de cubo es único en todo Google: si `sendik-publico` estuviera tomado, el cubo se
 llama de otra forma y eso no puede exigir tocar el código.
 
 **Los dos cubos no pueden ser el mismo.** La aplicación no arranca si lo son, y esa
@@ -246,7 +246,7 @@ usa las credenciales de aplicación por omisión, así que basta con:
 
 ```bash
 gcloud auth application-default login
-gcloud auth application-default set-quota-project sastra-col
+gcloud auth application-default set-quota-project sendik-col
 ```
 
 Eso deja las credenciales de **tu** usuario, no de la cuenta de servicio, así que tu
@@ -256,18 +256,18 @@ eres `owner` y no hay que hacer nada más. Si no:
 ```bash
 CUENTA=user:tu-correo@ejemplo.com
 
-gcloud storage buckets add-iam-policy-binding gs://sastra-publico   --member=$CUENTA --role=roles/storage.objectAdmin
-gcloud storage buckets add-iam-policy-binding gs://sastra-reservado   --member=$CUENTA --role=roles/storage.objectAdmin
+gcloud storage buckets add-iam-policy-binding gs://sendik-publico   --member=$CUENTA --role=roles/storage.objectAdmin
+gcloud storage buckets add-iam-policy-binding gs://sendik-reservado   --member=$CUENTA --role=roles/storage.objectAdmin
 ```
 
 Después, en el `.env` de la raíz del repositorio:
 
 ```
 STORAGE_PROVIDER=gcs
-STORAGE_PROJECT_ID=sastra-col
-STORAGE_PUBLIC_BUCKET=sastra-publico
-STORAGE_RESTRICTED_BUCKET=sastra-reservado
-STORAGE_PUBLIC_BASE_URL=https://storage.googleapis.com/sastra-publico
+STORAGE_PROJECT_ID=sendik-col
+STORAGE_PUBLIC_BUCKET=sendik-publico
+STORAGE_RESTRICTED_BUCKET=sendik-reservado
+STORAGE_PUBLIC_BASE_URL=https://storage.googleapis.com/sendik-publico
 ```
 
 Y se comprueba subiendo una foto de perfil en `/mi-cuenta`: la dirección de la
@@ -275,7 +275,7 @@ imagen tiene que ser la de `storage.googleapis.com` y el objeto tiene que aparec
 en el cubo.
 
 ```bash
-gcloud storage ls gs://sastra-publico/avatares/
+gcloud storage ls gs://sendik-publico/avatares/
 ```
 
 **Volver a `local` es cambiar una variable.** `STORAGE_PROVIDER=local` y ya: los
@@ -292,14 +292,14 @@ crear_secreto() {
   printf '%s' "$2" | gcloud secrets create "$1" --data-file=- --replication-policy=automatic
 }
 
-crear_secreto sastra-db-url      'jdbc:postgresql://HOST:5432/sastra?sslmode=require'
-crear_secreto sastra-db-username 'sastra'
-crear_secreto sastra-db-password 'LA-CONTRASEÑA'
-crear_secreto sastra-jwt-issuer  'https://sastra.co'
-crear_secreto sastra-mail-api-key 're_LA-CLAVE-DE-RESEND'
+crear_secreto sendik-db-url      'jdbc:postgresql://HOST:5432/sendik?sslmode=require'
+crear_secreto sendik-db-username 'sendik'
+crear_secreto sendik-db-password 'LA-CONTRASEÑA'
+crear_secreto sendik-jwt-issuer  'https://sendik.co'
+crear_secreto sendik-mail-api-key 're_LA-CLAVE-DE-RESEND'
 
 # La clave de firma de los tokens. Se genera, no se elige: 32 bytes de verdad.
-crear_secreto sastra-jwt-secret "$(openssl rand -base64 48)"
+crear_secreto sendik-jwt-secret "$(openssl rand -base64 48)"
 ```
 
 `JWT_SECRET` pide mínimo 32 caracteres y lo valida al arrancar. Cambiarlo
@@ -313,27 +313,27 @@ fueran la misma, la aplicación en marcha tendría permiso para desplegarse a s�
 misma.
 
 ```bash
-PROYECTO=sastra-col
+PROYECTO=sendik-col
 NUMERO=$(gcloud projects describe $PROYECTO --format='value(projectNumber)')
 
 # La que ejecuta la aplicación. Solo lee secretos.
-gcloud iam service-accounts create sastra-backend \
-  --display-name="Backend de Sastra en ejecución"
+gcloud iam service-accounts create sendik-backend \
+  --display-name="Backend de Sendik en ejecución"
 
-for secreto in sastra-db-url sastra-db-username sastra-db-password \
-               sastra-jwt-secret sastra-jwt-issuer sastra-mail-api-key; do
+for secreto in sendik-db-url sendik-db-username sendik-db-password \
+               sendik-jwt-secret sendik-jwt-issuer sendik-mail-api-key; do
   gcloud secrets add-iam-policy-binding $secreto \
-    --member="serviceAccount:sastra-backend@$PROYECTO.iam.gserviceaccount.com" \
+    --member="serviceAccount:sendik-backend@$PROYECTO.iam.gserviceaccount.com" \
     --role="roles/secretmanager.secretAccessor"
 done
 
 # La que despliega desde GitHub.
-gcloud iam service-accounts create sastra-despliegue \
+gcloud iam service-accounts create sendik-despliegue \
   --display-name="Despliegue desde GitHub Actions"
 
 for papel in roles/run.admin roles/artifactregistry.writer roles/iam.serviceAccountUser; do
   gcloud projects add-iam-policy-binding $PROYECTO \
-    --member="serviceAccount:sastra-despliegue@$PROYECTO.iam.gserviceaccount.com" \
+    --member="serviceAccount:sendik-despliegue@$PROYECTO.iam.gserviceaccount.com" \
     --role="$papel"
 done
 ```
@@ -349,22 +349,22 @@ la federación entrega un token de minutos, atado a este repositorio.
 gcloud iam workload-identity-pools create github \
   --location=global --display-name="GitHub"
 
-gcloud iam workload-identity-pools providers create-oidc sastra \
+gcloud iam workload-identity-pools providers create-oidc sendik \
   --location=global --workload-identity-pool=github \
-  --display-name="Repositorio de Sastra" \
+  --display-name="Repositorio de Sendik" \
   --issuer-uri="https://token.actions.githubusercontent.com" \
   --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository" \
-  --attribute-condition="assertion.repository == 'TU-USUARIO/sastra'"
+  --attribute-condition="assertion.repository == 'TU-USUARIO/sendik'"
 
 # Solo este repositorio puede usar la cuenta de despliegue. Sin esta condición,
 # cualquier repositorio de GitHub podría pedir el token.
 gcloud iam service-accounts add-iam-policy-binding \
-  sastra-despliegue@$PROYECTO.iam.gserviceaccount.com \
+  sendik-despliegue@$PROYECTO.iam.gserviceaccount.com \
   --role=roles/iam.workloadIdentityUser \
-  --member="principalSet://iam.googleapis.com/projects/$NUMERO/locations/global/workloadIdentityPools/github/attribute.repository/TU-USUARIO/sastra"
+  --member="principalSet://iam.googleapis.com/projects/$NUMERO/locations/global/workloadIdentityPools/github/attribute.repository/TU-USUARIO/sendik"
 ```
 
-Cambia `TU-USUARIO/sastra` por el repositorio real en los dos sitios. El
+Cambia `TU-USUARIO/sendik` por el repositorio real en los dos sitios. El
 `attribute-condition` es la pieza que importa: es lo que impide que otro
 repositorio pida el mismo token.
 
@@ -414,25 +414,25 @@ aparezcan tachadas en los registros cuando haga falta leerlas.
 
 | Variable | `dev` | `prod` |
 |---|---|---|
-| `GCP_PROJECT_ID` | `sastra-col` | `sastra-col` (uno solo, ver paso 1) |
+| `GCP_PROJECT_ID` | `sendik-col` | `sendik-col` (uno solo, ver paso 1) |
 | `GCP_REGION` | `us-east1` | `us-east1` |
 | `GCP_WORKLOAD_IDENTITY_PROVIDER` | ruta completa del proveedor del paso 5 | ídem |
-| `GCP_DEPLOY_SERVICE_ACCOUNT` | `sastra-despliegue@…` | ídem |
-| `CLOUD_RUN_SERVICE` | `sastra-backend-dev` | `sastra-backend` |
-| `CLOUD_RUN_SERVICE_ACCOUNT` | `sastra-backend@…` | ídem |
+| `GCP_DEPLOY_SERVICE_ACCOUNT` | `sendik-despliegue@…` | ídem |
+| `CLOUD_RUN_SERVICE` | `sendik-backend-dev` | `sendik-backend` |
+| `CLOUD_RUN_SERVICE_ACCOUNT` | `sendik-backend@…` | ídem |
 | `CLOUD_RUN_MIN_INSTANCES` | `0` | `1` |
 | `CLOUD_RUN_MAX_INSTANCES` | `2` | `10` |
 | `CLOUD_RUN_MEMORY` | `512Mi` | `1Gi` |
-| `APP_BASE_URL` | `https://dev.sastra.co` | `https://sastra.co` |
-| `APP_API_BASE_URL` | `https://api-dev.sastra.co/api/v1` | `https://api.sastra.co/api/v1` |
-| `CORS_ALLOWED_ORIGINS` | `https://dev.sastra.co` | `https://sastra.co` |
-| `SUPPORT_EMAIL` | `soporte@sastra.co` | ídem |
-| `MAIL_FROM` | `no-responder@sastra.co` | ídem |
+| `APP_BASE_URL` | `https://dev.sendik.co` | `https://sendik.co` |
+| `APP_API_BASE_URL` | `https://api-dev.sendik.co/api/v1` | `https://api.sendik.co/api/v1` |
+| `CORS_ALLOWED_ORIGINS` | `https://dev.sendik.co` | `https://sendik.co` |
+| `SUPPORT_EMAIL` | `soporte@sendik.co` | ídem |
+| `MAIL_FROM` | `no-responder@sendik.co` | ídem |
 | `COMPANY_NAME`, `COMPANY_TAX_ID`, `COMPANY_ADDRESS` | los reales | ídem |
 | `COMMISSION_RATE` | `0.05` | `0.05` |
 | `LEGAL_TERMS_VERSION`, `LEGAL_PRIVACY_VERSION` | `borrador-local` hasta que existan los textos | la versión real |
 | `STORAGE_PROVIDER` | `gcs` | `gcs` |
-| `STORAGE_PUBLIC_BASE_URL` | `https://storage.googleapis.com/sastra-publico-dev` | el dominio del CDN |
+| `STORAGE_PUBLIC_BASE_URL` | `https://storage.googleapis.com/sendik-publico-dev` | el dominio del CDN |
 
 `min-instances = 0` en `dev` es lo que hace que no cueste nada: Cloud Run escala
 a cero y sin tráfico no cobra. En `prod` se pone 1 para no pagar el arranque en
@@ -469,7 +469,7 @@ Está en `entornos.md`: se redirige el tráfico a la revisión previa de Cloud R
 es inmediato.
 
 ```bash
-gcloud run services update-traffic sastra-backend \
+gcloud run services update-traffic sendik-backend \
   --region us-east1 --to-revisions REVISION-ANTERIOR=100
 ```
 
@@ -481,7 +481,7 @@ al menos un despliegue.
 
 Se anota para no confundir lo que falta con lo que está:
 
-- **Dominio y certificado.** `sastra.co` no está comprado, por decisión y no por
+- **Dominio y certificado.** `sendik.co` no está comprado, por decisión y no por
   olvido: se contrata antes del lanzamiento inicial, junto con el resto de los
   servicios de pago y con el hospedaje del sitio. Hasta entonces, la única
   dirección asignada sola es la que da Cloud Run al backend, y las variables de

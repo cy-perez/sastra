@@ -7,13 +7,13 @@
 
 spring:
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/sastra}
-    username: ${DB_USERNAME:sastra}
-    password: ${DB_PASSWORD:sastra}
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/sendik}
+    username: ${DB_USERNAME:sendik}
+    password: ${DB_PASSWORD:sendik}
 
 logging:
   level:
-    co.sastra: DEBUG
+    co.sendik: DEBUG
 
 management:
   endpoints:
@@ -23,14 +23,14 @@ management:
         # se expone: dice demasiado sobre el esquema.
         include: health,info,flyway
 
-sastra:
+sendik:
   app:
     base-url: ${APP_BASE_URL:http://localhost:4200}
     api-base-url: ${APP_API_BASE_URL:http://localhost:8080}
     support-email: ${SUPPORT_EMAIL:soporte@localhost}
     cors-allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
   company:
-    name: ${COMPANY_NAME:Sastra}
+    name: ${COMPANY_NAME:Sendik}
     tax-id: ${COMPANY_TAX_ID:000000000-0}
     address: ${COMPANY_ADDRESS:Medellin, Colombia}
   commission:

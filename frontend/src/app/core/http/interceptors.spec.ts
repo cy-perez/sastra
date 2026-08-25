@@ -19,7 +19,7 @@ import {
   refreshInterceptor,
 } from './interceptors';
 
-const API = 'https://api.pruebas.sastra.co/api/v1';
+const API = 'https://api.pruebas.sendik.co/api/v1';
 
 const UNA_SESION = {
   accessToken: 'un-token',
@@ -137,11 +137,11 @@ describe('interceptores HTTP', () => {
     // Un host que empiece igual que nuestra base no es nuestra base.
     it('no se deja enganar por una direccion que solo se parece a la API', () => {
       sesion.set(UNA_SESION);
-      http.get('https://api.pruebas.sastra.co.atacante.example/listings').subscribe();
+      http.get('https://api.pruebas.sendik.co.atacante.example/listings').subscribe();
 
       expect(
         backend
-          .expectOne('https://api.pruebas.sastra.co.atacante.example/listings')
+          .expectOne('https://api.pruebas.sendik.co.atacante.example/listings')
           .request.headers.has('Authorization'),
       ).toBe(false);
     });

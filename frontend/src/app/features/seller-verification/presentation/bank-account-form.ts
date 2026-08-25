@@ -39,7 +39,7 @@ import {
  * tiene que salir ese nombre.
  */
 @Component({
-  selector: 'sastra-bank-account-form',
+  selector: 'sendik-bank-account-form',
   imports: [ReactiveFormsModule, TranslocoPipe, TextField, SubmitButton],
   templateUrl: './bank-account-form.html',
   styleUrl: './bank-account-form.css',

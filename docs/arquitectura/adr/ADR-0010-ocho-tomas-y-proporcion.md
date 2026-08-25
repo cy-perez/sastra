@@ -48,7 +48,7 @@ colgada, además, es más alta que ancha: 3:4 la encuadra mejor que 1:1.
 ## Excepción posterior
 
 **24 de agosto de 2026, al admitir tecnología en el catálogo.** Esta ADR se
-escribió cuando Sastra vendía solo moda y su razonamiento sigue en pie para toda
+escribió cuando Sendik vendía solo moda y su razonamiento sigue en pie para toda
 prenda. No se sostiene para un producto de tecnología que se vende sellado: ocho
 fotos de una caja cerrada no informan más que cuatro, y girar un empaque no se
 parece en nada a ver el producto.
@@ -63,3 +63,19 @@ tomó.
 
 Con datos reales de abandono en el asistente de captura, o si se mide que el
 visor no mejora la conversión frente al carrusel.
+
+## Confirmada en el cambio de marca
+
+**25 de agosto de 2026, con la identidad Sendik (ADR-0022).** El kit de interfaz
+nuevo fija **1:1, mínimo 800×800** para la foto de producto, y contradice esta
+ADR igual que la contradecía el borrador original.
+
+Se mantiene 3:4 y la decisión no se reabre: el razonamiento no dependía de la
+marca. Una prenda colgada sigue siendo más alta que ancha, el visor de ocho tomas
+sigue compartiendo canal de imágenes con el catálogo, y un solo recorte sigue
+siendo lo que evita tarjetas de alturas distintas. Nada de eso cambió porque
+cambiara el logo.
+
+Vive en `--relacion-foto`, en `frontend/src/styles/marca.css`, y la divergencia
+está anotada en `docs/ui/ubicacion-de-activos.md` para que no se lea como
+descuido. Adoptar el 1:1 sería una ADR nueva, no un cambio de token.

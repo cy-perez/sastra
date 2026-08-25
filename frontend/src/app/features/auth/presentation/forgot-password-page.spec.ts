@@ -14,7 +14,7 @@ import { ForgotPasswordPage } from './forgot-password-page';
 
 /** Criterio 19 de HU-001. */
 describe('ForgotPasswordPage', () => {
-  const API = 'https://api.pruebas.sastra.co/api/v1';
+  const API = 'https://api.pruebas.sendik.co/api/v1';
 
   const render = async () => {
     const fixture = TestBed.createComponent(ForgotPasswordPage);
@@ -87,7 +87,7 @@ describe('ForgotPasswordPage', () => {
   /**
    * Criterio 19. El servidor responde 202 exista o no la cuenta, y esta pantalla
    * muestra el mismo aviso: si dijera algo distinto en cada caso, escribir correos
-   * uno por uno revelaria quien esta registrado en Sastra.
+   * uno por uno revelaria quien esta registrado en Sendik.
    */
   it('muestra el mismo aviso en condicional, sin decir si el correo existe', async () => {
     const fixture = await render();

@@ -16,7 +16,7 @@
       <p class="error-general tipo-cuerpo" role="alert">{{ error | transloco }}</p>
     }
 
-    <sastra-text-field
+    <sendik-text-field
       fieldId="correo"
       type="email"
       autocomplete="email"
@@ -25,7 +25,7 @@
       [errorKey]="emailError()"
     />
 
-    <sastra-text-field
+    <sendik-text-field
       fieldId="nombre"
       autocomplete="name"
       labelKey="auth.register.fields.displayName"
@@ -34,7 +34,7 @@
       [errorKey]="displayNameError()"
     />
 
-    <sastra-text-field
+    <sendik-text-field
       fieldId="contrasena"
       type="password"
       autocomplete="new-password"
@@ -50,7 +50,7 @@
       <strong>{{ 'auth.register.strength.' + fuerza() | transloco }}</strong>
     </p>
 
-    <sastra-text-field
+    <sendik-text-field
       fieldId="nacimiento"
       type="date"
       autocomplete="bday"
@@ -64,7 +64,7 @@
          consentimiento valido segun la Ley 1581. Y cada una con el enlace a lo
          que acepta: el consentimiento tambien tiene que ser informado, y no lo
          es si no se puede leer el documento. -->
-    <sastra-checkbox-field
+    <sendik-checkbox-field
       fieldId="terminos"
       labelKey="auth.register.fields.acceptsTerms"
       linkLabelKey="auth.register.readTerms"
@@ -73,7 +73,7 @@
       [errorKey]="termsError()"
     />
 
-    <sastra-checkbox-field
+    <sendik-checkbox-field
       fieldId="privacidad"
       labelKey="auth.register.fields.acceptsPrivacy"
       linkLabelKey="auth.register.readPrivacy"
@@ -82,6 +82,6 @@
       [errorKey]="privacyError()"
     />
 
-    <sastra-submit-button labelKey="auth.register.submit" [loading]="registro.isPending()" />
+    <sendik-submit-button labelKey="auth.register.submit" [loading]="registro.isPending()" />
   </form>
 }

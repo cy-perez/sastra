@@ -1,22 +1,27 @@
 <!-- Criterios 1 a 4. .a-sangre pide el carril completo de la rejilla de <main>;
-     .franja-oscura es tinta en los dos modos y redefine el anillo de foco, que
-     sobre tinta seria invisible: sin ella el foco del boton principal seria
-     tinta sobre tinta. -->
-<section class="hero a-sangre franja-oscura">
+     .franja-tinta es tinta en los dos modos y redefine dentro del bloque el
+     anillo de foco, el acento y el boton primario, que sobre tinta serian
+     invisibles: sin ella el foco del boton principal seria tinta sobre tinta. -->
+<section class="hero a-sangre franja-tinta">
   <div class="contenedor">
     <h1 class="tipo-display">{{ 'home.hero.title' | transloco }}</h1>
     <p class="tipo-entradilla hero-cuerpo">{{ 'home.hero.body' | transloco }}</p>
 
-    <!-- El unico acento ocre de la pantalla (criterio 2). Es un enlace y no un
-         boton porque lo que hace es navegar: asi funciona sin JavaScript, se
-         puede abrir en otra pestana y el HTML del servidor ya lo trae entero.
+    <!-- La unica llamada a la accion de la pantalla (criterio 2). Va en tinta
+         invertida, no en bronce: el manual de Sendik reserva el bronce para lo
+         verificado y lo garantizado, y dice explicitamente que el boton
+         principal va en tinta. Dentro de la franja se invierte solo.
+
+         Es un enlace y no un boton porque lo que hace es navegar: asi funciona
+         sin JavaScript, se puede abrir en otra pestana y el HTML del servidor
+         ya lo trae entero.
 
          Lleva siempre a /registro, tambien con sesion abierta. El servidor no
          puede saber si hay sesion (el token vive en memoria y se recupera en el
          navegador), asi que cualquier destino condicional dejaria el hero sin
          boton en el HTML servido o lo cambiaria al hidratar. Quien ya entro
          tiene su cuenta en la cabecera, que es donde el sitio la muestra. -->
-    <a class="btn-cta cta tipo-etiqueta-boton" routerLink="/registro">{{
+    <a class="btn-primario cta tipo-etiqueta-boton" routerLink="/registro">{{
       'home.hero.cta' | transloco
     }}</a>
 
@@ -47,10 +52,6 @@
        ruta no exista no se pinta nada aqui: un enlace roto en portada es peor
        que no tenerlo. -->
 </section>
-
-<!-- La regla de puntada es el unico elemento decorativo del sistema y no se
-     sustituye por una linea continua (criterio 7). -->
-<hr class="regla-puntada" />
 
 <!-- Criterios 8 a 10 -->
 <section class="bloque" aria-labelledby="confianza-titulo">

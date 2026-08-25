@@ -15,7 +15,7 @@ import { VerificationImage } from './verification-image';
 
 /** Una imagen de la solicitud, que solo se pide al abrirla. HU-006, criterio 6. */
 describe('VerificationImage', () => {
-  const API = 'https://api.pruebas.sastra.co/api/v1';
+  const API = 'https://api.pruebas.sendik.co/api/v1';
   const ID = 'una-solicitud';
 
   const asentar = async (fixture: {
@@ -52,7 +52,7 @@ describe('VerificationImage', () => {
     TestBed.inject(SessionStore).set({
       accessToken: 'un-token',
       user: {
-        email: 'moderadora@sastra.co',
+        email: 'moderadora@sendik.co',
         displayName: 'Quien Modera',
         emailVerified: true,
         roles: ['MODERATOR'],

@@ -19,10 +19,19 @@ const enFrontend = ruta.includes('frontend/');
 const enBackend = ruta.includes('backend/');
 
 // --- Estilos: ningun valor visual suelto ---------------------------------
-const esHojaDelSistema = /(src\/styles|docs\/ui|generador\/fuentes)\/(tokens|tipografia|marca|fuentes)\.css$/.test(ruta);
+const esHojaDelSistema = /(src\/styles|docs\/ui)\/(tokens|tipografia|marca|fuentes)\.css$/.test(ruta);
 
 if (enFrontend && es('.css', '.scss', '.html') && !esHojaDelSistema) {
-  const sinComentarios = texto.replace(/\/\*[\s\S]*?\*\//g, '');
+  // Fuera de la revision: los comentarios, y el unico sitio donde un HEX no
+  // puede ir por variable. `<meta name="theme-color">` lo lee el navegador para
+  // tenir su propia interfaz antes de aplicar ninguna hoja de estilos, asi que
+  // no acepta var(): un color de marca literal ahi no es una fuga del sistema,
+  // es la unica forma que existe. El mismo valor esta en site.webmanifest, y
+  // los dos salen de docs/marca/dist/web/head-snippet.html.
+  const sinComentarios = texto
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<meta\s+name="theme-color"[^>]*>/g, '');
   if (/#[0-9a-fA-F]{3,8}\b/.test(sinComentarios)) {
     hallazgos.push('Color literal en HEX. Usa una variable de tokens.css, por ejemplo var(--color-superficie). Si el color no existe, el sistema esta incompleto: se nombra en marca.css y se documenta.');
   }
@@ -31,7 +40,7 @@ if (enFrontend && es('.css', '.scss', '.html') && !esHojaDelSistema) {
   }
   const px = sinComentarios.match(/(?<![\w-])(?:padding|margin|gap|border-radius|font-size)\s*:\s*[^;]*\d+px/g);
   if (px) {
-    hallazgos.push('Medida en px fuera del sistema. Espaciados con var(--esp-N), radios con var(--radio-*), tipografia con var(--texto-*). Las unicas medidas fijas permitidas son las del sistema: cabecera 72/60, logo 34, ancho maximo 1200, destino tactil 44.');
+    hallazgos.push('Medida en px fuera del sistema. Espaciados con var(--esp-N), radios con var(--radio-*), tipografia con var(--texto-*). Las unicas medidas fijas permitidas son las del sistema: cabecera 72/56, logo 34 (isotipo 32), ancho maximo 1140, destino tactil 44.');
   }
   if (/font-size\s*:|font-family\s*:|font-weight\s*:\s*\d/.test(sinComentarios)) {
     hallazgos.push('Tipografia definida fuera del sistema. tipografia.css es la unica fuente de verdad del tipo: se aplica el rol (.tipo-h2, .tipo-cuerpo, .tipo-titulo-tarjeta, .precio, .tipo-secundario), no el tamano ni la familia. Si falta un rol, se agrega alli y se documenta.');
@@ -68,7 +77,7 @@ if (enFrontend && es('.ts', '.html')) {
 // import. Es el unico archivo exento y se identifica por ruta completa, para
 // que crear un ArchitectureTest.java en otra carpeta no sirva de atajo.
 const esCatalogoDeApisProhibidas =
-  /backend\/bootstrap\/src\/test\/java\/co\/sastra\/ArchitectureTest\.java$/.test(ruta);
+  /backend\/bootstrap\/src\/test\/java\/co\/sendik\/ArchitectureTest\.java$/.test(ruta);
 
 if (enBackend && es('.java') && !esCatalogoDeApisProhibidas) {
   const reglas = [

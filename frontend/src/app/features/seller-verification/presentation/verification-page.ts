@@ -30,7 +30,7 @@ import {
  * espacios.
  */
 @Component({
-  selector: 'sastra-verification-page',
+  selector: 'sendik-verification-page',
   imports: [TranslocoPipe, BankAccountForm, DocumentCaptureForm, SelfieCaptureForm],
   templateUrl: './verification-page.html',
   styleUrl: './verification-page.css',

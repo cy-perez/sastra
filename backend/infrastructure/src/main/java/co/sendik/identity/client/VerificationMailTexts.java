@@ -1,0 +1,142 @@
+package co.sendik.identity.client;
+
+import co.sendik.identity.model.RejectionReason;
+import co.sendik.identity.model.UserLocale;
+
+/**
+ * Los textos de los cuatro correos de verificacion de vendedor. HU-002 criterio 10.
+ *
+ * <p>Estan aqui y no repartidos entre los dos adaptadores para que el de consola y el de
+ * Resend digan lo mismo. Con el texto en cada uno, el de desarrollo se separa del de
+ * produccion y lo que se lee al probar deja de ser lo que recibe una persona.
+ *
+ * <p><strong>El motivo del rechazo se traduce aqui y no llega como codigo.</strong> Un
+ * correo no tiene quien lo traduzca al abrirlo: no hay Transloco en un buzon. Es la
+ * unica copia del catalogo de motivos que existe fuera del frontend, y por eso la
+ * enumeracion es la fuente: agregar un motivo sin texto aqui no compila.
+ */
+final class VerificationMailTexts {
+
+    private VerificationMailTexts() {}
+
+    static String asuntoDeRecibida(UserLocale idioma) {
+        return espanol(idioma) ? "Recibimos tu solicitud de verificacion" : "We got your verification request";
+    }
+
+    static String cuerpoDeRecibida(UserLocale idioma, int diasDeRevision) {
+        return espanol(idioma)
+                ? "<p>Recibimos tu solicitud para vender en Sendik.</p>"
+                        + "<p>La revisamos en maximo " + diasDeRevision
+                        + " dias habiles y te escribimos con el resultado. No hace falta que hagas nada mas.</p>"
+                : "<p>We got your request to sell on Sendik.</p>"
+                        + "<p>We review it in at most " + diasDeRevision
+                        + " business days and we will write to you with the result. You do not need to do anything else.</p>";
+    }
+
+    static String asuntoDeAprobada(UserLocale idioma) {
+        return espanol(idioma) ? "Ya eres vendedor verificado en Sendik" : "You are a verified seller on Sendik";
+    }
+
+    /**
+     * No anuncia lo que se puede hacer ahora ni enlaza a publicar: esa pantalla llega con
+     * su propia historia, y prometerla aqui deja un enlace a algo que no existe.
+     */
+    static String cuerpoDeAprobada(UserLocale idioma) {
+        return espanol(idioma)
+                ? "<p>Revisamos tu solicitud y quedaste verificado. Tu perfil ya muestra el sello.</p>"
+                : "<p>We reviewed your request and you are verified. Your profile now shows the badge.</p>";
+    }
+
+    static String asuntoDeRechazada(UserLocale idioma) {
+        return espanol(idioma) ? "No pudimos verificar tu cuenta" : "We could not verify your account";
+    }
+
+    static String cuerpoDeRechazada(UserLocale idioma, RejectionReason motivo, String nota, int intentosRestantes) {
+        String cierre = intentosRestantes > 0
+                ? (espanol(idioma)
+                        ? "<p>Puedes corregirlo y volver a enviarlo. Te quedan " + intentosRestantes + " intentos.</p>"
+                        : "<p>You can fix it and send it again. You have " + intentosRestantes + " attempts left.</p>")
+                // En cero no se invita a reintentar: RN-014 no lo permite, y decir "vuelve
+                // a intentarlo" cuando el sistema va a negarlo es peor que no decir nada.
+                : (espanol(idioma)
+                        ? "<p>Ya usaste tus tres intentos. Escribenos y lo revisamos a mano.</p>"
+                        : "<p>You already used your three attempts. Write to us and we will review it by hand.</p>");
+
+        return (espanol(idioma)
+                        ? "<p>Revisamos tu solicitud para vender y no pudimos verificarla.</p>" + "<p>Motivo: "
+                                + textoDelMotivo(idioma, motivo) + "</p>"
+                        : "<p>We reviewed your request to sell and could not verify it.</p>" + "<p>Reason: "
+                                + textoDelMotivo(idioma, motivo) + "</p>")
+                + notaComoParrafo(idioma, nota)
+                + cierre;
+    }
+
+    static String asuntoDeRevocada(UserLocale idioma) {
+        return espanol(idioma) ? "Tu verificacion de vendedor se revoco" : "Your seller verification was revoked";
+    }
+
+    /**
+     * Dice lo que RN-013 decide y la persona necesita saber: lo publicado sigue visible y
+     * no puede publicar mas. Sin esa frase, quien lo reciba no sabe si perdio lo que tenia.
+     */
+    static String cuerpoDeRevocada(UserLocale idioma, RejectionReason motivo, String nota) {
+        return (espanol(idioma)
+                        ? "<p>Revocamos tu verificacion de vendedor.</p>"
+                                + "<p>Motivo: " + textoDelMotivo(idioma, motivo) + "</p>"
+                                + "<p>Lo que ya tenias publicado sigue visible, pero no puedes crear publicaciones"
+                                + " nuevas hasta volver a verificarte.</p>"
+                        : "<p>We revoked your seller verification.</p>"
+                                + "<p>Reason: " + textoDelMotivo(idioma, motivo) + "</p>"
+                                + "<p>What you already published stays visible, but you cannot create new listings"
+                                + " until you get verified again.</p>")
+                + notaComoParrafo(idioma, nota);
+    }
+
+    /** Los cinco motivos de la lista cerrada, en los dos idiomas. */
+    static String textoDelMotivo(UserLocale idioma, RejectionReason motivo) {
+        boolean es = espanol(idioma);
+
+        return switch (motivo) {
+            case ILLEGIBLE_PHOTOS -> es ? "las fotos no se pueden leer" : "the photos cannot be read";
+            case EXPIRED_DOCUMENT -> es ? "el documento esta vencido" : "the document has expired";
+            case HOLDER_MISMATCH ->
+                es
+                        ? "el titular de la cuenta no coincide con tu documento"
+                        : "the account holder does not match your document";
+            case DOCUMENT_ALREADY_VERIFIED ->
+                es
+                        ? "ese documento ya esta verificado en otra cuenta"
+                        : "that document is already verified on another account";
+            case REQUIREMENTS_NOT_MET ->
+                es ? "no cumples los requisitos para vender" : "you do not meet the requirements to sell";
+        };
+    }
+
+    private static String notaComoParrafo(UserLocale idioma, String nota) {
+        if (nota == null || nota.isBlank()) {
+            return "";
+        }
+        // Sin interpretar como HTML: la nota la escribe una persona y va dentro de un
+        // correo. Escapar es lo minimo, y el correo es texto que alguien abre en su buzon.
+        return (espanol(idioma) ? "<p>Nota de quien reviso: " : "<p>Note from the reviewer: ") + escapar(nota) + "</p>";
+    }
+
+    /**
+     * Escapa lo que una persona escribio antes de meterlo en el HTML del correo.
+     *
+     * <p>La nota la escribe quien revisa, que es de la casa, asi que esto no protege de un
+     * atacante: protege de un ampersand o de un signo de menor que rompan el mensaje. Se
+     * hace igual, porque «el texto lo escribe alguien de confianza» es una suposicion que
+     * envejece mal.
+     */
+    private static String escapar(String texto) {
+        return texto.replace("&", "&amp;")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;")
+                .replace("\"", "&quot;");
+    }
+
+    private static boolean espanol(UserLocale idioma) {
+        return idioma == UserLocale.ES;
+    }
+}

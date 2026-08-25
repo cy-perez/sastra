@@ -27,7 +27,7 @@ const ANCHO_COMPACTO = 640;
 const COMPACTO = `(max-width: ${ANCHO_COMPACTO - 0.02}px)`;
 
 @Component({
-  selector: 'sastra-site-header',
+  selector: 'sendik-site-header',
   imports: [RouterLink, TranslocoPipe],
   templateUrl: './site-header.html',
   styleUrl: './site-header.css',

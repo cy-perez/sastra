@@ -9,7 +9,7 @@ import { ThemeService } from '../../../core/theme/theme.service';
 
 /** Destino de relleno: aqui no se prueba a donde se llega, sino que se navegue. */
 @Component({
-  selector: 'sastra-destino',
+  selector: 'sendik-destino',
   template: '',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -58,13 +58,20 @@ describe('SiteHeader', () => {
     expect(link?.textContent?.trim()).toBe('Saltar al contenido');
   });
 
+  /**
+   * Cuatro imagenes: lockup y isotipo, cada uno en su version para fondo claro y
+   * para fondo oscuro. Cual se ve lo deciden dos ejes de CSS —tema y ancho—, no
+   * el componente, asi que las cuatro estan siempre en el DOM. Lo que este caso
+   * protege es que ninguna de ellas aporte nombre accesible: si una llevara alt,
+   * el lector de pantalla anunciaria la marca dos veces seguidas.
+   */
   it('nombra el logo una sola vez, en el enlace y no en las imagenes', async () => {
     const fixture = await render();
-    const home = byLabel('Sastra, ir al inicio');
+    const home = byLabel('Sendik, ir al inicio');
     const images = fixture.nativeElement.querySelectorAll('img');
 
     expect(home).not.toBeNull();
-    expect(images).toHaveLength(2);
+    expect(images).toHaveLength(4);
     for (const image of images) {
       expect((image as HTMLImageElement).getAttribute('alt')).toBe('');
     }
@@ -115,7 +122,7 @@ describe('SiteHeader', () => {
 
       expect(destinos).toEqual([
         '/como-funciona',
-        '/sobre-sastra',
+        '/sobre-sendik',
         '/preguntas-frecuentes',
         '/contacto',
       ]);

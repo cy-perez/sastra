@@ -29,7 +29,7 @@ import { APP_CONFIG } from '../config/app-config';
  * resultado seria una pagina con el cuerpo traducido y el titulo, la
  * descripcion y el atributo lang en otro idioma.
  */
-export const ACTIVE_LOCALE = new InjectionToken<string>('sastra.active-locale');
+export const ACTIVE_LOCALE = new InjectionToken<string>('sendik.active-locale');
 
 /**
  * Configuracion comun de Transloco. Los idiomas no estan escritos aqui: salen

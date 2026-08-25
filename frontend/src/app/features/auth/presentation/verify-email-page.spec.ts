@@ -15,7 +15,7 @@ import { VerifyEmailPage } from './verify-email-page';
 
 /** Criterios 7 a 9 de HU-001. */
 describe('VerifyEmailPage', () => {
-  const API = 'https://api.pruebas.sastra.co/api/v1';
+  const API = 'https://api.pruebas.sendik.co/api/v1';
 
   const SESION = {
     accessToken: 'token-de-acceso',

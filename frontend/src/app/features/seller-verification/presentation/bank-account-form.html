@@ -64,7 +64,7 @@
       }
     </div>
 
-    <sastra-text-field
+    <sendik-text-field
       fieldId="numero-de-cuenta"
       autocomplete="off"
       labelKey="sellerVerification.bankForm.accountNumber"
@@ -72,7 +72,7 @@
       [errorKey]="errorDeNumero()"
     />
 
-    <sastra-text-field
+    <sendik-text-field
       fieldId="titular"
       autocomplete="name"
       labelKey="sellerVerification.bankForm.holderName"
@@ -81,7 +81,7 @@
       [errorKey]="errorDeTitular()"
     />
 
-    <sastra-submit-button
+    <sendik-submit-button
       labelKey="sellerVerification.bankForm.submit"
       [loading]="envio.isPending()"
     />

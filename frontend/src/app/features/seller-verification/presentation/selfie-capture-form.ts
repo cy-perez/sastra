@@ -14,7 +14,7 @@ import { CaptureField } from './capture-field';
  * <p>Pide la cámara frontal, que es la que enfoca una cara sin girar el teléfono.
  */
 @Component({
-  selector: 'sastra-selfie-capture-form',
+  selector: 'sendik-selfie-capture-form',
   imports: [TranslocoPipe, CaptureField],
   templateUrl: './selfie-capture-form.html',
   styleUrl: './bank-account-form.css',

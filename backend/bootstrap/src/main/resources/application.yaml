@@ -9,7 +9,7 @@
 
 spring:
   application:
-    name: sastra
+    name: sendik
   config:
     # El .env de la raiz del repositorio, si existe. En la nube no existe: alli
     # los valores llegan del gestor de secretos como variables de entorno.
@@ -52,7 +52,7 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
 
-sastra:
+sendik:
   app:
     base-url: ${APP_BASE_URL}
     api-base-url: ${APP_API_BASE_URL}
@@ -82,7 +82,7 @@ sastra:
     # comportamiento anterior a ADR-0014, con sus falsos incidentes.
     refresh-grace: ${JWT_REFRESH_GRACE:PT10S}
     cookie:
-      name: ${SESSION_COOKIE_NAME:sastra_refresh}
+      name: ${SESSION_COOKIE_NAME:sendik_refresh}
       # Limitada a las rutas de sesion (ADR-0003): el navegador no la manda en
       # ninguna otra peticion.
       path: ${SESSION_COOKIE_PATH:/api/v1/auth}

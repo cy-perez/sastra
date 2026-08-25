@@ -17,7 +17,7 @@ import { AuthStore } from '../application/auth.store';
  * las veces en otro dispositivo. La credencial es el token del enlace.
  */
 @Component({
-  selector: 'sastra-confirm-email-change-page',
+  selector: 'sendik-confirm-email-change-page',
   imports: [TranslocoPipe, RouterLink],
   templateUrl: './confirm-email-change-page.html',
   styleUrl: './confirm-email-change-page.css',

@@ -59,7 +59,7 @@ donde corresponde:
 **Sitio informativo**
 - Portada con la propuesta de valor y las tres tarjetas de confianza (HU-004).
 - Cómo funciona, para comprador y para vendedor (HU-005).
-- Sobre Sastra (HU-005).
+- Sobre Sendik (HU-005).
 - Preguntas frecuentes (HU-005).
 - Contacto (HU-005).
 - Términos y condiciones, política de tratamiento de datos, política de cookies.

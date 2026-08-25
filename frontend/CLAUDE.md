@@ -65,27 +65,41 @@ src/app/
 
 - El orden lo fija `src/styles.css` y no se altera: `fuentes.css`, `tokens.css`,
   `tipografia.css`, `marca.css`, antes de cualquier estilo del proyecto.
-  Las tres primeras son copias publicadas por `../docs/ui/generador/publicar.py`:
-  **no se editan aquí**, se edita el original en `../docs/ui/generador/` y se
-  vuelve a publicar. Ubicación de cada activo en
-  `../docs/ui/ubicacion-de-activos.md`.
+  **Solo `tokens.css` es generado**: lo escribe `../docs/ui/generador/` y lo copia
+  `publicar.py`. Las otras tres son del proyecto y se editan aquí mismo.
+  Ubicación de cada activo en `../docs/ui/ubicacion-de-activos.md`.
 - **El tipo se aplica con clases de rol**, nunca con `font-size` propio:
   `.tipo-h1`, `.tipo-cuerpo`, `.tipo-titulo-tarjeta`, `.precio`,
-  `.tipo-secundario`. `tipografia.css` es la única fuente de verdad del texto y
-  un hook rechaza cualquier `font-size` o `font-family` fuera de ella. El nivel
-  del encabezado lo decide la estructura del documento; el tamaño, la clase.
+  `.tipo-secundario`. Dos familias y solo dos: **Archivo** para titulares y
+  precios grandes, **Inter** para todo lo demás, incluidas las cifras. No hay
+  familia monoespaciada: los precios alinean con `font-variant-numeric:
+tabular-nums` sobre Inter. Tres pesos: 400, 500 y 600.
+  `tipografia.css` es la única fuente de verdad del texto y un hook rechaza
+  cualquier `font-size` o `font-family` fuera de ella. El nivel del encabezado lo
+  decide la estructura del documento; el tamaño, la clase.
 - **Ningún HEX ni píxel suelto.** Todo por variable: `var(--color-superficie)`,
   `var(--esp-16)`, `var(--radio-md)`. Un hook bloquea la escritura si aparece un
   color literal.
 - Modo oscuro con `data-tema="oscuro"` en el elemento raíz. La preferencia del
   usuario se guarda y, si no la hay, se sigue la del sistema. En SSR se resuelve
   antes de pintar para evitar el parpadeo.
-- Medidas fijas del sistema: cabecera 72px en escritorio y 60px en móvil, logo a
-  34px, ancho máximo de contenido 1200px, puntos de quiebre en 640px y 1024px.
+- Medidas fijas del sistema: cabecera 72px en escritorio y 56px en móvil, logo a
+  34px (y solo el isotipo a 32px por debajo de 640px, porque el lockup tiene un
+  mínimo de 130px de ancho), ancho máximo de contenido 1140px, puntos de quiebre
+  en 640px y 1024px.
 - Destinos táctiles de 44px como mínimo. Sin excepción.
-- El acento ocre aparece una sola vez por pantalla, siempre como relleno.
-- La regla de puntada (`.regla-puntada`) es el único elemento decorativo. No se
-  sustituye por una línea continua.
+- **El bronce no es el botón.** El acento bronce aparece una sola vez por
+  pantalla y siempre en lo mismo: la insignia de vendedor verificado
+  (`.insignia-verificado`), como línea superior de 2px y un icono, nunca como
+  relleno grande ni como color de texto. El botón principal va en tinta
+  (`.btn-primario`).
+- **El bronce tiene dos tonos y no se cruzan.** `#8A6428` solo sobre fondo claro
+  y `#B4884A` solo sobre fondo oscuro. `tokens.css` alterna el correcto por modo;
+  dentro de `.franja-tinta`, que es oscura en los dos modos, lo hace `marca.css`.
+- La regla de corte (`.regla-corte`) es el único elemento decorativo: es el corte
+  del isotipo repetido fuera del logo. No se sustituye por una línea continua, y
+  va una sola vez por pieza —si ya hay una insignia de verificado a la vista, la
+  regla no.
 
 ## Accesibilidad
 
@@ -106,9 +120,10 @@ Es requisito de aceptación, no un extra. Cada componente entra con:
   agrega ese par a la lista `PARES` de `../docs/ui/generador/verificar.py`. Un
   par que no está en la lista no se está comprobando, y por ahí se cuela un texto
   ilegible.
-- Dentro de la franja oscura del hero y del pie se usa la clase `.franja-oscura`,
-  que redefine el anillo de foco. Sin ella, el foco del CTA principal es
-  invisible: es tinta sobre tinta.
+- Dentro de la franja del hero y del pie se usa la clase `.franja-tinta`, que
+  redefine dentro del bloque el anillo de foco, el acento y el botón primario.
+  Sin ella el foco de la acción principal es invisible —tinta sobre tinta—, el
+  bronce se queda con el tono equivocado y el botón desaparece contra el fondo.
 
 ## Internacionalización
 
@@ -119,7 +134,7 @@ Es requisito de aceptación, no un extra. Cada componente entra con:
 - El idioma se resuelve en el servidor durante el SSR, no en el cliente, para
   que el HTML llegue ya traducido.
 - Fechas, números y precios con las API de `Intl` y la configuración regional
-  activa. Los precios usan la fuente monoespaciada del sistema.
+  activa. Los precios usan `.precio`, que es Inter con numerales tabulares.
 - Los términos de dominio se traducen según `../docs/producto/glosario.md`, que
   es bilingüe justamente para esto.
 
@@ -163,6 +178,8 @@ Es requisito de aceptación, no un extra. Cada componente entra con:
 
 - Rutas con carga diferida. `@defer` para lo que está bajo el pliegue.
 - Imágenes con `NgOptimizedImage`, dimensiones explícitas y formato moderno. La
-  foto de producto es 3:4; el visor 360 usa los mismos fotogramas.
+  foto de producto es 3:4 (`--relacion-foto`); el visor 360 usa los mismos
+  fotogramas. El kit de interfaz propone 1:1 y aquí manda ADR-0010: la
+  divergencia está anotada en `../docs/ui/ubicacion-de-activos.md`.
 - Presupuesto inicial: 200KB comprimido en la ruta principal. Si un cambio lo
   excede, se justifica o se revierte.

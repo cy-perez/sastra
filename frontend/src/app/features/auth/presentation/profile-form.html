@@ -13,7 +13,7 @@
       </p>
     }
 
-    <sastra-text-field
+    <sendik-text-field
       fieldId="nombre-visible"
       autocomplete="name"
       labelKey="auth.account.profile.fields.displayName"
@@ -21,7 +21,7 @@
       [errorKey]="nombreError()"
     />
 
-    <sastra-text-field
+    <sendik-text-field
       fieldId="ciudad"
       autocomplete="address-level2"
       labelKey="auth.account.profile.fields.city"
@@ -30,7 +30,7 @@
       [errorKey]="ciudadError()"
     />
 
-    <sastra-text-field
+    <sendik-text-field
       fieldId="telefono"
       type="text"
       autocomplete="tel"
@@ -40,6 +40,6 @@
       [errorKey]="telefonoError()"
     />
 
-    <sastra-submit-button labelKey="auth.account.profile.submit" [loading]="guardado.isPending()" />
+    <sendik-submit-button labelKey="auth.account.profile.submit" [loading]="guardado.isPending()" />
   </form>
 }

@@ -40,7 +40,7 @@ const PUERTO_API = 8081;
  * una carga completa necesita la cookie para recuperar la sesion, y sin ella
  * `/mi-cuenta` se queda cargando para siempre.
  *
- * <p>En produccion son el mismo sitio (sastra.co y su subdominio de API), asi que
+ * <p>En produccion son el mismo sitio (sendik.co y su subdominio de API), asi que
  * lo que habia que arreglar era el entorno de la prueba, no el producto. El puerto
  * no cuenta para decidir si dos direcciones son del mismo sitio; el anfitrion, si.
  */
@@ -60,7 +60,7 @@ const BASE_URL = `http://localhost:${PUERTO_WEB}`;
  * primera vez la crean y las siguientes entran. El rol se lo concede el arranque cuando
  * ya existe, y el registro cuando todavia no.
  */
-export const MODERADORA = 'quien-modera@sastra.test';
+export const MODERADORA = 'quien-modera@sendik.test';
 const API_URL = `http://localhost:${PUERTO_API}`;
 
 /**
@@ -68,9 +68,9 @@ const API_URL = `http://localhost:${PUERTO_API}`;
  * es lo que hay levantado en local; en integracion continua llegan del servicio
  * de PostgreSQL del trabajo.
  */
-const DB_URL = process.env['DB_URL'] ?? 'jdbc:postgresql://127.0.0.1:5432/sastra';
-const DB_USERNAME = process.env['DB_USERNAME'] ?? 'sastra';
-const DB_PASSWORD = process.env['DB_PASSWORD'] ?? 'sastra';
+const DB_URL = process.env['DB_URL'] ?? 'jdbc:postgresql://127.0.0.1:5432/sendik';
+const DB_USERNAME = process.env['DB_USERNAME'] ?? 'sendik';
+const DB_PASSWORD = process.env['DB_PASSWORD'] ?? 'sendik';
 
 export default defineConfig({
   testDir: './e2e-completo',
@@ -188,7 +188,7 @@ export default defineConfig({
         SECURITY_BOOTSTRAP_MODERATORS: MODERADORA,
         VERIFICATION_REVIEW_DAYS: '2',
 
-        COMPANY_NAME: 'Sastra S.A.S.',
+        COMPANY_NAME: 'Sendik S.A.S.',
         COMPANY_TAX_ID: '000000000-0',
         COMPANY_ADDRESS: 'Medellin, Colombia',
         COMMISSION_RATE: '0.05',
@@ -196,8 +196,8 @@ export default defineConfig({
     },
     {
       command: process.env['CI']
-        ? 'node dist/sastra/server/server.mjs'
-        : 'npm run build && node dist/sastra/server/server.mjs',
+        ? 'node dist/sendik/server/server.mjs'
+        : 'npm run build && node dist/sendik/server/server.mjs',
       url: BASE_URL,
       reuseExistingServer: !process.env['CI'],
       timeout: 420_000,
@@ -211,7 +211,7 @@ export default defineConfig({
         // pantalla lo dice y el correo tambien, y una prueba que confirma el texto contra
         // el valor por omision no comprueba que la configuracion llegue.
         VERIFICATION_REVIEW_DAYS: '2',
-        COMPANY_NAME: 'Sastra S.A.S.',
+        COMPANY_NAME: 'Sendik S.A.S.',
         COMPANY_TAX_ID: '000000000-0',
         COMPANY_ADDRESS: 'Medellin, Colombia',
         SUPPORT_EMAIL: 'soporte@example.test',

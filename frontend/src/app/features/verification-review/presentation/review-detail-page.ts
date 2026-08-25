@@ -50,7 +50,7 @@ const TEXTOS_DE_IMAGEN = {
  * las pide su propio componente cuando alguien la abre.
  */
 @Component({
-  selector: 'sastra-review-detail-page',
+  selector: 'sendik-review-detail-page',
   imports: [TranslocoPipe, RouterLink, VerificationImage],
   templateUrl: './review-detail-page.html',
   styleUrl: './review.css',

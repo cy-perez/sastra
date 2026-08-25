@@ -9,7 +9,7 @@
 > y el cliente de `GcsWiring`. Los puertos, la validación y el adaptador local ya
 > estaban.
 >
-> Los dos adaptadores conviven y los elige `sastra.storage.provider`: `local` para
+> Los dos adaptadores conviven y los elige `sendik.storage.provider`: `local` para
 > desarrollo y para las dos suites de pruebas, que no deben depender de una cuenta de
 > nube ni de que haya red; `gcs` contra los cubos de verdad. Mientras el sitio no se
 > despliegue, esa es la integración que pide `entornos.md`: local contra la capa

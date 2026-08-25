@@ -1,6 +1,6 @@
 # Frontend
 
-Sitio web de Sastra. Angular 21 con renderizado en servidor e hidratacion,
+Sitio web de Sendik. Angular 21 con renderizado en servidor e hidratacion,
 TypeScript estricto, Transloco, TanStack Query, Vitest y CSS propio sobre los
 tokens de marca.
 
@@ -71,15 +71,21 @@ del servidor, para que el renderizado no dependa de una peticion contra si mismo
 Las cuatro hojas del sistema están en `src/styles/` y las importa
 `src/styles.css` en orden fijo: `fuentes.css`, `tokens.css`, `tipografia.css`,
 `marca.css`. Alterar el orden rompe el sistema en silencio, porque `marca.css`
-carga al final. Las tres primeras son **copias publicadas**: no se editan aquí.
-El original está en `docs/ui/generador/`, y para cambiar cualquier cosa del
-sistema visual se corre `python3 publicar.py` desde esa carpeta, que reconstruye,
-verifica el contraste en los dos modos y copia las hojas a `src/styles/`.
-`fuentes.css` sí es del proyecto y no lo toca ese script.
+carga al final.
 
-Las siete `.woff2` están en `public/fuentes/`, autoalojadas y subconjuntadas a
-latín. Solo falta precargar dos en el `<head>` del index cuando generes el
-proyecto: Instrument Sans 400 y Archivo 700. El detalle está en el LEEME de esa
+**Solo `tokens.css` es generado.** Sale de `docs/ui/generador/`, y para cambiar
+un color se corre `python3 publicar.py` desde esa carpeta, que reconstruye,
+verifica el contraste en los dos modos y copia la hoja aquí. Las otras tres son
+del proyecto y se editan directamente en `src/styles/`.
+
+Las `.woff2` están en `public/fuentes/`, autoalojadas: Inter para todo el texto y
+Archivo para los titulares, cada una en subconjunto latino y latino extendido. Al
+ser variables, cada archivo cubre el rango de pesos entero. Solo se precargan los
+dos latinos.
+
+⚠️ **No son los que trajo el kit**: aquellos eran las variantes itálicas de las
+dos familias y el sitio entero se veía inclinado. El detalle, el defecto de
+`fuentes.py` que lo causa y la prueba que lo caza están en el LEEME de esa
 carpeta.
 
 Ningún HEX, ningún píxel ni ningún tamaño de letra sueltos: todo por variable o

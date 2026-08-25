@@ -111,7 +111,7 @@ Grupo de medida: `DEVICE` (alto, ancho, profundidad). Sistema de talla:
 `ONE_SIZE` en todas, porque un dispositivo no tiene talla.
 
 **Solo admite condición nueva** (RN-064). Es la única familia con esa
-restricción, y es lo que separa a Sastra de un mercado de segunda genérico.
+restricción, y es lo que separa a Sendik de un mercado de segunda genérico.
 
 | Categoría | `slug` | Grupo de medida |
 |---|---|---|

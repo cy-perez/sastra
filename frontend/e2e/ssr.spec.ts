@@ -38,21 +38,36 @@ test.describe('renderizado en servidor', () => {
     expect(html).toContain('Vendedores verificados');
     expect(html).toContain('Publicaciones revisadas');
     // Pie
-    expect(html).toContain('Sastra S.A.S.');
+    expect(html).toContain('Sendik S.A.S.');
     expect(html).toContain('000000000-0');
     expect(html).toContain('mailto:soporte@example.test');
   });
 
   /**
-   * Criterio 2, sobre la pagina completa y no solo sobre la portada: el acento
-   * ocre aparece una vez por pantalla, cabecera y pie incluidos. Es la erosion
+   * Criterio 2, sobre la pagina completa y no solo sobre la portada: una sola
+   * llamada a la accion por pantalla, cabecera y pie incluidos. Es la erosion
    * que el criterio quiere evitar y que una prueba de componente no ve.
    */
-  test('solo hay un acento ocre en toda la pagina', async ({ request }) => {
+  test('solo hay una llamada a la accion en toda la pagina', async ({ request }) => {
     const html = await (await request.get('/')).text();
-    const elementos = html.match(/<[a-z]+[^>]*\bclass="[^"]*\bbtn-cta\b[^"]*"/g) ?? [];
+    const elementos = html.match(/<[a-z]+[^>]*\bclass="[^"]*\bbtn-primario\b[^"]*"/g) ?? [];
 
     expect(elementos).toHaveLength(1);
+  });
+
+  /**
+   * El bronce es el acento de Sendik y solo puede estar en un sitio: la insignia
+   * de vendedor verificado. Que no aparezca como relleno de ningun boton es lo
+   * que hace que signifique algo cuando aparezca de verdad.
+   *
+   * <p>Se comprueba sobre el HTML servido porque el fallo tipico es copiar una
+   * clase de una pantalla a otra, y eso se ve en el marcado antes que en pantalla.
+   */
+  test('ningun boton lleva el acento bronce', async ({ request }) => {
+    const html = await (await request.get('/')).text();
+
+    expect(html).not.toMatch(/class="[^"]*\bbtn-cta\b/);
+    expect(html).not.toMatch(/class="[^"]*\bbtn-acento\b/);
   });
 
   /**
@@ -111,7 +126,7 @@ test.describe('renderizado en servidor', () => {
 
   test('el idioma elegido gana sobre el del navegador', async ({ request }) => {
     const response = await request.get('/', {
-      headers: { 'Accept-Language': 'en-US,en;q=0.9', Cookie: 'sastra_locale=es' },
+      headers: { 'Accept-Language': 'en-US,en;q=0.9', Cookie: 'sendik_locale=es' },
     });
 
     expect(await response.text()).toContain('lang="es"');
@@ -121,7 +136,7 @@ test.describe('renderizado en servidor', () => {
     const claro = await request.get('/');
     expect(await claro.text()).toContain('data-tema="claro"');
 
-    const oscuro = await request.get('/', { headers: { Cookie: 'sastra_theme=dark' } });
+    const oscuro = await request.get('/', { headers: { Cookie: 'sendik_theme=dark' } });
     expect(await oscuro.text()).toContain('data-tema="oscuro"');
   });
 

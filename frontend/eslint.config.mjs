@@ -29,11 +29,11 @@ export default tseslint.config(
     rules: {
       '@angular-eslint/directive-selector': [
         'error',
-        { type: 'attribute', prefix: 'sastra', style: 'camelCase' },
+        { type: 'attribute', prefix: 'sendik', style: 'camelCase' },
       ],
       '@angular-eslint/component-selector': [
         'error',
-        { type: 'element', prefix: 'sastra', style: 'kebab-case' },
+        { type: 'element', prefix: 'sendik', style: 'kebab-case' },
       ],
       // Las convenciones del proyecto, como error y no como sugerencia.
       '@angular-eslint/prefer-on-push-component-change-detection': 'error',

@@ -15,7 +15,7 @@
     <div class="acciones">
       <button
         type="button"
-        class="btn-cta tipo-etiqueta-boton"
+        class="btn-primario tipo-etiqueta-boton"
         [disabled]="trabajando()"
         (click)="empezar()"
       >
@@ -77,13 +77,13 @@
                  de mas. Los dos pasos de imagen si necesitan pantalla propia, porque
                  usan la camara. -->
             @if (paso === 'document' && editable()) {
-              <sastra-document-capture-form />
+              <sendik-document-capture-form />
             }
             @if (paso === 'selfie' && editable()) {
-              <sastra-selfie-capture-form />
+              <sendik-selfie-capture-form />
             }
             @if (paso === 'bank' && editable()) {
-              <sastra-bank-account-form />
+              <sendik-bank-account-form />
             }
           </div>
         </li>
@@ -110,7 +110,7 @@
       @if (puedeEnviarla()) {
         <button
           type="button"
-          class="btn-cta tipo-etiqueta-boton"
+          class="btn-primario tipo-etiqueta-boton"
           [disabled]="trabajando()"
           (click)="enviar()"
         >

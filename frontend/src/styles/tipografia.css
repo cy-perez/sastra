@@ -1,23 +1,28 @@
 /* ============================================================
-   Sastra — tipografía
-   Orden de carga:  tokens.css  →  tipografia.css  →  marca.css
+   Sendik — tipografía
+   Orden de carga:  fuentes.css → tokens.css → tipografia.css → marca.css
 
-   Aquí vive TODO lo que es texto: los roles, la escala fluida, la carga de
-   las fuentes y el respaldo mientras cargan. Es la única fuente de verdad
-   del tipo; ni tokens.css ni marca.css redefinen tamaños de letra.
+   Aquí vive TODO lo que es texto: los roles, la escala fluida y el respaldo
+   mientras cargan las fuentes. Es la única fuente de verdad del tipo; ni
+   tokens.css ni marca.css redefinen tamaños de letra.
 
-   Tres familias, y cada una tiene un trabajo:
+   Dos familias, y cada una tiene un trabajo:
 
-     Archivo           titulares. Condensada y de asta firme, sostiene bien
-                       los tamaños grandes sin volverse decorativa. Es la del
-                       logotipo, así que el titular y la marca riman.
-     Instrument Sans   interfaz y cuerpo. Neutra y de altura de x generosa,
-                       que es lo que se lee cómodo a 16px en celular.
-     IBM Plex Mono     cifras. Ancho fijo y numerales tabulares: los precios
-                       se alinean en columna y el catálogo se recorre rápido.
+     Archivo   titulares y precios grandes. De asta firme, sostiene los tamaños
+               grandes sin volverse decorativa. Es la del logotipo, así que el
+               titular y la marca riman. Un solo peso: 600.
+     Inter     interfaz, cuerpo y cifras. Neutra y de altura de x generosa, que
+               es lo que se lee cómodo a 16px en celular. Tres pesos: 400, 500
+               y 600.
 
-   Las tres son SIL OFL. No cuestan nada ahora ni cuando el negocio crezca,
-   y se pueden empaquetar dentro de la app sin permiso de nadie.
+   Las dos son SIL OFL. No cuestan nada ahora ni cuando el negocio crezca, y se
+   pueden empaquetar dentro de la app sin permiso de nadie.
+
+   **No hay familia monoespaciada.** La había —IBM Plex Mono, solo para que los
+   precios alinearan en columna— y el manual de Sendik resuelve ese caso sin
+   ella: `font-variant-numeric: tabular-nums` sobre Inter da numerales de ancho
+   fijo, que es exactamente lo que hacía falta. Una familia menos es una
+   descarga menos.
    ============================================================ */
 
 /* ---------- 1. Escala fluida ----------
@@ -30,13 +35,18 @@
    El CUERPO NO ES FLUIDO. Se queda en 16px fijos: por debajo, el navegador
    móvil hace zoom solo al enfocar un campo y descuadra la maqueta. */
 :root {
-  --tipo-display:    clamp(2.125rem, 1.44rem + 3.04vw, 3.875rem);  /* 34 → 62 */
-  --tipo-h1:         clamp(1.875rem, 1.48rem + 1.74vw, 2.875rem);  /* 30 → 46 */
-  --tipo-h2:         clamp(1.625rem, 1.43rem + 0.87vw, 2.125rem);  /* 26 → 34 */
-  --tipo-h3:         clamp(1.375rem, 1.28rem + 0.43vw, 1.625rem);  /* 22 → 26 */
-  --tipo-entradilla: clamp(1.125rem, 1.08rem + 0.22vw, 1.25rem);   /* 18 → 20 */
+  --tipo-display: clamp(2.125rem, 1.44rem + 3.04vw, 3.875rem); /* 34 → 62 */
+  --tipo-h1: clamp(1.875rem, 1.48rem + 1.74vw, 2.875rem); /* 30 → 46 */
+  --tipo-h2: clamp(1.625rem, 1.43rem + 0.87vw, 2.125rem); /* 26 → 34 */
+  --tipo-h3: clamp(1.375rem, 1.28rem + 0.43vw, 1.625rem); /* 22 → 26 */
+  --tipo-entradilla: clamp(1.125rem, 1.08rem + 0.22vw, 1.25rem); /* 18 → 20 */
 
-  --medida: 68ch;   /* ancho de lectura: 60–75 caracteres */
+  --medida: 70ch; /* ancho de lectura: 60–75 caracteres (tokens.json) */
+
+  /* Titulares en mayúscula. El manual es explícito: apretados se ven baratos, y
+     ese es justo el efecto contrario al que busca la marca. No se aplica a los
+     titulares normales, que van en caja mixta. */
+  --tracking-titular-mayusculas: 0.06em;
 }
 
 /* ---------- 2. Respaldo mientras cargan las fuentes ----------
@@ -45,44 +55,51 @@
    página SALTA al cambiar. size-adjust ajusta la de respaldo para que ocupe
    casi lo mismo y el salto no se note.
 
-   ⚠️ Los tres valores de abajo son un punto de partida, NO están medidos
-   contra los archivos reales. Antes de publicar hay que medirlos con la
-   fuente descargada; si no se van a medir, es preferible borrar este bloque
-   y dejar el respaldo sin ajustar: un ajuste inventado empeora el salto. */
+   ⚠️ Los valores de abajo son un punto de partida, NO están medidos contra los
+   archivos reales de Archivo e Inter. Antes de publicar hay que medirlos; si no
+   se van a medir, es preferible borrar este bloque y dejar el respaldo sin
+   ajustar: un ajuste inventado empeora el salto. */
 @font-face {
-  font-family: "Archivo respaldo";
-  src: local("Arial Narrow"), local("Helvetica Neue Condensed"), local("Arial");
-  size-adjust: 96%;
+  font-family: 'Archivo respaldo';
+  src: local('Helvetica Neue'), local('Arial');
+  size-adjust: 97%;
   ascent-override: 92%;
   descent-override: 24%;
 }
 @font-face {
-  font-family: "Instrument respaldo";
-  src: local("Helvetica Neue"), local("Arial");
+  font-family: 'Inter respaldo';
+  src: local('Helvetica Neue'), local('Arial');
   size-adjust: 100%;
 }
 
 /* ---------- 3. Familias ----------
-   Sobrescriben las de tokens.css para insertar el respaldo ajustado. */
+   Sobrescriben las de tokens.css por dos motivos, y los dos importan:
+
+   1. Para insertar el respaldo ajustado de arriba, que el generador no conoce.
+   2. Porque el generador clasifica el rol «display» como serif y le pone
+      Georgia de respaldo. Archivo es una sans: con Georgia detrás, el salto al
+      cargar cambia de género tipográfico y se ve como un error de carga. */
 :root {
-  --fuente-display: "Archivo", "Archivo respaldo", system-ui, sans-serif;
-  --fuente-texto:   "Instrument Sans", "Instrument respaldo", system-ui, sans-serif;
-  --fuente-mono:    "IBM Plex Mono", ui-monospace, SFMono-Regular, monospace;
+  --fuente-display: 'Archivo', 'Archivo respaldo', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --fuente-texto: 'Inter', 'Inter respaldo', system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
 
 /* ---------- 4. Roles ----------
    Se aplica el ROL, no el tamaño. El nivel de encabezado lo decide la
    estructura del documento (un H1 por página, sin saltarse niveles); el
    tamaño lo decide la clase. Por eso un H2 puede llevar .tipo-h3 sin que
-   se rompa nada para un lector de pantalla. */
+   se rompa nada para un lector de pantalla.
+
+   El peso fuerte es 600 y no 700: es el único que la marca define para Archivo
+   y el máximo que usa Inter. Tres pesos en todo el sitio, ni uno más. */
 
 .tipo-display {
   font-family: var(--fuente-display);
   font-size: var(--tipo-display);
-  font-weight: 700;
+  font-weight: var(--peso-fuerte);
   line-height: 1.05;
-  letter-spacing: -0.02em;   /* en tamaños grandes el espaciado sobra */
-  text-wrap: balance;        /* reparte las líneas del titular */
+  letter-spacing: -0.02em; /* en tamaños grandes el espaciado sobra */
+  text-wrap: balance; /* reparte las líneas del titular */
   /* Con el texto al 200% el mínimo de clamp() también se duplica y una palabra
      larga se sale de la caja. El guion la parte antes de que eso pase. */
   hyphens: auto;
@@ -91,8 +108,8 @@
 .tipo-h1 {
   font-family: var(--fuente-display);
   font-size: var(--tipo-h1);
-  font-weight: 700;
-  line-height: 1.1;
+  font-weight: var(--peso-fuerte);
+  line-height: var(--interlineado-titulares);
   letter-spacing: -0.015em;
   text-wrap: balance;
   hyphens: auto;
@@ -101,7 +118,7 @@
 .tipo-h2 {
   font-family: var(--fuente-display);
   font-size: var(--tipo-h2);
-  font-weight: 700;
+  font-weight: var(--peso-fuerte);
   line-height: 1.15;
   letter-spacing: -0.01em;
   text-wrap: balance;
@@ -111,29 +128,37 @@
 .tipo-h3 {
   font-family: var(--fuente-display);
   font-size: var(--tipo-h3);
-  font-weight: 500;
+  font-weight: var(--peso-fuerte);
   line-height: 1.2;
 }
-/* Título de tarjeta de producto: NO es display. A 16px la condensada se
+
+/* Titular en mayúscula. Solo con esta clase encima de un rol de titular: el
+   tracking abierto es lo que evita que la caja alta se vea apretada. */
+.tipo-mayusculas {
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-titular-mayusculas);
+}
+
+/* Título de tarjeta de producto: NO es display. A 16px la de titulares se
    aprieta y el nombre de una prenda ya es largo de por sí. */
 .tipo-titulo-tarjeta {
   font-family: var(--fuente-texto);
   font-size: var(--texto-base);
-  font-weight: 500;
+  font-weight: var(--peso-medio);
   line-height: 1.35;
 }
 .tipo-entradilla {
   font-family: var(--fuente-texto);
   font-size: var(--tipo-entradilla);
-  font-weight: 400;
+  font-weight: var(--peso-regular);
   line-height: 1.5;
   max-width: var(--medida);
 }
 .tipo-cuerpo {
   font-family: var(--fuente-texto);
-  font-size: var(--texto-base);   /* 16px, nunca menos */
-  font-weight: 400;
-  line-height: 1.55;
+  font-size: var(--texto-base); /* 16px, nunca menos */
+  font-weight: var(--peso-regular);
+  line-height: var(--interlineado-texto);
   max-width: var(--medida);
 }
 .tipo-secundario {
@@ -146,13 +171,13 @@
   font-family: var(--fuente-texto);
   font-size: var(--texto-xs);
   line-height: 1.45;
-  letter-spacing: 0.01em;   /* en tamaños chicos el espaciado ayuda */
+  letter-spacing: 0.01em; /* en tamaños chicos el espaciado ayuda */
   color: var(--color-texto-suave);
 }
 .tipo-etiqueta-boton {
   font-family: var(--fuente-texto);
   font-size: var(--texto-base);
-  font-weight: 700;
+  font-weight: var(--peso-fuerte);
   line-height: 1;
   letter-spacing: 0.01em;
 }
@@ -160,18 +185,30 @@
 /* ---------- 5. Cifras ----------
    font-variant-numeric: tabular-nums es lo que hace que $ 89.000 y $ 189.000
    ocupen el mismo ancho y las columnas cuadren. Sin eso, una lista de precios
-   se lee en zigzag. */
+   se lee en zigzag.
+
+   La familia es la de texto, no la de titulares: el manual reserva Archivo
+   para titulares y precios GRANDES. En una tarjeta de catálogo el precio es
+   texto, y ahí Inter con numerales tabulares se lee mejor. */
 .precio {
-  font-family: var(--fuente-mono);
+  font-family: var(--fuente-texto);
   font-size: var(--texto-lg);
-  font-weight: 700;
+  font-weight: var(--peso-fuerte);
   line-height: 1.2;
-  letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
-  white-space: nowrap;      /* el signo no se separa de la cifra al ajustar */
+  white-space: nowrap; /* el signo no se separa de la cifra al ajustar */
+}
+/* El precio de la ficha de producto, que sí es grande y sí va en Archivo. */
+.precio-grande {
+  font-family: var(--fuente-display);
+  font-size: var(--texto-2xl);
+  font-weight: var(--peso-fuerte);
+  line-height: var(--interlineado-titulares);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 .precio-antes {
-  font-family: var(--fuente-mono);
+  font-family: var(--fuente-texto);
   font-size: var(--texto-sm);
   font-variant-numeric: tabular-nums;
   color: var(--color-texto-suave);
@@ -180,14 +217,14 @@
   white-space: nowrap;
 }
 .codigo-pedido {
-  font-family: var(--fuente-mono);
+  font-family: var(--fuente-texto);
   font-size: var(--texto-sm);
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
 }
 /* Cifras alineadas a la derecha en tablas, con ancho fijo por columna */
 .celda-cifra {
-  font-family: var(--fuente-mono);
+  font-family: var(--fuente-texto);
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
@@ -212,24 +249,39 @@ a {
 }
 
 /* ---------- 7. Ancho de lectura ---------- */
-.medida { max-width: var(--medida); }
+.medida {
+  max-width: var(--medida);
+}
 
 /* ---------- 8. Base del documento ----------
    Para que un HTML sin clases ya salga correcto.
 
    La familia y el tamaño base van aquí, en el elemento, y NO poniéndole una
    clase de rol al <body>. Ponerle .tipo-cuerpo parece equivalente y no lo es:
-   esa clase incluye max-width: var(--medida), o sea 68 caracteres, y aplicada al
+   esa clase incluye max-width: var(--medida), o sea 70 caracteres, y aplicada al
    body encoge el documento entero. El ancho máximo de contenido nunca llega a
    aplicarse porque ningún hijo puede pasar de su padre. El ancho de lectura es
    de los párrafos; el body no es un párrafo. Para ponérselo a un bloque suelto
    está la clase .medida. */
 body {
-  font: 400 var(--texto-base)/1.55 var(--fuente-texto);
+  font: var(--peso-regular) var(--texto-base) / var(--interlineado-texto) var(--fuente-texto);
 }
 
-h1 { font: 700 var(--tipo-h1)/1.1 var(--fuente-display); letter-spacing: -0.015em; }
-h2 { font: 700 var(--tipo-h2)/1.15 var(--fuente-display); letter-spacing: -0.01em; }
-h3 { font: 500 var(--tipo-h3)/1.2 var(--fuente-display); }
-h4 { font: 500 var(--texto-base)/1.35 var(--fuente-texto); }
-p  { font-size: var(--texto-base); line-height: 1.55; }
+h1 {
+  font: var(--peso-fuerte) var(--tipo-h1) / var(--interlineado-titulares) var(--fuente-display);
+  letter-spacing: -0.015em;
+}
+h2 {
+  font: var(--peso-fuerte) var(--tipo-h2) / 1.15 var(--fuente-display);
+  letter-spacing: -0.01em;
+}
+h3 {
+  font: var(--peso-fuerte) var(--tipo-h3) / 1.2 var(--fuente-display);
+}
+h4 {
+  font: var(--peso-medio) var(--texto-base) / 1.35 var(--fuente-texto);
+}
+p {
+  font-size: var(--texto-base);
+  line-height: var(--interlineado-texto);
+}

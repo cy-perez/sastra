@@ -112,7 +112,7 @@ no las reemplaza: manda la que primero se incumpla.
 ## Qué no se prueba
 
 - Configuración de framework que no contiene lógica propia. Por eso la clase de
-  arranque `SastraApplication` está excluida de la medición de cobertura: que el
+  arranque `SendikApplication` está excluida de la medición de cobertura: que el
   cableado funciona lo demuestra `ApplicationContextTest` levantando el contexto
   completo, no un porcentaje.
 - Getters, setters y mapeadores triviales sin reglas.

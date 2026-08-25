@@ -299,7 +299,7 @@ a mano, una vez, con acceso a la base:
 
 ```sql
 INSERT INTO user_roles (user_id, role, granted_at)
-SELECT id, 'MODERATOR', now() FROM users WHERE email = 'quien-revisa@sastra.co'
+SELECT id, 'MODERATOR', now() FROM users WHERE email = 'quien-revisa@sendik.co'
 ON CONFLICT (user_id, role) DO NOTHING;
 ```
 

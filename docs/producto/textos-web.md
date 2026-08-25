@@ -25,7 +25,7 @@ los dos árboles y falla si alguna clave existe en uno y no en el otro (HU-004).
 
 ## Decisiones de voz
 
-**Mensaje central.** Sastra reúne la moda nueva y de segunda que hoy se vende
+**Mensaje central.** Sendik reúne la moda nueva y de segunda que hoy se vende
 dispersa en redes, con vendedores verificados, publicaciones revisadas y un pago
 que no llega al vendedor hasta que el comprador confirma la entrega.
 
@@ -39,11 +39,11 @@ liquidación ni descuento.
 **Palabra clave: respaldo.** Es el término del glosario (`Backing`) y es el que
 se repite. **No** se dice "compra protegida", "protección", "te protegemos",
 "garantía", "seguro", "custodia" ni "escrow": las cuatro últimas describen
-figuras financieras que Sastra no ejerce y tienen lectura regulatoria en Colombia
+figuras financieras que Sendik no ejerce y tienen lectura regulatoria en Colombia
 (RN-031). Tampoco se dice "plata": el registro coloquial choca con una promesa
 de seguridad.
 
-**Lo que Sastra nunca dice.** "La mejor plataforma", "tu aliado en moda",
+**Lo que Sendik nunca dice.** "La mejor plataforma", "tu aliado en moda",
 "transforma tu clóset".
 
 **Con quién se compara.** El competidor real no es Mercado Libre: es la venta por
@@ -52,7 +52,7 @@ mayor parte de la moda de segunda en Colombia y donde no hay verificación, ni
 revisión de lo que se publica, ni retención del pago. Los diferenciadores están
 escritos contra ese punto de comparación.
 
-**Frase que no puede escribirse nunca:** "Sastra guarda tu dinero". Sastra no lo
+**Frase que no puede escribirse nunca:** "Sendik guarda tu dinero". Sendik no lo
 guarda. Lo recauda y lo retiene **la pasarela** (RN-031, RN-033). La forma
 correcta es "el pago queda retenido" o "el pago no llega al vendedor hasta que
 confirmas".
@@ -65,14 +65,14 @@ confirmas".
 |---|---|---|---|
 | 1 | `/` | Vendedor, sobre todo | ¿Qué es esto y por qué publico aquí? |
 | 2 | `/como-funciona` | Ambos, en dos recorridos | ¿Cómo funciona exactamente, de cada lado? |
-| 3 | `/sobre-sastra` | Ambos | ¿Quién está detrás? |
+| 3 | `/sobre-sendik` | Ambos | ¿Quién está detrás? |
 | 4 | `/preguntas-frecuentes` | Ambos | ¿Y lo que aún me preocupa? |
 | 5 | `/contacto` | Ambos | ¿Cómo los ubico y cómo ejerzo mis derechos? |
 
 Más los tres documentos legales, que tienen su propio mecanismo versionado
 (`docs/operacion/textos-legales.md`).
 
-**Navegación principal** (`layout.nav.*`): Cómo funciona · Sobre Sastra ·
+**Navegación principal** (`layout.nav.*`): Cómo funciona · Sobre Sendik ·
 Preguntas frecuentes · Contacto. A la derecha, Entrar y Crear cuenta.
 
 Ningún enlace del encabezado lleva a catálogo, categorías ni búsqueda: no
@@ -91,11 +91,14 @@ se revisa cuando la oferta supere a la demanda.
 
 `meta.home.title` · `meta.home.description`
 
-**Título:** Sastra
+**Título:** Sendik
 **Descripción:** Compra y vende moda con respaldo.
 
-⚠️ Ambos son de marcador de posición. Propuesta, dentro de los límites de
-buscador: título `Vende moda nueva y de segunda con respaldo | Sastra`;
+⚠️ Ambos son de marcador de posición, y la descripción arrastra además el
+descriptor viejo de marca. El eslogan aprobado es «Compra y vende de forma ágil y
+segura»; esta descripción no tiene por qué repetirlo, pero sí tiene que dejar de
+contradecirlo. Propuesta, dentro de los límites de
+buscador: título `Vende moda nueva y de segunda con respaldo | Sendik`;
 descripción `Publica gratis tu ropa, calzado y bolsos. Vendedores verificados,
 publicaciones revisadas y el pago retenido hasta que el comprador confirma la
 entrega.`
@@ -112,9 +115,9 @@ Texto vigente, ya implementado. Cualquier cambio aquí reabre HU-004.
 | `home.hero.note` | Publicar es gratis. Solo cobramos cuando vendes. |
 
 El botón dice **crear cuenta**, no publicar, porque publicar no existe hasta
-Fase 2 y un botón nombra lo que ocurre al pulsarlo (HU-004, criterio 3). Lleva el
-único acento ocre de la pantalla. El porcentaje no se escribe: `home.hero.note`
-lo omite a propósito (RN-026, HU-004 criterio 4).
+Fase 2 y un botón nombra lo que ocurre al pulsarlo (HU-004, criterio 3). Es la
+única llamada a la acción de la pantalla, rellena en tinta. El porcentaje no se
+escribe: `home.hero.note` lo omite a propósito (RN-026, HU-004 criterio 4).
 
 *Nota de diseño:* la primera pantalla en móvil contiene titular, apoyo y botón.
 
@@ -152,18 +155,18 @@ es `/como-funciona` y los términos.
 
 | Clave | Texto |
 |---|---|
-| `layout.footer.tagline` | Compra y vende moda con respaldo. |
+| `layout.footer.tagline` | Compra y vende de forma ágil y segura. |
 | `layout.footer.company.taxId` | NIT — es la única etiqueta traducible; el número, la razón social y la dirección son valores de `AppConfig` y se pintan tal cual |
 | `layout.footer.contactLabel` | Contacto |
 | `layout.footer.legalLabel` | Documentos legales |
 
-Enlaces: Cómo funciona · Sobre Sastra · Preguntas frecuentes · Contacto ·
+Enlaces: Cómo funciona · Sobre Sendik · Preguntas frecuentes · Contacto ·
 Términos y condiciones · Política de tratamiento de datos · Política de cookies.
 
 Razón social, NIT y dirección salen de configuración y se omiten si faltan;
 nunca se escriben en la plantilla (HU-004, criterios 11 y 12).
 
-© `{{year}}` Sastra.
+© `{{year}}` Sendik.
 
 **Fase 3.** Cuando existan los pagos y los envíos, el pie suma dos filas de
 logos: medios de pago (PSE · Nequi · Bancolombia a la mano · Tarjetas · Addi) y
@@ -176,15 +179,15 @@ anunciarían una funcionalidad que no existe.
 # 2. Cómo funciona — `/como-funciona`
 
 `meta.howItWorks.title` → **Cómo funciona**
-`meta.howItWorks.description` → Cómo se compra y cómo se vende en Sastra:
+`meta.howItWorks.description` → Cómo se compra y cómo se vende en Sendik:
 verificación del vendedor, publicaciones revisadas, pago retenido hasta que el
 comprador confirma la entrega y qué hacer si lo recibido no corresponde.
 
-**H1** (`howItWorks.title`): Cómo funciona Sastra
+**H1** (`howItWorks.title`): Cómo funciona Sendik
 
 **Entrada** (`howItWorks.intro`): Comprar o vender moda por internet en Colombia
 suele significar transferirle a un desconocido y esperar, o despachar y esperar.
-Sastra se pone en medio con reglas iguales para los dos lados.
+Sendik se pone en medio con reglas iguales para los dos lados.
 
 Los dos recorridos van uno tras otro, ambos visibles y rotulados. Ninguno queda
 detrás de una pestaña ni de un acordeón que un buscador no pueda seguir
@@ -197,7 +200,7 @@ detrás de una pestaña ni de un acordeón que un buscador no pueda seguir
 | # | Clave | Título | Texto |
 |---|---|---|---|
 | 1 | `.browse` | Eliges una prenda | Cada publicación pasó por revisión antes de aparecer y muestra la prenda desde ocho ángulos, con su talla, sus medidas reales en centímetros y su condición declarada. Una prenda, una publicación: lo que ves es la pieza exacta que recibes. |
-| 2 | `.pay` | Pagas producto más envío | El envío se cotiza con las transportadoras y el valor es aproximado; lo ves antes de confirmar. La comisión de Sastra no se te suma: la asume el vendedor. |
+| 2 | `.pay` | Pagas producto más envío | El envío se cotiza con las transportadoras y el valor es aproximado; lo ves antes de confirmar. La comisión de Sendik no se te suma: la asume el vendedor. |
 | 3 | `.hold` | El pago queda retenido | Tu pago lo recauda y lo retiene la pasarela. No llega al vendedor mientras la prenda viaja. |
 | 4 | `.confirm` | Confirmas y se libera | Cuando recibes la prenda y confirmas que corresponde a lo publicado, el pago se libera. Si no confirmas ni reportas nada dentro de la ventana de reclamo, se da por confirmada. |
 
@@ -206,7 +209,7 @@ Reglas: RN-016 a RN-021 (paso 1), RN-027 y RN-038 (paso 2), RN-031 y RN-033
 
 El paso 2 dice **aproximado** porque RN-038 obliga a rotularlo así, y no anuncia
 plazo de entrega: no hay regla que lo respalde. El paso 3 dice "la pasarela", no
-"Sastra".
+"Sendik".
 
 ### Si lo que recibes no es lo publicado — `howItWorks.buyer.claim.*`
 
@@ -256,7 +259,7 @@ reclamos que no se pueden atender.
 Reglas: RN-008 y RN-010 a RN-012 (paso 1), RN-016 a RN-021 y RN-025 (paso 2),
 RN-015 y RN-022 (paso 3), RN-034 y RN-052 (paso 5).
 
-El paso 5 dice "en la cuenta bancaria que verificaste", no "a tu saldo": Sastra
+El paso 5 dice "en la cuenta bancaria que verificaste", no "a tu saldo": Sendik
 no tiene billetera ni saldo interno (glosario). Y **no dice en cuántos días
 hábiles llega**: ese plazo se decide en Fase 3 y hasta entonces no se escribe en
 ninguna parte (HU-005, criterio 17).
@@ -291,18 +294,18 @@ se muere por los malos vendedores, no por los pocos vendedores.
   verificaste.
 
 **Cierre de página** (`howItWorks.cta`): botón **Crear cuenta**. Es la única
-llamada a la acción y el único acento ocre de la página (HU-005, Diseño).
+llamada a la acción de la página, rellena en tinta (HU-005, Diseño).
 
 ---
 
-# 3. Sobre Sastra — `/sobre-sastra`
+# 3. Sobre Sendik — `/sobre-sendik`
 
-`meta.about.title` → **Qué es Sastra**
-`meta.about.description` → Sastra reúne la moda nueva y de segunda que hoy se
+`meta.about.title` → **Qué es Sendik**
+`meta.about.description` → Sendik reúne la moda nueva y de segunda que hoy se
 vende dispersa en redes, con vendedores verificados, publicaciones revisadas y el
 pago retenido hasta que el comprador confirma la entrega.
 
-**H1** (`about.title`): Por qué existe Sastra
+**H1** (`about.title`): Por qué existe Sendik
 
 **Texto** (`about.body`):
 
@@ -311,7 +314,7 @@ de Facebook, en historias de Instagram y en chats de WhatsApp. El comprador
 transfiere y espera. El vendedor despacha y espera. Los dos asumen un riesgo que
 nadie está cubriendo.
 
-Sastra reúne esa oferta dispersa en un solo catálogo y pone cuatro cosas que en
+Sendik reúne esa oferta dispersa en un solo catálogo y pone cuatro cosas que en
 un chat no existen: vendedores verificados con documento de identidad, cada
 publicación revisada antes de aparecer, fotos que muestran la prenda desde ocho
 ángulos, y un pago que no llega al vendedor hasta que el comprador confirma que
@@ -325,7 +328,7 @@ con reglas claras para las dos.
 `{{companyTaxId}}`, dirección `{{companyAddress}}`. De configuración; se omiten
 si faltan (HU-005, criterio 10).
 
-⚠️ **Falta lo que hace creíble esta página: quién está detrás.** Sastra es una
+⚠️ **Falta lo que hace creíble esta página: quién está detrás.** Sendik es una
 marca nueva sin trayectoria, y en ese caso la confianza viene de las personas.
 Dos o tres líneas con nombre, ciudad y por qué se montó valen más que cualquier
 párrafo de misión.
@@ -342,7 +345,7 @@ liquidación ni precio bajo (HU-005, criterio 11).
 # 4. Preguntas frecuentes — `/preguntas-frecuentes`
 
 `meta.faq.title` → **Preguntas frecuentes**
-`meta.faq.description` → Cómo comprar y vender en Sastra: verificación de
+`meta.faq.description` → Cómo comprar y vender en Sendik: verificación de
 vendedores, publicaciones revisadas, pago retenido, comisión, medios de pago y
 qué hacer si lo recibido no corresponde.
 
@@ -360,7 +363,7 @@ bancaria a su nombre antes de poder publicar. No se puede vender de forma
 anónima. (RN-011, RN-012)
 
 **¿A quién le pago?** (`.whoGetsPaid`)
-El pago lo recauda y lo retiene la pasarela, no Sastra. El vendedor no lo recibe
+El pago lo recauda y lo retiene la pasarela, no Sendik. El vendedor no lo recibe
 mientras la prenda viaja. (RN-031, RN-033)
 
 **¿Cuándo se le paga al vendedor?** (`.release`)
@@ -391,7 +394,7 @@ y condiciones, en los [Términos y condiciones](/terminos-y-condiciones).
 **¿Cuánto cuesta el envío?** (`.shippingCost`)
 Depende del destino, del peso y del tamaño. Se cotiza con las transportadoras y
 lo ves antes de pagar. Es un valor aproximado. El envío lo paga el comprador y la
-comisión de Sastra no se te suma. (RN-027, RN-038, RN-039)
+comisión de Sendik no se te suma. (RN-027, RN-038, RN-039)
 
 **¿Cómo puedo pagar?** (`.payment`)
 Con PSE, Nequi, Bancolombia a la mano y tarjeta débito o crédito a través de
@@ -425,7 +428,7 @@ y recorta a la misma proporción. De ahí salen las cuatro vistas obligatorias
 —frente, los dos lados y espalda— y la vista giratoria. (RN-016 a RN-019)
 
 **¿Puedo vender productos nuevos?** (`.new`)
-Sí. Sastra tiene catálogo de nuevo y de segunda, y cada publicación indica su
+Sí. Sendik tiene catálogo de nuevo y de segunda, y cada publicación indica su
 condición. (RN-024 para lo que no se puede publicar)
 
 **¿Puedo vender tecnología?** (`.tech`)
@@ -457,7 +460,7 @@ condición real es la mejor forma de que no ocurra. (RN-055)
 # 5. Contacto — `/contacto`
 
 `meta.contact.title` → **Contacto**
-`meta.contact.description` → Cómo comunicarte con Sastra y cómo ejercer tus
+`meta.contact.description` → Cómo comunicarte con Sendik y cómo ejercer tus
 derechos sobre tus datos personales.
 
 **H1** (`contact.title`): Escríbenos
@@ -749,11 +752,19 @@ más la pregunta nueva sobre tecnología.
 
 Lo que falta escribir:
 
-- [ ] **El descriptor de marca dice «Compra y vende moda con respaldo»** y el
-      catálogo ya no es solo moda. Aparece en la portada, en el pie, en el título
-      para buscadores y en `docs/marca/`, que este proyecto no modifica por su
-      cuenta. Es una decisión de marca, no de redacción, y arrastra el logo
-      horizontal y el manual. **Es el pendiente más grande de esta lista.**
+- [x] ~~**El descriptor de marca dice «Compra y vende moda con respaldo»** y el
+      catálogo ya no es solo moda.~~ **Resuelto por la marca Sendik** (ADR-0022):
+      el eslogan es ahora **«Compra y vende de forma ágil y segura»**, que no
+      nombra la categoría y por eso no vuelve a quedarse corto. Ya está en
+      `layout.footer.tagline`, en el logo con eslogan y en el manual.
+      **Sigue pendiente el titular del hero y la descripción para buscadores**,
+      que son redacción y no marca: ver abajo.
+- [ ] **El titular del hero y `meta.home.description` siguen diciendo «moda con
+      respaldo».** Era el descriptor viejo puesto como copy. Cambiarlos reabre
+      HU-004, así que es una decisión de producto, no un arrastre del cambio de
+      marca. La maqueta del kit propone «Compra y vende moda y tecnología de
+      forma ágil y segura», pero el propio kit la marca como texto **de
+      muestra**: no está aprobada.
 - [ ] Los tres pasos de la portada y el recorrido de `/como-funciona` hablan solo
       de prendas, tallas y medidas. Hay que decidir si se generalizan o si se
       separan los dos recorridos.
@@ -790,7 +801,7 @@ Lo que falta escribir:
       engañosa.
 - [ ] Si se anuncia algún plazo de entrega. Hoy no, y RN-038 obliga a rotular la
       cotización como aproximada.
-- [ ] Quién está detrás de Sastra: nombre, ciudad y por qué se montó.
+- [ ] Quién está detrás de Sendik: nombre, ciudad y por qué se montó.
 - [ ] Dirección y correo de soporte reales (`COMPANY_ADDRESS`, `SUPPORT_EMAIL`).
 - [ ] Variables de configuración para canales adicionales, si se quieren mostrar.
 
@@ -801,14 +812,14 @@ Lo que falta escribir:
       formulario o registro.
 - [ ] Política de devoluciones y reclamos, dentro de los términos
       (`docs/operacion/textos-legales.md`).
-- [ ] **Qué responsabilidad tiene Sastra frente al comprador si el reintegro
+- [ ] **Qué responsabilidad tiene Sendik frente al comprador si el reintegro
       falla.** RN-054 lo mitiga —el dinero sigue retenido en la pasarela, así
       que no depende de que el vendedor colabore—, pero el Estatuto del
       Consumidor impone deberes propios a quien opera una plataforma de comercio
       electrónico. Es el punto que un abogado debe revisar primero.
 - [ ] **La garantía legal de un producto de tecnología nuevo.** La Ley 1480 de
       2011 la impone sobre todo producto nuevo, y RN-067 dice que responde el
-      vendedor y no Sastra. Que la regla lo diga no basta: hay que comprobar que
+      vendedor y no Sendik. Que la regla lo diga no basta: hay que comprobar que
       es sostenible para una plataforma que además cobra comisión, y redactar
       cómo se enuncia sin rozar la palabra Respaldo. **Bloquea abrir la venta de
       tecnología**, no el resto del sitio.

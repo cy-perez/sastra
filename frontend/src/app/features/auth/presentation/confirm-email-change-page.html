@@ -9,7 +9,7 @@
   <p class="tipo-entradilla">{{ 'auth.confirmEmail.done.body' | transloco }}</p>
   <!-- Se entra de nuevo a mano: quien abrio el enlace puede estar en otro
        dispositivo, y aqui no se abre sesion por haber llegado al buzon. -->
-  <a class="btn-cta enlace-cta tipo-etiqueta-boton" routerLink="/ingresar">
+  <a class="btn-primario enlace-cta tipo-etiqueta-boton" routerLink="/ingresar">
     {{ 'auth.confirmEmail.done.goToLogin' | transloco }}
   </a>
 } @else {
@@ -24,7 +24,7 @@
        enlace lo gastaria antes de que nadie lo hubiera visto. -->
   <button
     type="button"
-    class="btn-cta enlace-cta tipo-etiqueta-boton"
+    class="btn-primario enlace-cta tipo-etiqueta-boton"
     [disabled]="confirmacion.isPending()"
     [attr.aria-busy]="confirmacion.isPending() ? 'true' : null"
     (click)="confirmar()"

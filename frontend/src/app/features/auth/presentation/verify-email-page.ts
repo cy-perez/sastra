@@ -24,7 +24,7 @@ import { AuthStore } from '../application/auth.store';
  * llegar a esta pantalla ya esta dentro y no vuelve a escribir la contrasena.
  */
 @Component({
-  selector: 'sastra-verify-email-page',
+  selector: 'sendik-verify-email-page',
   imports: [TranslocoPipe, RouterLink],
   templateUrl: './verify-email-page.html',
   styleUrl: './verify-email-page.css',

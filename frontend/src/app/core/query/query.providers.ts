@@ -7,7 +7,7 @@ import { provideTanStackQuery, QueryClient } from '@tanstack/angular-query-exper
  * cache. Una instancia compartida a nivel de modulo serviria a un visitante los
  * datos consultados por otro.
  */
-const QUERY_CLIENT = new InjectionToken<QueryClient>('sastra.query-client', {
+const QUERY_CLIENT = new InjectionToken<QueryClient>('sendik.query-client', {
   providedIn: 'root',
   factory: () =>
     new QueryClient({

@@ -24,11 +24,10 @@ const SECRETOS = [
 ];
 
 const SOLO_LECTURA = [
-  { patron: /(frontend\/src\/styles|docs\/ui)\/tokens\.css$/, motivo: 'tokens.css es generado. El origen es docs/ui/generador/tokens.json: cambia el token y corre "python3 publicar.py". Los estados (hover, pressed, foco, borde de campo) se recalculan solos.' },
-  { patron: /(frontend\/src\/styles|docs\/ui)\/(marca|tipografia)\.css$/, motivo: 'Es una copia publicada, no el original. Edita docs/ui/generador/fuentes/ y corre "python3 publicar.py": el siguiente build sobrescribiria cualquier cambio hecho aqui.' },
-  { patron: /docs\/ui\/(index\.html|LEEME\.md|contraste\.md)$/, motivo: 'Salida del generador del kit. Se regenera con construir.py, no se edita.' },
-  { patron: /docs\/ui\/generador\/(kit_ui|construir)\.py$/, motivo: 'Script entregado por diseno. Modificarlo bifurca el kit y la proxima entrega se pierde. Si hace falta otro paso, va en publicar.py, que si es del proyecto.' },
-  { patron: /docs\/ui\/generador\/_plantilla_kit\.html$/, motivo: 'Plantilla del generador. Los cambios de la guia van como parche en construir.py.' },
+  { patron: /(frontend\/src\/styles|docs\/ui)\/tokens\.css$/, motivo: 'tokens.css es generado. El origen es docs/ui/generador/tokens.json: cambia el token y corre "python3 publicar.py". Los estados (hover, pressed, foco, borde de campo) y el modo oscuro se recalculan solos.' },
+  { patron: /docs\/ui\/(index\.html|LEEME\.md|contraste\.md|tipografia\.md)$/, motivo: 'Salida del generador del kit. Se regenera con construir.py, no se edita.' },
+  { patron: /docs\/ui\/generador\/(kit_ui|fuentes)\.py$/, motivo: 'Script entregado por diseno. Modificarlo bifurca el kit y la proxima entrega se pierde. Si hace falta otro paso, va en construir.py o publicar.py, que si son del proyecto.' },
+  { patron: /docs\/ui\/generador\/_plantilla_kit\.html$/, motivo: 'Plantilla del generador, entregada por diseno. Los cambios de la guia van como parche en construir.py.' },
   { patron: /docs\/marca\//, motivo: 'Los activos de marca son entregables cerrados. Si algo falta, se solicita a diseno.' },
   { patron: /gradle\/wrapper\//, motivo: 'El wrapper de Gradle se cambia con el comando gradlew wrapper, no editando archivos.' },
   { patron: /package-lock\.json$/, motivo: 'package-lock.json lo escribe npm. Usa npm install o npm ci.' },

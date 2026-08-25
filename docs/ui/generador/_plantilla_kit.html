@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Kit de interfaz — __MARCA__</title>
+__ENLACE_FUENTE__
 <link rel="stylesheet" href="tokens.css">
 <style>
 *{box-sizing:border-box}
@@ -24,21 +25,33 @@ table{width:100%;border-collapse:collapse;font-size:var(--texto-sm)}
 th,td{text-align:left;padding:var(--esp-8) var(--esp-12);border-bottom:1px solid var(--color-borde)}
 tr.falla td{background:color-mix(in srgb,var(--color-error) 12%,transparent)}
 .nota{color:var(--color-texto-suave);font-size:var(--texto-sm);max-width:62ch}
+.muestra-texto{background:#FFD400;color:#111;font-size:11px;font-weight:700;
+  padding:2px 8px;border-radius:var(--radio-completo);display:inline-block;
+  text-transform:uppercase;letter-spacing:.04em}
 
-/* --- componentes --- */
+/* --- iconos: reticula 24, trazo 2, terminaciones rectas (butt/miter) --- */
+.icono{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;
+  stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter}
+.icono-lg{width:24px;height:24px}
+
+/* --- componentes base --- */
 .btn{font:inherit;font-weight:600;border:1px solid transparent;cursor:pointer;
      padding:12px 20px;border-radius:var(--radio-md);min-height:44px;
-     display:inline-flex;align-items:center;gap:8px;transition:background .15s,transform .05s}
+     display:inline-flex;align-items:center;justify-content:center;gap:8px;
+     transition:background .15s,transform .05s}
 .btn:focus-visible{outline:3px solid var(--color-foco);outline-offset:2px}
 .btn-primario{background:var(--color-primario);color:var(--color-sobre-primario)}
 .btn-primario:hover{background:var(--color-primario-hover)}
 .btn-primario:active{background:var(--color-primario-pressed);transform:translateY(1px)}
 .btn-secundario{background:transparent;color:var(--color-primario);border-color:var(--color-primario)}
 .btn-secundario:hover{background:var(--color-primario-suave)}
-.btn-texto{background:transparent;color:var(--color-primario);padding:12px 8px}
+.btn-texto{background:transparent;color:var(--color-primario);padding:12px 8px;min-height:auto}
 .btn-texto:hover{text-decoration:underline}
 .btn:disabled{background:var(--color-deshabilitado);color:var(--color-superficie);
               border-color:transparent;cursor:not-allowed}
+.btn-icono{width:44px;height:44px;padding:0;border-radius:var(--radio-completo);
+  background:transparent;border-color:transparent;color:var(--color-texto)}
+.btn-icono:hover{background:var(--color-primario-suave)}
 .campo{display:block;margin-bottom:var(--esp-16);max-width:420px}
 .campo label{display:block;font-size:var(--texto-sm);font-weight:600;margin-bottom:6px}
 .campo input,.campo textarea,.campo select{width:100%;font:inherit;padding:11px 12px;
@@ -51,40 +64,153 @@ tr.falla td{background:color-mix(in srgb,var(--color-error) 12%,transparent)}
 .tarjeta{background:var(--color-superficie);border:1px solid var(--color-borde);
          border-radius:var(--radio-lg);padding:var(--esp-24);box-shadow:var(--sombra-sm)}
 .aviso{border-left:4px solid;border-radius:var(--radio-sm);padding:var(--esp-12) var(--esp-16);
-       margin-bottom:var(--esp-12);background:var(--color-superficie)}
+       margin-bottom:var(--esp-12);background:var(--color-superficie);display:flex;gap:10px;align-items:flex-start}
 .aviso-exito{border-color:var(--color-exito)} .aviso-aviso{border-color:var(--color-aviso)}
 .aviso-error{border-color:var(--color-error)}
+.aviso .icono{margin-top:2px}
+.aviso-exito .icono{color:var(--color-exito)} .aviso-aviso .icono{color:var(--color-aviso)}
+.aviso-error .icono{color:var(--color-error)}
 .etiqueta{display:inline-block;font-size:var(--texto-xs);font-weight:700;padding:3px 10px;
   border-radius:var(--radio-completo);background:var(--color-primario-suave);color:var(--color-primario)}
 
+/* --- precio: numeros tabulares, familia de texto no de display (el manual pide
+     'Archivo' solo para titulares/precios GRANDES; en tarjeta el precio es texto) --- */
+.precio{font-variant-numeric:tabular-nums;font-weight:600}
+.precio-grande{font-family:var(--fuente-display);font-variant-numeric:tabular-nums;
+  font-weight:600;font-size:var(--texto-2xl)}
+
+/* --- chip de condicion (nuevo / usado) --- */
+.chip-condicion{display:inline-flex;align-items:center;font-size:11px;font-weight:700;
+  padding:3px 9px;border-radius:var(--radio-sm);text-transform:uppercase;letter-spacing:.04em}
+.chip-nuevo{background:color-mix(in srgb,var(--color-exito) 14%,var(--color-superficie));color:var(--color-exito)}
+.chip-usado{background:var(--color-fondo);color:var(--color-texto-suave);border:1px solid var(--color-borde)}
+
+/* --- insignia de vendedor verificado: el bronce aparece aqui, una vez, como
+     linea superior + icono. Nunca como relleno grande (regla de marca). --- */
+.insignia-verificado{display:inline-flex;align-items:center;gap:6px;font-size:var(--texto-xs);
+  font-weight:600;color:var(--color-texto-suave);border-top:2px solid var(--color-acento);
+  padding-top:6px}
+.insignia-verificado .icono{width:16px;height:16px;color:var(--color-acento)}
+
+/* --- tarjeta de producto --- */
+.rejilla-productos{display:grid;gap:var(--esp-16);grid-template-columns:repeat(4,1fr)}
+.tarjeta-producto{background:var(--color-superficie);border:1px solid var(--color-borde);
+  border-radius:var(--radio-lg);overflow:hidden;display:flex;flex-direction:column}
+.tp-imagen{aspect-ratio:1/1;background:
+  repeating-linear-gradient(45deg,var(--color-fondo) 0 10px,var(--color-superficie) 10px 20px);
+  position:relative;display:flex;align-items:center;justify-content:center}
+.tp-imagen .tp-medida{position:absolute;bottom:8px;left:8px;font-size:10px;
+  color:var(--color-texto-suave);background:var(--color-superficie);padding:2px 6px;
+  border-radius:var(--radio-sm);border:1px solid var(--color-borde)}
+.tp-favorito{position:absolute;top:8px;right:8px;width:32px;height:32px;border-radius:var(--radio-completo);
+  background:var(--color-superficie);border:1px solid var(--color-borde);display:flex;
+  align-items:center;justify-content:center;color:var(--color-texto)}
+.tp-condicion{position:absolute;top:8px;left:8px}
+.tp-cuerpo{padding:var(--esp-12) var(--esp-16) var(--esp-16);display:flex;flex-direction:column;gap:6px;flex:1}
+.tp-titulo{font-size:var(--texto-sm);font-weight:500;margin:0;
+  overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.tp-vendedor{font-size:var(--texto-xs);color:var(--color-texto-suave)}
+.tp-precio-fila{display:flex;align-items:baseline;gap:8px;margin-top:2px}
+.tp-precio-antes{font-size:var(--texto-xs);color:var(--color-texto-suave);text-decoration:line-through;
+  font-variant-numeric:tabular-nums}
+.tp-cta{margin-top:auto;padding-top:8px}
+.tp-cta .btn{width:100%;min-height:38px;padding:8px 12px;font-size:var(--texto-sm)}
+
+/* --- chips de categoria --- */
+.chips-categoria{display:flex;gap:var(--esp-8);overflow-x:auto;padding-bottom:4px;
+  scrollbar-width:none}
+.chips-categoria::-webkit-scrollbar{display:none}
+.chip-cat{flex:none;font-size:var(--texto-sm);font-weight:500;padding:9px 16px;
+  border-radius:var(--radio-completo);border:1px solid var(--color-borde);background:var(--color-superficie);
+  color:var(--color-texto);white-space:nowrap;min-height:40px;display:inline-flex;align-items:center}
+.chip-cat[aria-current]{background:var(--color-primario);border-color:var(--color-primario);
+  color:var(--color-sobre-primario)}
+
+/* --- franja de confianza --- */
+.franja-confianza{background:var(--color-fondo);color:var(--color-texto-suave);border-bottom:1px solid var(--color-borde)}
+.franja-confianza .env{display:flex;flex-wrap:wrap;gap:var(--esp-16) var(--esp-24);
+  padding-top:var(--esp-8);padding-bottom:var(--esp-8);font-size:var(--texto-xs);font-weight:500}
+.franja-confianza .item{display:inline-flex;align-items:center;gap:6px}
+.franja-confianza .icono{width:16px;height:16px}
+
+/* --- medios de pago (footer) --- */
+.medios-pago{display:flex;flex-wrap:wrap;gap:8px;margin-top:var(--esp-12)}
+.medio-pago{font-size:11px;font-weight:600;border:1px solid rgba(255,255,255,.25);
+  border-radius:var(--radio-sm);padding:5px 10px;color:inherit}
+
+/* --- la firma de marca: linea interrumpida, UNA sola vez por pieza --- */
+.regla-corte{height:3px;border:0;margin:0;
+  background:repeating-linear-gradient(to right,var(--color-acento) 0 40px,transparent 40px 52px)}
+
 /* --- maqueta --- */
 .maqueta{border:1px solid var(--color-borde);border-radius:var(--radio-lg);overflow:hidden;
-         margin-top:var(--esp-16)}
-.mk-header{background:var(--color-superficie);border-bottom:1px solid var(--color-borde);
-  padding:var(--esp-12) var(--esp-24);display:flex;align-items:center;gap:var(--esp-24)}
-.mk-nav{display:flex;gap:var(--esp-24);margin-left:auto;font-size:var(--texto-sm);font-weight:500}
-.mk-nav a{color:var(--color-texto);text-decoration:none;padding:8px 0;border-bottom:2px solid transparent}
+         margin-top:var(--esp-16);background:var(--color-fondo)}
+.mk-header{position:sticky;top:0;z-index:5;background:var(--color-superficie);
+  border-bottom:1px solid var(--color-borde)}
+.mk-header .env{display:flex;align-items:center;gap:var(--esp-24);padding:14px var(--esp-24);min-height:72px}
+.mk-buscar{flex:1;max-width:480px;position:relative}
+.mk-buscar input{width:100%;min-height:44px;border:1px solid var(--color-borde-control);
+  border-radius:var(--radio-md);padding:10px 14px 10px 42px;font:inherit;font-size:var(--texto-sm);
+  background:var(--color-fondo);color:var(--color-texto)}
+.mk-buscar .icono{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--color-texto-suave)}
+.mk-nav{display:flex;gap:var(--esp-24);font-size:var(--texto-sm);font-weight:500}
+.mk-nav a{color:var(--color-texto);text-decoration:none;padding:8px 0;border-bottom:2px solid transparent;
+  display:inline-flex;align-items:center;gap:4px}
 .mk-nav a:hover,.mk-nav a[aria-current]{border-bottom-color:var(--color-primario);color:var(--color-primario)}
+.mk-acciones{display:flex;align-items:center;gap:4px;margin-left:auto}
+.mk-carrito{position:relative}
+.mk-carrito .contador{position:absolute;top:2px;right:2px;background:var(--color-error);color:#fff;
+  font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:var(--radio-completo);
+  display:flex;align-items:center;justify-content:center;padding:0 3px}
 .logotexto{font-family:var(--fuente-display);font-weight:700;font-size:var(--texto-lg)}
-.mk-hero{background:var(--color-primario);color:var(--color-sobre-primario);
-         padding:var(--esp-64) var(--esp-24);text-align:center}
-.mk-hero h2{font-size:var(--texto-2xl);margin-bottom:var(--esp-12)}
-.mk-hero p{max-width:52ch;margin:0 auto var(--esp-24);opacity:.92}
-.mk-hero .btn-primario{background:var(--color-superficie);color:var(--color-primario)}
-.mk-body{padding:var(--esp-48) var(--esp-24);background:var(--color-fondo)}
-.mk-footer{background:var(--color-texto);color:var(--color-fondo);padding:var(--esp-32) var(--esp-24);
-           font-size:var(--texto-sm);display:grid;gap:var(--esp-24);
-           grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
-.mk-footer a{color:var(--color-fondo);opacity:.85;text-decoration:none;display:block;padding:4px 0}
+/* El logo cambia con el modo: la variante mono-negativa es la que se ve legible
+   sobre fondo oscuro (ver manual de marca, "Usos prohibidos"). */
+.logo-oscuro{display:none}
+[data-tema="oscuro"] .logo-claro{display:none}
+[data-tema="oscuro"] .logo-oscuro{display:inline-block}
+.mk-categorias{background:var(--color-superficie);border-bottom:1px solid var(--color-borde);padding:10px 0}
+.mk-hero{background:var(--color-tinta);color:var(--color-sobre-tinta);
+         padding:var(--esp-48) var(--esp-24) var(--esp-32);text-align:center}
+.mk-hero h2{font-size:var(--texto-2xl);margin-bottom:var(--esp-8)}
+.mk-hero p{max-width:52ch;margin:0 auto var(--esp-24);opacity:.85}
+.mk-hero-buscar{max-width:520px;margin:0 auto}
+.mk-hero-buscar .mk-buscar{max-width:none}
+.mk-hero-buscar input{background:var(--color-superficie);border-color:transparent;color:var(--color-texto)}
+.mk-body{padding:var(--esp-32) var(--esp-24)}
+.mk-seccion-titulo{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:var(--esp-16)}
+.mk-seccion-titulo h3{margin:0}
+.mk-diferenciadores{display:grid;gap:var(--esp-24);grid-template-columns:repeat(3,1fr);
+  padding:var(--esp-16) 0 var(--esp-8)}
+.mk-diferenciadores .item{display:flex;gap:12px}
+.mk-diferenciadores .icono{width:24px;height:24px;color:var(--color-primario);flex:none;margin-top:2px}
+.mk-diferenciadores h4{margin:0 0 4px;font-family:var(--fuente-display);font-size:var(--texto-base);font-weight:600}
+.mk-diferenciadores p{margin:0;font-size:var(--texto-sm);color:var(--color-texto-suave)}
+.mk-footer{background:var(--color-tinta);color:var(--color-sobre-tinta)}
+.mk-footer .env{padding:var(--esp-32) var(--esp-24);font-size:var(--texto-sm);display:grid;gap:var(--esp-24);
+           grid-template-columns:repeat(4,1fr)}
+.mk-footer a{color:var(--color-sobre-tinta);opacity:.85;text-decoration:none;display:block;padding:6px 0;min-height:32px}
 .mk-footer a:hover{opacity:1;text-decoration:underline}
+.mk-footer .marca-col b{font-family:var(--fuente-display);font-size:var(--texto-lg)}
+.mk-copyright{border-top:1px solid rgba(255,255,255,.15);padding:14px var(--esp-24);
+  font-size:var(--texto-xs);opacity:.7;text-align:center}
+.mk-menu-movil{display:none}
 .barra{position:sticky;top:0;z-index:9;background:var(--color-superficie);
   border-bottom:1px solid var(--color-borde);padding:var(--esp-12) 0}
 .barra .env{display:flex;align-items:center;gap:var(--esp-16)}
+
 @media (max-width:640px){
-  .mk-nav{display:none}
+  .mk-nav,.mk-header .mk-buscar{display:none}
+  .mk-header .env{padding:10px var(--esp-16);min-height:56px;flex-wrap:wrap}
+  .mk-menu-movil{display:flex;align-items:center;gap:4px;margin-left:auto}
+  .mk-buscar-movil{order:3;flex-basis:100%;margin-top:10px}
+  .mk-buscar-movil .mk-buscar{max-width:none}
+  .mk-diferenciadores{grid-template-columns:1fr}
+  .rejilla-productos{grid-template-columns:repeat(2,1fr)}
+  .mk-footer .env{grid-template-columns:repeat(2,1fr);gap:var(--esp-24) var(--esp-16)}
   h1{font-size:var(--texto-2xl)}
-  .mk-hero{padding:var(--esp-32) var(--esp-16)}
+  .mk-hero{padding:var(--esp-32) var(--esp-16) var(--esp-24)}
 }
+@media (min-width:641px){ .mk-buscar-movil,.mk-menu-movil{display:none} }
 </style>
 </head>
 <body>
@@ -102,15 +228,19 @@ tr.falla td{background:color-mix(in srgb,var(--color-error) 12%,transparent)}
 
 <section class="doc" style="border-top:none">
   <h1>__MARCA__</h1>
-  <p class="nota">Guia visual del sitio. Todo lo que se ve aqui sale de
-  <code>tokens.css</code>: si cambia un token, cambia el sitio entero. Prueba el
-  modo oscuro y reduce el ancho de la ventana para ver el comportamiento en movil.</p>
+  <p class="nota">Guia visual del sitio — marketplace de moda y tecnologia nueva y
+  usada. Todo lo que se ve aqui sale de <code>tokens.css</code>: si cambia un
+  token, cambia el sitio entero. Prueba el modo oscuro y reduce el ancho de la
+  ventana para ver el comportamiento en movil. Los textos, precios y nombres de
+  producto de esta guia son <span class="muestra-texto">de muestra</span> —
+  reemplazalos por los definitivos antes de publicar.</p>
 </section>
 
 <section class="doc">
   <h2>Paleta</h2>
-  <p class="nota">Cada color tiene un rol. El acento se usa en un solo elemento
-  por pantalla: si esta en todas partes, deja de destacar nada.</p>
+  <p class="nota">Cada color tiene un rol. El bronce (acento) se usa en un solo
+  elemento por pantalla y siempre en el mismo sitio conceptual: lo verificado, lo
+  garantizado — nunca como color de un boton de compra.</p>
   <div class="rejilla">__PALETA__</div>
 </section>
 
@@ -123,22 +253,40 @@ tr.falla td{background:color-mix(in srgb,var(--color-error) 12%,transparent)}
 
 <section class="doc">
   <h2>Tipografia</h2>
-  <p class="nota">Titulares en <b>__FAM_DISPLAY__</b>, texto e interfaz en
-  <b>__FAM_TEXTO__</b>. El cuerpo nunca baja de 16px: por debajo, el navegador
-  movil hace zoom solo al enfocar un campo.</p>
-  <table><thead><tr><th>Token</th><th>Tamano</th><th>Muestra</th></tr></thead>
+  __AVISO_TIPO__
+  <p class="nota">Titulares y precios grandes en <b>__FAM_DISPLAY__</b>, texto e
+  interfaz en <b>__FAM_TEXTO__</b>. Las muestras de abajo se ven en la
+  tipografia real: si no la ves aplicada, es que no cargo — revisa el enlace de
+  instalacion.</p>
+
+  <h3 style="margin-top:24px">Familias</h3>
+  <table><thead><tr><th>Rol</th><th>Familia</th><th>Pesos</th><th>Licencia</th></tr></thead>
+  <tbody>__FAMILIAS__</tbody></table>
+
+  <h3 style="margin-top:24px">Como se instala</h3>
+  <p class="nota">En el <code>&lt;head&gt;</code>, antes de la hoja de estilos del sitio.
+  La ficha completa, con la alternativa autoalojada, esta en <code>tipografia.md</code>.</p>
+  <pre style="background:var(--color-primario-suave);padding:14px;border-radius:8px;
+  overflow-x:auto;font-size:13px"><code>__CODIGO_CARGA__</code></pre>
+
+  <h3 style="margin-top:24px">Escala y jerarquia</h3>
+  <p class="nota">El cuerpo nunca baja de 16px: por debajo, el navegador movil hace
+  zoom solo al enfocar un campo y descuadra la maqueta.</p>
+  <table><thead><tr><th>Token</th><th>Tamano</th><th>Donde se usa</th><th>Muestra</th></tr></thead>
   <tbody>__TIPO__</tbody></table>
 </section>
 
 <section class="doc">
   <h2>Botones y estados</h2>
   <p class="nota">Area tactil minima de 44px de alto. El foco visible no se
-  elimina nunca: es como navega quien usa teclado.</p>
+  elimina nunca: es como navega quien usa teclado. Un solo boton principal
+  (relleno) por pantalla — en las tarjetas de producto ese lugar lo ocupa
+  "Anadir al carrito", asi que la cabecera usa el secundario para "Vender".</p>
   <p>
-    <button class="btn btn-primario">Cotizar ahora</button>
-    <button class="btn btn-secundario">Ver servicios</button>
-    <button class="btn btn-texto">Saber mas</button>
-    <button class="btn btn-primario" disabled>Enviando...</button>
+    <button class="btn btn-primario">Anadir al carrito</button>
+    <button class="btn btn-secundario">Vender en Sendik</button>
+    <button class="btn btn-texto">Ver todas las condiciones</button>
+    <button class="btn btn-primario" disabled>Procesando pago…</button>
   </p>
   <p class="nota">Pasa el cursor, manten pulsado y navega con la tecla Tab para
   ver los cuatro estados.</p>
@@ -147,66 +295,286 @@ tr.falla td{background:color-mix(in srgb,var(--color-error) 12%,transparent)}
 <section class="doc">
   <h2>Formularios</h2>
   <div class="campo">
-    <label for="n">Nombre</label>
-    <input id="n" placeholder="Como te llamas">
+    <label for="n">Titulo de la publicacion</label>
+    <input id="n" placeholder="Ej. Tenis urbanos talla 40, poco uso">
   </div>
   <div class="campo error">
-    <label for="c">Correo</label>
-    <input id="c" value="correo-invalido" aria-invalid="true" aria-describedby="ec">
-    <div class="ayuda" id="ec">Falta el correo para poder responderte</div>
+    <label for="c">Precio de venta (COP)</label>
+    <input id="c" value="0" aria-invalid="true" aria-describedby="ec">
+    <div class="ayuda" id="ec">El precio tiene que ser mayor a $0 para poder publicar</div>
   </div>
-  <p class="nota">El error dice que pasa y como arreglarlo, y no depende solo del
+  <p class="nota">El error dice que paso y como arreglarlo, y no depende solo del
   color: lleva texto y borde mas grueso, para quien no distingue rojo y verde.</p>
 </section>
 
 <section class="doc">
-  <h2>Tarjetas, avisos y etiquetas</h2>
-  <div class="rejilla" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
-    <div class="tarjeta"><span class="etiqueta">Servicio</span>
-      <h3 style="margin-top:12px">Mantenimiento</h3>
-      <p class="nota">Revision completa con diagnostico incluido.</p>
-      <button class="btn btn-secundario">Cotizar</button></div>
+  <h2>Tarjeta de producto, condicion e insignia de vendedor</h2>
+  <p class="nota">La pieza que mas se repite en el sitio. Proporcion de imagen
+  fija 1:1, 800×800px minimo, fondo neutro o foto del producto real — nunca
+  texto dentro de la imagen. El chip de condicion va siempre visible, sin que
+  haya que abrir el producto para saberlo.</p>
+  <div class="rejilla-productos" style="margin-top:16px">
+    <div class="tarjeta-producto">
+      <div class="tp-imagen">
+        <span class="chip-condicion chip-usado tp-condicion">Usado</span>
+        <button class="tp-favorito" aria-label="Guardar en favoritos" type="button">
+          <svg class="icono" viewBox="0 0 24 24"><path d="M12 20 4.6 13c-2-2-2-5.3 0-7.2 2-1.9 5-1.7 6.7.4l.7.9.7-.9c1.7-2.1 4.7-2.3 6.7-.4 2 1.9 2 5.2 0 7.2z"/></svg>
+        </button>
+        <span class="tp-medida">800×800</span>
+      </div>
+      <div class="tp-cuerpo">
+        <p class="tp-titulo">Tenis urbanos talla 40 — poco uso</p>
+        <span class="tp-vendedor">María G.</span>
+        <div class="insignia-verificado">
+          <svg class="icono" viewBox="0 0 24 24"><path d="M5 12.5 10 17 19 7"/></svg>
+          Vendedor verificado
+        </div>
+        <div class="tp-precio-fila">
+          <span class="precio">$128.000</span>
+          <span class="tp-precio-antes">$180.000</span>
+        </div>
+        <div class="tp-cta"><button class="btn btn-primario">Anadir al carrito</button></div>
+      </div>
+    </div>
+    <div class="tarjeta-producto">
+      <div class="tp-imagen">
+        <span class="chip-condicion chip-nuevo tp-condicion">Nuevo</span>
+        <button class="tp-favorito" aria-label="Guardar en favoritos" type="button">
+          <svg class="icono" viewBox="0 0 24 24"><path d="M12 20 4.6 13c-2-2-2-5.3 0-7.2 2-1.9 5-1.7 6.7.4l.7.9.7-.9c1.7-2.1 4.7-2.3 6.7-.4 2 1.9 2 5.2 0 7.2z"/></svg>
+        </button>
+        <span class="tp-medida">800×800</span>
+      </div>
+      <div class="tp-cuerpo">
+        <p class="tp-titulo">Audifonos inalambricos con estuche de carga</p>
+        <span class="tp-vendedor">TecnoDirecto</span>
+        <div class="insignia-verificado">
+          <svg class="icono" viewBox="0 0 24 24"><path d="M5 12.5 10 17 19 7"/></svg>
+          Vendedor verificado
+        </div>
+        <div class="tp-precio-fila"><span class="precio">$249.900</span></div>
+        <div class="tp-cta"><button class="btn btn-primario">Anadir al carrito</button></div>
+      </div>
+    </div>
+    <div class="tarjeta-producto">
+      <div class="tp-imagen">
+        <span class="chip-condicion chip-usado tp-condicion">Usado</span>
+        <button class="tp-favorito" aria-label="Guardar en favoritos" type="button">
+          <svg class="icono" viewBox="0 0 24 24"><path d="M12 20 4.6 13c-2-2-2-5.3 0-7.2 2-1.9 5-1.7 6.7.4l.7.9.7-.9c1.7-2.1 4.7-2.3 6.7-.4 2 1.9 2 5.2 0 7.2z"/></svg>
+        </button>
+        <span class="tp-medida">800×800</span>
+      </div>
+      <div class="tp-cuerpo">
+        <p class="tp-titulo">Bolso de cuero mediano, color camel</p>
+        <span class="tp-vendedor">Camila R.</span>
+        <div class="tp-precio-fila"><span class="precio">$95.000</span></div>
+        <div class="tp-cta"><button class="btn btn-secundario">Anadir al carrito</button></div>
+      </div>
+    </div>
+    <div class="tarjeta-producto">
+      <div class="tp-imagen">
+        <span class="chip-condicion chip-nuevo tp-condicion">Nuevo</span>
+        <button class="tp-favorito" aria-label="Guardar en favoritos" type="button">
+          <svg class="icono" viewBox="0 0 24 24"><path d="M12 20 4.6 13c-2-2-2-5.3 0-7.2 2-1.9 5-1.7 6.7.4l.7.9.7-.9c1.7-2.1 4.7-2.3 6.7-.4 2 1.9 2 5.2 0 7.2z"/></svg>
+        </button>
+        <span class="tp-medida">800×800</span>
+      </div>
+      <div class="tp-cuerpo">
+        <p class="tp-titulo">Chaqueta impermeable talla M</p>
+        <span class="tp-vendedor">Jorge L.</span>
+        <div class="tp-precio-fila"><span class="precio">$134.000</span></div>
+        <div class="tp-cta"><button class="btn btn-secundario">Anadir al carrito</button></div>
+      </div>
+    </div>
+  </div>
+  <p class="nota" style="margin-top:12px">La tercera y cuarta tarjeta muestran un
+  vendedor sin verificar: sin la linea de bronce ni el texto de insignia. No se
+  oculta ni se penaliza visualmente — simplemente no lleva la senal de confianza.
+  El bronce no lleva relleno de fondo en ningun caso: es linea + icono, una sola
+  vez por tarjeta.</p>
+</section>
+
+<section class="doc">
+  <h2>Avisos y etiquetas</h2>
+  <div class="rejilla" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
     <div>
-      <div class="aviso aviso-exito"><b>Listo.</b> Recibimos tu mensaje.</div>
-      <div class="aviso aviso-aviso"><b>Atencion.</b> Quedan 3 cupos.</div>
-      <div class="aviso aviso-error"><b>Error.</b> No pudimos enviar el formulario.</div>
+      <div class="aviso aviso-exito">
+        <svg class="icono" viewBox="0 0 24 24"><path d="M5 12.5 10 17 19 7"/></svg>
+        <div><b>Pago aprobado.</b> El vendedor ya recibio la confirmacion.</div>
+      </div>
+      <div class="aviso aviso-aviso">
+        <svg class="icono" viewBox="0 0 24 24"><path d="M12 8v5M12 16.5v.01M4 19h16L12 5 4 19z"/></svg>
+        <div><b>Publicacion en revision.</b> La vera solo tu hasta que se apruebe.</div>
+      </div>
+      <div class="aviso aviso-error">
+        <svg class="icono" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        <div><b>Pago rechazado.</b> Intenta con otro medio o revisa los datos.</div>
+      </div>
     </div>
   </div>
 </section>
 
 <section class="doc">
   <h2>Maqueta: header, body y footer</h2>
+  <p class="nota">Compuesta para un marketplace: la busqueda es la accion mas
+  usada del header, por eso ocupa el espacio principal en escritorio y una fila
+  propia en movil, donde el logo se reduce al isotipo. El bronce aparece una
+  sola vez en toda la maqueta: en la insignia de vendedor verificado.</p>
   <div class="maqueta">
+
     <header class="mk-header">
-      __LOGO__
-      <nav class="mk-nav">
-        <a href="#" aria-current="page">Inicio</a><a href="#">Servicios</a>
-        <a href="#">Nosotros</a><a href="#">Blog</a>
-      </nav>
-      <button class="btn btn-primario" style="min-height:38px;padding:8px 16px">WhatsApp</button>
+      <div class="env">
+        __LOGO__
+        <nav class="mk-nav">
+          <a href="#">Calzado</a><a href="#">Ropa</a><a href="#">Bolsos</a><a href="#">Tecnologia</a>
+        </nav>
+        <div class="mk-buscar">
+          <svg class="icono" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="M14.5 14.5 20 20"/></svg>
+          <input placeholder="Buscar tenis, bolsos, celulares…" aria-label="Buscar productos">
+        </div>
+        <div class="mk-acciones">
+          <button class="btn btn-secundario" style="min-height:38px;padding:8px 16px">Vender</button>
+          <button class="btn-icono" aria-label="Favoritos">
+            <svg class="icono icono-lg" viewBox="0 0 24 24"><path d="M12 20 4.6 13c-2-2-2-5.3 0-7.2 2-1.9 5-1.7 6.7.4l.7.9.7-.9c1.7-2.1 4.7-2.3 6.7-.4 2 1.9 2 5.2 0 7.2z"/></svg>
+          </button>
+          <button class="btn-icono" aria-label="Mi cuenta">
+            <svg class="icono icono-lg" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20c1.5-4 4-6 7.5-6s6 2 7.5 6"/></svg>
+          </button>
+          <button class="btn-icono mk-carrito" aria-label="Carrito, 2 productos">
+            <svg class="icono icono-lg" viewBox="0 0 24 24"><path d="M4 8h16l-1.5 11h-13L4 8z"/><path d="M8 8V6a4 4 0 0 1 8 0v2"/></svg>
+            <span class="contador">2</span>
+          </button>
+          <div class="mk-menu-movil">
+            <button class="btn-icono" aria-label="Abrir menu">
+              <svg class="icono icono-lg" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="mk-buscar-movil">
+          <div class="mk-buscar">
+            <svg class="icono" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="M14.5 14.5 20 20"/></svg>
+            <input placeholder="Buscar tenis, bolsos, celulares…" aria-label="Buscar productos">
+          </div>
+        </div>
+      </div>
     </header>
-    <div class="mk-hero">
-      <h2>El titular que dice que resuelves</h2>
-      <p>Una o dos lineas que anaden a quien sirve y como funciona.</p>
-      <button class="btn btn-primario">Cotizar ahora</button>
-    </div>
-    <div class="mk-body">
-      <div class="rejilla" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
-        <div class="tarjeta"><h3>Sin sorpresas</h3><p class="nota">Cotizacion cerrada por escrito.</p></div>
-        <div class="tarjeta"><h3>No paras</h3><p class="nota">Trabajamos de noche.</p></div>
-        <div class="tarjeta"><h3>Garantia</h3><p class="nota">Seis meses por escrito.</p></div>
+
+    <div class="franja-confianza">
+      <div class="env">
+        <span class="item">
+          <svg class="icono" viewBox="0 0 24 24"><path d="M5 12.5 10 17 19 7"/></svg>
+          Vendedores verificados
+        </span>
+        <span class="item">
+          <svg class="icono" viewBox="0 0 24 24"><rect x="4" y="9" width="16" height="10" rx="1"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/></svg>
+          Pago protegido con Wompi y Addi
+        </span>
+        <span class="item">
+          <svg class="icono" viewBox="0 0 24 24"><path d="M4 8h16l-1.5 11h-13L4 8z"/><path d="M8 8V6a4 4 0 0 1 8 0v2"/></svg>
+          Cualquiera compra, cualquiera vende
+        </span>
       </div>
     </div>
+
+    <nav class="mk-categorias">
+      <div class="env">
+        <div class="chips-categoria">
+          <span class="chip-cat" aria-current="true">Todo</span>
+          <span class="chip-cat">Calzado</span>
+          <span class="chip-cat">Ropa</span>
+          <span class="chip-cat">Bolsos</span>
+          <span class="chip-cat">Tecnologia (nuevo)</span>
+        </div>
+      </div>
+    </nav>
+
+    <div class="mk-hero">
+      <h2>Compra y vende moda y tecnologia de forma agil y segura</h2>
+      <p>Miles de personas compran y venden todos los dias. Publica en minutos o
+      encuentra lo que buscas con pago protegido.</p>
+      <div class="mk-hero-buscar">
+        <div class="mk-buscar">
+          <svg class="icono" viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="M14.5 14.5 20 20"/></svg>
+          <input placeholder="¿Que estas buscando hoy?" aria-label="Buscar productos">
+        </div>
+      </div>
+    </div>
+
+    <div class="mk-body">
+      <div class="mk-seccion-titulo">
+        <h3>Recien publicados</h3>
+        <a href="#" class="btn btn-texto" style="padding:0">Ver todo</a>
+      </div>
+      <div class="rejilla-productos">
+        <div class="tarjeta-producto">
+          <div class="tp-imagen"><span class="chip-condicion chip-usado tp-condicion">Usado</span></div>
+          <div class="tp-cuerpo">
+            <p class="tp-titulo">Tenis urbanos talla 40</p>
+            <div class="tp-precio-fila"><span class="precio">$128.000</span></div>
+          </div>
+        </div>
+        <div class="tarjeta-producto">
+          <div class="tp-imagen"><span class="chip-condicion chip-nuevo tp-condicion">Nuevo</span></div>
+          <div class="tp-cuerpo">
+            <p class="tp-titulo">Audifonos inalambricos</p>
+            <div class="tp-precio-fila"><span class="precio">$249.900</span></div>
+          </div>
+        </div>
+        <div class="tarjeta-producto">
+          <div class="tp-imagen"><span class="chip-condicion chip-usado tp-condicion">Usado</span></div>
+          <div class="tp-cuerpo">
+            <p class="tp-titulo">Bolso de cuero camel</p>
+            <div class="tp-precio-fila"><span class="precio">$95.000</span></div>
+          </div>
+        </div>
+        <div class="tarjeta-producto">
+          <div class="tp-imagen"><span class="chip-condicion chip-nuevo tp-condicion">Nuevo</span></div>
+          <div class="tp-cuerpo">
+            <p class="tp-titulo">Chaqueta impermeable M</p>
+            <div class="tp-precio-fila"><span class="precio">$134.000</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mk-diferenciadores">
+        <div class="item">
+          <svg class="icono" viewBox="0 0 24 24"><path d="M5 12.5 10 17 19 7"/></svg>
+          <div><h4>Compra segura</h4><p>Verificamos a quien vende antes de que publique.</p></div>
+        </div>
+        <div class="item">
+          <svg class="icono" viewBox="0 0 24 24"><rect x="4" y="9" width="16" height="10" rx="1"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/></svg>
+          <div><h4>Paga como quieras</h4><p>PSE, Nequi, tarjeta, Bancolombia a la mano o Addi.</p></div>
+        </div>
+        <div class="item">
+          <svg class="icono" viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20c1.5-4 4-6 7.5-6s6 2 7.5 6"/></svg>
+          <div><h4>Todos pueden vender</h4><p>Publica en minutos y cobra directo a tu cuenta.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <hr class="regla-corte">
+
     <footer class="mk-footer">
-      <div><b>__MARCA__</b><br><span style="opacity:.8">NIT 900.000.000-0<br>Bogota, Colombia</span></div>
-      <div><a href="#">Servicios</a><a href="#">Nosotros</a><a href="#">Blog</a></div>
-      <div><a href="#">Politica de datos</a><a href="#">Terminos</a></div>
-      <div><a href="#">WhatsApp</a><a href="#">Instagram</a></div>
+      <div class="env">
+        <div class="marca-col">
+          <b>__MARCA__</b><br>
+          <span style="opacity:.75">NIT 900.000.000-0<br>Bogota, Colombia</span>
+          <div class="medios-pago">
+            <span class="medio-pago">PSE</span><span class="medio-pago">Nequi</span>
+            <span class="medio-pago">Tarjeta</span><span class="medio-pago">Bancolombia a la mano</span>
+            <span class="medio-pago">Addi</span>
+          </div>
+        </div>
+        <div><a href="#">Calzado</a><a href="#">Ropa</a><a href="#">Bolsos</a><a href="#">Tecnologia</a></div>
+        <div><a href="#">Vender en Sendik</a><a href="#">Vendedor verificado</a><a href="#">Ayuda</a></div>
+        <div><a href="#">Politica de datos</a><a href="#">Terminos y condiciones</a><a href="#">WhatsApp</a></div>
+      </div>
+      <div class="mk-copyright">© 2026 Sendik. Todos los derechos reservados.</div>
     </footer>
   </div>
   <p class="nota" style="margin-top:16px">Reduce la ventana por debajo de 640px:
-  la navegacion se oculta y el hero baja de tamano. En el sitio real, ese menu
-  pasa a un boton de menu con destino tactil de 44px.</p>
+  la navegacion y la busqueda del header se ocultan detras del isotipo, el
+  menu y una segunda fila de busqueda a ancho completo. La rejilla de
+  productos pasa de 4 a 2 columnas y el footer de 4 a 2.</p>
 </section>
 
 <section class="doc">
@@ -215,8 +583,10 @@ tr.falla td{background:color-mix(in srgb,var(--color-error) 12%,transparent)}
     <li>Copia <code>tokens.css</code> al proyecto y enlazalo antes de tus estilos.</li>
     <li>Usa siempre las variables, nunca un HEX suelto en el codigo.</li>
     <li>Para modo oscuro basta con <code>data-tema="oscuro"</code> en el html.</li>
-    <li>Si cambia un color de marca, edita el token y vuelve a generar el kit:
-        los estados se recalculan solos.</li>
+    <li>Si cambia un color de marca, edita <code>tokens.json</code> y vuelve a
+        generar el kit: los estados y el modo oscuro se recalculan solos.</li>
+    <li>Los textos, precios y nombres de esta guia son de muestra. Los
+        definitivos salen de <code>copywriter-web</code>.</li>
   </ol>
 </section>
 

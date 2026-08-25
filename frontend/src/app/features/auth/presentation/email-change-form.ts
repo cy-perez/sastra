@@ -23,7 +23,7 @@ import { TextField } from '../../../shared/ui/form/text-field';
  * es justo lo que el registro evita (criterio 2).
  */
 @Component({
-  selector: 'sastra-email-change-form',
+  selector: 'sendik-email-change-form',
   imports: [ReactiveFormsModule, TranslocoPipe, TextField, SubmitButton],
   templateUrl: './email-change-form.html',
   styleUrl: './email-change-form.css',

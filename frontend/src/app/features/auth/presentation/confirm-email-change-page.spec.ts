@@ -14,7 +14,7 @@ import { ConfirmEmailChangePage } from './confirm-email-change-page';
 
 /** Criterio 21 de HU-001: confirmar el correo nuevo con el enlace. */
 describe('ConfirmEmailChangePage', () => {
-  const API = 'https://api.pruebas.sastra.co/api/v1';
+  const API = 'https://api.pruebas.sendik.co/api/v1';
 
   const render = async (token?: string) => {
     const fixture = TestBed.createComponent(ConfirmEmailChangePage);

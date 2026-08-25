@@ -1,0 +1,75 @@
+/* Carga de los archivos de tipografía. Aquí SOLO se declaran los @font-face de
+   las fuentes reales: los roles, la escala y los respaldos ajustados viven en
+   tipografia.css, que es la única fuente de verdad del tipo.
+
+   Dos familias y no tres. La marca define Archivo e Inter, y nada más: los
+   precios se alinean con font-variant-numeric: tabular-nums sobre Inter, no con
+   una familia monoespaciada aparte. Antes había una tercera (IBM Plex Mono) que
+   entró solo por las cifras; el manual de Sendik resuelve ese caso sin ella y
+   una descarga menos en celular con datos móviles se nota.
+
+   Son fuentes VARIABLES: un archivo por familia y subconjunto cubre el rango de
+   pesos entero. El sistema usa tres pesos y no más —400, 500 y 600, que son
+   --peso-regular, --peso-medio y --peso-fuerte de tokens.css—, y Archivo solo
+   en 600, que es lo único que define la marca.
+
+   ⚠️ Los .woff2 NO son los que venían dentro del kit. Los del kit eran las
+   variantes ITÁLICAS de las dos familias, así que el sitio entero se veía
+   inclinado. El defecto está en `fuentes.py` del generador: toma `variables[:1]`
+   sobre la lista de archivos de google/fonts, y ahí `Inter-Italic[opsz,wght].ttf`
+   ordena antes que `Inter[opsz,wght].ttf` porque el guion va antes que el
+   corchete. Con Archivo pasa igual. Hay que reportarlo a diseño; mientras tanto
+   estos archivos salieron de la API de Google Fonts, que además los entrega ya
+   subconjuntados: 155 KB en total frente a los 586 KB sin subconjuntar del kit.
+
+   El caso `no hay texto en italica` de e2e/tipografia.spec.ts mide la
+   inclinación real de la letra pintada y falla si esto vuelve a pasar.
+
+   Los cuatro archivos están en frontend/public/fuentes/ con estos nombres
+   exactos. Detalle en el LEEME de esa carpeta. */
+
+/* ---------- Archivo: titulares y precios grandes ---------- */
+@font-face {
+  font-family: 'Archivo';
+  src: url('./fuentes/archivo-latin.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Archivo';
+  src: url('./fuentes/archivo-latin-ext.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+    U+A720-A7FF;
+}
+
+/* ---------- Inter: interfaz, cuerpo y cifras ---------- */
+@font-face {
+  font-family: 'Inter';
+  src: url('./fuentes/inter-latin.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Inter';
+  src: url('./fuentes/inter-latin-ext.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+  unicode-range:
+    U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+    U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F,
+    U+A720-A7FF;
+}

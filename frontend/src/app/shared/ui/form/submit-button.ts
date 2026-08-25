@@ -13,7 +13,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
  * HU-001).
  */
 @Component({
-  selector: 'sastra-submit-button',
+  selector: 'sendik-submit-button',
   imports: [TranslocoPipe],
   templateUrl: './submit-button.html',
   styleUrl: './submit-button.css',

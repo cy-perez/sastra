@@ -1,8 +1,9 @@
-<!-- Unico uso del acento ocre en la pantalla, y siempre como relleno con texto
-     oscuro encima: el ocre nunca va como color de texto sobre fondo claro. -->
+<!-- Unica llamada a la accion de la pantalla, y siempre como relleno en tinta
+     con texto claro encima. En Sendik el boton principal va en tinta y nunca en
+     bronce, que esta reservado a lo verificado. -->
 <button
   type="submit"
-  class="btn-cta boton-envio tipo-etiqueta-boton"
+  class="btn-primario boton-envio tipo-etiqueta-boton"
   [disabled]="loading()"
   [attr.aria-busy]="loading() ? 'true' : null"
 >

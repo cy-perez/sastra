@@ -5,7 +5,7 @@
 
 ## Objetivo
 
-Una persona de Sastra con rol de moderador puede ver las solicitudes de
+Una persona de Sendik con rol de moderador puede ver las solicitudes de
 verificación que esperan revisión, mirar el documento y la selfie, y aprobar o
 rechazar con motivo, desde la interfaz y sin tocar la base de datos.
 
@@ -131,7 +131,7 @@ No entra:
 
 ## Diseño
 
-Pantalla interna, no pública: no lleva el acento ocre, que está reservado a la
+Pantalla interna, no pública: no lleva el acento bronce, que está reservado a la
 acción principal de las pantallas de cara al comprador. Las dos acciones son
 aprobar y rechazar y se distinguen por forma y texto, no por color.
 

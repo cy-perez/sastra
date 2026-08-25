@@ -2,7 +2,7 @@
 // interfaces que la infraestructura implementa.
 
 plugins {
-    id("sastra.spring-conventions")
+    id("sendik.spring-conventions")
 }
 
 dependencies {

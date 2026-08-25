@@ -16,7 +16,7 @@ import { AccountPage } from './account-page';
 
 /** Criterios 17, 21, 22 y 23 de HU-001. */
 describe('AccountPage', () => {
-  const API = 'https://api.pruebas.sastra.co/api/v1';
+  const API = 'https://api.pruebas.sendik.co/api/v1';
 
   const SESION: Session = {
     accessToken: 'un-token',

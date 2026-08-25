@@ -15,7 +15,7 @@ plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 
-rootProject.name = "sastra-backend"
+rootProject.name = "sendik-backend"
 
 dependencyResolutionManagement {
     // Ningun modulo declara sus propios repositorios: se resuelven todos aqui.

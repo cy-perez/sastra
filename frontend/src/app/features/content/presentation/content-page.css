@@ -2,9 +2,13 @@
    la misma clase de pagina, y asi corregir la separacion de una seccion no
    consiste en repetir el arreglo cuatro veces.
 
-   Nada de esto lleva el acento ocre. En estas paginas la accion que importa es
-   leer; si una termina llamando a registrarse, esa es la unica y va como relleno
-   con texto oscuro encima (HU-005, Diseno). */
+   Nada de esto lleva el acento bronce. En estas paginas la accion que importa
+   es leer; si una termina llamando a registrarse, esa va en tinta, que es el
+   relleno del boton principal (HU-005, Diseno).
+
+   El bronce no es de los botones: el manual de Sendik lo reserva para lo
+   verificado y lo garantizado, y en el sitio eso es la insignia de vendedor
+   verificado y nada mas. */
 
 :host {
   display: block;
@@ -30,7 +34,7 @@
    y esos dos NO se redefinen en modo oscuro: con --color-texto el problema
    volveria invertido.
 
-   El pie tiene su propia regla, en marca.css junto a .franja-oscura, porque la
+   El pie tiene su propia regla, en marca.css junto a .franja-tinta, porque la
    franja es de marca y la comparten el hero y el pie de todo el sitio.
 
    Basta ponerlo en el host: los roles de tipo que usan estas paginas heredan el
@@ -43,7 +47,7 @@
   }
 }
 
-/* Razon social, NIT y direccion en /sobre-sastra. El navegador pinta <address>
+/* Razon social, NIT y direccion en /sobre-sendik. El navegador pinta <address>
    en cursiva y concatena los tres datos en un renglon: uno por linea y sin
    cursiva, igual que .datos en el pie. Sin esto, la unica pagina que muestra
    quien responde lo hace en letra inclinada y de corrido. */
@@ -78,8 +82,9 @@ address {
   scroll-margin-top: var(--esp-96);
 }
 
-/* Las secciones se separan con la regla de puntada, unico elemento decorativo
-   de la marca. No se sustituye por una linea continua. */
+/* Las secciones se separan con la regla de corte, unico elemento decorativo de
+   la marca: es el corte del isotipo repetido fuera del logo. No se sustituye
+   por una linea continua, y va una sola vez por pantalla. */
 .seccion {
   margin-top: var(--esp-48);
 }
@@ -106,9 +111,9 @@ address {
 }
 
 /* El cierre de /como-funciona, la unica llamada a registrarse del sitio
-   informativo. El relleno ocre lo pone .btn-cta de marca.css; aqui solo va la
-   forma y el destino tactil, que es el mismo del CTA de la portada. */
-.cierre > .btn-cta {
+   informativo. El relleno en tinta lo pone .btn-primario de marca.css; aqui solo
+   va la forma y el destino tactil, que es el mismo del boton de la portada. */
+.cierre > .btn-primario {
   display: inline-flex;
   align-items: center;
   justify-content: center;

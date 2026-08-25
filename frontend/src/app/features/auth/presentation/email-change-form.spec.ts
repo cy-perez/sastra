@@ -16,7 +16,7 @@ import { EmailChangeForm } from './email-change-form';
 
 /** Criterio 21 de HU-001: pedir el cambio de correo, que no lo cambia. */
 describe('EmailChangeForm', () => {
-  const API = 'https://api.pruebas.sastra.co/api/v1';
+  const API = 'https://api.pruebas.sendik.co/api/v1';
 
   const SESION: Session = {
     accessToken: 'un-token',

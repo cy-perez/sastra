@@ -1,19 +1,24 @@
 #!/usr/bin/env python3
-"""Verifica el contraste del kit en modo claro Y en modo oscuro.
+"""Verifica el contraste del sistema en modo claro Y en modo oscuro.
 
-    cd generador
+    cd docs/ui/generador
     python3 verificar.py
 
 Por que existe si kit_ui.py ya escribe contraste.md:
 
-kit_ui.py solo comprueba los pares del MODO CLARO. El modo oscuro lo deriva
-parcialmente —fondo, superficie, texto, borde y primario— y deja sin tocar los
-colores semanticos, el anillo de foco y el borde de campo, que se quedan con su
-valor de modo claro. Sobre fondo oscuro eso daba entre 2.2:1 y 2.5:1, ilegible.
-Esas correcciones viven en fuentes/marca.css y NADIE las estaba comprobando.
+kit_ui.py comprueba los pares del MODO CLARO y solo los que el generador
+conoce. El sistema real de Sendik tiene ademas:
 
-Este script lee los colores reales de los dos archivos ya construidos, arma la
-paleta de cada modo y comprueba los pares que de verdad se usan en pantalla.
+  - la franja de tinta (`--color-tinta`), que no cambia con el modo y por eso
+    necesita sus propios pares en los dos;
+  - el bronce, que tiene DOS tonos —uno para fondo claro y otro para fondo
+    oscuro— y falla si se cruzan;
+  - los componentes propios y las correcciones de modo oscuro que viven en
+    `frontend/src/styles/marca.css`, que el kit no ve.
+
+Este script lee los colores reales de las tres hojas **tal como las sirve el
+sitio**: `docs/ui/tokens.css` (recien generado) mas las dos hojas del proyecto
+en `frontend/src/styles/`. Asi lo que se mide es la pantalla, no el kit.
 
 No necesita nada instalado: solo Python 3.
 Devuelve 0 si todo cumple y 1 si algo falla, para poder encadenarlo.
@@ -23,11 +28,17 @@ import sys
 from pathlib import Path
 
 AQUI = Path(__file__).resolve().parent
-KIT = AQUI.parent
+KIT = AQUI.parent                   # docs/ui
+RAIZ = KIT.parent.parent            # raiz del repositorio
+ESTILOS = RAIZ / "frontend" / "src" / "styles"
+
+# El orden importa: es el mismo de src/styles.css, y la ultima gana.
+HOJAS = [KIT / "tokens.css",
+         ESTILOS / "tipografia.css",
+         ESTILOS / "marca.css"]
 
 AA_TEXTO = 4.5   # texto normal
 AA_GRANDE = 3.0  # texto grande (>=24px, o >=18.66px en negrita) e iconos
-NO_APLICA = 0.0  # deshabilitado: exento por norma
 
 
 # ---------------------------------------------------------------- color
@@ -83,8 +94,8 @@ def paletas():
     """Arma la paleta final de cada modo respetando el orden de carga:
     tokens.css -> tipografia.css -> marca.css."""
     claro, oscuro = {}, {}
-    for archivo in ["tokens.css", "tipografia.css", "marca.css"]:
-        c, o = leer_variables(KIT / archivo)
+    for archivo in HOJAS:
+        c, o = leer_variables(archivo)
         claro.update(c)
         oscuro.update(o)
     # el modo oscuro parte del claro y solo sobrescribe lo que redefine
@@ -98,39 +109,66 @@ def paletas():
 # Cada par corresponde a algo que de verdad se ve en pantalla. Si se anade un
 # componente con una combinacion nueva, se anade aqui.
 PARES = [
-    ("Texto principal sobre el fondo",        "--color-texto",         "--color-fondo",            AA_TEXTO),
-    ("Texto principal sobre tarjeta",         "--color-texto",         "--color-superficie",       AA_TEXTO),
-    ("Texto secundario sobre el fondo",       "--color-texto-suave",   "--color-fondo",            AA_TEXTO),
-    ("Texto secundario sobre tarjeta",        "--color-texto-suave",   "--color-superficie",       AA_TEXTO),
-    ("Enlace y estructura sobre el fondo",    "--color-primario",      "--color-fondo",            AA_TEXTO),
-    ("Texto del boton primario",              "--color-sobre-primario", "--color-primario",        AA_TEXTO),
-    ("Texto del CTA sobre el ocre",           "--color-sobre-cta",     "--color-acento",           AA_TEXTO),
-    ("Etiqueta sobre fondo de etiqueta",      "--color-texto",         "--color-primario-suave",   AA_TEXTO),
-    ("Mensaje de exito sobre tarjeta",        "--color-exito",         "--color-superficie",       AA_TEXTO),
-    ("Mensaje de aviso sobre tarjeta",        "--color-aviso",         "--color-superficie",       AA_TEXTO),
-    ("Mensaje de error sobre tarjeta",        "--color-error",         "--color-superficie",       AA_TEXTO),
-    ("Anillo de foco sobre el fondo",         "--color-foco",          "--color-fondo",            AA_GRANDE),
-    ("Anillo de foco sobre tarjeta",          "--color-foco",          "--color-superficie",       AA_GRANDE),
-    # El anillo se dibuja con outline-offset:2px, o sea SEPARADO del boton por
-    # un hueco que deja ver el fondo. Por eso se compara contra el fondo de
-    # alrededor y no contra el relleno del boton: contra el relleno daria un
-    # falso negativo en oscuro, donde el anillo y el CTA son el mismo ocre.
-    ("Anillo de foco sobre la franja oscura", "--color-foco-franja",   "--fondo-oscuro-marca",     AA_GRANDE),
-    ("Borde de campo de formulario",          "--color-borde-control", "--color-superficie",       AA_GRANDE),
+    ("Texto principal sobre el fondo",        "--color-texto",          "--color-fondo",          AA_TEXTO),
+    ("Texto principal sobre tarjeta",         "--color-texto",          "--color-superficie",     AA_TEXTO),
+    ("Texto secundario sobre el fondo",       "--color-texto-suave",    "--color-fondo",          AA_TEXTO),
+    ("Texto secundario sobre tarjeta",        "--color-texto-suave",    "--color-superficie",     AA_TEXTO),
+    ("Enlace y estructura sobre el fondo",    "--color-primario",       "--color-fondo",          AA_TEXTO),
+    ("Texto del boton primario",              "--color-sobre-primario", "--color-primario",       AA_TEXTO),
+    ("Etiqueta sobre fondo de etiqueta",      "--color-texto",          "--color-primario-suave", AA_TEXTO),
+    ("Mensaje de exito sobre tarjeta",        "--color-exito",          "--color-superficie",     AA_TEXTO),
+    ("Mensaje de aviso sobre tarjeta",        "--color-aviso",          "--color-superficie",     AA_TEXTO),
+    ("Mensaje de error sobre tarjeta",        "--color-error",          "--color-superficie",     AA_TEXTO),
+    ("Anillo de foco sobre el fondo",         "--color-foco",           "--color-fondo",          AA_GRANDE),
+    ("Anillo de foco sobre tarjeta",          "--color-foco",           "--color-superficie",     AA_GRANDE),
+    ("Borde de campo de formulario",          "--color-borde-control",  "--color-superficie",     AA_GRANDE),
     # Las cajas de aviso y de error llevan fondo de tarjeta pero se apoyan sobre
     # el fondo de pagina: su borde linda con los dos y es informacion no textual.
-    ("Borde de aviso sobre el fondo",         "--color-aviso",         "--color-fondo",            AA_GRANDE),
-    ("Borde de error sobre el fondo",         "--color-error",         "--color-fondo",            AA_GRANDE),
-    ("Texto sobre la franja oscura",          "--sobre-fondo-oscuro",  "--fondo-oscuro-marca",     AA_TEXTO),
-    ("CTA sobre la franja oscura",            "--color-acento",        "--fondo-oscuro-marca",     AA_GRANDE),
-    ("Texto del CTA en la franja oscura",     "--color-sobre-cta",     "--color-acento",           AA_TEXTO),
-    # HU-006, bandeja del moderador. Es una pantalla interna y sus controles no llevan el
-    # acento: la accion principal va rellena en primario y la secundaria con su borde. El
-    # borde es lo unico que identifica al boton secundario como control, asi que es
+    ("Borde de aviso sobre el fondo",         "--color-aviso",          "--color-fondo",          AA_GRANDE),
+    ("Borde de error sobre el fondo",         "--color-error",          "--color-fondo",          AA_GRANDE),
+    ("Borde de exito sobre el fondo",         "--color-exito",          "--color-fondo",          AA_GRANDE),
+    # El boton secundario solo se identifica como control por su borde: eso es
     # informacion no textual y va contra el fondo de PAGINA, que es donde se apoya.
-    ("Borde de boton secundario sobre el fondo", "--color-primario",     "--color-fondo",            AA_GRANDE),
-    # El aviso de decision aplicada, al volver a la bandeja.
-    ("Borde de exito sobre el fondo",         "--color-exito",         "--color-fondo",            AA_GRANDE),
+    ("Borde de boton secundario sobre el fondo", "--color-primario",    "--color-fondo",          AA_GRANDE),
+
+    # ---- El bronce. Dos tonos, cada uno con su fondo, y nunca al reves ----
+    # Sobre fondo claro va --color-acento (que en modo claro ES el bronce
+    # oscuro #8A6428). Cruzar los tonos es el error que el manual senala como
+    # prohibido: el bronce claro sobre fondo claro da 2.97:1.
+    #
+    # Umbral de 3:1 y no 4.5:1, y no es una rebaja para que pase: el bronce
+    # NUNCA es texto. En la insignia de vendedor verificado es una linea de 2px
+    # y un icono de 16px —objetos graficos, WCAG 1.4.11—, y el texto de la
+    # insignia va en --color-texto-suave, que si se comprueba como texto mas
+    # arriba. El manual lo prohibe ademas explicitamente como color de texto
+    # sobre fondo claro y como relleno grande.
+    #
+    # Que quede claro cual es el margen real: sobre la tarjeta oscura el bronce
+    # da 4.22:1. Cumple de sobra como objeto grafico, pero si alguna vez se usa
+    # como texto ahi, incumple. Si eso llega a hacer falta, no se sube el
+    # umbral: se pide a diseno un tercer tono, porque el bronce de marca no da.
+    ("Insignia verificada sobre el fondo",    "--color-acento",         "--color-fondo",          AA_GRANDE),
+    ("Insignia verificada sobre tarjeta",     "--color-acento",         "--color-superficie",     AA_GRANDE),
+    # El relleno de acento si lleva texto encima (--color-sobre-acento), y ahi
+    # el umbral de texto aplica entero.
+    ("Texto sobre relleno de acento",         "--color-sobre-acento",   "--color-acento",         AA_TEXTO),
+
+    # ---- La franja de tinta: hero y pie. NO cambia con el modo ----
+    # Por eso sus pares se comprueban en los dos: en oscuro la tinta queda un
+    # paso POR ENCIMA del fondo de pagina y se sigue leyendo como franja, pero
+    # el texto y el anillo de foco de dentro tienen que cumplir igual.
+    ("Texto sobre la franja de tinta",        "--color-sobre-tinta",    "--color-tinta",          AA_TEXTO),
+    ("Insignia verificada sobre la tinta",    "--color-acento-tinta",   "--color-tinta",          AA_GRANDE),
+    # El anillo se dibuja con outline-offset:2px, o sea SEPARADO del control por
+    # un hueco que deja ver el fondo. Por eso se compara contra el fondo de
+    # alrededor y no contra el relleno del control.
+    ("Anillo de foco sobre la franja de tinta", "--color-foco-tinta",   "--color-tinta",          AA_GRANDE),
+    # Dentro de la franja el boton principal se invierte: relleno claro con
+    # tinta encima. Un boton en tinta sobre fondo de tinta no se ve, y el manual
+    # prohibe resolverlo con bronce ("el boton principal de compra va en tinta,
+    # no en bronce"), asi que la salida es invertirlo, no cambiarle el color.
+    ("Texto del boton dentro de la franja",   "--color-tinta",          "--color-primario-tinta", AA_TEXTO),
+    ("Relleno del boton contra la franja",    "--color-primario-tinta", "--color-tinta",          AA_GRANDE),
 ]
 
 
@@ -173,7 +211,7 @@ def main():
     for desc, r, umbral, fg, bg in fallas:
         print("FALLA  {}: {}:1, necesita {}:1  ({} sobre {})".format(desc, r, umbral, fg, bg))
         print("       Se corrige en tokens.json si es un color de rol, o en\n"
-              "       fuentes/marca.css si es una correccion de modo oscuro.")
+              "       frontend/src/styles/marca.css si es un token del proyecto.")
     for desc, falta in ausentes:
         print("FALTA  la variable {} ({})".format(falta, desc))
     return 1

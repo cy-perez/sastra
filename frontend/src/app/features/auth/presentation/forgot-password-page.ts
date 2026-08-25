@@ -26,13 +26,13 @@ import { TextField } from '../../../shared/ui/form/text-field';
  * servidor responde igual en los dos casos, y aqui se muestra el mismo aviso
  * pase lo que pase: "si ese correo tiene cuenta, le llega un enlace". Cualquier
  * otra cosa, incluido un error distinto, convertiria el formulario en una forma
- * de averiguar quien esta registrado en Sastra.
+ * de averiguar quien esta registrado en Sendik.
  *
  * <p>Por eso el aviso de exito habla en condicional. Es incomodo de redactar y es
  * lo correcto: la persona que si tiene cuenta entiende igual que revise su buzon.
  */
 @Component({
-  selector: 'sastra-forgot-password-page',
+  selector: 'sendik-forgot-password-page',
   imports: [ReactiveFormsModule, TranslocoPipe, RouterLink, TextField, SubmitButton],
   templateUrl: './forgot-password-page.html',
   styleUrl: './forgot-password-page.css',

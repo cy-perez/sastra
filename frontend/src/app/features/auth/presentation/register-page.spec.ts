@@ -17,7 +17,7 @@ import { RegisterPage } from './register-page';
  * quien usa el sitio, y no se rompe al maquetar.
  */
 describe('RegisterPage', () => {
-  const API = 'https://api.pruebas.sastra.co/api/v1';
+  const API = 'https://api.pruebas.sendik.co/api/v1';
 
   const render = async () => {
     const fixture = TestBed.createComponent(RegisterPage);

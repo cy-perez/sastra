@@ -2,7 +2,7 @@
 
 ## Qué es
 
-Sastra es el mercado colombiano donde cualquier persona compra y vende **moda,
+Sendik es el mercado colombiano donde cualquier persona compra y vende **moda,
 nueva y de segunda, y tecnología nueva**, con la plataforma como respaldo de la
 transacción.
 
@@ -12,15 +12,17 @@ medidas, y en tecnología lo que falla no se fotografía. Un catálogo de tecnol
 de segunda es un catálogo de disputas, y el respaldo no lo puede sostener.
 
 La promesa es **seguridad**, no precio bajo. Todo el sistema de marca sale de
-ahí: el nombre suena a sastre, el símbolo es una puntada que une dos partes, y
-el descriptor es "Compra y vende moda con respaldo". Nada en el producto debe
-comunicar ganga.
+ahí: el símbolo es una S construida con dos ganchos idénticos —la misma pieza dos
+veces, porque la misma persona vende y compra— separados por un corte, que es el
+momento del traspaso y justo donde la plataforma se para a verificar y a
+garantizar el pago. El eslogan es **«Compra y vende de forma ágil y segura»**.
+Nada en el producto debe comunicar ganga.
 
-**El descriptor de marca se quedó corto y no se cambia aquí.** Dice «moda» y el
-catálogo ya no es solo moda. Cambiarlo es una decisión de marca, vive en
-`docs/marca/`, que este proyecto no toca por su cuenta, y arrastra el logo
-horizontal, el manual y las etiquetas del sitio. Queda anotado como pendiente en
-`textos-web.md`.
+**El descriptor viejo ya no aplica.** Decía «Compra y vende moda con respaldo»,
+se había quedado corto cuando entró tecnología al catálogo, y era el pendiente
+más grande de `textos-web.md`. La marca Sendik lo resolvió: el eslogan nuevo no
+nombra la categoría, así que no vuelve a quedarse corto cuando el catálogo
+crezca. Ver ADR-0022.
 
 ## Para quién
 
@@ -40,14 +42,14 @@ En ambos lados la unidad de confianza es la misma: la plataforma responde.
 Comisión del **5% sobre el valor del producto**, a cargo del vendedor, retenida
 al momento del desembolso. El envío no hace parte de la base de cálculo.
 
-Sastra no toca el dinero: la pasarela recauda y divide el pago. Ver `ADR-0005`.
+Sendik no toca el dinero: la pasarela recauda y divide el pago. Ver `ADR-0005`.
 
 ## Qué lo diferencia
 
 1. **Respaldo de la transacción.** El pago no llega al vendedor hasta que el
    comprador confirma la entrega, y si lo recibido no es lo publicado hay 3 días
    hábiles para reportarlo con el dinero todavía retenido (RN-050 a RN-058).
-   Sastra no custodia ese dinero: lo retiene la pasarela (RN-031).
+   Sendik no custodia ese dinero: lo retiene la pasarela (RN-031).
 2. **Publicaciones moderadas.** Toda publicación se revisa antes de aparecer. Un
    catálogo limpio es el activo del sitio.
 3. **Fotos consistentes y vista 360º.** El asistente de captura fuerza encuadre
@@ -66,7 +68,7 @@ Sastra no toca el dinero: la pasarela recauda y divide el pago. Ver `ADR-0005`.
   vender veinte unidades del mismo modelo no tiene aquí la herramienta, y
   vendedores con figura de empresa siguen fuera de alcance.
 - No vende tecnología de segunda. Solo moda admite lo usado (RN-064).
-- No es una billetera: Sastra no custodia dinero de terceros.
+- No es una billetera: Sendik no custodia dinero de terceros.
 - No compite por precio. Compite por confianza.
 
 ## Señales de que va bien
@@ -80,8 +82,8 @@ En orden de importancia para las primeras fases:
 5. Vendedores que vuelven a publicar después de su primera venta.
 
 El sitio no arranca sin inventario, así que la acción principal de la portada es
-**publicar una prenda**, y por eso lleva el único acento ocre de la pantalla.
-Cuando la oferta supere a la demanda, se revisa esa decisión.
+**publicar una prenda**, y por eso lleva la única llamada a la acción de la
+pantalla. Cuando la oferta supere a la demanda, se revisa esa decisión.
 
 Esa decisión se ha cuestionado una vez, con el argumento de que la portada
 debería hablarle solo al comprador y llevar al catálogo. Se mantiene: un

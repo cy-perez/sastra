@@ -1,10 +1,10 @@
 /* Hoja compartida por la bandeja y el detalle: son la misma clase de pantalla y
    corregir una separacion no puede consistir en repetir el arreglo dos veces.
 
-   Pantallas internas. **Nada de esto lleva el acento ocre**: es el unico de la marca
-   y esta reservado a la accion principal de las pantallas de cara al comprador. Aqui
-   las dos acciones son aprobar y rechazar, y se distinguen por forma y texto, nunca
-   solo por color. */
+   Pantallas internas. **Nada de esto lleva el acento bronce**: es el unico de la
+   marca y esta reservado a lo verificado, que es una senal de cara al comprador y
+   no un control de moderacion. Aqui las dos acciones son aprobar y rechazar, y se
+   distinguen por forma y texto, nunca solo por color. */
 
 /* El carril de contenido de la rejilla de <main>. Hoy lo asigna ya
    `.contenido > *` desde src/styles.css, que por ser hoja global si alcanza al host
@@ -101,8 +101,8 @@
 
 /* ---------- Botones ---------- */
 
-/* La distincion es por forma y texto, no por color: la historia lo pide y el acento ocre
-   no entra en una pantalla interna.
+/* La distincion es por forma y texto, no por color: la historia lo pide y el
+   acento bronce no entra en una pantalla interna.
 
    El borde va en --color-primario y no en --color-borde-control porque ese ultimo da
    2.82:1 contra el fondo de pagina y no llega al minimo de 3:1 para un control (WCAG

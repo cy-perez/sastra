@@ -8,8 +8,8 @@ describe('resolveTheme', () => {
   });
 
   it('respeta la preferencia guardada', () => {
-    expect(resolveTheme({ cookieHeader: 'sastra_theme=dark' })).toBe('dark');
-    expect(resolveTheme({ cookieHeader: 'sastra_theme=light' })).toBe('light');
+    expect(resolveTheme({ cookieHeader: 'sendik_theme=dark' })).toBe('dark');
+    expect(resolveTheme({ cookieHeader: 'sendik_theme=light' })).toBe('light');
   });
 
   // En la primera visita el navegador todavia no manda la pista, porque el
@@ -20,13 +20,13 @@ describe('resolveTheme', () => {
   });
 
   it('la eleccion de la persona gana sobre la del sistema', () => {
-    expect(resolveTheme({ cookieHeader: 'sastra_theme=light', colorSchemeHint: 'dark' })).toBe(
+    expect(resolveTheme({ cookieHeader: 'sendik_theme=light', colorSchemeHint: 'dark' })).toBe(
       'light',
     );
   });
 
   it('ignora una cookie con un valor que no existe', () => {
-    expect(resolveTheme({ cookieHeader: 'sastra_theme=neon', colorSchemeHint: 'dark' })).toBe(
+    expect(resolveTheme({ cookieHeader: 'sendik_theme=neon', colorSchemeHint: 'dark' })).toBe(
       'dark',
     );
   });
@@ -51,7 +51,7 @@ describe('buildThemeCookie', () => {
   it('limita la cookie al sitio y le da un ano de vida', () => {
     const cookie = buildThemeCookie('dark');
 
-    expect(cookie).toContain('sastra_theme=dark');
+    expect(cookie).toContain('sendik_theme=dark');
     expect(cookie).toContain('Path=/');
     expect(cookie).toContain('SameSite=Lax');
     expect(cookie).toContain('Max-Age=31536000');

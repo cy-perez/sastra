@@ -16,13 +16,13 @@ import { ReviewDetailPage } from './review-detail-page';
 
 /** El detalle de una solicitud, donde se decide. HU-006. */
 describe('ReviewDetailPage', () => {
-  const API = 'https://api.pruebas.sastra.co/api/v1';
+  const API = 'https://api.pruebas.sendik.co/api/v1';
   const ID = 'una-solicitud';
 
   const SESION: Session = {
     accessToken: 'un-token',
     user: {
-      email: 'moderadora@sastra.co',
+      email: 'moderadora@sendik.co',
       displayName: 'Quien Modera',
       emailVerified: true,
       roles: ['MODERATOR'],

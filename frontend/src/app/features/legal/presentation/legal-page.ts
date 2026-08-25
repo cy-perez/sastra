@@ -30,7 +30,7 @@ import { esBorrador } from '../domain/legal-document';
  * legal-page.css cuelgan de .documento-legal y ninguna se escribe suelta.
  */
 @Component({
-  selector: 'sastra-legal-page',
+  selector: 'sendik-legal-page',
   imports: [TranslocoPipe],
   templateUrl: './legal-page.html',
   styleUrl: './legal-page.css',

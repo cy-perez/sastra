@@ -1,26 +1,45 @@
 /* Generado por kit_ui.py. Los estados son derivados: no los edites a mano,
    cambia el color base y vuelve a generar. */
+
+/* TIPOGRAFIA — la fuente debe cargarse o el navegador usara la de respaldo.
+   Pega esto en el <head>, ANTES de esta hoja de estilos:
+
+   <link rel="preconnect" href="https://fonts.googleapis.com">
+   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Archivo:wght@600&display=swap">
+
+   Alternativa autoalojada (mas rapida y sin dependencia externa):
+   descarga los .woff2, declara @font-face con font-display: swap y
+   apunta las variables de abajo a esas familias. */
+
 :root {
-  --color-primario: #16192A;
-  --color-primario-hover: #131625;
-  --color-primario-pressed: #111421;
+  --color-primario: #14162B;
+  --color-primario-hover: #121326;
+  --color-primario-pressed: #101122;
   --color-primario-suave: #E8E8EA;
   --color-sobre-primario: #FFFFFF;
-  --color-acento: #D69A3C;
-  --color-sobre-acento: #111111;
-  --color-fondo: #F7F5F1;
+  --color-acento: #8A6428;
+  --color-sobre-acento: #FFFFFF;
+  --color-fondo: #F6F6F8;
   --color-superficie: #FFFFFF;
-  --color-texto: #16192A;
-  --color-texto-suave: #5B6072;
-  --color-borde: #E3DFD7;
-  --color-exito: #1F7A55;
-  --color-aviso: #8A5A12;
-  --color-error: #B3402A;
-  --color-deshabilitado: #B1B2B8;
-  --color-foco: #16192A;
-  --color-borde-control: #95938E;
-  --fuente-texto: "Instrument Sans", system-ui, sans-serif;
-  --fuente-display: "Archivo", var(--fuente-texto);
+  --color-texto: #14162B;
+  --color-texto-suave: #6A6E80;
+  --color-borde: #E3E4EA;
+  --color-exito: #1E7A5A;
+  --color-aviso: #9C4A12;
+  --color-error: #B3261E;
+  --color-deshabilitado: #B7B9C2;
+  --color-foco: #14162B;
+  --color-borde-control: #86868B;
+  --color-tinta: #14162B;  /* fija: no cambia en modo oscuro, ver derivar() */
+  --color-sobre-tinta: #FFFFFF;
+  --fuente-texto: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --fuente-display: "Archivo", Georgia, "Times New Roman", serif;
+  --peso-regular: 400;
+  --peso-medio: 500;
+  --peso-fuerte: 600;
+  --interlineado-titulares: 1.1;
+  --interlineado-texto: 1.55;
   --texto-xs: 12px;
   --texto-sm: 14px;
   --texto-base: 16px;
@@ -40,7 +59,7 @@
   --esp-96: 96px;
   --radio-sm: 4px;
   --radio-md: 8px;
-  --radio-lg: 14px;
+  --radio-lg: 12px;
   --radio-completo: 9999px;
   --sombra-sm: 0 1px 2px rgba(0,0,0,.06);
   --sombra-md: 0 4px 12px rgba(0,0,0,.08);
@@ -49,13 +68,18 @@
 }
 
 [data-tema="oscuro"] {
-  --color-fondo: #0E101B;
-  --color-superficie: #2D303F;
-  --color-texto: #F9F8F5;
-  --color-texto-suave: #A19F9D;
-  --color-borde: #494C59;
-  --color-primario: #85868E;
+  --color-fondo: #0D0E1C;
+  --color-superficie: #2C2D40;
+  --color-texto: #F9F9FA;
+  --color-texto-suave: #A0A0A1;
+  --color-borde: #48495A;
+  --color-primario: #83858E;
   --color-sobre-primario: #111111;
+  --color-acento: #B4884A;
+  --color-sobre-acento: #111111;
+  --color-exito: #4FBF92;
+  --color-aviso: #E08A3C;
+  --color-error: #F2837C;
 }
 
 /* Respeta a quien pide menos movimiento */

@@ -6,7 +6,7 @@
 
 ## Objetivo
 
-Quien llega a Sastra por primera vez entiende en la primera pantalla qué es el
+Quien llega a Sendik por primera vez entiende en la primera pantalla qué es el
 sitio, por qué es seguro comprar y vender aquí, y qué se espera que haga a
 continuación.
 
@@ -27,9 +27,9 @@ esta historia debe poder recibir la rejilla debajo del hero sin rehacerse.
 1. Dado un visitante que abre `/`, cuando la página termina de renderizarse,
    entonces ve un `h1` con la propuesta de valor y un texto de apoyo que explica
    el respaldo del pago, ambos dentro de una franja con la clase
-   `.franja-oscura`.
+   `.franja-tinta`.
 2. Dado el hero, cuando se inspecciona la página completa, entonces existe
-   **exactamente un** elemento con el acento ocre como relleno: el botón
+   **exactamente un** elemento con relleno de acción principal: el botón
    principal. Es comprobable contando los elementos con esa clase en el DOM
    renderizado.
 3. Dado el botón principal, cuando el visitante lo pulsa, entonces navega a
@@ -48,7 +48,11 @@ esta historia debe poder recibir la rejilla debajo del hero sin rehacerse.
    entonces navega a la página de cómo funciona (HU-005). Si esa ruta todavía no
    existe, el enlace no se renderiza: no se deja un enlace roto en portada.
 7. Dado el bloque, cuando se separa visualmente del siguiente, entonces la
-   separación usa `.regla-puntada` y no una línea continua.
+   separación la da el espaciado de los bloques. **Ya no lleva regla de corte
+   propia** (cambio de ADR-0022): el manual de Sendik permite el corte del
+   isotipo una sola vez por pieza, y en el sitio esa vez es el borde superior del
+   pie, que sale en todas las pantallas. Con una regla aquí, la portada mostraba
+   dos.
 
 **Tarjetas de confianza**
 
@@ -123,7 +127,7 @@ La maqueta de referencia es `docs/ui/index.html:450-505`. Se toma de ahí el
 hero, el pie y la rejilla de tarjetas; **no** se toma la rejilla "Recién
 publicado", que es de Fase 2, ni la tercera tarjeta de devoluciones.
 
-- Franja oscura del hero y del pie con `.franja-oscura`, que redefine el anillo
+- Franja de tinta del hero y del pie con `.franja-tinta`, que redefine el anillo
   de foco: sin ella el foco del botón principal es tinta sobre tinta.
 - Titular con `.tipo-display`, apoyo con `.tipo-entradilla`, tarjetas con
   `.tipo-titulo-tarjeta` y `.nota`. Ningún `font-size` propio.
@@ -169,9 +173,9 @@ apunte a una ruta que no está.
 ## Pruebas requeridas
 
 - Componente (Vitest, sin red): existe un solo `h1`; hay exactamente un elemento
-  con el acento ocre; el botón principal apunta siempre a `/registro`; se
+  con el relleno de acción principal; el botón apunta siempre a `/registro`; se
   renderizan tres tarjetas y tres pasos; el enlace a cómo funciona no aparece
-  mientras la ruta no exista; ningún texto dice que Sastra guarde o custodie el
+  mientras la ruta no exista; ningún texto dice que Sendik guarde o custodie el
   dinero (RN-031).
 - Pie: renderiza los datos de empresa que vienen de `AppConfig` y los omite
   cuando faltan; los tres documentos legales están presentes y apuntan a
@@ -209,7 +213,7 @@ diga qué se le promete públicamente al visitante, habría que escribirla.
 **Glosario.** Resuelto: **respaldo** entra como `Backing`, y con él la retención
 y la liberación del pago y la moderación. `Escrow`, custodia y garantía quedan
 en la lista de palabras que no se usan, porque describen figuras financieras que
-Sastra no ejerce (RN-031). **Tarjeta de confianza** y **franja oscura** no van
+Sendik no ejerce (RN-031). **Tarjeta de confianza** y **franja oscura** no van
 al glosario: son términos de interfaz, no de dominio, y ya están nombrados en
 `docs/ui/README.md`.
 

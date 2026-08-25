@@ -21,15 +21,16 @@
   row-gap: 0;
   padding-top: var(--esp-12);
   padding-bottom: var(--esp-12);
-  /* Lo que separa la franja de la cabecera, ya que comparten fondo. El ocre no
-     se usa aqui: --color-aviso es el semantico de advertencia y esta resuelto en
-     los dos modos. */
+  /* Lo que separa la franja de la cabecera, ya que comparten fondo. El bronce
+     no se usa aqui: --color-aviso es el semantico de advertencia y tiene su
+     matiz propio para no confundirse con el bronce del verificado (24 grados de
+     matiz frente a 35). Esta resuelto en los dos modos. */
   border-left: 4px solid var(--color-aviso);
 }
 
-/* No lleva el acento ocre: el ocre es de la accion principal del contenido, y
-   esta franja sale en todas las pantallas. Mismo borde que .boton-icono de la
-   cabecera, que es un par ya verificado sobre esta superficie. */
+/* No lleva relleno de accion principal: esa es del contenido, y esta franja
+   sale en todas las pantallas. Mismo borde que .boton-icono de la cabecera, que
+   es un par ya verificado sobre esta superficie. */
 .reenviar {
   display: inline-flex;
   align-items: center;

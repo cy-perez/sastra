@@ -35,7 +35,7 @@ import { TextField } from '../../../shared/ui/form/text-field';
  * estorbe sino porque no se deshace.
  */
 @Component({
-  selector: 'sastra-account-page',
+  selector: 'sendik-account-page',
   imports: [
     ReactiveFormsModule,
     TranslocoPipe,
@@ -128,7 +128,7 @@ export class AccountPage {
         const url = URL.createObjectURL(new Blob([contenido], { type: 'application/json' }));
 
         enlace.href = url;
-        enlace.download = 'sastra-mis-datos.json';
+        enlace.download = 'sendik-mis-datos.json';
         enlace.click();
 
         // Sin esto el contenido queda retenido en memoria mientras viva la

@@ -15,7 +15,7 @@ import { ResetPasswordPage } from './reset-password-page';
 
 /** Criterios 18 y 20 de HU-001. */
 describe('ResetPasswordPage', () => {
-  const API = 'https://api.pruebas.sastra.co/api/v1';
+  const API = 'https://api.pruebas.sendik.co/api/v1';
 
   const render = async (token?: string) => {
     const fixture = TestBed.createComponent(ResetPasswordPage);

@@ -5,7 +5,7 @@
 logging:
   level:
     root: INFO
-    co.sastra: DEBUG
+    co.sendik: DEBUG
 
 management:
   endpoints:

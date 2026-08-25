@@ -55,7 +55,7 @@ val clasesDeProduccion = files(Callable {
             // Misma exclusion que en bootstrap: la clase de arranque es
             // configuracion de framework sin logica propia, y
             // docs/arquitectura/pruebas.md dice expresamente que eso no se prueba.
-            exclude("co/sastra/SastraApplication.class")
+            exclude("co/sendik/SendikApplication.class")
         }
     }
 })

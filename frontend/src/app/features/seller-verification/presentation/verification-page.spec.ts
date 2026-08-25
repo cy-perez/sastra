@@ -16,7 +16,7 @@ import { VerificationPage } from './verification-page';
 
 /** El progreso de la verificación de vendedor. HU-002. */
 describe('VerificationPage', () => {
-  const API = 'https://api.pruebas.sastra.co/api/v1';
+  const API = 'https://api.pruebas.sendik.co/api/v1';
 
   const SESION: Session = {
     accessToken: 'un-token',

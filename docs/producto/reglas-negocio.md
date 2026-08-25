@@ -110,7 +110,7 @@ Cada regla tiene identificador. Úsalo en el código y en las pruebas:
   usada, productos que no sean moda ni tecnología, prendas con daño no declarado,
   y cualquier producto de tecnología que no sea nuevo (RN-064).
 - **RN-025** Existencia siempre igual a 1. Un producto, una publicación.
-- **RN-064** Sastra vende dos cosas y con distinta condición admisible:
+- **RN-064** Sendik vende dos cosas y con distinta condición admisible:
 
   | Familia | Condiciones admisibles |
   |---|---|
@@ -118,7 +118,7 @@ Cada regla tiene identificador. Úsalo en el código y en las pruebas:
   | Tecnología | **Solo nuevo** |
 
   Lo usado se vende únicamente en moda. Un celular, un televisor o un computador
-  de segunda no se publican en Sastra, y la comprobación no es de la interfaz: el
+  de segunda no se publican en Sendik, y la comprobación no es de la interfaz: el
   dominio rechaza cualquier condición distinta de nueva en una categoría de
   tecnología.
 
@@ -127,7 +127,7 @@ Cada regla tiene identificador. Úsalo en el código y en las pruebas:
   que falla no se fotografía —la batería, el sensor, la pantalla que se apaga a
   los dos meses— y ninguna toma a 45 grados lo muestra. Sin capacidad de probar
   el aparato, un catálogo de tecnología de segunda es un catálogo de disputas, y
-  el respaldo que promete Sastra no lo puede sostener.
+  el respaldo que promete Sendik no lo puede sostener.
 
 - **RN-065** Un producto de tecnología puede declararse **sellado**, y esa
   declaración es lo único que habilita las imágenes de referencia (RN-066). Una
@@ -157,9 +157,9 @@ Cada regla tiene identificador. Úsalo en el código y en las pruebas:
 
 - **RN-067** Si un producto de tecnología trae garantía del fabricante, el
   vendedor declara que la trae y por cuántos meses. **Quien responde por esa
-  garantía es el vendedor**, no Sastra, y así se dice en la ficha.
+  garantía es el vendedor**, no Sendik, y así se dice en la ficha.
 
-  Sastra ofrece el Respaldo y nada más: el pago retenido y la ventana de reclamo
+  Sendik ofrece el Respaldo y nada más: el pago retenido y la ventana de reclamo
   de RN-050 a RN-058. La garantía legal que la Ley 1480 de 2011 fija para un
   producto nuevo existe además de eso y no la sustituye ninguna regla de aquí.
 
@@ -239,12 +239,12 @@ Cada regla tiene identificador. Úsalo en el código y en las pruebas:
 
 ## Pago
 
-- **RN-031** El recaudo lo hace Wompi. Sastra no recibe ni custodia dinero de
+- **RN-031** El recaudo lo hace Wompi. Sendik no recibe ni custodia dinero de
   terceros.
 - **RN-032** Medios habilitados: PSE, Nequi, tarjeta débito y crédito,
   Bancolombia a la mano y Addi. El pago contraentrega no está habilitado.
 - **RN-033** La división del pago separa el valor del vendedor y la comisión de
-  Sastra en la propia pasarela.
+  Sendik en la propia pasarela.
 - **RN-034** El pago se libera al vendedor cuando **el comprador confirma la
   entrega**, o cuando vence la ventana de reclamo sin que confirme ni reporte
   (RN-051, RN-052). Quien confirma es el comprador, no la transportadora: la
@@ -322,7 +322,7 @@ estados y las pantallas de ese flujo se definen allí y no aquí.
   que el vendedor colabore.
 - **RN-055** Si el reporte se acepta, se le reintegra al comprador el valor del
   producto y el envío que pagó, y el flete de regreso lo asume el vendedor. La
-  comisión de Sastra no se cobra sobre un pedido reintegrado.
+  comisión de Sendik no se cobra sobre un pedido reintegrado.
 - **RN-056** El reporte se abre desde el pedido, en la cuenta del comprador, y
   exige fotos de lo recibido. Es el único canal: un reclamo por correo o por
   redes se responde indicando dónde abrirlo, para que quede registro.

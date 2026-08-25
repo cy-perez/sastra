@@ -9,7 +9,7 @@ import org.gradle.testing.jacoco.tasks.JacocoCoverageVerification
 // a este modulo exige una ADR.
 
 plugins {
-    id("sastra.java-conventions")
+    id("sendik.java-conventions")
 }
 
 dependencies {

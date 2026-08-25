@@ -9,7 +9,7 @@
    redundantes con las de src/styles.css, al contrario que las de las demas
    paginas: `display: contents` cambia el arbol de CAJAS, no el del DOM, y
    `.contenido > *` sigue exigiendo que el padre en el DOM sea .contenido,
-   mientras que el padre real de estas secciones es <sastra-home-page>. Sin
+   mientras que el padre real de estas secciones es <sendik-home-page>. Sin
    ellas las secciones caen en `grid-column: auto`, la rejilla las auto-coloca
    en los carriles de sangria y el hero acaba midiendo 16px. */
 :host > * {
@@ -44,37 +44,35 @@
 }
 
 /**
- * El color del texto se repite aqui a proposito, y no sobra.
+ * Solo la caja. El relleno y el color del texto los pone .btn-primario de
+ * marca.css, que dentro de .franja-tinta se invierte solo: la franja redefine
+ * --color-primario y --color-sobre-primario, asi que el boton pasa a relleno
+ * claro con tinta encima. Un boton en tinta sobre fondo de tinta no se veria, y
+ * el manual prohibe resolverlo poniendolo en bronce.
  *
- * marca.css recolorea TODOS los enlaces de la franja con
- * `.franja-oscura a { color: var(--sobre-fondo-oscuro) }` (0,1,1), que gana por
- * especificidad a `.btn-cta { color: var(--color-sobre-cta) }` (0,1,0). El
- * resultado es hueso claro sobre ocre: 2.18:1, muy por debajo del minimo. Este
- * es el primer CTA del sitio que cae dentro de una franja oscura, por eso no
- * habia salido antes.
- *
- * La regla correcta vive en el kit (`.franja-oscura a.btn-cta`) y hay que
- * subirla a docs/ui/generador/fuentes/marca.css y republicar; mientras tanto se
- * corrige aqui, donde la encapsulacion de Angular da (0,2,0) y gana.
+ * El color del texto ya NO se repite aqui. Hacia falta mientras
+ * `.franja-tinta a` (0,1,1) le ganaba a `.btn-primario` (0,1,0) y dejaba el
+ * boton con texto claro sobre relleno claro. La regla que lo arregla de verdad
+ * —`.franja-tinta a.btn-primario`, (0,2,1)— ya vive en marca.css, que es del
+ * proyecto: no hay motivo para parchearlo desde la portada.
  */
 .cta {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
+  min-height: var(--destino-tactil);
   margin-top: var(--esp-24);
   padding: 0 var(--esp-32);
   border: 1px solid transparent;
   border-radius: var(--radio-md);
-  color: var(--color-sobre-cta);
   text-decoration: none;
   cursor: pointer;
 }
 
-/* .tipo-secundario fija --color-texto-suave, que sobre la franja oscura no
+/* .tipo-secundario fija --color-texto-suave, que sobre la franja de tinta no
    pasa el contraste minimo. Aqui se hereda el color de la franja y el matiz de
    nota lo da la opacidad, que si lo conserva. Los enlaces no necesitan esto:
-   marca.css ya los recolorea con `.franja-oscura a`. */
+   marca.css ya los recolorea con `.franja-tinta a`. */
 .hero-nota {
   color: inherit;
   opacity: 0.85;

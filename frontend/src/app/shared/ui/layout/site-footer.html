@@ -1,9 +1,11 @@
-<!-- .franja-oscura es tinta en los dos modos y redefine el anillo de foco, que
-     sobre tinta seria invisible. La regla de puntada es el unico elemento
-     decorativo del sistema: no se sustituye por una linea continua. -->
-<footer class="pie franja-oscura">
+<!-- .franja-tinta es tinta en los dos modos y redefine dentro del bloque el
+     anillo de foco, el acento y el boton primario, que sobre tinta serian
+     invisibles. La regla de corte es el unico elemento decorativo del sistema
+     —el corte del isotipo repetido fuera del logo— y no se sustituye por una
+     linea continua. -->
+<footer class="pie franja-tinta">
   <div class="contenedor">
-    <hr class="regla-puntada" />
+    <hr class="regla-corte" />
 
     <div class="columnas">
       <!-- Quien responde por el sitio. En Colombia el NIT y la direccion en el
@@ -16,7 +18,7 @@
           class="logo-pie"
           src="/logo-mono-negativo.svg"
           [alt]="'layout.footer.logoAlt' | transloco"
-          width="152"
+          width="139"
           height="28"
         />
         <p class="tipo-entradilla lema">{{ 'layout.footer.tagline' | transloco }}</p>

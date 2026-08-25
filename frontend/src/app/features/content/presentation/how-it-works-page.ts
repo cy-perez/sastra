@@ -20,11 +20,11 @@ import { formatearComision } from './business-figures';
  * <p>Sin datos remotos: no tiene estado de carga, vacio ni error.
  *
  * <p>Es la unica de las cuatro que termina llamando a registrarse, y por eso la
- * unica que lleva el acento ocre: quien acaba de leer como funciona esto es
- * justo quien esta listo para abrir cuenta.
+ * unica con boton principal: quien acaba de leer como funciona esto es justo
+ * quien esta listo para abrir cuenta.
  */
 @Component({
-  selector: 'sastra-how-it-works-page',
+  selector: 'sendik-how-it-works-page',
   imports: [RouterLink, TranslocoPipe],
   templateUrl: './how-it-works-page.html',
   styleUrl: './content-page.css',

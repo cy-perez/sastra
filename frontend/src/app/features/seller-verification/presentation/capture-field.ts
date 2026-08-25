@@ -37,7 +37,7 @@ export type Encuadre = 'documento' | 'rostro';
  * desconfiar de un sitio donde acabas de subir tu cédula.
  */
 @Component({
-  selector: 'sastra-capture-field',
+  selector: 'sendik-capture-field',
   imports: [TranslocoPipe],
   templateUrl: './capture-field.html',
   styleUrl: './capture-field.css',

@@ -32,7 +32,7 @@ import { TextField } from '../../../shared/ui/form/text-field';
  * un componente obligaria a distinguir con prefijos cual error es de cual campo.
  */
 @Component({
-  selector: 'sastra-profile-form',
+  selector: 'sendik-profile-form',
   imports: [ReactiveFormsModule, TranslocoPipe, TextField, SubmitButton],
   templateUrl: './profile-form.html',
   styleUrl: './profile-form.css',

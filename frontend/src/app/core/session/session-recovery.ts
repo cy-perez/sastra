@@ -24,10 +24,10 @@ import {
  */
 export type SessionRefresher = () => Observable<void>;
 
-export const SESSION_REFRESHER = new InjectionToken<SessionRefresher>('sastra.session-refresher');
+export const SESSION_REFRESHER = new InjectionToken<SessionRefresher>('sendik.session-refresher');
 
 /** Un candado por origen: lo comparten todas las pestanas del mismo sitio. */
-const CANDADO = 'sastra.refresco-de-sesion';
+const CANDADO = 'sendik.refresco-de-sesion';
 
 /**
  * Renueva la sesion de una en una, aunque se lo pidan varios a la vez.

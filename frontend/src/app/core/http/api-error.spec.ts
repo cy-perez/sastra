@@ -5,7 +5,7 @@ import { toApiError } from './api-error';
 describe('toApiError', () => {
   it('conserva el codigo, la traza y los errores por campo', () => {
     const error = toApiError(409, {
-      type: 'https://sastra.co/errors/email-already-registered',
+      type: 'https://sendik.co/errors/email-already-registered',
       title: 'email-already-registered',
       status: 409,
       detail: 'Codigo interno para trazabilidad',

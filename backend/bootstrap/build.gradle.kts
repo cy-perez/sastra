@@ -6,7 +6,7 @@ import org.springframework.boot.gradle.tasks.run.BootRun
 // Nadie depende de bootstrap.
 
 plugins {
-    id("sastra.spring-conventions")
+    id("sendik.spring-conventions")
     alias(libs.plugins.spring.boot)
 }
 
@@ -79,7 +79,7 @@ val clasesMedibles = the<SourceSetContainer>()
     .output
     .classesDirs
     .asFileTree
-    .matching { exclude("co/sastra/SastraApplication.class") }
+    .matching { exclude("co/sendik/SendikApplication.class") }
 
 tasks.withType<JacocoReportBase>().configureEach {
     classDirectories.setFrom(clasesMedibles)

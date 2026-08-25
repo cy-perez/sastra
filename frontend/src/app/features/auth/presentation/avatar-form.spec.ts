@@ -16,7 +16,7 @@ import { AvatarForm } from './avatar-form';
 
 /** Criterio 21 de HU-001: la foto de perfil. */
 describe('AvatarForm', () => {
-  const API = 'https://api.pruebas.sastra.co/api/v1';
+  const API = 'https://api.pruebas.sendik.co/api/v1';
 
   const SESION: Session = {
     accessToken: 'un-token',
@@ -32,7 +32,7 @@ describe('AvatarForm', () => {
     avatarUrl: null,
   };
 
-  const CON_FOTO = { ...SIN_FOTO, avatarUrl: 'https://archivos.sastra.co/avatares/la-foto.png' };
+  const CON_FOTO = { ...SIN_FOTO, avatarUrl: 'https://archivos.sendik.co/avatares/la-foto.png' };
 
   const asentar = async (fixture: {
     whenStable: () => Promise<unknown>;

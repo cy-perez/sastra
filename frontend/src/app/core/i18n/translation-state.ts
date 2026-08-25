@@ -8,5 +8,5 @@ import type { Translation } from '@jsverse/transloco';
  * el resultado es un parpadeo de claves crudas.
  */
 export function translationStateKey(language: string): StateKey<Translation> {
-  return makeStateKey<Translation>(`sastra.i18n.${language}`);
+  return makeStateKey<Translation>(`sendik.i18n.${language}`);
 }

@@ -7,7 +7,7 @@
   },
   "newProjectRoot": "projects",
   "projects": {
-    "sastra": {
+    "sendik": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -17,7 +17,7 @@
       },
       "root": "",
       "sourceRoot": "src",
-      "prefix": "sastra",
+      "prefix": "sendik",
       "architect": {
         "build": {
           "builder": "@angular/build:application",
@@ -73,10 +73,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "sastra:build:production"
+              "buildTarget": "sendik:build:production"
             },
             "development": {
-              "buildTarget": "sastra:build:development"
+              "buildTarget": "sendik:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -84,7 +84,7 @@
         "test": {
           "builder": "@angular/build:unit-test",
           "options": {
-            "buildTarget": "sastra:build:development",
+            "buildTarget": "sendik:build:development",
             "tsConfig": "tsconfig.spec.json",
             "runner": "vitest",
             "coverage": true,

@@ -13,8 +13,8 @@ test.use({ locale: 'es-CO' });
 
 /** Direccion y titular de cada pagina, que es lo que las distingue. */
 const PAGINAS = [
-  { ruta: '/como-funciona', h1: 'Cómo funciona Sastra' },
-  { ruta: '/sobre-sastra', h1: 'Por qué existe Sastra' },
+  { ruta: '/como-funciona', h1: 'Cómo funciona Sendik' },
+  { ruta: '/sobre-sendik', h1: 'Por qué existe Sendik' },
   { ruta: '/preguntas-frecuentes', h1: 'Preguntas frecuentes' },
   { ruta: '/contacto', h1: 'Escríbenos' },
 ] as const;
@@ -90,12 +90,12 @@ test.describe('paginas informativas, HTML servido', () => {
     expect(texto).toContain('Por qué aquí y no en un grupo de Facebook');
   });
 
-  test('sobre Sastra llega entera, con los datos de la empresa', async ({ request }) => {
-    const texto = textoServido(await (await request.get('/sobre-sastra')).text());
+  test('sobre Sendik llega entera, con los datos de la empresa', async ({ request }) => {
+    const texto = textoServido(await (await request.get('/sobre-sendik')).text());
 
     expect(texto).toContain('Quién responde');
     // Criterio 10: razon social, NIT y direccion salen de la configuracion.
-    expect(texto).toContain('Sastra S.A.S.');
+    expect(texto).toContain('Sendik S.A.S.');
     expect(texto).toContain('000000000-0');
   });
 
@@ -168,8 +168,8 @@ test.describe('paginas informativas, HTML servido', () => {
    */
   test('las cuatro llegan traducidas al ingles en la misma direccion', async ({ request }) => {
     const enIngles = [
-      { ruta: '/como-funciona', ingles: 'How Sastra works', espanol: 'Cómo funciona Sastra' },
-      { ruta: '/sobre-sastra', ingles: 'Why Sastra exists', espanol: 'Por qué existe Sastra' },
+      { ruta: '/como-funciona', ingles: 'How Sendik works', espanol: 'Cómo funciona Sendik' },
+      { ruta: '/sobre-sendik', ingles: 'Why Sendik exists', espanol: 'Por qué existe Sendik' },
       {
         ruta: '/preguntas-frecuentes',
         ingles: 'Frequently asked questions',
@@ -227,7 +227,7 @@ test.describe('paginas informativas en el navegador', () => {
 
     await page.getByRole('navigation', { name: 'Principal' }).getByText('Cómo funciona').click();
     await expect(page).toHaveURL('/como-funciona');
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Cómo funciona Sastra');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText('Cómo funciona Sendik');
 
     await page.getByRole('link', { name: 'Crear cuenta' }).click();
     await expect(page).toHaveURL('/registro');
@@ -336,7 +336,7 @@ const contrasteConPapel = (color: string): number => {
 test.describe('contacto impreso', () => {
   test('sobre papel blanco el correo y los plazos siguen legibles', async ({ page, context }) => {
     await context.addCookies([
-      { name: 'sastra_theme', value: 'dark', url: 'http://localhost:4173' },
+      { name: 'sendik_theme', value: 'dark', url: 'http://localhost:4173' },
     ]);
     await page.goto('/contacto');
     await expect(page.locator('html')).toHaveAttribute('data-tema', 'oscuro');
@@ -362,7 +362,7 @@ test.describe('contacto impreso', () => {
 
     // Y el pie, que repite el correo y los tres documentos legales. Es la mitad
     // del caso borde que faltaba: su regla vive en marca.css, junto a
-    // .franja-oscura, porque la franja la comparten el hero y el pie.
+    // .franja-tinta, porque la franja la comparten el hero y el pie.
     const delPie = await page
       .locator('footer')
       .getByRole('link', { name: 'soporte@example.test' })
@@ -478,7 +478,7 @@ test.describe('navegacion principal', () => {
       .evaluateAll((enlaces) => enlaces.map((enlace) => enlace.getAttribute('href') ?? ''));
 
     expect(destinos.sort()).toEqual(
-      ['/como-funciona', '/contacto', '/preguntas-frecuentes', '/sobre-sastra'].sort(),
+      ['/como-funciona', '/contacto', '/preguntas-frecuentes', '/sobre-sendik'].sort(),
     );
   });
 

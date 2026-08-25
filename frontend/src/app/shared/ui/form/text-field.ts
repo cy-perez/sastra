@@ -11,7 +11,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
  * cambia; el padre si tiene senales y sabe cuando mostrarlo.
  */
 @Component({
-  selector: 'sastra-text-field',
+  selector: 'sendik-text-field',
   imports: [ReactiveFormsModule, TranslocoPipe],
   templateUrl: './text-field.html',
   styleUrl: './form-field.css',

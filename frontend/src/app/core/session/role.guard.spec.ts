@@ -18,7 +18,7 @@ import { SessionStore } from './session.store';
 describe('exigirRol', () => {
   const sesionCon = (roles: readonly string[]): Session => ({
     accessToken: 'un-token',
-    user: { email: 'quien@sastra.co', displayName: 'Quien Modera', emailVerified: true, roles },
+    user: { email: 'quien@sendik.co', displayName: 'Quien Modera', emailVerified: true, roles },
   });
 
   let almacen: SessionStore;

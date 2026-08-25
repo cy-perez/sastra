@@ -45,8 +45,6 @@
   <p class="tipo-cuerpo">{{ 'howItWorks.buyer.notCovered.retracto' | transloco }}</p>
 </section>
 
-<hr class="regla-puntada" />
-
 <section class="seccion" aria-labelledby="recorrido-vendedor">
   <h2 class="tipo-h2" id="recorrido-vendedor">{{ 'howItWorks.seller.title' | transloco }}</h2>
 
@@ -85,11 +83,10 @@
   </ul>
 </section>
 
-<hr class="regla-puntada" />
-
-<!-- El unico acento ocre de las cuatro paginas informativas, y solo aqui: quien
-     acaba de leer como funciona es quien esta listo para registrarse. Va como
-     relleno con texto oscuro encima, nunca como color de texto (../CLAUDE.md).
+<!-- La unica llamada a la accion de las cuatro paginas informativas, y solo
+     aqui: quien acaba de leer como funciona es quien esta listo para
+     registrarse. Va en tinta rellena, no en bronce: el manual reserva el bronce
+     para lo verificado (../CLAUDE.md).
 
      Lleva siempre a /registro, tambien con sesion abierta, por lo mismo que el
      de la portada: el servidor no puede saber si hay sesion, y un destino
@@ -97,7 +94,7 @@
 <section class="seccion cierre" aria-labelledby="listo">
   <h2 class="tipo-h2" id="listo">{{ 'howItWorks.cta.title' | transloco }}</h2>
   <p class="tipo-cuerpo">{{ 'howItWorks.cta.body' | transloco }}</p>
-  <a class="btn-cta tipo-etiqueta-boton" routerLink="/registro">{{
+  <a class="btn-primario tipo-etiqueta-boton" routerLink="/registro">{{
     'howItWorks.cta.action' | transloco
   }}</a>
 </section>

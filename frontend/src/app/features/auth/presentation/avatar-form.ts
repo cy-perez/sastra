@@ -21,7 +21,7 @@ import { ACEPTA_IMAGENES, elTipoDeImagenEsAceptado } from '../domain/profile';
  * archivo original ya no esta en el telefono.
  */
 @Component({
-  selector: 'sastra-avatar-form',
+  selector: 'sendik-avatar-form',
   imports: [TranslocoPipe],
   templateUrl: './avatar-form.html',
   styleUrl: './avatar-form.css',

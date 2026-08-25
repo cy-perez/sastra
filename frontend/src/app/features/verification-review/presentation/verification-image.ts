@@ -29,7 +29,7 @@ import type { VerificationImage as CualImagen } from '../domain/pending-verifica
  * cuerpo del documento y con teclado habría que recorrer la página entera para volver.
  */
 @Component({
-  selector: 'sastra-verification-image',
+  selector: 'sendik-verification-image',
   imports: [TranslocoPipe],
   templateUrl: './verification-image.html',
   styleUrl: './review.css',

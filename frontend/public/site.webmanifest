@@ -1,6 +1,6 @@
 {
-  "name": "Sastra",
-  "short_name": "Sastra",
+  "name": "Sendik",
+  "short_name": "Sendik",
   "icons": [
     {
       "src": "/icon-192.png",
@@ -19,8 +19,8 @@
       "purpose": "maskable"
     }
   ],
-  "theme_color": "#16192A",
-  "background_color": "#16192A",
+  "theme_color": "#14162B",
+  "background_color": "#14162B",
   "display": "standalone",
   "start_url": "/"
 }

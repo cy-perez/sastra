@@ -37,8 +37,8 @@ export default defineConfig({
      * de lanzar las pruebas.
      */
     command: process.env['CI']
-      ? 'node dist/sastra/server/server.mjs'
-      : 'npm run build && node dist/sastra/server/server.mjs',
+      ? 'node dist/sendik/server/server.mjs'
+      : 'npm run build && node dist/sendik/server/server.mjs',
     url: BASE_URL,
     reuseExistingServer: !process.env['CI'],
     // Una construccion en frio pasa de los tres minutos, y el primer renderizado
@@ -65,7 +65,7 @@ export default defineConfig({
       API_BASE_URL: process.env['API_BASE_URL'] ?? 'http://127.0.0.1:9/api/v1',
       // El pie las muestra y ninguna es obligatoria, asi que sin declararlas
       // aqui la prueba no distinguiria "no se pintan" de "no habia que pintar".
-      COMPANY_NAME: 'Sastra S.A.S.',
+      COMPANY_NAME: 'Sendik S.A.S.',
       COMPANY_TAX_ID: '000000000-0',
       COMPANY_ADDRESS: 'Medellin, Colombia',
       SUPPORT_EMAIL: 'soporte@example.test',

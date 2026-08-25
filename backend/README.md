@@ -1,6 +1,6 @@
 # Backend
 
-API de Sastra. Java 25, Spring Boot 4.1.0, Gradle 9 multi-modulo, PostgreSQL 17,
+API de Sendik. Java 25, Spring Boot 4.1.0, Gradle 9 multi-modulo, PostgreSQL 17,
 Spring Data JDBC y Flyway.
 
 Las convenciones de codigo estan en `CLAUDE.md`. Este archivo es solo para
@@ -20,9 +20,9 @@ buildSrc        plugins de convencion: toolchain, compilador, formato, cobertura
 Las dependencias van siempre hacia adentro. El grafo de Gradle lo impide y
 `ArchitectureTest`, en `bootstrap`, lo comprueba con doce reglas.
 
-`domain` aplica solo `sastra.java-conventions`: no recibe ni el BOM de Spring.
+`domain` aplica solo `sendik.java-conventions`: no recibe ni el BOM de Spring.
 Su unica dependencia es JSpecify. Los otros cuatro modulos aplican
-`sastra.spring-conventions`, que agrega la plataforma de versiones.
+`sendik.spring-conventions`, que agrega la plataforma de versiones.
 
 ## Requisitos
 
@@ -84,18 +84,18 @@ construccion. No se suprime, se corrige.
 ## Configuracion
 
 Los valores externos se declaran en clases `@ConfigurationProperties` validadas,
-en `infrastructure/co/sastra/shared/config/`:
+en `infrastructure/co/sendik/shared/config/`:
 
 | Clase | Prefijo | Que cubre |
 |---|---|---|
-| `AppProperties` | `sastra.app` | URL publicas, correo de soporte, origenes CORS |
-| `CompanyProperties` | `sastra.company` | Razon social, NIT, direccion |
-| `CommissionProperties` | `sastra.commission` | Tasa de comision, entre 0 y 1 |
-| `FeatureFlags` | `sastra.features` | Las cinco banderas, todas apagadas todavia |
-| `StorageProperties` | `sastra.storage` | Proveedor de archivos, los dos cubos y los limites de imagen |
+| `AppProperties` | `sendik.app` | URL publicas, correo de soporte, origenes CORS |
+| `CompanyProperties` | `sendik.company` | Razon social, NIT, direccion |
+| `CommissionProperties` | `sendik.commission` | Tasa de comision, entre 0 y 1 |
+| `FeatureFlags` | `sendik.features` | Las cinco banderas, todas apagadas todavia |
+| `StorageProperties` | `sendik.storage` | Proveedor de archivos, los dos cubos y los limites de imagen |
 
 Las de JWT y de correo viven junto a lo que configuran, en
-`infrastructure/co/sastra/identity/config/`: `SessionProperties`, `MailProperties`,
+`infrastructure/co/sendik/identity/config/`: `SessionProperties`, `MailProperties`,
 `PasswordSecurityProperties` y `LegalDocumentProperties`.
 
 Si falta una variable obligatoria, la aplicacion no arranca. La lista completa
@@ -128,5 +128,5 @@ Lo que hay hoy, todo en `bootstrap`:
 | `FlywayMigrationsTest` | Las migraciones corren sobre PostgreSQL real |
 
 La cobertura minima la exige `check`: 90% en `domain`, 80% en el resto.
-`SastraApplication` queda fuera de la medicion por ser configuracion de framework
+`SendikApplication` queda fuera de la medicion por ser configuracion de framework
 sin logica propia.

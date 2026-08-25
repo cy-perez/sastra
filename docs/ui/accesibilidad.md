@@ -14,7 +14,7 @@ Cinco cosas que la persona usa o que el sitio respeta por ella.
 | Control | Dónde | Se comprueba en |
 |---|---|---|
 | Enlace de salto al contenido | Primer elemento enfocable de cada página (`site-header.html`) | `e2e/shell.spec.ts` |
-| Foco visible de 3px | `tokens.css`, con anillo propio dentro de `.franja-oscura` | `e2e/portada.spec.ts` |
+| Foco visible de 3px | `tokens.css`, con anillo propio dentro de `.franja-tinta` | `e2e/portada.spec.ts` |
 | Conmutador de tema claro y oscuro | Cabecera, con `aria-pressed` | `e2e/shell.spec.ts`, `core/theme/theme.spec.ts` |
 | Selector de idioma ES/EN | Cabecera, con etiqueta para lector de pantalla | `e2e/shell.spec.ts` |
 | Respeto de las preferencias del sistema | `prefers-reduced-motion` en `tokens.css` y `marca.css`; tema preferido si no hay elección guardada | `core/theme/theme.spec.ts` |

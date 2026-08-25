@@ -10,18 +10,18 @@
 services:
   postgres:
     image: postgres:17-alpine
-    container_name: sastra-postgres
+    container_name: sendik-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${DB_NAME:-sastra}
-      POSTGRES_USER: ${DB_USERNAME:-sastra}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-sastra}
+      POSTGRES_DB: ${DB_NAME:-sendik}
+      POSTGRES_USER: ${DB_USERNAME:-sendik}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-sendik}
     ports:
       - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-sastra} -d ${DB_NAME:-sastra}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-sendik} -d ${DB_NAME:-sendik}"]
       interval: 5s
       timeout: 5s
       retries: 10

@@ -26,14 +26,14 @@
   border-bottom: 1px solid var(--color-borde);
 }
 
-/* Medidas del sistema: 60 en movil, 72 en escritorio. Es min-height y no height
-   para que con el texto al 200% la barra crezca en vez de recortar. */
+/* Medidas del kit de Sendik: 56 en movil, 72 en escritorio. Es min-height y no
+   height para que con el texto al 200% la barra crezca en vez de recortar. */
 .barra {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--esp-16);
-  min-height: 60px;
+  min-height: 56px;
   flex-wrap: wrap;
 }
 
@@ -43,17 +43,26 @@
   }
 }
 
-/* Sin declarar display. Quien decide cual de los dos logos se ve es marca.css,
-   que los alterna segun el tema, y una regla de aqui le gana aunque parezca
-   menos especifica: la encapsulacion de Angular le anade atributos al selector y
-   lo sube por encima. Con display:block puesto aqui se pintaban LOS DOS logos a
-   la vez, uno al lado del otro.
+/* Aqui SOLO el tamano de cada variante. Cual de las cuatro se ve —dos temas por
+   dos anchos— lo decide marca.css, y tiene que ser alli por una razon concreta:
+   la encapsulacion emulada de Angular le anade `[_ngcontent-x]` a TODOS los
+   compuestos del selector, incluido `[data-tema="oscuro"]`, que vive en el
+   <html> y no lleva ese atributo. Una regla de tema escrita en esta hoja se
+   compila a algo que no casa nunca, y falla en silencio: el logo se quedaba en
+   su version clara sobre el fondo oscuro y casi no se veia.
 
-   Tampoco hace falta: .logo-sitio es inline-flex, y un elemento flex no arrastra
-   el hueco de linea base que display:block venia a quitar. */
-.logo-sitio img {
+   Tampoco se declara `display` sobre `.logo-sitio img` en general: una regla de
+   aqui le gana a la de marca.css aunque parezca menos especifica, justamente
+   porque la encapsulacion le suma atributos, y volverian a pintarse dos logos a
+   la vez. */
+.logo-sitio .lockup {
   height: 34px;
   width: auto;
+}
+
+.logo-sitio .isotipo {
+  height: 32px;
+  width: 32px;
 }
 
 /* Envuelve igual que .barra. Con el hueco proyectado son ya tres controles, y
@@ -130,12 +139,18 @@
   display: flex;
 }
 
+/* list-style: none faltaba y las vinetas se pintaban a la izquierda de cada
+   enlace de la barra. Venia de antes del cambio de marca; se corrige aqui porque
+   la maqueta del kit no las tiene y esta hoja es la que la implementa.
+   role="list" en la plantilla devuelve el rol que WebKit le quita a un ul sin
+   vinetas, asi que quitarlas no cuesta la semantica. */
 .lista-nav {
   display: flex;
   flex-direction: column;
   gap: var(--esp-4);
   margin: 0;
   padding: 0;
+  list-style: none;
 }
 
 /* 44px de destino tactil, sin excepcion, tambien en la lista desplegada. */

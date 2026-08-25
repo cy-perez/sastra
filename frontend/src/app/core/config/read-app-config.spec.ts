@@ -7,13 +7,13 @@ import {
   readAppConfigForBootstrap,
 } from './read-app-config';
 
-const MINIMUM = { API_BASE_URL: 'https://api.sastra.co/api/v1' };
+const MINIMUM = { API_BASE_URL: 'https://api.sendik.co/api/v1' };
 
 describe('readAppConfig', () => {
   it('aplica los valores por omision cuando solo esta lo obligatorio', () => {
     const config = readAppConfig(MINIMUM);
 
-    expect(config.apiBaseUrl).toBe('https://api.sastra.co/api/v1');
+    expect(config.apiBaseUrl).toBe('https://api.sendik.co/api/v1');
     expect(config.defaultLocale).toBe('es');
     expect(config.availableLocales).toEqual(['es', 'en']);
     expect(config.enableDevtools).toBe(false);
@@ -31,9 +31,9 @@ describe('readAppConfig', () => {
   // Una barra de mas produce //api/v1, que en muchos servidores es un 404 y
   // cuesta una tarde encontrar.
   it('quita la barra final de la direccion de la API', () => {
-    const config = readAppConfig({ API_BASE_URL: 'https://api.sastra.co/api/v1/' });
+    const config = readAppConfig({ API_BASE_URL: 'https://api.sendik.co/api/v1/' });
 
-    expect(config.apiBaseUrl).toBe('https://api.sastra.co/api/v1');
+    expect(config.apiBaseUrl).toBe('https://api.sendik.co/api/v1');
   });
 
   it('recorta los espacios de la lista de idiomas', () => {
@@ -106,14 +106,14 @@ describe('readAppConfig', () => {
   it('lee los datos de la empresa para el pie', () => {
     const config = readAppConfig({
       ...MINIMUM,
-      COMPANY_NAME: 'Sastra S.A.S.',
+      COMPANY_NAME: 'Sendik S.A.S.',
       COMPANY_TAX_ID: '000000000-0',
       COMPANY_ADDRESS: '  Medellin, Colombia  ',
       SUPPORT_EMAIL: 'soporte@example.test',
     });
 
     expect(config.company).toEqual({
-      name: 'Sastra S.A.S.',
+      name: 'Sendik S.A.S.',
       taxId: '000000000-0',
       address: 'Medellin, Colombia',
       supportEmail: 'soporte@example.test',
@@ -233,7 +233,7 @@ describe('avisosDeConfiguracion', () => {
     avisosDeConfiguracion(readAppConfig({ ...MINIMUM, ...variables }));
 
   const COMPLETA = {
-    COMPANY_NAME: 'Sastra S.A.S.',
+    COMPANY_NAME: 'Sendik S.A.S.',
     COMPANY_TAX_ID: '000000000-0',
     COMPANY_ADDRESS: 'Medellin, Colombia',
     SUPPORT_EMAIL: 'soporte@example.test',
@@ -283,7 +283,7 @@ describe('readAppConfigForBootstrap', () => {
   });
 
   it('usa el entorno real cuando esta completo', () => {
-    expect(readAppConfigForBootstrap(MINIMUM).apiBaseUrl).toBe('https://api.sastra.co/api/v1');
+    expect(readAppConfigForBootstrap(MINIMUM).apiBaseUrl).toBe('https://api.sendik.co/api/v1');
   });
 });
 
@@ -295,6 +295,6 @@ describe('assertRenderingEnvironment', () => {
   });
 
   it('pasa cuando esta declarada', () => {
-    expect(() => assertRenderingEnvironment({ NG_ALLOWED_HOSTS: 'sastra.co' })).not.toThrow();
+    expect(() => assertRenderingEnvironment({ NG_ALLOWED_HOSTS: 'sendik.co' })).not.toThrow();
   });
 });

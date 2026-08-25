@@ -63,7 +63,7 @@ capacidad nueva.
 biblioteca estándar, sin contador de monotonicidad, conservando la decisión que el
 modelo de datos ya había tomado.
 
-La fábrica es `co.sastra.shared.id.Uuid7`, con `nuevo()` y `nuevo(Instant)` —la
+La fábrica es `co.sendik.shared.id.Uuid7`, con `nuevo()` y `nuevo(Instant)` —la
 sobrecarga existe para que la prueba pueda afirmar la marca de tiempo embebida—. La
 usan los cinco identificadores de Fase 1 y el `id` de `login_attempts`, que se
 generaba en `JdbcLoginAttemptRecorder` y también es clave primaria de una tabla.

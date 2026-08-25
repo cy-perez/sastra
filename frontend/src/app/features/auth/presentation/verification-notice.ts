@@ -16,7 +16,7 @@ import { AuthStore } from '../application/auth.store';
  * verificacion no significa nada.
  */
 @Component({
-  selector: 'sastra-verification-notice',
+  selector: 'sendik-verification-notice',
   imports: [TranslocoPipe],
   templateUrl: './verification-notice.html',
   styleUrl: './verification-notice.css',

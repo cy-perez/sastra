@@ -1,9 +1,12 @@
 /* Orden obligatorio, definido por el kit de interfaz:
 
-     fuentes.css      declara los archivos de tipografía
-     tokens.css       variables del sistema. Generado, no se edita
-     tipografia.css   roles de texto, escala fluida y respaldos
-     marca.css        componentes de Sastra y ajustes de modo oscuro
+     fuentes.css      declara los archivos de tipografía. Del proyecto
+     tokens.css       variables del sistema. GENERADO, no se edita
+     tipografia.css   roles de texto, escala fluida y respaldos. Del proyecto
+     marca.css        componentes de Sendik y ajustes de modo oscuro. Del proyecto
+
+   Solo tokens.css sale del generador: lo escribe docs/ui/generador y lo copia
+   publicar.py. Las otras tres se editan aquí mismo.
 
    marca.css va al final porque carga después y sobrescribiría lo que
    tipografia.css define. Alterar este orden rompe el sistema en silencio. */
@@ -28,12 +31,11 @@ body {
   margin: 0;
   background: var(--color-fondo);
   color: var(--color-texto);
-  /* La clase de rol .tipo-cuerpo va en el atributo class del body, en
-     index.html: el tamaño y la familia los define tipografia.css y no se
-     redeclaran aquí. */
+  /* El tamaño y la familia los define tipografia.css sobre el propio <body>, y
+     no se redeclaran aquí. */
 }
 
-/* El anillo de foco es de 3px y no se retira nunca. Dentro de .franja-oscura,
+/* El anillo de foco es de 3px y no se retira nunca. Dentro de .franja-tinta,
    marca.css ya redefine --color-foco para que siga siendo visible sobre tinta. */
 :focus-visible {
   outline: 3px solid var(--color-foco);
@@ -100,7 +102,10 @@ body {
   grid-column: full;
 }
 
-/* Ancho de contenido del sitio. --ancho-max lo fija marca.css en 1200px. */
+/* Ancho de contenido del sitio. --ancho-max lo fija tokens.css en 1140px, que
+   es la medida del kit de Sendik. Antes marca.css lo subía a 1200 para encajar
+   cinco tarjetas de producto; el kit nuevo dimensiona la rejilla a 1140 y ya no
+   hace falta la excepción. */
 .contenedor {
   width: 100%;
   max-width: var(--ancho-max);

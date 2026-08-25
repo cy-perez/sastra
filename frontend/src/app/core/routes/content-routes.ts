@@ -17,7 +17,7 @@ export type ContentPageId = 'howItWorks' | 'about' | 'faq' | 'contact';
 
 export const RUTAS_CONTENIDO: Readonly<Record<ContentPageId, string>> = {
   howItWorks: '/como-funciona',
-  about: '/sobre-sastra',
+  about: '/sobre-sendik',
   faq: '/preguntas-frecuentes',
   contact: '/contacto',
 };

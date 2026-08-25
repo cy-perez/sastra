@@ -14,7 +14,7 @@
       <p class="error tipo-cuerpo" role="alert">{{ error | transloco }}</p>
     }
 
-    <sastra-text-field
+    <sendik-text-field
       fieldId="correo-nuevo"
       type="email"
       autocomplete="email"
@@ -24,6 +24,6 @@
       [errorKey]="correoError()"
     />
 
-    <sastra-submit-button labelKey="auth.account.email.submit" [loading]="peticion.isPending()" />
+    <sendik-submit-button labelKey="auth.account.email.submit" [loading]="peticion.isPending()" />
   </form>
 }

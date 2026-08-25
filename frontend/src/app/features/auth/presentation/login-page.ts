@@ -31,7 +31,7 @@ import { TextField } from '../../../shared/ui/form/text-field';
  * escrito y que el correo tenga forma de correo. Quien decide es el servidor.
  */
 @Component({
-  selector: 'sastra-login-page',
+  selector: 'sendik-login-page',
   imports: [ReactiveFormsModule, TranslocoPipe, RouterLink, TextField, SubmitButton],
   templateUrl: './login-page.html',
   styleUrl: './login-page.css',

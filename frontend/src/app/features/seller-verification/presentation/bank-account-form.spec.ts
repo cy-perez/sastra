@@ -16,7 +16,7 @@ import { BankAccountForm } from './bank-account-form';
 
 /** El formulario de la cuenta bancaria. Criterio 4 de HU-002. */
 describe('BankAccountForm', () => {
-  const API = 'https://api.pruebas.sastra.co/api/v1';
+  const API = 'https://api.pruebas.sendik.co/api/v1';
 
   const SESION: Session = {
     accessToken: 'un-token',

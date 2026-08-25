@@ -28,7 +28,7 @@ test.describe('cabeceras de seguridad', () => {
    * se ponen al lado del renderizado, y por eso se comprueba aparte.
    */
   test('el archivo estatico tambien las lleva', async ({ request }) => {
-    const cabeceras = (await request.get('/fuentes/instrument-sans-400.woff2')).headers();
+    const cabeceras = (await request.get('/fuentes/inter-latin.woff2')).headers();
 
     expect(cabeceras['x-content-type-options']).toBe('nosniff');
     expect(cabeceras['x-frame-options']).toBe('DENY');
@@ -48,13 +48,18 @@ test.describe('cabeceras de seguridad', () => {
 
 test.describe('politicas de cache', () => {
   /**
-   * Un anio e `immutable`: el nombre del archivo lleva la familia y el grosor, asi
-   * que cambiar de fuente produce otro archivo y este no cambia nunca.
+   * Un anio e `immutable`: el nombre del archivo lleva la familia, asi que cambiar
+   * de tipografia produce otro archivo y este no cambia nunca.
+   *
+   * <p>Se pide el archivo real y no uno cualquiera de la carpeta: si el nombre
+   * deja de existir —como paso al cambiar a las variables de Sendik— la cabecera
+   * llega indefinida y el caso tiene que verlo.
    */
   test('la fuente se cachea un anio y no se revalida', async ({ request }) => {
-    const cache = (await request.get('/fuentes/instrument-sans-400.woff2')).headers()[
-      'cache-control'
-    ];
+    const respuesta = await request.get('/fuentes/inter-latin.woff2');
+    const cache = respuesta.headers()['cache-control'];
+
+    expect(respuesta.status()).toBe(200);
 
     expect(cache).toContain('max-age=31536000');
     expect(cache).toContain('immutable');

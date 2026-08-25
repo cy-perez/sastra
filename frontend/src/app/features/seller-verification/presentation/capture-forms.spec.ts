@@ -19,7 +19,7 @@ import { SelfieCaptureForm } from './selfie-capture-form';
 
 /** Los dos pasos de imagen de HU-002: documento por ambas caras y selfie. */
 describe('formularios de captura', () => {
-  const API = 'https://api.pruebas.sastra.co/api/v1';
+  const API = 'https://api.pruebas.sendik.co/api/v1';
 
   const SESION: Session = {
     accessToken: 'un-token',

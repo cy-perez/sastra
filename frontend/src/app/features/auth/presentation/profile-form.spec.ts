@@ -16,7 +16,7 @@ import { ProfileForm } from './profile-form';
 
 /** Criterio 21 de HU-001: el perfil que se edita de una vez. */
 describe('ProfileForm', () => {
-  const API = 'https://api.pruebas.sastra.co/api/v1';
+  const API = 'https://api.pruebas.sendik.co/api/v1';
 
   const SESION: Session = {
     accessToken: 'un-token',

@@ -17,7 +17,7 @@ import { TranslocoPipe } from '@jsverse/transloco';
  * (docs/operacion/datos-personales.md).
  */
 @Component({
-  selector: 'sastra-checkbox-field',
+  selector: 'sendik-checkbox-field',
   imports: [ReactiveFormsModule, RouterLink, TranslocoPipe],
   templateUrl: './checkbox-field.html',
   styleUrl: './form-field.css',

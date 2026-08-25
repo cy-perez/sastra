@@ -1,8 +1,11 @@
-# Sastra
+# Sendik
 
-Marketplace colombiano donde cualquiera compra y vende moda, nueva y usada, con
-la plataforma como respaldo de la transacción. La comisión es del 5% sobre el
-valor del producto, a cargo del vendedor.
+Marketplace colombiano donde cualquiera compra y vende moda —calzado, ropa y
+bolsos— nueva y usada, y tecnología solo nueva, con la plataforma como respaldo
+de la transacción. La comisión es del 5% sobre el valor del producto, a cargo del
+vendedor.
+
+**Compra y vende de forma ágil y segura.**
 
 ## Estado
 
@@ -119,4 +122,4 @@ Las subidas de versión mayor no se proponen automáticamente: exigen una ADR.
 
 ## Licencia y titularidad
 
-Proyecto privado. Sastra, NIT 1054994043-1, Medellín, Colombia.
+Proyecto privado. Sendik, NIT 1054994043-1, Medellín, Colombia.

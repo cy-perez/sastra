@@ -44,7 +44,7 @@ describe('HomePage', () => {
   it('tiene un unico h1 con la propuesta de valor', async () => {
     const fixture = await render();
 
-    expect(textos(fixture.nativeElement, 'h1')).toEqual(['Compra y vende moda con respaldo']);
+    expect(textos(fixture.nativeElement, 'h1')).toEqual(['Compra y vende de forma ágil y segura']);
   });
 
   // La otra mitad del criterio 1: el texto de apoyo explica el respaldo del pago.

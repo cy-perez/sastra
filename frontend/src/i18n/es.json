@@ -3,7 +3,7 @@
     "siteName": "Sendik",
     "home": {
       "title": "Sendik",
-      "description": "Compra y vende moda con respaldo."
+      "description": "Compra y vende de forma ágil y segura."
     },
     "notFound": {
       "title": "Página no encontrada",
@@ -11,7 +11,7 @@
     },
     "register": {
       "title": "Crear cuenta",
-      "description": "Crea tu cuenta en Sendik para comprar y vender moda con respaldo."
+      "description": "Crea tu cuenta en Sendik para comprar y vender de forma ágil y segura."
     },
     "verify": {
       "title": "Verificar correo",
@@ -19,7 +19,7 @@
     },
     "login": {
       "title": "Entrar",
-      "description": "Entra a tu cuenta de Sendik para comprar y vender moda con respaldo."
+      "description": "Entra a tu cuenta de Sendik para comprar y vender de forma ágil y segura."
     },
     "legal": {
       "terms": {
@@ -122,7 +122,7 @@
   },
   "home": {
     "hero": {
-      "title": "Compra y vende moda con respaldo",
+      "title": "Compra y vende de forma ágil y segura",
       "body": "El pago queda retenido hasta que confirmas que la prenda llegó como la viste.",
       "cta": "Crear cuenta",
       "note": "Publicar es gratis. Solo cobramos cuando vendes."

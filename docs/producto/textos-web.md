@@ -92,16 +92,15 @@ se revisa cuando la oferta supere a la demanda.
 `meta.home.title` · `meta.home.description`
 
 **Título:** Sendik
-**Descripción:** Compra y vende moda con respaldo.
+**Descripción:** Compra y vende de forma ágil y segura.
 
-⚠️ Ambos son de marcador de posición, y la descripción arrastra además el
-descriptor viejo de marca. El eslogan aprobado es «Compra y vende de forma ágil y
-segura»; esta descripción no tiene por qué repetirlo, pero sí tiene que dejar de
-contradecirlo. Propuesta, dentro de los límites de
-buscador: título `Vende moda nueva y de segunda con respaldo | Sendik`;
-descripción `Publica gratis tu ropa, calzado y bolsos. Vendedores verificados,
-publicaciones revisadas y el pago retenido hasta que el comprador confirma la
-entrega.`
+La descripción ya no arrastra el descriptor viejo de marca: adopta el eslogan
+aprobado (ADR-0022), que no nombra la categoría y por eso no se queda corto ahora
+que el catálogo incluye tecnología.
+
+⚠️ El **título** sigue siendo de marcador de posición. Propuesta, dentro de los
+límites de buscador: `Vende moda nueva y de segunda con respaldo | Sendik`. No se
+cambia todavía porque nombra solo una de las dos categorías.
 
 ## 1.1 Hero — `home.hero.*`
 
@@ -109,7 +108,7 @@ Texto vigente, ya implementado. Cualquier cambio aquí reabre HU-004.
 
 | Clave | Texto |
 |---|---|
-| `home.hero.title` | Compra y vende moda con respaldo |
+| `home.hero.title` | Compra y vende de forma ágil y segura |
 | `home.hero.body` | El pago queda retenido hasta que confirmas que la prenda llegó como la viste. |
 | `home.hero.cta` | Crear cuenta |
 | `home.hero.note` | Publicar es gratis. Solo cobramos cuando vendes. |
@@ -759,12 +758,15 @@ Lo que falta escribir:
       `layout.footer.tagline`, en el logo con eslogan y en el manual.
       **Sigue pendiente el titular del hero y la descripción para buscadores**,
       que son redacción y no marca: ver abajo.
-- [ ] **El titular del hero y `meta.home.description` siguen diciendo «moda con
-      respaldo».** Era el descriptor viejo puesto como copy. Cambiarlos reabre
-      HU-004, así que es una decisión de producto, no un arrastre del cambio de
-      marca. La maqueta del kit propone «Compra y vende moda y tecnología de
-      forma ágil y segura», pero el propio kit la marca como texto **de
-      muestra**: no está aprobada.
+- [x] ~~**El titular del hero y `meta.home.description` siguen diciendo «moda con
+      respaldo».**~~ **Decidido el 25 de agosto de 2026:** ambos adoptan el
+      eslogan tal cual, «Compra y vende de forma ágil y segura», y con ellos
+      `meta.register.description` y `meta.login.description`, que arrastraban el
+      mismo descriptor. Se descartó la variante de la maqueta del kit —«Compra y
+      vende moda y tecnología de forma ágil y segura»—, que el propio kit marca
+      como texto de muestra y que vuelve a nombrar las categorías. En inglés se
+      reusa la fórmula del pie, `Buy and sell quickly and safely`, para que marca
+      y copy no diverjan entre idiomas. Reabre y cierra HU-004.
 - [ ] Los tres pasos de la portada y el recorrido de `/como-funciona` hablan solo
       de prendas, tallas y medidas. Hay que decidir si se generalizan o si se
       separan los dos recorridos.

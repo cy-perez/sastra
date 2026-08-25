@@ -48,19 +48,23 @@ class ListingTest {
             assertThatThrownBy(() -> conSiete.enviarARevision(AHORA)).isInstanceOf(ShotsIncompleteException.class);
         }
 
-        // Ocho tomas que no incluyen las cuatro canonicas no existen en una secuencia
-        // de 45 grados, pero si se pueden construir subiendo ocho veces posiciones
-        // impares. RN-016 es lo que lo impide.
+        // La rama de canonicas solo se alcanza cuando el conteo cuadra, y eso solo pasa
+        // con tecnologia sellada: cuatro tomas exigidas, cuatro subidas, ninguna canonica
+        // porque estan todas en posiciones impares. La version anterior de esta prueba
+        // subia cuatro impares a una camisa, que exige ocho, asi que fallaba por el
+        // conteo y nunca ejercitaba RN-016.
         @Test
         void deberia_exigir_las_cuatro_canonicas_RN_016() {
-            Listing soloImpares = CatalogoDePrueba.borrador();
+            Listing sellado = CatalogoDePrueba.borradorDe(CatalogoDePrueba.celular(true));
             for (int posicion = 1; posicion < 8; posicion += 2) {
-                soloImpares = soloImpares.conImagen(CatalogoDePrueba.toma(posicion), AHORA);
+                sellado = sellado.conImagen(CatalogoDePrueba.toma(posicion), AHORA);
             }
-            Listing conCuatroImpares = soloImpares;
+            Listing cuatroSinCanonicas = sellado;
 
-            assertThatThrownBy(() -> conCuatroImpares.enviarARevision(AHORA))
-                    .isInstanceOf(ShotsIncompleteException.class);
+            assertThat(cuatroSinCanonicas.tomasDelVendedor()).hasSize(4);
+            assertThatThrownBy(() -> cuatroSinCanonicas.enviarARevision(AHORA))
+                    .isInstanceOf(ShotsIncompleteException.class)
+                    .hasMessageContaining("canonicas");
         }
 
         @Test
@@ -145,6 +149,116 @@ class ListingTest {
     }
 
     @Nested
+    class EdicionYModeracion {
+
+        // El agujero que destapo la revision: sustituir las ocho tomas de algo ya
+        // aprobado por las de una replica, sin volver a pasar por moderacion.
+        @Test
+        void deberia_volver_a_revision_al_cambiar_una_toma_de_algo_publicado_RN_062() {
+            Listing publicada = CatalogoDePrueba.publicada();
+
+            Listing conOtraFoto = publicada.conImagen(CatalogoDePrueba.toma(0), AHORA);
+
+            assertThat(conOtraFoto.status()).isEqualTo(ListingStatus.PENDING_REVIEW);
+            assertThat(conOtraFoto.esVisible()).isFalse();
+        }
+
+        @Test
+        void deberia_volver_a_revision_al_quitar_una_toma_de_algo_publicado_RN_062() {
+            Listing publicada = CatalogoDePrueba.publicada();
+
+            Listing conSiete = publicada.sinImagen(publicada.images().getFirst().id(), AHORA);
+
+            assertThat(conSiete.status()).isEqualTo(ListingStatus.PENDING_REVIEW);
+            assertThat(conSiete.tomasDelVendedor()).hasSize(7);
+        }
+
+        // Criterio 19: mientras el moderador la mira, no se toca.
+        @Test
+        void deberia_impedir_editar_algo_que_espera_revision_criterio_19() {
+            Listing enRevision = CatalogoDePrueba.borradorCompleto().enviarARevision(AHORA);
+
+            assertThatThrownBy(() -> enRevision.editarContenido(enRevision.product(), AHORA))
+                    .isInstanceOf(InvalidListingTransitionException.class);
+        }
+
+        // Criterio 23: corregir una rechazada la devuelve a borrador, no a revision.
+        @Test
+        void deberia_llevar_a_borrador_al_editar_una_rechazada_criterio_23() {
+            Listing rechazada = CatalogoDePrueba.borradorCompleto()
+                    .enviarARevision(AHORA)
+                    .rechazar(MODERADOR, ListingRejectionReason.PHOTOS_UNUSABLE, null, AHORA);
+
+            Listing corregida = rechazada.editarContenido(rechazada.product(), AHORA);
+
+            assertThat(corregida.status()).isEqualTo(ListingStatus.DRAFT);
+            assertThat(corregida.tomasDelVendedor()).hasSize(8);
+        }
+
+        @Test
+        void deberia_borrar_las_referencias_al_dejar_de_estar_sellado_RN_066() {
+            Listing sellado = CatalogoDePrueba.conTomas(CatalogoDePrueba.borradorDe(CatalogoDePrueba.celular(true)))
+                    .conImagen(CatalogoDePrueba.referencia(0), AHORA);
+            assertThat(sellado.imagenesDeReferencia()).hasSize(1);
+
+            Listing abierto = sellado.editarContenido(CatalogoDePrueba.celular(false), AHORA);
+
+            assertThat(abierto.imagenesDeReferencia()).isEmpty();
+            assertThat(abierto.tomasExigidas()).isEqualTo(8);
+        }
+
+        @Test
+        void deberia_conservar_las_dos_marcas_de_atencion_a_la_vez_criterios_12_y_18() {
+            Listing barataYDeGaleria = CatalogoDePrueba.borradorDe(CatalogoDePrueba.camisaCon(Money.dePesos(9_000)))
+                    .marcarCargaDesdeGaleria(AHORA);
+
+            assertThat(barataYDeGaleria.attentionReasons())
+                    .containsExactlyInAnyOrder(AttentionReason.PRICE_OUT_OF_RANGE, AttentionReason.GALLERY_UPLOAD);
+        }
+
+        @Test
+        void deberia_conservar_la_marca_de_galeria_al_corregir_el_precio_criterio_18() {
+            Listing corregida = CatalogoDePrueba.borradorDe(CatalogoDePrueba.camisaCon(Money.dePesos(9_000)))
+                    .marcarCargaDesdeGaleria(AHORA)
+                    .cambiarPrecio(Money.dePesos(120_000), AHORA);
+
+            assertThat(corregida.attentionReasons()).containsExactly(AttentionReason.GALLERY_UPLOAD);
+        }
+
+        @Test
+        void deberia_impedir_marcar_una_publicacion_archivada() {
+            Listing archivada = CatalogoDePrueba.publicada().archivar(AHORA);
+
+            assertThatThrownBy(() -> archivada.marcarCargaDesdeGaleria(AHORA))
+                    .isInstanceOf(InvalidListingTransitionException.class);
+        }
+
+        @Test
+        void deberia_topar_las_imagenes_de_referencia_RN_066() {
+            Listing sellado = CatalogoDePrueba.borradorDe(CatalogoDePrueba.celular(true));
+            for (int posicion = 0; posicion < Listing.MAXIMO_DE_REFERENCIAS; posicion++) {
+                sellado = sellado.conImagen(CatalogoDePrueba.referencia(posicion), AHORA);
+            }
+            Listing conElMaximo = sellado;
+
+            assertThatThrownBy(() -> conElMaximo.conImagen(CatalogoDePrueba.referencia(9), AHORA))
+                    .isInstanceOf(ReferenceImageNotAllowedException.class)
+                    .hasMessageContaining("maximo");
+        }
+
+        // RN-020 es un rango cerrado: los extremos estan dentro.
+        @Test
+        void deberia_aceptar_sin_marca_los_limites_exactos_de_RN_020() {
+            assertThat(CatalogoDePrueba.borradorDe(CatalogoDePrueba.camisaCon(Money.dePesos(10_000)))
+                            .requiereAtencion())
+                    .isFalse();
+            assertThat(CatalogoDePrueba.borradorDe(CatalogoDePrueba.camisaCon(Money.dePesos(20_000_000)))
+                            .requiereAtencion())
+                    .isFalse();
+        }
+    }
+
+    @Nested
     class DespuesDePublicada {
 
         @Test
@@ -212,14 +326,14 @@ class ListingTest {
             Listing barata = CatalogoDePrueba.borradorDe(CatalogoDePrueba.camisaCon(Money.dePesos(9_999)));
 
             assertThat(barata.requiereAtencion()).isTrue();
-            assertThat(barata.attentionReason()).isEqualTo(AttentionReason.PRICE_OUT_OF_RANGE);
+            assertThat(barata.attentionReasons()).containsExactly(AttentionReason.PRICE_OUT_OF_RANGE);
         }
 
         @Test
         void deberia_marcar_para_atencion_un_precio_por_encima_del_rango_RN_020() {
             Listing cara = CatalogoDePrueba.borradorDe(CatalogoDePrueba.camisaCon(Money.dePesos(20_000_001)));
 
-            assertThat(cara.attentionReason()).isEqualTo(AttentionReason.PRICE_OUT_OF_RANGE);
+            assertThat(cara.attentionReasons()).containsExactly(AttentionReason.PRICE_OUT_OF_RANGE);
         }
 
         // El rango es blando: fuera de el se publica igual y solo se marca.

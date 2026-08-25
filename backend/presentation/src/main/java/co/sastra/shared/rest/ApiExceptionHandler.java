@@ -236,7 +236,15 @@ public class ApiExceptionHandler {
                     // La categoria no existe o esta retirada. Codigo propio y no el de
                     // validacion generica, por lo mismo que la entidad financiera: lo
                     // que hay que decirle es que elija otra del arbol.
-                    CATALOG_UNKNOWN_CATEGORY -> HttpStatus.UNPROCESSABLE_CONTENT;
+                    CATALOG_UNKNOWN_CATEGORY,
+                    // Criterio 6: el borrador esta incompleto para enviarlo. Guardar el
+                    // borrador asi es valido, asi que no es un 400 de formato: es el
+                    // negocio rechazando el envio, con la lista de campos en errors.
+                    CATALOG_LISTING_INCOMPLETE,
+                    // Criterio 19: el estado actual no admite editar. 422 y no 409 porque
+                    // lo que sobra no es la peticion sino el momento, y el cliente no
+                    // tiene que reintentar: tiene que esperar la decision.
+                    CATALOG_LISTING_NOT_EDITABLE -> HttpStatus.UNPROCESSABLE_CONTENT;
             // 415: el contenido no es de un tipo que el servidor sepa manejar. Es
             // exactamente lo que significa, y le dice al cliente que el problema es
             // el formato y no lo que hay dentro. Se decide por los bytes de

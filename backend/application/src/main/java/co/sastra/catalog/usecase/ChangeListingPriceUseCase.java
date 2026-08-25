@@ -1,6 +1,7 @@
 package co.sastra.catalog.usecase;
 
 import co.sastra.catalog.dto.ChangeListingPriceCommand;
+import co.sastra.catalog.exception.ListingNotFoundException;
 import co.sastra.catalog.model.Listing;
 import co.sastra.catalog.port.out.ListingRepository;
 import java.time.Clock;
@@ -26,7 +27,9 @@ public class ChangeListingPriceUseCase {
 
     @Transactional
     public Listing execute(ChangeListingPriceCommand comando) {
-        Listing actual = ListingAccess.deVendedor(publicaciones, comando.publicacion(), comando.vendedor());
+        Listing actual = publicaciones
+                .buscarDelDueno(comando.publicacion(), comando.vendedor())
+                .orElseThrow(() -> new ListingNotFoundException(comando.publicacion()));
 
         return publicaciones.guardar(actual.cambiarPrecio(comando.precio(), Instant.now(reloj)));
     }

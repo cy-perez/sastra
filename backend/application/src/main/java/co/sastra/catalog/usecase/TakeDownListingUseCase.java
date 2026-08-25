@@ -1,12 +1,17 @@
 package co.sastra.catalog.usecase;
 
 import co.sastra.catalog.dto.TakeDownListingCommand;
+import co.sastra.catalog.exception.InvalidListingTransitionException;
+import co.sastra.catalog.exception.ListingNotFoundException;
 import co.sastra.catalog.exception.SelfModerationForbiddenException;
 import co.sastra.catalog.model.Listing;
+import co.sastra.catalog.model.ListingStatus;
 import co.sastra.catalog.model.ModerationAction;
+import co.sastra.catalog.model.ProductImage;
 import co.sastra.catalog.port.out.ListingNotifier;
 import co.sastra.catalog.port.out.ListingRepository;
 import co.sastra.catalog.port.out.ModerationLog;
+import co.sastra.shared.port.out.PublicFileStore;
 import java.time.Clock;
 import java.time.Instant;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,23 +31,32 @@ public class TakeDownListingUseCase {
     private final ListingRepository publicaciones;
     private final ModerationLog bitacora;
     private final ListingNotifier avisos;
+    private final PublicFileStore almacen;
     private final Clock reloj;
 
     public TakeDownListingUseCase(
-            ListingRepository publicaciones, ModerationLog bitacora, ListingNotifier avisos, Clock reloj) {
+            ListingRepository publicaciones,
+            ModerationLog bitacora,
+            ListingNotifier avisos,
+            PublicFileStore almacen,
+            Clock reloj) {
         this.publicaciones = publicaciones;
         this.bitacora = bitacora;
         this.avisos = avisos;
+        this.almacen = almacen;
         this.reloj = reloj;
     }
 
     @Transactional
     public Listing execute(TakeDownListingCommand comando) {
-        Listing actual = ListingAccess.cualquiera(publicaciones, comando.publicacion());
+        Listing actual = publicaciones
+                .buscar(comando.publicacion())
+                .orElseThrow(() -> new ListingNotFoundException(comando.publicacion()));
 
-        if (actual.sellerId().value().equals(comando.moderador().value())) {
+        if (actual.laPublico(comando.moderador())) {
             throw new SelfModerationForbiddenException();
         }
+        exigirQueHayaSidoVisible(actual);
 
         Listing retirada = publicaciones.guardar(actual.archivar(Instant.now(reloj)));
 
@@ -53,6 +67,24 @@ public class TakeDownListingUseCase {
                 comando.motivo().name(),
                 comando.nota());
         avisos.publicacionRetirada(retirada, comando.nota());
+
+        // Lo que se retira por RN-024 no puede seguir servido. Es el caso mas claro:
+        // una replica bajada del catalogo con sus fotos todavia accesibles.
+        retirada.images().stream().map(ProductImage::objectKey).forEach(almacen::borrar);
         return retirada;
+    }
+
+    /**
+     * Criterio 31: esto retira lo que <strong>ya era visible</strong>.
+     *
+     * <p>Sin la comprobacion, un moderador destruye de forma irreversible el borrador
+     * privado de alguien —{@code DRAFT} y {@code REJECTED} tambien admiten archivar— y le
+     * manda un correo de retirada por algo que nadie llego a ver. Lo que se rechaza antes
+     * de publicar se rechaza con {@code RejectListingUseCase}, que si deja corregir.
+     */
+    private static void exigirQueHayaSidoVisible(Listing publicacion) {
+        if (publicacion.status() != ListingStatus.PUBLISHED && publicacion.status() != ListingStatus.PAUSED) {
+            throw new InvalidListingTransitionException(publicacion.status(), ListingStatus.ARCHIVED);
+        }
     }
 }

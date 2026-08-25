@@ -1,6 +1,7 @@
 package co.sastra.catalog.usecase;
 
 import co.sastra.catalog.dto.SellerListingCommand;
+import co.sastra.catalog.exception.ListingNotFoundException;
 import co.sastra.catalog.exception.SellerNotEligibleException;
 import co.sastra.catalog.exception.UnknownCategoryException;
 import co.sastra.catalog.model.Category;
@@ -47,7 +48,9 @@ public class SubmitListingForReviewUseCase {
             throw new SellerNotEligibleException();
         }
 
-        Listing actual = ListingAccess.deVendedor(publicaciones, comando.publicacion(), comando.vendedor());
+        Listing actual = publicaciones
+                .buscarDelDueno(comando.publicacion(), comando.vendedor())
+                .orElseThrow(() -> new ListingNotFoundException(comando.publicacion()));
 
         Category categoria = categorias
                 .buscar(actual.product().categoryId())

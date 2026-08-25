@@ -63,6 +63,7 @@ class CasosDeUsoDelCatalogoTest {
     private CatalogoEnMemoria.Elegibilidad elegibilidad;
     private CatalogoEnMemoria.Bitacora bitacora;
     private CatalogoEnMemoria.Avisos avisos;
+    private CatalogoEnMemoria.Almacen almacen;
 
     private SellerId vendedor;
 
@@ -73,6 +74,7 @@ class CasosDeUsoDelCatalogoTest {
         elegibilidad = new CatalogoEnMemoria.Elegibilidad();
         bitacora = new CatalogoEnMemoria.Bitacora();
         avisos = new CatalogoEnMemoria.Avisos();
+        almacen = new CatalogoEnMemoria.Almacen();
         vendedor = new SellerId(UUID.randomUUID());
     }
 
@@ -81,7 +83,7 @@ class CasosDeUsoDelCatalogoTest {
 
         @Test
         void deberia_impedir_publicar_a_quien_no_esta_verificado_RN_011() {
-            elegibilidad.revocar();
+            elegibilidad.revocar(vendedor);
             Category camisas = arbol.camisas();
 
             assertThatThrownBy(() -> crear().execute(new CreateListingCommand(vendedor, datosDeCamisa(camisas))))
@@ -96,7 +98,7 @@ class CasosDeUsoDelCatalogoTest {
             Category camisas = arbol.camisas();
             Listing ya = crear().execute(new CreateListingCommand(vendedor, datosDeCamisa(camisas)));
 
-            elegibilidad.revocar();
+            elegibilidad.revocar(vendedor);
 
             assertThatThrownBy(() -> crear().execute(new CreateListingCommand(vendedor, datosDeCamisa(camisas))))
                     .isInstanceOf(SellerNotEligibleException.class);
@@ -177,7 +179,7 @@ class CasosDeUsoDelCatalogoTest {
         @Test
         void deberia_impedir_enviar_si_perdio_el_sello_con_borradores_abiertos_RN_013() {
             Listing borrador = borradorConTomas();
-            elegibilidad.revocar();
+            elegibilidad.revocar(vendedor);
 
             assertThatThrownBy(() -> enviar().execute(new SellerListingCommand(vendedor, borrador.id())))
                     .isInstanceOf(SellerNotEligibleException.class);
@@ -219,7 +221,9 @@ class CasosDeUsoDelCatalogoTest {
                 assertThat(entrada.accion()).isEqualTo(ModerationAction.APPROVED);
                 assertThat(entrada.actor()).isEqualTo(moderador);
             });
-            assertThat(avisos.enviados()).containsExactly("aprobada:" + aprobada.id());
+            assertThat(avisos.enviados())
+                    .singleElement()
+                    .satisfies(aviso -> assertThat(aviso.tipo()).isEqualTo("aprobada"));
         }
 
         // RN-063: es RN-060 aplicada al catalogo.
@@ -264,7 +268,11 @@ class CasosDeUsoDelCatalogoTest {
             assertThat(bitacora.entradas())
                     .singleElement()
                     .satisfies(entrada -> assertThat(entrada.motivo()).isEqualTo("PHOTOS_UNUSABLE"));
-            assertThat(avisos.enviados()).containsExactly("rechazada:" + rechazada.id());
+            // La nota viaja al vendedor: es el dato del criterio 22.
+            assertThat(avisos.enviados()).singleElement().satisfies(aviso -> {
+                assertThat(aviso.tipo()).isEqualTo("rechazada");
+                assertThat(aviso.nota()).isEqualTo("Frontal borrosa");
+            });
         }
 
         @Test
@@ -283,7 +291,8 @@ class CasosDeUsoDelCatalogoTest {
                 assertThat(entrada.accion()).isEqualTo(ModerationAction.ARCHIVED);
                 assertThat(entrada.motivo()).isEqualTo("SUSPECTED_COUNTERFEIT");
             });
-            assertThat(avisos.enviados()).contains("retirada:" + retirada.id());
+            assertThat(avisos.enviados())
+                    .anySatisfy(aviso -> assertThat(aviso.tipo()).isEqualTo("retirada"));
         }
     }
 
@@ -391,11 +400,11 @@ class CasosDeUsoDelCatalogoTest {
     }
 
     private TakeDownListingUseCase retirar() {
-        return new TakeDownListingUseCase(publicaciones, bitacora, avisos, RELOJ);
+        return new TakeDownListingUseCase(publicaciones, bitacora, avisos, almacen, RELOJ);
     }
 
     private UpdateListingContentUseCase editar() {
-        return new UpdateListingContentUseCase(publicaciones, arbol, RELOJ);
+        return new UpdateListingContentUseCase(publicaciones, arbol, elegibilidad, RELOJ);
     }
 
     private ChangeListingPriceUseCase cambiarPrecio() {
@@ -411,7 +420,7 @@ class CasosDeUsoDelCatalogoTest {
     }
 
     private ArchiveListingUseCase archivar() {
-        return new ArchiveListingUseCase(publicaciones, RELOJ);
+        return new ArchiveListingUseCase(publicaciones, almacen, RELOJ);
     }
 
     private WithdrawListingUseCase retirarDeRevision() {

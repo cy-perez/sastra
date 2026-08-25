@@ -1,6 +1,7 @@
 package co.sastra.catalog.usecase;
 
 import co.sastra.catalog.dto.RemoveListingImageCommand;
+import co.sastra.catalog.exception.ListingNotFoundException;
 import co.sastra.catalog.model.Listing;
 import co.sastra.catalog.model.ProductImage;
 import co.sastra.catalog.port.out.ListingRepository;
@@ -32,7 +33,9 @@ public class RemoveListingImageUseCase {
 
     @Transactional
     public Listing execute(RemoveListingImageCommand comando) {
-        Listing actual = ListingAccess.deVendedor(publicaciones, comando.publicacion(), comando.vendedor());
+        Listing actual = publicaciones
+                .buscarDelDueno(comando.publicacion(), comando.vendedor())
+                .orElseThrow(() -> new ListingNotFoundException(comando.publicacion()));
 
         Optional<ProductImage> borrada = actual.images().stream()
                 .filter(imagen -> imagen.id().equals(comando.imagen()))

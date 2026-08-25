@@ -197,6 +197,17 @@ public enum ErrorCode {
      */
     CATALOG_SHOTS_INCOMPLETE,
 
+    /**
+     * Criterio 6: faltan datos para enviar el borrador a revision.
+     *
+     * <p>Distinto de {@link #COMMON_VALIDATION_FAILED}: la peticion no esta mal
+     * formada, y guardar el borrador asi es valido. Lo que no se puede es enviarlo.
+     */
+    CATALOG_LISTING_INCOMPLETE,
+
+    /** El estado actual no admite editar la publicacion (criterio 19). */
+    CATALOG_LISTING_NOT_EDITABLE,
+
     /** RN-064: esa categoria no admite lo usado. Toda la familia de tecnologia. */
     CATALOG_CONDITION_NOT_ALLOWED,
 

@@ -1,6 +1,7 @@
 package co.sastra.catalog.usecase;
 
 import co.sastra.catalog.dto.SellerListingCommand;
+import co.sastra.catalog.exception.ListingNotFoundException;
 import co.sastra.catalog.model.Listing;
 import co.sastra.catalog.port.out.ListingRepository;
 import java.time.Clock;
@@ -22,7 +23,9 @@ public class ResumeListingUseCase {
 
     @Transactional
     public Listing execute(SellerListingCommand comando) {
-        Listing actual = ListingAccess.deVendedor(publicaciones, comando.publicacion(), comando.vendedor());
+        Listing actual = publicaciones
+                .buscarDelDueno(comando.publicacion(), comando.vendedor())
+                .orElseThrow(() -> new ListingNotFoundException(comando.publicacion()));
 
         return publicaciones.guardar(actual.reanudar(Instant.now(reloj)));
     }

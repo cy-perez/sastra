@@ -7,8 +7,10 @@ import co.sastra.shared.money.Money;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -21,9 +23,15 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>Inmutable como el resto del dominio: cada paso devuelve una instancia nueva.
  *
- * <p>Las transiciones son RN-061 y viven en {@link ListingStatus}. Aqui se decide
- * <em>cuando</em> se intenta cada una y con que condiciones; que sea legal lo dice el
- * enum, y ningun metodo de esta clase se salta esa comprobacion.
+ * <p><strong>Toda edicion pasa por {@link #destinoTrasEditar()}.</strong> Cambiar el
+ * titulo y cambiar una foto son la misma clase de cambio para RN-062 —las dos son
+ * contenido moderable— y por eso comparten camino. Que estuvieran separados fue el
+ * agujero que permitia sustituir las ocho tomas de una publicacion ya aprobada sin que
+ * volviera a revision.
+ *
+ * <p>La version es del criterio 34 y viaja con el agregado: es la que se leyo. Sin
+ * ella, quien guarda no puede decir "yo lei esta" y el bloqueo optimista no bloquea
+ * nada.
  */
 public final class Listing {
 
@@ -35,6 +43,9 @@ public final class Listing {
     /** RN-065: la tecnologia sellada se queda en las cuatro canonicas del empaque. */
     public static final int TOMAS_SI_ESTA_SELLADO = 4;
 
+    /** RN-066: suficientes para mostrar el producto, pocas para no llenar el almacen. */
+    public static final int MAXIMO_DE_REFERENCIAS = 4;
+
     private final ListingId id;
     private final Product product;
     private final ListingStatus status;
@@ -45,8 +56,15 @@ public final class Listing {
     private final @Nullable Instant moderatedAt;
     private final @Nullable ListingRejectionReason rejectionReason;
     private final @Nullable String rejectionNote;
-    private final @Nullable AttentionReason attentionReason;
 
+    /**
+     * Las dos marcas caben a la vez: un borrador barato con tomas de galeria las tiene
+     * las dos, y el moderador tiene que ver las dos. Con un solo campo, la ultima
+     * pisaba a la anterior segun el orden de los clics.
+     */
+    private final Set<AttentionReason> attentionReasons;
+
+    private final long version;
     private final Instant createdAt;
     private final Instant updatedAt;
 
@@ -60,7 +78,8 @@ public final class Listing {
             @Nullable Instant moderatedAt,
             @Nullable ListingRejectionReason rejectionReason,
             @Nullable String rejectionNote,
-            @Nullable AttentionReason attentionReason,
+            Set<AttentionReason> attentionReasons,
+            long version,
             Instant createdAt,
             Instant updatedAt) {
         this.id = Objects.requireNonNull(id, "El identificador es obligatorio");
@@ -72,7 +91,8 @@ public final class Listing {
         this.moderatedAt = moderatedAt;
         this.rejectionReason = rejectionReason;
         this.rejectionNote = rejectionNote;
-        this.attentionReason = attentionReason;
+        this.attentionReasons = attentionReasons.isEmpty() ? Set.of() : Set.copyOf(EnumSet.copyOf(attentionReasons));
+        this.version = version;
         this.createdAt = Objects.requireNonNull(createdAt, "La fecha de creacion es obligatoria");
         this.updatedAt = Objects.requireNonNull(updatedAt, "La fecha de actualizacion es obligatoria");
     }
@@ -89,7 +109,8 @@ public final class Listing {
                 null,
                 null,
                 null,
-                marcaPorPrecio(producto.price()),
+                marcaPorPrecio(producto.price(), Set.of()),
+                0L,
                 ahora,
                 ahora);
     }
@@ -105,7 +126,8 @@ public final class Listing {
             @Nullable Instant moderatedAt,
             @Nullable ListingRejectionReason rejectionReason,
             @Nullable String rejectionNote,
-            @Nullable AttentionReason attentionReason,
+            Set<AttentionReason> attentionReasons,
+            long version,
             Instant createdAt,
             Instant updatedAt) {
         return new Listing(
@@ -118,7 +140,8 @@ public final class Listing {
                 moderatedAt,
                 rejectionReason,
                 rejectionNote,
-                attentionReason,
+                attentionReasons,
+                version,
                 createdAt,
                 updatedAt);
     }
@@ -126,18 +149,21 @@ public final class Listing {
     // ------------------------------------------------------------------ imagenes
 
     /**
-     * Agrega o reemplaza una imagen. Criterio 16: nunca hay dos en la misma posicion.
+     * Agrega o reemplaza una imagen. Criterios 16 y 27.
+     *
+     * <p>Sobre una publicacion viva la devuelve a moderacion: RN-062 nombra «cualquiera
+     * de las tomas» como contenido moderable, y una foto sustituida despues de aprobar
+     * es justo el fraude que la moderacion existe para impedir.
      *
      * @throws ReferenceImageNotAllowedException si es de referencia y el producto no es
-     *     tecnologia declarada sellada (RN-066)
+     *     tecnologia declarada sellada, o si ya hay demasiadas (RN-066)
      */
     public Listing conImagen(ProductImage imagen, Instant ahora) {
         Objects.requireNonNull(imagen, "La imagen es obligatoria");
-        exigirEditable();
+        ListingStatus destino = destinoTrasEditar();
 
-        if (imagen.kind() == ImageKind.REFERENCE && !product.estaSellado()) {
-            throw new ReferenceImageNotAllowedException(
-                    product.esTecnologia() ? "el producto no se declaro sellado" : "el producto no es tecnologia");
+        if (imagen.kind() == ImageKind.REFERENCE) {
+            exigirReferenciaAdmisible(imagen);
         }
 
         List<ProductImage> nuevas = new ArrayList<>(images);
@@ -145,16 +171,29 @@ public final class Listing {
         nuevas.add(imagen);
         nuevas.sort(Comparator.comparing(ProductImage::kind).thenComparingInt(ProductImage::position));
 
-        return copiaCon(status, nuevas, ahora);
+        return conEstadoEImagenes(destino, nuevas, ahora);
     }
 
     public Listing sinImagen(ProductImageId imagenId, Instant ahora) {
         Objects.requireNonNull(imagenId, "El identificador de la imagen es obligatorio");
-        exigirEditable();
+        ListingStatus destino = destinoTrasEditar();
 
         List<ProductImage> nuevas = new ArrayList<>(images);
         nuevas.removeIf(imagen -> imagen.id().equals(imagenId));
-        return copiaCon(status, nuevas, ahora);
+
+        return conEstadoEImagenes(destino, nuevas, ahora);
+    }
+
+    private void exigirReferenciaAdmisible(ProductImage imagen) {
+        if (!product.estaSellado()) {
+            throw new ReferenceImageNotAllowedException(
+                    product.esTecnologia() ? "el producto no se declaro sellado" : "el producto no es tecnologia");
+        }
+        boolean esNueva = imagenesDeReferencia().stream().noneMatch(otra -> otra.position() == imagen.position());
+
+        if (esNueva && imagenesDeReferencia().size() >= MAXIMO_DE_REFERENCIAS) {
+            throw new ReferenceImageNotAllowedException("ya hay " + MAXIMO_DE_REFERENCIAS + ", que es el maximo");
+        }
     }
 
     /** Las que cuentan para RN-016 y RN-017. Una de referencia nunca cuenta. */
@@ -174,41 +213,29 @@ public final class Listing {
     // ------------------------------------------------------------------ ciclo
 
     /**
-     * Criterio 19. Comprueba las tomas antes de mover el estado.
+     * Criterios 6, 17 y 19. Comprueba las tomas antes de mover el estado.
      *
-     * <p>Que el producto este completo —medidas, sobre todo— lo comprueba el caso de
-     * uso con la categoria delante: esta clase no la conoce.
+     * <p>Que el producto este completo lo comprueba el caso de uso con la categoria
+     * delante: esta clase no la conoce.
      *
      * @throws ShotsIncompleteException si faltan tomas o alguna canonica
      */
     public Listing enviarARevision(Instant ahora) {
         exigirTransicion(ListingStatus.PENDING_REVIEW);
         exigirTomasCompletas();
-        return copiaCon(ListingStatus.PENDING_REVIEW, images, ahora);
+        return conEstadoEImagenes(ListingStatus.PENDING_REVIEW, images, ahora);
     }
 
     /** Criterio 20: retirar antes de que se decida. */
     public Listing retirarDeRevision(Instant ahora) {
         exigirTransicion(ListingStatus.DRAFT);
-        return copiaCon(ListingStatus.DRAFT, images, ahora);
+        return conEstadoEImagenes(ListingStatus.DRAFT, images, ahora);
     }
 
     /** Criterio 23: retomar una rechazada conserva datos e imagenes. */
     public Listing retomar(Instant ahora) {
         exigirTransicion(ListingStatus.DRAFT);
-        return new Listing(
-                id,
-                product,
-                ListingStatus.DRAFT,
-                images,
-                publishedAt,
-                moderatedBy,
-                moderatedAt,
-                rejectionReason,
-                rejectionNote,
-                attentionReason,
-                createdAt,
-                ahora);
+        return conEstadoEImagenes(ListingStatus.DRAFT, images, ahora);
     }
 
     /** Criterio 21. */
@@ -226,7 +253,8 @@ public final class Listing {
                 ahora,
                 null,
                 null,
-                attentionReason,
+                attentionReasons,
+                version,
                 createdAt,
                 ahora);
     }
@@ -248,7 +276,8 @@ public final class Listing {
                 ahora,
                 motivo,
                 nota,
-                attentionReason,
+                attentionReasons,
+                version,
                 createdAt,
                 ahora);
     }
@@ -256,18 +285,18 @@ public final class Listing {
     /** Criterio 29: pausar y reanudar no pasan por moderacion. */
     public Listing pausar(Instant ahora) {
         exigirTransicion(ListingStatus.PAUSED);
-        return copiaCon(ListingStatus.PAUSED, images, ahora);
+        return conEstadoEImagenes(ListingStatus.PAUSED, images, ahora);
     }
 
     public Listing reanudar(Instant ahora) {
         exigirTransicion(ListingStatus.PUBLISHED);
-        return copiaCon(ListingStatus.PUBLISHED, images, ahora);
+        return conEstadoEImagenes(ListingStatus.PUBLISHED, images, ahora);
     }
 
     /** Criterios 30 y 31. Terminal: de aqui no se vuelve. */
     public Listing archivar(Instant ahora) {
         exigirTransicion(ListingStatus.ARCHIVED);
-        return copiaCon(ListingStatus.ARCHIVED, images, ahora);
+        return conEstadoEImagenes(ListingStatus.ARCHIVED, images, ahora);
     }
 
     // ------------------------------------------------------------------ edicion
@@ -275,30 +304,28 @@ public final class Listing {
     /**
      * RN-062: cambiar lo que describe el producto devuelve a moderacion.
      *
-     * <p>Desde un borrador se queda en borrador; desde una publicacion viva o pausada
-     * vuelve a {@code PENDING_REVIEW} y deja de verse. Es la unica lectura que
-     * satisface RN-015 y RN-030 a la vez.
+     * <p>Si el producto deja de estar sellado, sus imagenes de referencia se van con la
+     * declaracion: sin empaque cerrado no hay nada que las justifique (RN-066, caso
+     * borde de la historia).
      */
     public Listing editarContenido(Product editado, Instant ahora) {
         Objects.requireNonNull(editado, "El producto es obligatorio");
-        exigirNoTerminal();
+        ListingStatus destino = destinoTrasEditar();
 
-        ListingStatus destino = status.admiteEdicionLibre() ? status : ListingStatus.PENDING_REVIEW;
-        if (destino != status) {
-            exigirTransicion(destino);
-        }
+        List<ProductImage> nuevas = editado.estaSellado() ? images : soloTomas();
 
         return new Listing(
                 id,
                 editado,
                 destino,
-                images,
+                nuevas,
                 publishedAt,
                 moderatedBy,
                 moderatedAt,
                 rejectionReason,
                 rejectionNote,
-                marcaPorPrecio(editado.price()),
+                marcaPorPrecio(editado.price(), attentionReasons),
+                version,
                 createdAt,
                 ahora);
     }
@@ -311,11 +338,10 @@ public final class Listing {
      */
     public Listing cambiarPrecio(Money nuevo, Instant ahora) {
         exigirNoTerminal();
-        Product conNuevoPrecio = product.conPrecio(nuevo);
 
         return new Listing(
                 id,
-                conNuevoPrecio,
+                product.conPrecio(nuevo),
                 status,
                 images,
                 publishedAt,
@@ -323,7 +349,8 @@ public final class Listing {
                 moderatedAt,
                 rejectionReason,
                 rejectionNote,
-                marcaPorPrecio(nuevo),
+                marcaPorPrecio(nuevo, attentionReasons),
+                version,
                 createdAt,
                 ahora);
     }
@@ -331,6 +358,7 @@ public final class Listing {
     /** Tampoco pasa por moderacion: no altera lo que un moderador aprobo. */
     public Listing cambiarEnvio(ShippingDimensions nuevo, Instant ahora) {
         exigirNoTerminal();
+
         return new Listing(
                 id,
                 product.conEnvio(nuevo),
@@ -341,13 +369,20 @@ public final class Listing {
                 moderatedAt,
                 rejectionReason,
                 rejectionNote,
-                attentionReason,
+                attentionReasons,
+                version,
                 createdAt,
                 ahora);
     }
 
     /** Criterio 18: la toma vino de galeria, asi que se mira con mas atencion. */
     public Listing marcarCargaDesdeGaleria(Instant ahora) {
+        exigirNoTerminal();
+
+        Set<AttentionReason> marcas = EnumSet.noneOf(AttentionReason.class);
+        marcas.addAll(attentionReasons);
+        marcas.add(AttentionReason.GALLERY_UPLOAD);
+
         return new Listing(
                 id,
                 product,
@@ -358,7 +393,8 @@ public final class Listing {
                 moderatedAt,
                 rejectionReason,
                 rejectionNote,
-                AttentionReason.GALLERY_UPLOAD,
+                marcas,
+                version,
                 createdAt,
                 ahora);
     }
@@ -385,16 +421,43 @@ public final class Listing {
         return product.sellerId();
     }
 
+    public long version() {
+        return version;
+    }
+
+    /** Tras guardar, la fila queda una version por delante. */
+    public Listing conVersion(long nueva) {
+        return new Listing(
+                id,
+                product,
+                status,
+                images,
+                publishedAt,
+                moderatedBy,
+                moderatedAt,
+                rejectionReason,
+                rejectionNote,
+                attentionReasons,
+                nueva,
+                createdAt,
+                updatedAt);
+    }
+
     public boolean esVisible() {
         return status.esVisible();
     }
 
-    public boolean requiereAtencion() {
-        return attentionReason != null;
+    /** RN-063: comparar dos personas es cosa del caso de uso; nombrar la pregunta, de aqui. */
+    public boolean laPublico(ModeratorId quienDecide) {
+        return sellerId().value().equals(quienDecide.value());
     }
 
-    public @Nullable AttentionReason attentionReason() {
-        return attentionReason;
+    public boolean requiereAtencion() {
+        return !attentionReasons.isEmpty();
+    }
+
+    public Set<AttentionReason> attentionReasons() {
+        return attentionReasons;
     }
 
     public @Nullable ListingRejectionReason rejectionReason() {
@@ -427,6 +490,33 @@ public final class Listing {
 
     // ------------------------------------------------------------------ interno
 
+    /**
+     * A donde va la publicacion cuando se le cambia contenido moderable. RN-062.
+     *
+     * <p>Desde un borrador se queda donde esta; desde una rechazada vuelve a borrador,
+     * que es como se corrige y se reenvia (criterio 23); desde una viva o pausada vuelve
+     * a revision y deja de verse. En revision no se toca, porque el moderador la esta
+     * mirando (criterio 19), y en terminal tampoco.
+     */
+    private ListingStatus destinoTrasEditar() {
+        exigirNoTerminal();
+
+        if (status == ListingStatus.PENDING_REVIEW) {
+            throw new InvalidListingTransitionException(status, ListingStatus.DRAFT);
+        }
+        if (status.admiteEdicionLibre()) {
+            return status;
+        }
+
+        ListingStatus destino = status == ListingStatus.REJECTED ? ListingStatus.DRAFT : ListingStatus.PENDING_REVIEW;
+        exigirTransicion(destino);
+        return destino;
+    }
+
+    private List<ProductImage> soloTomas() {
+        return images.stream().filter(ProductImage::esTomaDelVendedor).toList();
+    }
+
     /** RN-016 y RN-017, con la excepcion de RN-065 ya resuelta en {@link #tomasExigidas}. */
     private void exigirTomasCompletas() {
         List<ProductImage> tomas = tomasDelVendedor();
@@ -450,26 +540,33 @@ public final class Listing {
         }
     }
 
-    private void exigirEditable() {
-        exigirNoTerminal();
-        if (status == ListingStatus.PENDING_REVIEW) {
-            throw new InvalidListingTransitionException(status, ListingStatus.DRAFT);
-        }
-    }
-
     private void exigirNoTerminal() {
         if (status.esTerminal()) {
             throw new InvalidListingTransitionException(status, status);
         }
     }
 
-    /** RN-020: el rango es blando y salirse solo marca. */
-    private static @Nullable AttentionReason marcaPorPrecio(Money precio) {
-        boolean fueraDeRango = precio.esMenorQue(PRECIO_MINIMO_RAZONABLE) || precio.esMayorQue(PRECIO_MAXIMO_RAZONABLE);
-        return fueraDeRango ? AttentionReason.PRICE_OUT_OF_RANGE : null;
+    /**
+     * RN-020: el rango es blando y salirse solo marca.
+     *
+     * <p>Recalcula la marca de precio y conserva las demas. Antes las sobrescribia
+     * todas, asi que corregir el precio borraba la marca de carga desde galeria.
+     */
+    private static Set<AttentionReason> marcaPorPrecio(@Nullable Money precio, Set<AttentionReason> previas) {
+        Set<AttentionReason> marcas = EnumSet.noneOf(AttentionReason.class);
+        marcas.addAll(previas);
+        marcas.remove(AttentionReason.PRICE_OUT_OF_RANGE);
+
+        // Un borrador sin precio todavia no puede estar fuera de rango: no hay rango
+        // que comparar. La marca aparece en cuanto el vendedor escriba uno.
+        if (precio != null
+                && (precio.esMenorQue(PRECIO_MINIMO_RAZONABLE) || precio.esMayorQue(PRECIO_MAXIMO_RAZONABLE))) {
+            marcas.add(AttentionReason.PRICE_OUT_OF_RANGE);
+        }
+        return marcas;
     }
 
-    private Listing copiaCon(ListingStatus nuevoEstado, List<ProductImage> nuevasImagenes, Instant ahora) {
+    private Listing conEstadoEImagenes(ListingStatus nuevoEstado, List<ProductImage> nuevasImagenes, Instant ahora) {
         return new Listing(
                 id,
                 product,
@@ -480,7 +577,8 @@ public final class Listing {
                 moderatedAt,
                 rejectionReason,
                 rejectionNote,
-                attentionReason,
+                attentionReasons,
+                version,
                 createdAt,
                 ahora);
     }

@@ -1,6 +1,9 @@
 package co.sastra.catalog.model;
 
+import co.sastra.catalog.exception.IncompleteListingException;
 import co.sastra.shared.money.Money;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
@@ -25,15 +28,15 @@ public record Product(
         ProductId id,
         SellerId sellerId,
         CategoryId categoryId,
-        Title title,
-        Description description,
+        @Nullable Title title,
+        @Nullable Description description,
         @Nullable Brand brand,
-        Condition condition,
-        Size size,
+        @Nullable Condition condition,
+        @Nullable Size size,
         Measurements measurements,
-        Color color,
-        Money price,
-        ShippingDimensions shipping,
+        @Nullable Color color,
+        @Nullable Money price,
+        @Nullable ShippingDimensions shipping,
         @Nullable Boolean isSealed,
         @Nullable WarrantyMonths warranty) {
 
@@ -41,16 +44,9 @@ public record Product(
         Objects.requireNonNull(id, "El identificador es obligatorio");
         Objects.requireNonNull(sellerId, "El vendedor es obligatorio");
         Objects.requireNonNull(categoryId, "La categoria es obligatoria");
-        Objects.requireNonNull(title, "El titulo es obligatorio");
-        Objects.requireNonNull(description, "La descripcion es obligatoria");
-        Objects.requireNonNull(condition, "La condicion es obligatoria");
-        Objects.requireNonNull(size, "La talla es obligatoria");
         Objects.requireNonNull(measurements, "Las medidas son obligatorias");
-        Objects.requireNonNull(color, "El color es obligatorio");
-        Objects.requireNonNull(price, "El precio es obligatorio");
-        Objects.requireNonNull(shipping, "Las dimensiones de envio son obligatorias");
 
-        if (price.esCero()) {
+        if (price != null && price.esCero()) {
             throw new IllegalArgumentException("El precio no puede ser cero");
         }
         if (warranty != null && isSealed == null) {
@@ -67,15 +63,15 @@ public record Product(
             ProductId id,
             SellerId sellerId,
             Category categoria,
-            Title title,
-            Description description,
+            @Nullable Title title,
+            @Nullable Description description,
             @Nullable Brand brand,
-            Condition condition,
-            Size size,
+            @Nullable Condition condition,
+            @Nullable Size size,
             Measurements measurements,
-            Color color,
-            Money price,
-            ShippingDimensions shipping,
+            @Nullable Color color,
+            @Nullable Money price,
+            @Nullable ShippingDimensions shipping,
             @Nullable Boolean isSealed,
             @Nullable WarrantyMonths warranty) {
 
@@ -84,9 +80,10 @@ public record Product(
         if (!categoria.admitePublicaciones()) {
             throw new IllegalArgumentException("No se publica en esa categoria: " + categoria.slug());
         }
-        categoria.exigirCondicionAdmisible(condition);
-
-        if (!categoria.sizeSystems().contains(size.system())) {
+        if (condition != null) {
+            categoria.exigirCondicionAdmisible(condition);
+        }
+        if (size != null && !categoria.sizeSystems().contains(size.system())) {
             throw new IllegalArgumentException(
                     "La categoria " + categoria.slug() + " no admite el sistema de talla " + size.system());
         }
@@ -125,6 +122,7 @@ public record Product(
     }
 
     public Product conPrecio(Money nuevo) {
+        Objects.requireNonNull(nuevo, "El precio es obligatorio");
         return new Product(
                 id,
                 sellerId,
@@ -136,7 +134,7 @@ public record Product(
                 size,
                 measurements,
                 color,
-                Objects.requireNonNull(nuevo, "El precio es obligatorio"),
+                nuevo,
                 shipping,
                 isSealed,
                 warranty);
@@ -161,13 +159,61 @@ public record Product(
     }
 
     /**
-     * Comprueba que el producto esta listo para revision. RN-021.
+     * Comprueba que el producto esta listo para revision. Criterios 6 y 10, RN-021.
      *
-     * <p>Las medidas se validan aqui y no al construir, porque un borrador se guarda a
-     * medias: el vendedor mide con la prenda en la mano y vuelve.
+     * <p><strong>Nada de esto se exige al construir.</strong> El criterio 5 pide que el
+     * borrador se guarde con lo que lleve y se retome donde iba: el vendedor mide con la
+     * prenda en la mano, se va y vuelve. Es el mismo patron que ya usa
+     * {@code SellerVerification} con el documento, la selfie y la cuenta bancaria.
+     *
+     * <p>Reune todo lo que falta en un solo error en vez de fallar en el primero, porque
+     * el criterio 6 pide «una entrada en {@code errors} por cada campo que falta» y con
+     * fallo temprano el vendedor los descubre de uno en uno.
+     *
+     * @throws IncompleteListingException si falta algo
+     * @throws MeasurementsIncompleteException si faltan medidas del grupo
      */
     public void exigirCompletoPara(Category categoria) {
         Objects.requireNonNull(categoria, "La categoria es obligatoria");
+
+        List<String> faltantes = new ArrayList<>();
+        if (title == null) {
+            faltantes.add("titulo");
+        }
+        if (description == null) {
+            faltantes.add("descripcion");
+        }
+        if (condition == null) {
+            faltantes.add("condicion");
+        }
+        if (size == null) {
+            faltantes.add("talla");
+        }
+        if (color == null) {
+            faltantes.add("color");
+        }
+        if (price == null) {
+            faltantes.add("precio");
+        }
+        if (shipping == null) {
+            faltantes.add("envio");
+        }
+
+        if (!faltantes.isEmpty()) {
+            throw new IncompleteListingException(faltantes);
+        }
         measurements.exigirCompletasPara(categoria.grupoDeMedida());
+    }
+
+    /** Si se puede enviar a revision sin que falte nada. */
+    public boolean estaCompletoPara(Category categoria) {
+        return title != null
+                && description != null
+                && condition != null
+                && size != null
+                && color != null
+                && price != null
+                && shipping != null
+                && measurements.estanCompletasPara(categoria.grupoDeMedida());
     }
 }

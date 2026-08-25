@@ -1,6 +1,7 @@
 package co.sastra.catalog.usecase;
 
 import co.sastra.catalog.dto.RejectListingCommand;
+import co.sastra.catalog.exception.ListingNotFoundException;
 import co.sastra.catalog.exception.SelfModerationForbiddenException;
 import co.sastra.catalog.model.Listing;
 import co.sastra.catalog.model.ModerationAction;
@@ -35,9 +36,11 @@ public class RejectListingUseCase {
 
     @Transactional
     public Listing execute(RejectListingCommand comando) {
-        Listing actual = ListingAccess.cualquiera(publicaciones, comando.publicacion());
+        Listing actual = publicaciones
+                .buscar(comando.publicacion())
+                .orElseThrow(() -> new ListingNotFoundException(comando.publicacion()));
 
-        if (actual.sellerId().value().equals(comando.moderador().value())) {
+        if (actual.laPublico(comando.moderador())) {
             throw new SelfModerationForbiddenException();
         }
 

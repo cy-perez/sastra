@@ -2,12 +2,15 @@ package co.sastra.catalog.usecase;
 
 import co.sastra.catalog.dto.ProductData;
 import co.sastra.catalog.dto.UpdateListingContentCommand;
+import co.sastra.catalog.exception.ListingNotFoundException;
+import co.sastra.catalog.exception.SellerNotEligibleException;
 import co.sastra.catalog.exception.UnknownCategoryException;
 import co.sastra.catalog.model.Category;
 import co.sastra.catalog.model.Listing;
 import co.sastra.catalog.model.Product;
 import co.sastra.catalog.port.out.Categories;
 import co.sastra.catalog.port.out.ListingRepository;
+import co.sastra.catalog.port.out.SellerEligibility;
 import java.time.Clock;
 import java.time.Instant;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,17 +31,29 @@ public class UpdateListingContentUseCase {
 
     private final ListingRepository publicaciones;
     private final Categories categorias;
+    private final SellerEligibility elegibilidad;
     private final Clock reloj;
 
-    public UpdateListingContentUseCase(ListingRepository publicaciones, Categories categorias, Clock reloj) {
+    public UpdateListingContentUseCase(
+            ListingRepository publicaciones, Categories categorias, SellerEligibility elegibilidad, Clock reloj) {
         this.publicaciones = publicaciones;
         this.categorias = categorias;
+        this.elegibilidad = elegibilidad;
         this.reloj = reloj;
     }
 
     @Transactional
     public Listing execute(UpdateListingContentCommand comando) {
-        Listing actual = ListingAccess.deVendedor(publicaciones, comando.publicacion(), comando.vendedor());
+        // RN-011 y RN-013. Sin esto, quien perdio el sello no puede enviar un borrador
+        // pero si reescribir una publicacion entera y devolverla a la cola de
+        // moderacion: la unica puerta del catalogo quedaba con una hoja sin cerradura.
+        if (!elegibilidad.puedePublicar(comando.vendedor())) {
+            throw new SellerNotEligibleException();
+        }
+
+        Listing actual = publicaciones
+                .buscarDelDueno(comando.publicacion(), comando.vendedor())
+                .orElseThrow(() -> new ListingNotFoundException(comando.publicacion()));
 
         ProductData datos = comando.datos();
         Category categoria = categorias

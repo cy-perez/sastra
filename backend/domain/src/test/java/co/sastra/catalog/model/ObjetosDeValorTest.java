@@ -157,7 +157,7 @@ class ObjetosDeValorTest {
             Listing marcada = CatalogoDePrueba.borrador().marcarCargaDesdeGaleria(AHORA);
 
             assertThat(marcada.requiereAtencion()).isTrue();
-            assertThat(marcada.attentionReason()).isEqualTo(AttentionReason.GALLERY_UPLOAD);
+            assertThat(marcada.attentionReasons()).containsExactly(AttentionReason.GALLERY_UPLOAD);
         }
 
         // Una publicacion enviada a revision no se toca: el moderador la esta mirando.
@@ -183,7 +183,8 @@ class ObjetosDeValorTest {
                     original.moderatedAt(),
                     original.rejectionReason(),
                     original.rejectionNote(),
-                    original.attentionReason(),
+                    original.attentionReasons(),
+                    original.version(),
                     original.createdAt(),
                     original.updatedAt());
 

@@ -59,6 +59,24 @@ public enum ImageContentType {
     }
 
     /**
+     * El inverso de {@link #mediaType()}, para reconstruir lo que se guardo.
+     *
+     * <p><strong>No sirve para decidir que es un archivo que llega de fuera.</strong>
+     * Eso lo hace {@link #detectar}, por los bytes de cabecera, porque el
+     * {@code Content-Type} lo pone quien sube. Este metodo lee un valor que escribio
+     * el propio sistema, y por eso falla en vez de devolver vacio: si en la base hay
+     * un tipo que no existe, lo que hay es datos corruptos, no una entrada invalida.
+     */
+    public static ImageContentType porMediaType(String mediaType) {
+        for (ImageContentType tipo : values()) {
+            if (tipo.mediaType.equals(mediaType)) {
+                return tipo;
+            }
+        }
+        throw new IllegalArgumentException("Tipo de imagen desconocido en la base: " + mediaType);
+    }
+
+    /**
      * Que tipo es, mirando el contenido.
      *
      * @return vacio si no es ninguno de los aceptados, lo que incluye el caso de

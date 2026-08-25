@@ -1,6 +1,7 @@
 package co.sastra.catalog.usecase;
 
 import co.sastra.catalog.dto.UploadListingImageCommand;
+import co.sastra.catalog.exception.ListingNotFoundException;
 import co.sastra.catalog.model.ImageKind;
 import co.sastra.catalog.model.Listing;
 import co.sastra.catalog.model.ProductImage;
@@ -14,6 +15,7 @@ import co.sastra.shared.port.out.ImageNormalizer;
 import co.sastra.shared.port.out.PublicFileStore;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Optional;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -60,7 +62,9 @@ public class UploadListingImageUseCase {
 
     @Transactional
     public Listing execute(UploadListingImageCommand comando) {
-        Listing actual = ListingAccess.deVendedor(publicaciones, comando.publicacion(), comando.vendedor());
+        Listing actual = publicaciones
+                .buscarDelDueno(comando.publicacion(), comando.vendedor())
+                .orElseThrow(() -> new ListingNotFoundException(comando.publicacion()));
 
         politica.exigirTamanoAceptado(comando.contenido().length);
         ImageContentType tipo = politica.exigirTipoAceptado(comando.contenido());
@@ -71,13 +75,31 @@ public class UploadListingImageUseCase {
         FileKey clave = almacen.guardar(CARPETA, imagen);
         Instant ahora = Instant.now(reloj);
 
+        Optional<FileKey> reemplazada = claveEnLaMismaPosicion(actual, comando);
+
         ProductImage nueva = construir(comando, clave, imagen);
         Listing conImagen = actual.conImagen(nueva, ahora);
 
         if (comando.desdeGaleria()) {
             conImagen = conImagen.marcarCargaDesdeGaleria(ahora);
         }
-        return publicaciones.guardar(conImagen);
+        Listing guardada = publicaciones.guardar(conImagen);
+
+        // Criterio 16: «la anterior se borra del almacen». Despues de guardar la fila,
+        // por el mismo motivo que en el avatar: de los dos fallos posibles se elige el
+        // que se puede limpiar. Y no es solo espacio: una toma que el vendedor sustituyo
+        // al ver que salia su cara o su direccion seguiria servida para siempre, con
+        // cache de un ano, y eso convierte «suprimir» en «dejar de enlazar» (Ley 1581).
+        reemplazada.ifPresent(almacen::borrar);
+        return guardada;
+    }
+
+    /** La que ocupaba esa posicion y esa clase, si habia alguna. */
+    private static Optional<FileKey> claveEnLaMismaPosicion(Listing actual, UploadListingImageCommand comando) {
+        return actual.images().stream()
+                .filter(imagen -> imagen.kind() == comando.clase() && imagen.position() == comando.posicion())
+                .map(ProductImage::objectKey)
+                .findFirst();
     }
 
     private static ProductImage construir(UploadListingImageCommand comando, FileKey clave, NormalizedImage imagen) {

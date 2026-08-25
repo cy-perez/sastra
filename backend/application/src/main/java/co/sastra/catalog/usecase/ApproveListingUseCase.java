@@ -1,6 +1,7 @@
 package co.sastra.catalog.usecase;
 
 import co.sastra.catalog.dto.ApproveListingCommand;
+import co.sastra.catalog.exception.ListingNotFoundException;
 import co.sastra.catalog.exception.SelfModerationForbiddenException;
 import co.sastra.catalog.model.Listing;
 import co.sastra.catalog.model.ModerationAction;
@@ -40,20 +41,17 @@ public class ApproveListingUseCase {
 
     @Transactional
     public Listing execute(ApproveListingCommand comando) {
-        Listing actual = ListingAccess.cualquiera(publicaciones, comando.publicacion());
-        exigirQueNoSeaSuya(actual, comando);
+        Listing actual = publicaciones
+                .buscar(comando.publicacion())
+                .orElseThrow(() -> new ListingNotFoundException(comando.publicacion()));
+        if (actual.laPublico(comando.moderador())) {
+            throw new SelfModerationForbiddenException();
+        }
 
         Listing aprobada = publicaciones.guardar(actual.aprobar(comando.moderador(), Instant.now(reloj)));
 
         bitacora.registrar(aprobada.id(), comando.moderador(), ModerationAction.APPROVED, null, null);
         avisos.publicacionAprobada(aprobada);
         return aprobada;
-    }
-
-    /** RN-063. */
-    private static void exigirQueNoSeaSuya(Listing publicacion, ApproveListingCommand comando) {
-        if (publicacion.sellerId().value().equals(comando.moderador().value())) {
-            throw new SelfModerationForbiddenException();
-        }
     }
 }

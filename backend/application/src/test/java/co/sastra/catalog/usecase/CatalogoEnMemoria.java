@@ -14,9 +14,13 @@ import co.sastra.catalog.port.out.ListingNotifier;
 import co.sastra.catalog.port.out.ListingRepository;
 import co.sastra.catalog.port.out.ModerationLog;
 import co.sastra.catalog.port.out.SellerEligibility;
+import co.sastra.shared.file.FileKey;
+import co.sastra.shared.file.NormalizedImage;
+import co.sastra.shared.port.out.PublicFileStore;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +53,11 @@ final class CatalogoEnMemoria {
         @Override
         public Optional<Listing> buscar(ListingId id) {
             return Optional.ofNullable(filas.get(id));
+        }
+
+        @Override
+        public Optional<Listing> buscarDelDueno(ListingId id, SellerId vendedor) {
+            return buscar(id).filter(publicacion -> publicacion.sellerId().equals(vendedor));
         }
 
         @Override
@@ -117,28 +126,37 @@ final class CatalogoEnMemoria {
         }
     }
 
-    /** RN-011 y RN-013. Por omision deja publicar, que es el caso normal. */
+    /**
+     * RN-011 y RN-013.
+     *
+     * <p><strong>Mira el vendedor que le preguntan.</strong> El doble anterior devolvia
+     * un booleano de instancia e ignoraba el argumento, asi que un caso de uso que
+     * consultara la elegibilidad de otra persona —el moderador, el dueno anterior—
+     * pasaba todas las pruebas. Es justo el fallo que un doble tiene que atrapar.
+     */
     static final class Elegibilidad implements SellerEligibility {
 
-        private boolean permitido = true;
+        private final Set<SellerId> revocados = new HashSet<>();
 
-        void revocar() {
-            permitido = false;
+        void revocar(SellerId vendedor) {
+            revocados.add(vendedor);
         }
 
         @Override
         public boolean puedePublicar(SellerId vendedor) {
-            return permitido;
+            return !revocados.contains(vendedor);
         }
     }
 
     static final class Bitacora implements ModerationLog {
 
+        /** Guarda todos los argumentos: un doble que descarta uno no puede probarlo. */
         record Entrada(
                 ListingId publicacion,
                 ModeratorId actor,
                 ModerationAction accion,
-                @Nullable String motivo) {}
+                @Nullable String motivo,
+                @Nullable String nota) {}
 
         private final List<Entrada> entradas = new ArrayList<>();
 
@@ -149,7 +167,7 @@ final class CatalogoEnMemoria {
                 ModerationAction accion,
                 @Nullable String motivo,
                 @Nullable String nota) {
-            entradas.add(new Entrada(publicacion, actor, accion, motivo));
+            entradas.add(new Entrada(publicacion, actor, accion, motivo, nota));
         }
 
         List<Entrada> entradas() {
@@ -157,27 +175,67 @@ final class CatalogoEnMemoria {
         }
     }
 
+    /**
+     * Los avisos del criterio 26.
+     *
+     * <p>Guarda la nota, que es el dato del criterio 22. El doble anterior la tiraba, asi
+     * que invertir los argumentos de motivo y nota, o dejar de pasarla al correo, no lo
+     * habria notado ninguna prueba.
+     */
     static final class Avisos implements ListingNotifier {
 
-        private final List<String> enviados = new ArrayList<>();
+        record Aviso(
+                String tipo,
+                ListingId publicacion,
+                @Nullable String nota) {}
+
+        private final List<Aviso> enviados = new ArrayList<>();
 
         @Override
         public void publicacionAprobada(Listing publicacion) {
-            enviados.add("aprobada:" + publicacion.id());
+            enviados.add(new Aviso("aprobada", publicacion.id(), null));
         }
 
         @Override
         public void publicacionRechazada(Listing publicacion, @Nullable String nota) {
-            enviados.add("rechazada:" + publicacion.id());
+            enviados.add(new Aviso("rechazada", publicacion.id(), nota));
         }
 
         @Override
         public void publicacionRetirada(Listing publicacion, @Nullable String nota) {
-            enviados.add("retirada:" + publicacion.id());
+            enviados.add(new Aviso("retirada", publicacion.id(), nota));
         }
 
-        List<String> enviados() {
+        List<Aviso> enviados() {
             return List.copyOf(enviados);
+        }
+    }
+
+    /** Almacen publico en memoria, para comprobar que lo que se borra se borra. */
+    static final class Almacen implements PublicFileStore {
+
+        private final Set<FileKey> guardados = new java.util.LinkedHashSet<>();
+        private int contador;
+
+        @Override
+        public FileKey guardar(String carpeta, NormalizedImage imagen) {
+            FileKey clave = new FileKey(carpeta + "/prueba-" + (++contador) + ".jpg");
+            guardados.add(clave);
+            return clave;
+        }
+
+        @Override
+        public void borrar(FileKey clave) {
+            guardados.remove(clave);
+        }
+
+        @Override
+        public java.net.URI direccionDe(FileKey clave) {
+            return java.net.URI.create("https://ejemplo.co/" + clave.value());
+        }
+
+        Set<FileKey> guardados() {
+            return Set.copyOf(guardados);
         }
     }
 }

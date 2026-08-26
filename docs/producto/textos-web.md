@@ -706,6 +706,245 @@ verificación ya aprobada desde la interfaz. Tampoco hay texto para conceder el 
 moderador: eso sigue siendo un `INSERT` a mano hasta el panel administrativo de la
 Fase 4.
 
+## Publicación de producto — Fase 2
+
+El texto de HU-007, del lado del vendedor. Las claves van bajo `listing.*`. Los
+mensajes de error no están aquí: salen del código de error, en `errors.byCode.*`,
+y los nueve códigos `CATALOG_*` están al final de esta sección.
+
+**Detrás de `FEATURE_PUBLISHING`, hoy apagada.** Mientras lo esté, ninguna de estas
+claves se muestra y la entrada a publicar no aparece en ningún menú ni ruta
+(criterio 3).
+
+Rutas, con el mismo criterio que las de Fase 1 —en español, en minúscula y con
+guion—: `/publicar` para el formulario y `/mis-publicaciones` para el listado
+propio.
+
+### Entrada y encabezado — `listing.intro.*`
+
+`.title`: Publica tu producto
+`.body`: Cuéntanos qué vendes y muéstralo bien. Puedes salir a la mitad y volver
+cuando quieras: guardamos lo que llevas.
+`.notVerified`: Verifícate como vendedor para poder publicar.
+`.notVerifiedAction`: Empezar mi verificación
+
+La última pareja es lo que ve quien no tiene el sello (RN-011). Es la única
+promesa cruzada entre las dos historias, y va en este sentido y no en el otro:
+desde la verificación **no** se anuncia que luego se podrá publicar, porque esa
+pantalla existía antes que esta.
+
+### Los datos del producto — `listing.form.*`
+
+| Clave | Etiqueta | Ayuda |
+|---|---|---|
+| `.category` | Categoría | Elige dónde encaja. De ella dependen las medidas que te pedimos. |
+| `.title` | Título | Qué es, en pocas palabras. Máximo 120 caracteres. |
+| `.description` | Descripción | Cuenta el estado real, incluido lo que no está perfecto. |
+| `.brand` | Marca | Opcional. |
+| `.condition` | Condición | — |
+| `.size` | Talla | — |
+| `.measurements` | Medidas | En centímetros, sobre la prenda estirada. |
+| `.color` | Color | El que más se ve. |
+| `.price` | Precio | En pesos, sin centavos. |
+| `.shipping` | Envío | Peso y medidas de la caja con el producto dentro. |
+
+`.optional`: Opcional
+`.saved`: Guardado
+`.saving`: Guardando…
+
+**Condición** (`listing.condition.*`), las cuatro del glosario y ninguna más:
+`.NEW`: Nuevo · `.LIKE_NEW`: Como nuevo · `.GOOD`: Buen estado ·
+`.WITH_FLAWS`: Con detalles.
+
+`.usedNotAllowed`: En esta categoría solo se publica lo nuevo.
+
+Ese último aparece cuando la categoría no admite lo usado (RN-064). El formulario
+esconde las otras tres, y el mensaje explica por qué: sin él, quien viene de
+publicar ropa ve tres opciones menos y no sabe si es un error.
+
+**Sistema de talla** (`listing.sizeSystem.*`):
+`.ALPHA`: Letra (XS a XXL) · `.NUMERIC_CO`: Número (talla colombiana) ·
+`.WAIST_INCHES`: Cintura en pulgadas · `.FOOTWEAR_CO`: Calzado (talla colombiana) ·
+`.ONE_SIZE`: Talla única.
+
+**Medidas** (`listing.measurement.*`). Cuáles se piden lo decide el grupo de medida
+de la categoría, no el formulario:
+`.CHEST`: Pecho · `.WAIST`: Cintura · `.HIP`: Cadera · `.RISE`: Tiro ·
+`.SHOULDERS`: Hombros · `.SLEEVE`: Manga · `.LENGTH`: Largo ·
+`.INSOLE`: Plantilla · `.HEIGHT`: Alto · `.WIDTH`: Ancho · `.DEPTH`: Fondo.
+
+**Color** (`listing.color.*`), lista cerrada de quince:
+`.BLACK`: Negro · `.WHITE`: Blanco · `.GRAY`: Gris · `.BEIGE`: Beige ·
+`.BROWN`: Café · `.RED`: Rojo · `.PINK`: Rosado · `.ORANGE`: Naranja ·
+`.YELLOW`: Amarillo · `.GREEN`: Verde · `.BLUE`: Azul · `.PURPLE`: Morado ·
+`.GOLD`: Dorado · `.SILVER`: Plateado · `.MULTICOLOR`: Multicolor.
+
+**Envío** (`listing.shipping.*`):
+`.weight`: Peso en gramos · `.length`: Largo · `.width`: Ancho · `.height`: Alto ·
+`.help`: Mide la caja con el producto dentro, no el producto suelto.
+
+### Las tomas — `listing.shots.*`
+
+`.title`: Las fotos
+`.body`: Ocho tomas girando el producto, una cada 45 grados. Son las que dejan ver
+lo que una sola foto esconde.
+`.sealedBody`: Cuatro tomas del empaque cerrado: frente, lado, atrás y el otro lado.
+`.position`: Toma `{{n}}` de `{{total}}`
+`.canonical`: Esta no puede faltar
+`.replace`: Reemplazar
+`.remove`: Quitar
+`.requirements`: Vertical, mínimo 900 × 1200 píxeles.
+`.fromGallery`: Elegir de la galería
+
+Las cuatro canónicas —0, 90, 180 y 270 grados— se rotulan aparte porque son las
+únicas obligatorias por sí mismas (RN-016, RN-017):
+`.front`: Frente · `.side`: Lado · `.back`: Atrás · `.otherSide`: El otro lado.
+
+**Lo que no se dice aquí.** Nada sobre el asistente de captura, el nivelador ni el
+recorte: eso es HU-003 y todavía no existe. Mientras tanto la única vía es la
+galería, y el texto no promete otra.
+
+### Solo en tecnología — `listing.tech.*`
+
+`.sealed`: Está sellado, sin abrir
+`.sealedHelp`: Si lo declaras sellado te pedimos cuatro tomas del empaque en vez de
+ocho, y puedes agregar imágenes del fabricante.
+`.warranty`: Meses de garantía del fabricante
+`.reference`: Imagen de referencia
+`.referenceHelp`: Del fabricante, para mostrar el producto por dentro. Nunca cuenta
+como una de tus tomas: sin fotos reales no publicamos.
+
+⚠️ **Cómo se enuncia la garantía en la ficha sigue sin escribirse.** RN-067 dice
+que responde el vendedor y no Sendik, y ese texto no se redacta hasta que pase
+revisión de abogado, igual que los tres documentos legales. Lo de aquí arriba es el
+rótulo del campo del formulario, que es otra cosa: nombra el dato, no promete nada.
+
+⚠️ **El rótulo de la imagen de referencia en la ficha y en el carrusel tampoco.**
+`.reference` es del formulario. RN-066 exige rotularlas también donde se ven, y eso
+llega con la ficha de producto, que es otra historia.
+
+### Enviar a revisión — `listing.submit.*`
+
+`.action`: Enviar a revisión
+`.body`: Un moderador la revisa antes de que se vea en Sendik.
+`.incomplete`: Te falta completar algo antes de enviar.
+`.shotsIncomplete`: Te faltan tomas. Necesitamos `{{exigidas}}` y llevas `{{presentes}}`.
+`.sent`: Enviada a revisión
+`.withdraw`: Retirar de revisión
+`.withdrawHelp`: Puedes retirarla mientras nadie la haya revisado.
+
+**Ningún texto promete un plazo**, y es deliberado: `LISTING_REVIEW_DAYS` no está
+decidido, y a diferencia de la verificación de vendedor —que sí anuncia un plazo
+configurable— aquí no hay ninguno que anunciar. El día que se decida, entra una
+clave `.reviewTime` con la misma forma que `sellerVerification.intro.reviewTime` y
+el valor por variable, nunca en el texto.
+
+### Estados — `listing.status.*`
+
+La clave es el valor del estado, en mayúsculas, porque la plantilla la compone con
+el dato que llega:
+
+| Clave | Etiqueta | Explicación (`listing.statusHelp.*`) |
+|---|---|---|
+| `.DRAFT` | Borrador | Solo la ves tú. Envíala a revisión cuando esté lista. |
+| `.PENDING_REVIEW` | En revisión | Un moderador la está mirando. Mientras tanto no se puede editar. |
+| `.PUBLISHED` | Publicada | Cualquiera puede verla y comprarla. |
+| `.REJECTED` | Rechazada | No pudimos publicarla. Abajo te decimos por qué. |
+| `.PAUSED` | Pausada | Deja de verse hasta que la reactives. Nadie más la ve. |
+| `.SOLD` | Vendida | Ya se vendió. No se puede volver a publicar. |
+| `.ARCHIVED` | Archivada | La retiraste para siempre. No vuelve. |
+
+### Rechazo y corrección — `listing.rejected.*`
+
+`.title`: No pudimos publicarla
+`.reasonLabel`: Motivo
+`.noteLabel`: Nota de quien revisó
+`.retry`: Corregir y volver a enviar
+`.retryHelp`: Conserva tus datos y tus fotos. Puedes reenviarla las veces que haga
+falta.
+
+Los siete motivos son lista cerrada y se traducen por su código
+(`listing.rejectionReason.*`):
+
+| Clave | Texto |
+|---|---|
+| `.PHOTOS_UNUSABLE` | Las fotos no se pueden usar: están borrosas, muy oscuras o no cumplen el mínimo |
+| `.PHOTOS_MISMATCH` | Las fotos no corresponden con lo que describe la publicación |
+| `.MEASUREMENTS_UNRELIABLE` | Las medidas faltan o no son creíbles |
+| `.CONDITION_MISDECLARED` | La condición declarada no es la que se ve en las fotos |
+| `.PROHIBITED_ITEM` | El producto no se puede vender en Sendik |
+| `.SUSPECTED_COUNTERFEIT` | Sospechamos que no es original |
+| `.PRICE_OUT_OF_RANGE` | El precio está fuera del rango razonable para esa categoría |
+
+Son los mismos siete textos que salen por correo, y no es casualidad: quien recibe
+el correo y luego entra a corregir tiene que leer lo mismo en los dos sitios. La
+copia del correo vive en el backend porque un buzón no tiene quien lo traduzca
+(`ListingRejectionTexts`); **si uno de los dos cambia, cambian los dos**.
+
+### Después de publicada — `listing.live.*`
+
+`.editPrice`: Cambiar el precio
+`.editShipping`: Cambiar el envío
+`.noReview`: El precio y el envío no pasan por revisión.
+`.backToReview`: Si cambias las fotos o lo que describe el producto, vuelve a
+revisión y deja de verse hasta que la aprueben.
+`.pause`: Pausar
+`.resume`: Reactivar
+`.archive`: Archivar
+`.archiveConfirm`: Archivar es para siempre. La publicación no vuelve y sus fotos se
+borran. ¿Seguimos?
+
+La confirmación de archivar es la única de toda la historia, y está porque es la
+única acción del vendedor que no se puede deshacer.
+
+### Mis publicaciones — `listing.mine.*`
+
+`.title`: Mis publicaciones
+`.empty`: Todavía no has publicado nada.
+`.emptyAction`: Publicar mi primer producto
+`.new`: Publicar
+`.attention`: Necesita atención
+
+`.attention` es lo que ve el vendedor cuando su publicación quedó marcada
+(RN-020). **No dice por qué**: el motivo es para el moderador, y anunciarle al
+vendedor «tu precio está fuera de rango» antes de que nadie lo mire invita a
+cambiarlo para esquivar la revisión.
+
+### Códigos de error — `errors.byCode.*`
+
+Los nueve de `CATALOG_`, que hoy no tienen texto:
+
+| Código | Texto |
+|---|---|
+| `CATALOG_SELLER_NOT_VERIFIED` | Necesitas ser vendedor verificado para publicar. |
+| `CATALOG_LISTING_INVALID_STATE` | Esta publicación cambió mientras la editabas. Vuelve a cargarla. |
+| `CATALOG_LISTING_INCOMPLETE` | Faltan datos para enviarla a revisión. |
+| `CATALOG_LISTING_NOT_EDITABLE` | No puedes editarla mientras está en revisión. |
+| `CATALOG_SHOTS_INCOMPLETE` | Te faltan tomas para enviarla a revisión. |
+| `CATALOG_CONDITION_NOT_ALLOWED` | En esta categoría solo se publica lo nuevo. |
+| `CATALOG_REFERENCE_IMAGE_NOT_ALLOWED` | Las imágenes de referencia solo se pueden agregar en tecnología sellada. |
+| `CATALOG_UNKNOWN_CATEGORY` | Esa categoría ya no está disponible. Elige otra. |
+| `CATALOG_SELF_MODERATION_FORBIDDEN` | No puedes decidir sobre tu propia publicación. |
+
+⚠️ **`FILE_DIMENSIONS_TOO_SMALL` se queda corto y ya no es solo cosa del catálogo.**
+Su texto dice «La imagen es muy pequeña y se vería borrosa. Sube una más grande», y
+desde HU-007 ese mismo código sale también cuando la imagen es grande pero no es
+vertical 3:4 (RN-018). A quien suba una foto apaisada de 4000 píxeles le estamos
+diciendo que es pequeña. Propuesta: **«La imagen tiene que ser vertical y de al
+menos 900 × 1200 píxeles.»** Toca un texto de Fase 1, así que se cambia con quien
+lleve la copia, no de paso.
+
+### Lo que no se escribe aquí, y por qué
+
+- **Ningún plazo de revisión.** Ver arriba.
+- **Ningún límite de publicaciones activas.** No está decidido, y sin decisión no
+  hay límite: un texto que lo insinúe crea la regla por la puerta de atrás.
+- **Ningún plazo de despacho.** Es de Fase 3 y sigue sin decidir.
+- **Nada sobre el visor 360.** La ficha con el visor es HU-003; aquí solo se suben
+  las tomas que ese visor usará.
+- **Nada que enlace al catálogo público.** No existe todavía, y HU-004 y HU-005 ya
+  fijaron que no se enlaza a rutas que no están.
+
 ## Etiquetas de ficha de producto — Fase 2
 
 - **Condición:** Nuevo · Como nuevo · Buen estado · Con detalles. Son las cuatro
@@ -772,8 +1011,10 @@ Lo que falta escribir:
       separan los dos recorridos.
 - [ ] Los nombres visibles de las siete categorías de tecnología, en los dos
       idiomas.
-- [ ] El rótulo de las imágenes de referencia en la ficha y en el carrusel, que
-      RN-066 exige en los dos idiomas y que todavía no tiene texto.
+- [ ] El rótulo de las imágenes de referencia **en la ficha y en el carrusel**, que
+      RN-066 exige en los dos idiomas. El del formulario de publicación sí está
+      escrito, en «Publicación de producto — Fase 2»; el de la ficha llega con la
+      ficha, que es otra historia.
 - [ ] Cómo se enuncia la garantía del fabricante en la ficha sin usar la palabra
       Respaldo ni parecerse a ella (RN-067). **No se escribe hasta que pase
       revisión de abogado**, igual que los tres documentos legales.
@@ -788,13 +1029,20 @@ Lo que falta escribir:
       tipo de producto. "Dama" y "Caballero" siguen sin ser categorías del
       proyecto. Faltan los nombres visibles en inglés.
 - [ ] Plazo máximo de despacho del vendedor.
-- [ ] Si hay límite de publicaciones activas por vendedor.
+- [ ] Si hay límite de publicaciones activas por vendedor. Mientras no se decida no
+      hay límite, y ningún texto de publicación lo insinúa.
 - [ ] Si se le exige al vendedor entregar la prenda limpia.
 - [ ] Si existe chat comprador–vendedor. Hoy es Fase 4 (`alcance.md`), así que
       ningún texto puede decir "pregúntale al vendedor".
 - [ ] Plazo de respuesta comprometido para el canal de contacto.
 
 ## Datos que faltan
+
+- [ ] `LISTING_REVIEW_DAYS`, o la decisión de no prometer plazo para revisar una
+      publicación. Mientras no se decida, la interfaz de publicar **no promete
+      nada**, a diferencia de la verificación de vendedor, que sí anuncia un plazo
+      configurable. El día que se decida, entra como `listing.submit.reviewTime`
+      con el valor por variable.
 
 - [ ] Días hábiles que tarda el desembolso en llegar a la cuenta del vendedor.
       Decidido en Fase 3 (`alcance.md`); hasta entonces ningún texto lo enuncia.

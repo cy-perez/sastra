@@ -526,12 +526,16 @@ para que quien implemente no lo vuelva a abrir.
 
 **Bloquea la implementación:**
 
-- **La sección «Publicación de producto — Fase 2» de `textos-web.md`**, de donde
-  salen las claves `listing.*`. Bloquea la interfaz, no el backend: ningún texto
-  visible se escribe en la plantilla. La migración, el dominio y los endpoints se
-  pueden hacer sin ella. **Sigue siendo lo único que bloquea, y ahora es lo
-  único que falta antes de la interfaz:** el backend quedó cerrado el 25 de
-  agosto de 2026.
+- ~~**La sección «Publicación de producto — Fase 2» de `textos-web.md`**, de donde
+  salen las claves `listing.*`.~~ **Escrita el 26 de agosto de 2026.** Con ella y
+  con el backend cerrado el 25 de agosto, **esta historia ya no tiene nada que la
+  bloquee**: lo que falta es implementar la interfaz.
+
+  Dos cosas de esa sección siguen sin redactar a propósito, y ninguna bloquea el
+  formulario: cómo se enuncia la garantía del fabricante en la ficha (RN-067, no
+  se escribe hasta que pase revisión de abogado) y el rótulo de las imágenes de
+  referencia en la ficha y el carrusel (RN-066). Las dos son de la ficha de
+  producto, que es otra historia.
 
 El árbol de categorías **ya no bloquea**: se aprobó el 24 de agosto de 2026 y está
 en `docs/producto/categorias.md`, con el grupo de medida y los sistemas de talla

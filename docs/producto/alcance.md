@@ -96,10 +96,11 @@ Es la fase en curso desde el 21 de agosto de 2026.
   **HU-007: el backend está hecho y probado desde el 25 de agosto de 2026; la
   interfaz sigue pendiente.** Están el dominio con su máquina de estados, los
   diecisiete casos de uso, la persistencia, el aviso por correo al vendedor y los
-  diecisiete endpoints, detrás de `FEATURE_PUBLISHING`, hoy apagada. Lo que falta
-  para la interfaz es la sección de publicación de `docs/producto/textos-web.md`,
-  de donde salen las claves `listing.*`: sin ella no se puede escribir una
-  plantilla sin quemar texto visible en el código.
+  diecisiete endpoints, detrás de `FEATURE_PUBLISHING`, hoy apagada. La sección de
+  publicación de `docs/producto/textos-web.md`, de donde salen las claves
+  `listing.*`, se escribió el 26 de agosto de 2026, así que **la historia ya no
+  tiene nada que la bloquee**: lo que queda es implementar la interfaz. Encender
+  la bandera sí espera cuatro decisiones de producto que la historia enumera.
 - Panel de moderación y flujo de aprobación o rechazo con motivo. **Hecho a
   medias**: HU-006 entrega la bandeja de verificaciones de vendedor, y con ella
   `FEATURE_SELLER_VERIFICATION` ya se puede encender. La moderación de

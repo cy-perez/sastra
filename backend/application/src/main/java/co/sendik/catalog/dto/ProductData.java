@@ -21,17 +21,27 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>Lleva objetos de valor del dominio y no cadenas sueltas: para cuando un comando
  * llega hasta aqui, el borde ya tradujo y lo que no era un titulo valido no paso.
+ *
+ * <p><strong>Casi todo es opcional, y eso no es descuido.</strong> El criterio 5 dice que
+ * un borrador se guarda a medias y que salir y volver retoma donde iba, asi que un
+ * comando de creacion o de edicion llega con lo que el vendedor lleva escrito y no con
+ * todo. Lo obligatorio se exige al enviar a revision, que es cuando el dominio lo
+ * comprueba con la categoria delante ({@code Product.exigirCompletoPara}).
+ *
+ * <p>La categoria y las medidas son la excepcion porque {@code Product} las exige no
+ * nulas: sin categoria no se sabe que condiciones ni que tallas admite la publicacion, y
+ * las medidas son un mapa que vacio ya significa "ninguna todavia".
  */
 public record ProductData(
         CategoryId categoria,
-        Title titulo,
-        Description descripcion,
+        @Nullable Title titulo,
+        @Nullable Description descripcion,
         @Nullable Brand marca,
-        Condition condicion,
-        Size talla,
+        @Nullable Condition condicion,
+        @Nullable Size talla,
         Measurements medidas,
-        Color color,
-        Money precio,
-        ShippingDimensions envio,
+        @Nullable Color color,
+        @Nullable Money precio,
+        @Nullable ShippingDimensions envio,
         @Nullable Boolean sellado,
         @Nullable WarrantyMonths garantia) {}

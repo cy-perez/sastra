@@ -152,6 +152,12 @@ public class SecurityConfig {
                         // mismo que las de moderacion.
                         rutas.requestMatchers(HttpMethod.GET, "/api/v1/categories")
                                 .permitAll();
+                    } else {
+                        // Con la bandera apagada hace falta una regla igualmente: sin
+                        // ninguna, la peticion cae en el denyAll del final y sale 403,
+                        // que es lo que el criterio 3 no quiere. Con "authenticated"
+                        // atraviesa la cadena, no encuentra manejador y sale el 404.
+                        rutas.requestMatchers("/api/v1/categories").authenticated();
                     }
 
                     rutas

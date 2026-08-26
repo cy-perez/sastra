@@ -50,6 +50,9 @@ export class ListingStore {
     queryKey: queryKeys.mine,
     queryFn: () => this.api.mias(),
     staleTime: 0,
+    // Sin reintentos, como las demas: con los tres de por omision, quien se queda sin
+    // listado espera siete segundos antes de que la pantalla le diga que algo fallo.
+    retry: false,
     enabled: this.sesion.isAuthenticated(),
   }));
 

@@ -25,5 +25,9 @@ export class CategoriesStore {
     queryKey: queryKeys.categories,
     queryFn: () => this.api.categorias(),
     staleTime: 60 * 60 * 1000,
+    // Sin reintentos, como las demas del catalogo: con los tres de por omision, quien se
+    // queda sin arbol espera siete segundos mirando un esqueleto antes de que la pantalla
+    // le diga que algo fallo.
+    retry: false,
   }));
 }

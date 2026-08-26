@@ -6,6 +6,7 @@ import {
   effect,
   inject,
   Injector,
+  InjectionToken,
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
@@ -29,12 +30,32 @@ import {
   type Category,
   type Condition,
   type Listing,
+  type Money,
+  type Shipping,
 } from '../domain/listing';
 import type { DatosDelProducto } from '../infrastructure/listing.api';
 import { ShotsField } from './shots-field';
 
-/** Lo que tarda en guardarse solo después de dejar de escribir. */
-const ESPERA_DE_GUARDADO = 1500;
+/**
+ * Lo que tarda en guardarse solo después de dejar de escribir.
+ *
+ * <p>Es un token y no una constante para que una prueba pueda ponerlo en cero. Con 1,5 s
+ * fijos, el guardado de avance que pide el criterio 5 no se puede comprobar: los relojes
+ * falsos de Vitest y el planificador sin zonas de Angular no se llevan bien, y esperar de
+ * verdad son segundos por prueba.
+ */
+export const ESPERA_DE_GUARDADO = new InjectionToken<number>('espera de guardado', {
+  providedIn: 'root',
+  factory: () => 1500,
+});
+
+/**
+ * Los cuatro del envío.
+ *
+ * <p>Están juntos porque el envío se guarda entero o no se guarda: su ruta propia no
+ * admite media caja.
+ */
+const CAMPOS_DE_ENVIO: readonly string[] = ['weightGrams', 'lengthCm', 'widthCm', 'heightCm'];
 
 /**
  * El formulario de publicar. HU-007.
@@ -67,6 +88,7 @@ export class PublishPage {
   private readonly router = inject(Router);
   private readonly formularios = inject(FormBuilder);
   private readonly inyector = inject(Injector);
+  private readonly esperaDeGuardado = inject(ESPERA_DE_GUARDADO);
 
   /** El plazo que se promete, por configuración y nunca quemado en el texto. */
   protected readonly diasDeRevision = inject(APP_CONFIG).business.listingReviewDays;
@@ -75,6 +97,8 @@ export class PublishPage {
   protected readonly consulta = this.store.current;
   protected readonly creacion = this.store.create;
   protected readonly guardado = this.store.update;
+  protected readonly cambioDePrecio = this.store.changePrice;
+  protected readonly cambioDeEnvio = this.store.changeShipping;
   protected readonly envio = this.store.submit;
   protected readonly subida = this.store.uploadShot;
   protected readonly borradoDeImagen = this.store.removeImage;
@@ -136,6 +160,15 @@ export class PublishPage {
 
   /** Las medidas se arman aparte: cuáles hay depende de la categoría. */
   protected readonly medidas = signal<Readonly<Record<string, string>>>({});
+
+  /**
+   * Si se tocó alguna medida desde el último guardado.
+   *
+   * <p>Las medidas no están en el {@code FormGroup} —cuáles hay depende de la
+   * categoría—, así que su estado de «tocado» hay que llevarlo aparte. Importa porque una
+   * medida es contenido: cambiarla sí devuelve a moderación.
+   */
+  private readonly medidasTocadas = signal(false);
 
   protected readonly hojas = computed<readonly Category[]>(() =>
     categoriasHoja(this.arbol.data() ?? []),
@@ -234,7 +267,7 @@ export class PublishPage {
     // Guardado automático: el criterio 5 promete que nada se pierde al salir. Se espera
     // a que la persona deje de escribir para no mandar una petición por tecla.
     this.formulario.valueChanges
-      .pipe(debounceTime(ESPERA_DE_GUARDADO), takeUntilDestroyed())
+      .pipe(debounceTime(this.esperaDeGuardado), takeUntilDestroyed())
       .subscribe(() => this.guardarSiProcede());
   }
 
@@ -318,11 +351,24 @@ export class PublishPage {
   protected alEscribirMedida(clase: string, evento: Event): void {
     const valor = (evento.target as HTMLInputElement).value;
     this.medidas.update((actuales) => ({ ...actuales, [clase]: valor }));
+    this.medidasTocadas.set(true);
     this.guardarSiProcede();
   }
 
   protected claveDeError(fallo: unknown): string {
     return ListingStore.claveDeError(fallo);
+  }
+
+  /**
+   * La clave con la que se nombra un campo que falta.
+   *
+   * <p>El servidor manda las medidas como {@code measurements.CHEST}, y componer
+   * {@code listing.form.} con eso daba una clave que no existe: en pantalla salía el
+   * nombre de la clave en crudo. Las medidas tienen su propio grupo de traducciones.
+   */
+  protected etiquetaDe(campo: string): string {
+    const medida = campo.startsWith('measurements.') ? campo.slice('measurements.'.length) : null;
+    return medida === null ? `listing.form.${campo}` : `listing.measurement.${medida}`;
   }
 
   protected falta(campo: string): boolean {
@@ -340,17 +386,79 @@ export class PublishPage {
   }
 
   /**
-   * Guarda lo que lleva, si hay borrador y se puede editar.
+   * Guarda lo que lleva, por la ruta que corresponde a lo que se tocó.
    *
-   * <p>Se manda todo el producto y no solo lo que cambió: la API es un `PATCH` del
-   * producto entero, y mandar campos sueltos borraría los que no viajen.
+   * <p><strong>Esto es el criterio 28, y no es un detalle de eficiencia.</strong> Sobre
+   * una publicación viva, editar lo que describe el producto la devuelve a moderación
+   * (RN-062) y cambiar solo el precio o el envío no. Mandarlo todo por el {@code PATCH}
+   * general hacía lo contrario de lo que la historia promete: tocar el precio de algo
+   * publicado lo sacaba de circulación hasta que un moderador volviera a mirarlo.
+   *
+   * <p>Sobre un borrador da igual por dónde vaya —no hay moderación de por medio—, así
+   * que ahí se manda todo junto y en una sola petición.
+   *
+   * <p>Cuando sí va por el {@code PATCH} general se manda el producto entero y no solo lo
+   * que cambió: esa ruta reemplaza el producto, y mandar campos sueltos borraría los que
+   * no viajen.
    */
   private guardarSiProcede(): void {
     const actual = this.publicacion();
-    if (actual === null || !this.editable() || this.formulario.pristine) {
+    if (actual === null || !this.editable() || !this.hayCambios()) {
+      return;
+    }
+
+    if (editarDevuelveARevision(actual.status) && this.soloPrecioOEnvio()) {
+      this.guardarSinModeracion(actual.id);
       return;
     }
     this.guardado.mutate({ id: actual.id, datos: this.datosDelFormulario() });
+  }
+
+  /** Los nombres de los controles que se tocaron desde el último guardado. */
+  private camposTocados(): readonly string[] {
+    return Object.entries(this.formulario.controls)
+      .filter(([, control]) => control.dirty)
+      .map(([nombre]) => nombre);
+  }
+
+  private hayCambios(): boolean {
+    return !this.formulario.pristine || this.medidasTocadas();
+  }
+
+  /**
+   * Si lo tocado se puede guardar sin volver a moderación.
+   *
+   * <p>Una medida cuenta como contenido, así que basta con que se haya tocado una para
+   * que la respuesta sea que no.
+   */
+  private soloPrecioOEnvio(): boolean {
+    const tocados = this.camposTocados();
+
+    return (
+      !this.medidasTocadas() &&
+      tocados.length > 0 &&
+      tocados.every((campo) => campo === 'price' || CAMPOS_DE_ENVIO.includes(campo))
+    );
+  }
+
+  /**
+   * Manda el precio y el envío por sus rutas propias.
+   *
+   * <p>Pueden salir las dos peticiones: son dos cambios distintos y cada uno tiene su
+   * ruta. Si el precio quedó vacío, o el envío a medias, no se manda: media caja no es
+   * una caja, y esas dos rutas no admiten quitar el dato.
+   */
+  private guardarSinModeracion(id: string): void {
+    const tocados = this.camposTocados();
+    const precio = this.precioDelFormulario();
+    const envio = this.envioDelFormulario();
+
+    if (tocados.includes('price') && precio !== null) {
+      this.cambioDePrecio.mutate({ id, precio });
+    }
+    if (tocados.some((campo) => CAMPOS_DE_ENVIO.includes(campo)) && envio !== null) {
+      this.cambioDeEnvio.mutate({ id, envio });
+    }
   }
 
   private datosDelFormulario(): DatosDelProducto {
@@ -379,7 +487,12 @@ export class PublishPage {
     };
   }
 
-  private envioDelFormulario(): DatosDelProducto['shipping'] {
+  private precioDelFormulario(): Money | null {
+    const pesos = numero(this.formulario.getRawValue().price);
+    return pesos === null ? null : { amount: pesos, currency: 'COP' };
+  }
+
+  private envioDelFormulario(): Shipping | null {
     const valores = this.formulario.getRawValue();
     const peso = numero(valores.weightGrams);
     const largo = numero(valores.lengthCm);
@@ -437,6 +550,7 @@ export class PublishPage {
       medidas[clase] = String(valor);
     }
     this.medidas.set(medidas);
+    this.medidasTocadas.set(false);
     this.formulario.markAsPristine();
   }
 }
@@ -445,7 +559,21 @@ function vacioANulo(valor: string): string | null {
   return valor.trim().length === 0 ? null : valor.trim();
 }
 
-function numero(valor: string): number | null {
+/**
+ * Un número, venga como venga del control.
+ *
+ * <p><strong>No siempre es una cadena.</strong> En un {@code input type="number"} quien
+ * escribe en el control es {@code NumberValueAccessor}, que pone un {@code number}; el
+ * mismo control, volcado desde el servidor, trae la cadena que le pusimos. Asumir texto
+ * aquí reventaba con «trim is not a function» en cuanto alguien tecleaba un precio.
+ */
+function numero(valor: string | number | null): number | null {
+  if (valor === null || valor === '') {
+    return null;
+  }
+  if (typeof valor === 'number') {
+    return Number.isFinite(valor) ? valor : null;
+  }
   if (valor.trim().length === 0) {
     return null;
   }

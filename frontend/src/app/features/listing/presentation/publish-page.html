@@ -419,7 +419,7 @@
             <ul class="publicar__faltantes">
               @for (campo of camposQueFaltan(); track campo) {
                 <li class="tipo-secundario" [id]="'falta-' + campo">
-                  {{ 'listing.form.' + campo | transloco }}
+                  {{ etiquetaDe(campo) | transloco }}
                 </li>
               }
             </ul>

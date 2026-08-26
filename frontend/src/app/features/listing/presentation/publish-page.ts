@@ -4,10 +4,12 @@ import {
   Component,
   computed,
   effect,
+  ElementRef,
   inject,
   Injector,
   InjectionToken,
   signal,
+  viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
@@ -104,6 +106,15 @@ export class PublishPage {
   protected readonly borradoDeImagen = this.store.removeImage;
   protected readonly retirada = this.store.withdraw;
   protected readonly retomada = this.store.reopen;
+
+  /**
+   * El formulario, para buscar dentro de él y no en el documento entero.
+   *
+   * <p>Con {@code document.querySelector} el foco podía acabar en un elemento de otra
+   * parte de la página que también estuviera marcado como inválido, y además obliga a
+   * tocar {@code document}, que en el servidor no existe.
+   */
+  private readonly formularioRef = viewChild<ElementRef<HTMLFormElement>>('formularioProducto');
 
   /** Qué posición se está subiendo, para que la casilla lo diga. */
   protected readonly subiendo = signal<number | null>(null);
@@ -319,12 +330,8 @@ export class PublishPage {
   private enfocarElPrimeroQueFalta(): void {
     afterNextRender(
       () => {
-        const primero = this.camposQueFaltan()[0];
-        if (primero === undefined) {
-          return;
-        }
-        const control = document.querySelector<HTMLElement>(`[aria-invalid="true"]`);
-        control?.focus();
+        const formulario = this.formularioRef()?.nativeElement;
+        formulario?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
       },
       { injector: this.inyector },
     );

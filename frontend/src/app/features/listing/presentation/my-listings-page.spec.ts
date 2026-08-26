@@ -272,6 +272,27 @@ describe('MyListingsPage', () => {
     );
   });
 
+  /**
+   * El foco no se pierde al abrir ni al cerrar la confirmación.
+   *
+   * <p>Es lo más parecido a un diálogo de toda la historia, y el botón que la abre se
+   * destruye al abrirla: sin mover el foco, quien navega con teclado se queda en el body
+   * sin saber que ha pasado nada.
+   */
+  it('mueve el foco a la confirmación y lo devuelve al cancelar', async () => {
+    const { fixture } = await montar([publicacion({ status: 'PUBLISHED' })]);
+
+    boton(fixture, 'Archivar')?.click();
+    await bombear(fixture);
+
+    expect(document.activeElement).toBe(fixture.nativeElement.querySelector('.mias__confirmar'));
+
+    boton(fixture, 'No, dejarla')?.click();
+    await bombear(fixture);
+
+    expect(document.activeElement).toBe(fixture.nativeElement.querySelector('.mias__archivar'));
+  });
+
   /** RN-020: la marca es para el moderador; al vendedor se le dice que la mire. */
   it('avisa cuando una publicación necesita atención', async () => {
     const { fixture } = await montar([

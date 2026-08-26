@@ -3,9 +3,11 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  ElementRef,
   inject,
   Injector,
   signal,
+  viewChildren,
 } from '@angular/core';
 import { NgOptimizedImage } from '@angular/common';
 import { RouterLink } from '@angular/router';
@@ -43,6 +45,22 @@ export class MyListingsPage {
 
   /** Cuál está esperando confirmación de archivo. Nunca hay dos a la vez. */
   protected readonly porArchivar = signal<string | null>(null);
+
+  /**
+   * Los botones de archivar y el de confirmar, en el orden de las filas.
+   *
+   * <p>Por {@code viewChildren} y no buscando en el documento: así el foco no puede
+   * acabar en un elemento de otra parte de la página, y no hace falta tocar
+   * {@code document}, que en el servidor no existe.
+   *
+   * <p>Del de confirmar solo hay uno a la vez —{@code porArchivar} guarda una sola
+   * publicación—, así que el primero es el que hay. Los de archivar salen en el mismo
+   * orden que {@code publicaciones()}, y por eso se puede volver al de la fila correcta
+   * sin preguntarle nada al DOM.
+   */
+  private readonly botonesDeArchivar = viewChildren<ElementRef<HTMLButtonElement>>('archivarBoton');
+
+  private readonly botonDeConfirmar = viewChildren<ElementRef<HTMLButtonElement>>('confirmarBoton');
 
   protected readonly publicaciones = computed<readonly Listing[]>(() => this.consulta.data() ?? []);
 
@@ -84,23 +102,30 @@ export class MyListingsPage {
    */
   protected pedirConfirmacion(id: string): void {
     this.porArchivar.set(id);
-    this.enfocar('.mias__confirmar');
+    this.enfocar(() => this.botonDeConfirmar()[0]);
   }
 
   /** Al cancelar, el foco vuelve a donde estaba: al botón de archivar de esa fila. */
   protected cancelarArchivo(): void {
+    const cancelada = this.porArchivar();
     this.porArchivar.set(null);
-    this.enfocar('.mias__archivar');
+
+    const fila = this.publicaciones().findIndex((publicacion) => publicacion.id === cancelada);
+    this.enfocar(() => (fila === -1 ? undefined : this.botonesDeArchivar()[fila]));
   }
 
   protected archivar(id: string): void {
     this.archivo.mutate(id, { onSettled: () => this.porArchivar.set(null) });
   }
 
-  private enfocar(selector: string): void {
-    afterNextRender(() => document.querySelector<HTMLElement>(selector)?.focus(), {
-      injector: this.inyector,
-    });
+  /**
+   * Lleva el foco a donde diga la función, después de pintar.
+   *
+   * <p>Se resuelve tras pintar porque antes el elemento no existe: los dos casos cambian
+   * de rama del {@code @if} justo al pulsarlos.
+   */
+  private enfocar(donde: () => ElementRef<HTMLButtonElement> | undefined): void {
+    afterNextRender(() => donde()?.nativeElement.focus(), { injector: this.inyector });
   }
 
   protected claveDeError(fallo: unknown): string {

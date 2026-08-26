@@ -134,7 +134,7 @@
       </p>
     }
 
-    <form class="publicar__formulario" [formGroup]="formulario">
+    <form class="publicar__formulario" #formularioProducto [formGroup]="formulario">
       <fieldset class="publicar__bloque" [disabled]="!editable()">
         <legend class="tipo-titulo-tarjeta">{{ 'listing.sections.what' | transloco }}</legend>
 

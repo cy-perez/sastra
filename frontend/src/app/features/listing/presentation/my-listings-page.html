@@ -98,6 +98,7 @@
                   {{ 'listing.live.archiveConfirm' | transloco }}
                 </p>
                 <button
+                  #confirmarBoton
                   type="button"
                   class="btn btn-secundario mias__confirmar"
                   [disabled]="archivo.isPending()"
@@ -110,6 +111,7 @@
                 </button>
               } @else {
                 <button
+                  #archivarBoton
                   type="button"
                   class="btn btn-secundario mias__archivar"
                   (click)="pedirConfirmacion(publicacion.id)"

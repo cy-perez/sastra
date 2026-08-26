@@ -1,3 +1,4 @@
+import { NgOptimizedImage } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 
@@ -22,7 +23,7 @@ import { ACEPTA_IMAGENES, elTipoDeImagenEsAceptado } from '../domain/profile';
  */
 @Component({
   selector: 'sendik-avatar-form',
-  imports: [TranslocoPipe],
+  imports: [NgOptimizedImage, TranslocoPipe],
   templateUrl: './avatar-form.html',
   styleUrl: './avatar-form.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

@@ -100,6 +100,10 @@ class PublishingDisabledTest {
         mvc.perform(post("/api/v1/listings/" + CUALQUIERA + "/archival").with(jwt()))
                 .andExpect(status().isNotFound());
         mvc.perform(get("/api/v1/users/me/listings").with(jwt())).andExpect(status().isNotFound());
+        // El arbol de categorias es de esta historia y por tanto tampoco existe. Sin esta
+        // linea, la unica ruta del catalogo que se quedaba fuera del criterio 3 era la
+        // que el formulario necesita para pintar su primer desplegable.
+        mvc.perform(get("/api/v1/categories").with(jwt())).andExpect(status().isNotFound());
     }
 
     /**

@@ -1,5 +1,7 @@
 package co.sendik.catalog.rest;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -72,13 +74,17 @@ class CategoriesControllerTest {
     void deberia_decir_que_medidas_pide_cada_categoria() throws Exception {
         when(listar.execute()).thenReturn(List.of(familiaDeModa()));
 
+        // El conjunto entero y no una muestra: el motivo de que este endpoint mande las
+        // medidas calculadas es que el formulario no tenga que repetir la tabla de grupos,
+        // y con media lista tendria que adivinar el resto.
         mvc.perform(get("/api/v1/categories"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].children[0].requiredMeasurements").isArray())
-                .andExpect(jsonPath("$[0].children[0].requiredMeasurements[?(@ == 'CHEST')]")
-                        .exists())
-                .andExpect(jsonPath("$[0].children[0].sizeSystems[?(@ == 'ALPHA')]")
-                        .exists());
+                .andExpect(jsonPath("$[0].children[0].requiredMeasurements", hasSize(4)))
+                .andExpect(jsonPath(
+                        "$[0].children[0].requiredMeasurements",
+                        containsInAnyOrder("CHEST", "LENGTH", "SHOULDERS", "SLEEVE")))
+                .andExpect(jsonPath("$[0].children[0].sizeSystems", hasSize(2)))
+                .andExpect(jsonPath("$[0].children[0].sizeSystems", containsInAnyOrder("ALPHA", "NUMERIC_CO")));
     }
 
     /** RN-064: la tecnologia no admite lo usado, y el formulario tiene que saberlo antes. */

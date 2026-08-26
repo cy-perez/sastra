@@ -313,6 +313,85 @@ class CatalogPersistenceTest {
         });
     }
 
+    /**
+     * Una categoria retirada no se ofrece, y la publicacion que ya la tenia la conserva.
+     *
+     * <p>Es el caso borde de la historia, y hasta ahora el {@code WHERE active} se podia
+     * quitar sin que ninguna prueba se enterara: las tres leian el arbol sembrado, donde
+     * todo esta activo.
+     */
+    @Test
+    void no_deberia_ofrecer_una_categoria_retirada() {
+        Category gafas = categoriaPorSlug("gafas");
+        retirar("gafas");
+
+        try {
+            List<String> hojas = categorias.arbolActivo().stream()
+                    .flatMap(familia -> familia.hijas().stream())
+                    .map(CategoryView::slug)
+                    .toList();
+
+            assertThat(hojas).doesNotContain("gafas").hasSize(30);
+            // Y sigue existiendo para quien ya la tenia: no se borra, se retira.
+            assertThat(categorias.buscar(gafas.id())).isPresent();
+        } finally {
+            devolver("gafas");
+        }
+    }
+
+    /** Retirada la familia, sus hojas no cuelgan de la nada: desaparecen con ella. */
+    @Test
+    void no_deberia_ofrecer_las_hojas_de_una_familia_retirada() {
+        retirar("tech");
+
+        try {
+            List<CategoryView> arbol = categorias.arbolActivo();
+
+            assertThat(arbol).hasSize(5).noneMatch(familia -> "tech".equals(familia.slug()));
+            assertThat(arbol.stream().flatMap(familia -> familia.hijas().stream()))
+                    .hasSize(24)
+                    .noneMatch(hoja -> "celulares-y-tabletas".equals(hoja.slug()));
+        } finally {
+            devolver("tech");
+        }
+    }
+
+    /**
+     * El orden sale de la columna {@code position}.
+     *
+     * <p>Su motivo declarado es que el desplegable no cambie de orden entre peticiones, y
+     * eso no lo comprueba contar cuantas hay.
+     */
+    @Test
+    void deberia_devolver_las_familias_en_el_orden_sembrado() {
+        List<String> familias =
+                categorias.arbolActivo().stream().map(CategoryView::slug).toList();
+
+        assertThat(familias).containsExactly("tops", "bottoms", "full-body", "footwear", "accessories", "tech");
+    }
+
+    /** Retira una categoria o una familia, como haria una migracion futura. */
+    private void retirar(String slug) {
+        cambiarActiva(slug, false);
+    }
+
+    /**
+     * Devuelve al arbol lo que la prueba retiro.
+     *
+     * <p>Esta clase comparte la base entre pruebas: sin deshacerlo, las que cuentan el
+     * arbol entero empiezan a fallar por culpa de esta.
+     */
+    private void devolver(String slug) {
+        cambiarActiva(slug, true);
+    }
+
+    private void cambiarActiva(String slug, boolean activa) {
+        jdbc.sql("UPDATE categories SET active = :activa WHERE slug = :slug")
+                .param("activa", activa)
+                .param("slug", slug)
+                .update();
+    }
+
     private Category categoriaPorSlug(String slug) {
         UUID id = jdbc.sql("SELECT id FROM categories WHERE slug = :s")
                 .param("s", slug)

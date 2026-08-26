@@ -193,6 +193,18 @@ class ListingSecurityTest {
     // --- Criterio 33: leer es publico ---------------------------------------
 
     /**
+     * El arbol de categorias, sin token.
+     *
+     * <p>Son treinta y siete nombres iguales para todo el mundo y el catalogo publico va a
+     * pedir esto mismo. Sin esta prueba, quitar la regla de {@code SecurityConfig} deja el
+     * formulario de publicar con un 401 y un desplegable vacio, y todo lo demas en verde.
+     */
+    @Test
+    void deberia_dejar_leer_el_arbol_de_categorias_sin_token() throws Exception {
+        mvc.perform(get("/api/v1/categories")).andExpect(status().isOk());
+    }
+
+    /**
      * Sin token, 404 y no 401. La diferencia es todo el criterio 33: con 401, quien
      * pregunta sabria que la publicacion existe pero no es suya.
      */

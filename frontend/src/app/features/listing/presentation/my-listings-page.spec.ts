@@ -23,6 +23,7 @@ import { MyListingsPage } from './my-listings-page';
  */
 describe('MyListingsPage', () => {
   const API = 'https://api.pruebas.sendik.co/api/v1';
+  const ID = 'af8b9a52-4a3f-4a52-9a1e-8d9a2f1c4b70';
 
   const SESION: Session = {
     accessToken: 'un-token',
@@ -30,7 +31,7 @@ describe('MyListingsPage', () => {
   };
 
   const publicacion = (cambios: Record<string, unknown> = {}) => ({
-    id: 'af8b9a52-4a3f-4a52-9a1e-8d9a2f1c4b70',
+    id: ID,
     sellerId: 'vendedor',
     status: 'DRAFT',
     product: {
@@ -71,7 +72,24 @@ describe('MyListingsPage', () => {
     }
   };
 
+  /**
+   * Deja pasar unos turnos y vuelve a pintar, sin esperar la estabilidad.
+   *
+   * <p>`whenStable` no sirve cuando queda alguna peticion sin responder: Angular la
+   * cuenta como tarea pendiente y la espera no termina hasta que la prueba conteste.
+   */
+  const bombear = async (fixture: { detectChanges: () => void }) => {
+    for (let vuelta = 0; vuelta < 5; vuelta++) {
+      await new Promise((listo) => setTimeout(listo, 0));
+      fixture.detectChanges();
+    }
+  };
+
   const montar = async (items: object[]) => {
+    // La sesión se pone aquí y no en el beforeEach: allí instancia el módulo de pruebas
+    // y ninguna prueba puede ya sustituir un proveedor ni montar sin sesión.
+    TestBed.inject(SessionStore).set(SESION);
+
     const fixture = TestBed.createComponent(MyListingsPage);
     await fixture.whenStable();
 
@@ -106,7 +124,6 @@ describe('MyListingsPage', () => {
         provideHttpClientTesting(),
       ],
     });
-    TestBed.inject(SessionStore).set(SESION);
   });
 
   /** El estado vacío es un estado de pantalla, no un error. */
@@ -128,10 +145,103 @@ describe('MyListingsPage', () => {
     expect(texto).toMatch(/185[.,\s]?000/);
   });
 
-  it('ofrece pausar una publicada y reactivar una pausada', async () => {
-    const { fixture } = await montar([publicacion({ status: 'PUBLISHED' })]);
+  /** Criterio 29: pausar deja de verse, y se reactiva sin pasar por moderación. */
+  it('pausa una publicada por su ruta y la fila queda pausada', async () => {
+    const { fixture, backend } = await montar([publicacion({ status: 'PUBLISHED' })]);
+
     expect(boton(fixture, 'Pausar')).toBeDefined();
     expect(boton(fixture, 'Reactivar')).toBeUndefined();
+
+    boton(fixture, 'Pausar')?.click();
+    await bombear(fixture);
+
+    backend
+      .expectOne(
+        (llamada) => llamada.method === 'POST' && llamada.url.endsWith(`/listings/${ID}/pause`),
+      )
+      .flush(publicacion({ status: 'PAUSED' }));
+    await bombear(fixture);
+
+    // Y la lista se vuelve a pedir, porque «mis publicaciones» dejó de ser cierto.
+    backend
+      .match((llamada) => llamada.url === `${API}/users/me/listings`)
+      .forEach((peticion) =>
+        peticion.flush({ items: [publicacion({ status: 'PAUSED' })], page: 0, size: 20 }),
+      );
+    await bombear(fixture);
+
+    expect(fixture.nativeElement.textContent).toContain('Pausada');
+  });
+
+  it('reactiva una pausada por su ruta', async () => {
+    const { fixture, backend } = await montar([publicacion({ status: 'PAUSED' })]);
+
+    expect(boton(fixture, 'Pausar')).toBeUndefined();
+    boton(fixture, 'Reactivar')?.click();
+    await bombear(fixture);
+
+    backend.expectOne(
+      (llamada) => llamada.method === 'DELETE' && llamada.url.endsWith(`/listings/${ID}/pause`),
+    );
+  });
+
+  /** Criterio 30: archivada no vuelve a ningún estado, así que no se ofrece nada. */
+  it('no ofrece nada sobre una archivada', async () => {
+    const { fixture } = await montar([publicacion({ status: 'ARCHIVED' })]);
+
+    expect(boton(fixture, 'Pausar')).toBeUndefined();
+    expect(boton(fixture, 'Reactivar')).toBeUndefined();
+    expect(boton(fixture, 'Archivar')).toBeUndefined();
+    expect(fixture.nativeElement.textContent).toContain('Archivada');
+  });
+
+  /**
+   * §9 del informe: esta pantalla no necesita el árbol de categorías.
+   *
+   * <p>Es la razón por la que existe {@code CategoriesStore} aparte. Sin esta prueba,
+   * volver a juntarlos dejaría una petición de más que nadie notaría.
+   */
+  it('no pide el árbol de categorías', async () => {
+    const { backend } = await montar([]);
+
+    expect(backend.match((llamada) => llamada.url.endsWith('/categories'))).toHaveLength(0);
+  });
+
+  it('muestra el error cuando el listado falla', async () => {
+    TestBed.inject(SessionStore).set(SESION);
+
+    const fixture = TestBed.createComponent(MyListingsPage);
+    await fixture.whenStable();
+
+    TestBed.inject(HttpTestingController)
+      .expectOne(
+        (llamada) => llamada.method === 'GET' && llamada.url === `${API}/users/me/listings`,
+      )
+      .flush({ code: 'COMMON_UNEXPECTED' }, { status: 500, statusText: 'Server Error' });
+    await bombear(fixture);
+
+    expect(fixture.nativeElement.querySelector('[role="alert"]')).not.toBeNull();
+  });
+
+  /**
+   * La regresión que fija frontend/CLAUDE.md: el componente nace antes de que la sesión
+   * llegue por la cookie de refresco.
+   */
+  it('pide el listado aunque la sesión llegue después de crear el componente', async () => {
+    const fixture = TestBed.createComponent(MyListingsPage);
+    await fixture.whenStable();
+
+    TestBed.inject(SessionStore).set(SESION);
+    await fixture.whenStable();
+
+    TestBed.inject(HttpTestingController)
+      .expectOne(
+        (llamada) => llamada.method === 'GET' && llamada.url === `${API}/users/me/listings`,
+      )
+      .flush({ items: [publicacion()], page: 0, size: 20 });
+    await asentar(fixture);
+
+    expect(fixture.nativeElement.textContent).toContain('Camisa de lino');
   });
 
   it('no ofrece pausar ni archivar una vendida', async () => {
@@ -149,13 +259,13 @@ describe('MyListingsPage', () => {
     const { fixture, backend } = await montar([publicacion({ status: 'PUBLISHED' })]);
 
     boton(fixture, 'Archivar')?.click();
-    await asentar(fixture);
+    await bombear(fixture);
 
     expect(fixture.nativeElement.textContent).toContain('Archivar es para siempre');
     backend.verify();
 
     boton(fixture, 'Sí, archivar')?.click();
-    await fixture.whenStable();
+    await bombear(fixture);
 
     backend.expectOne(
       (peticion) => peticion.method === 'POST' && peticion.url.endsWith('/archival'),

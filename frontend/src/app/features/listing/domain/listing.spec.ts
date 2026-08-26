@@ -11,6 +11,7 @@ import {
   gradosDe,
   imagenesDeReferencia,
   posicionesAPintar,
+  precioFormateado,
   puedeIntentarEnviar,
   tomaEn,
   tomasDelVendedor,
@@ -113,7 +114,8 @@ describe('listing, lo que la pantalla decide', () => {
     });
 
     it('no ofrece enviar si falta una canónica aunque el total cuadre', () => {
-      expect(puedeIntentarEnviar(publicacionCon(tomas(0, 1, 2, 3, 5, 6, 7, 8)))).toBe(false);
+      // Ocho tomas pero sin la de 180 grados: el total cuadra y la canonica falta.
+      expect(puedeIntentarEnviar(publicacionCon(tomas(0, 1, 2, 3, 5, 6, 7, 7)))).toBe(false);
     });
 
     it('no ofrece enviar desde un estado que no lo admite', () => {
@@ -123,6 +125,29 @@ describe('listing, lo que la pantalla decide', () => {
       };
 
       expect(puedeIntentarEnviar(enRevision)).toBe(false);
+    });
+  });
+
+  describe('el precio formateado', () => {
+    it('escribe el peso colombiano sin decimales', () => {
+      const formateado = precioFormateado({ amount: 185000, currency: 'COP' }, 'es');
+
+      // Se comprueban las partes y no la cadena entera: el separador de miles lo decide
+      // la configuracion regional del entorno, y fijarlo aqui haria la prueba fragil. En
+      // es-CO el punto separa los miles, asi que «no lleva decimales» se comprueba por el
+      // final de la cadena y no buscando un punto.
+      expect(formateado).toContain('185');
+      expect(formateado).toContain('000');
+      expect(formateado).not.toMatch(/[.,]\d{2}$/);
+    });
+
+    it('lleva el símbolo de la moneda', () => {
+      expect(precioFormateado({ amount: 1000, currency: 'COP' }, 'es')).toMatch(/\$|COP/);
+    });
+
+    /** El importe es un entero de pesos: redondear aqui seria inventar centavos. */
+    it('no inventa decimales', () => {
+      expect(precioFormateado({ amount: 1, currency: 'COP' }, 'en')).not.toContain('.0');
     });
   });
 

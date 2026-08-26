@@ -47,7 +47,8 @@ texto baja de 16px.
 - Los tres pesos disponibles son 400, 500 y 600. Un diseño que pida otro se
   ajusta al sistema.
 - Queda pendiente medir los `size-adjust` del bloque de respaldo contra los
-  archivos reales, o eliminarlo. Está anotado en `docs/ui/README.md`.
+  archivos reales, o eliminarlo. El aviso vive junto al bloque que describe, en
+  `frontend/src/styles/tipografia.css`.
 
 ## Cuándo revisar
 

@@ -47,9 +47,11 @@ body {
  * vive aqui por lo mismo que .contenedor, que es el mecanismo al que sustituye.
  *
  * Para una pagina normal el comportamiento es equivalente, con una diferencia
- * medible: .contenedor limitaba a 1200px la caja CON su relleno, dejando 1168px
- * de contenido en escritorio; aqui el carril de contenido llega a 1200px. Son
- * hasta 32px mas de ancho por encima de 1232px de ventana.
+ * medible: .contenedor limita a --ancho-max la caja CON su relleno, asi que en
+ * escritorio deja 1092px de contenido; aqui el carril de contenido llega a los
+ * 1140px completos. Son hasta 48px mas de ancho por encima de 1188px de ventana.
+ * Las cifras salen de --ancho-max (1140px, medida del kit de Sendik) menos los
+ * dos rellenos de --esp-24; si cambia el token, cambian con el.
  *
  * Lo que agrega es un carril a sangre completa, que .contenedor no podia dar. El
  * hero de la portada tiene que llegar de borde a borde igual que el pie, y el

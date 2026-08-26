@@ -31,8 +31,12 @@ No son controles: son propiedades que todo componente cumple.
 - **Un solo `h1` por página** y sin saltos de nivel. Lo comprueban
   `e2e/shell.spec.ts` y `e2e/registro.spec.ts`.
 - **Contraste mínimo** 4.5:1 en texto normal y 3:1 en texto grande, iconos y
-  bordes de control. El informe es `contraste.md` y lo regenera
-  `generador/verificar.py` en los dos modos.
+  bordes de control. Se comprueba en dos pasos y no son el mismo: `contraste.md`
+  es el informe que escribe el generador del kit, y cubre los pares del **modo
+  claro** que el kit conoce; `generador/verificar.py` no escribe informe, mide 25
+  pares **en los dos modos** leyendo las hojas tal como las sirve el sitio
+  —`tokens.css` más `tipografia.css` y `marca.css`— y devuelve código de error si
+  alguno falla, que es lo que impide publicar.
 - **Formularios** con `label` asociado, errores con `aria-describedby` y
   `aria-invalid`. Cada formulario de cuentas tiene su prueba de componente.
 - **Navegación completa por teclado**, menú móvil incluido, con `Escape` para

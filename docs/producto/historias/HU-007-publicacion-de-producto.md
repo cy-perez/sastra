@@ -1,6 +1,6 @@
 # HU-007 — Publicación de producto
 
-**Fase:** 2 | **Estado:** pendiente
+**Fase:** 2 | **Estado:** backend implementado el 25 de agosto de 2026; frontend pendiente
 **Reglas que aplica:** RN-011, RN-013, RN-015 a RN-025, RN-029, RN-030,
 RN-061, RN-062, RN-063
 
@@ -415,17 +415,39 @@ pase por moderación.
   |---|---|---|
   | `POST /api/v1/listings` | Vendedor verificado | Crea el borrador |
   | `GET /api/v1/listings/{id}` | Dueño, moderador, o cualquiera si está publicada | Lee una publicación |
-  | `PATCH /api/v1/listings/{id}` | Dueño | Guarda datos del producto |
+  | `PATCH /api/v1/listings/{id}` | Dueño | Guarda datos del producto. Vuelve a moderación (RN-062) |
+  | `PATCH /api/v1/listings/{id}/price` | Dueño | Solo el precio. No pasa por moderación |
+  | `PATCH /api/v1/listings/{id}/shipping` | Dueño | Solo peso y medidas de la caja. No pasa por moderación |
   | `POST /api/v1/listings/{id}/images` | Dueño | Sube una toma, multipart. El cuerpo lleva el `kind` |
   | `DELETE /api/v1/listings/{id}/images/{imageId}` | Dueño | Borra una toma o una imagen de referencia |
   | `POST /api/v1/listings/{id}/submission` | Dueño | Envía a revisión |
   | `DELETE /api/v1/listings/{id}/submission` | Dueño | Retira la solicitud |
+  | `DELETE /api/v1/listings/{id}/rejection` | Dueño | Retoma una rechazada y la devuelve a borrador |
   | `POST /api/v1/listings/{id}/approval` | Moderador | Aprueba |
   | `POST /api/v1/listings/{id}/rejection` | Moderador | Rechaza con motivo |
   | `POST /api/v1/listings/{id}/pause` | Dueño | Pausa |
   | `DELETE /api/v1/listings/{id}/pause` | Dueño | Reanuda |
-  | `POST /api/v1/listings/{id}/archival` | Dueño o moderador | Archiva |
+  | `POST /api/v1/listings/{id}/archival` | Dueño | Archiva lo suyo, sin motivo |
+  | `POST /api/v1/listings/{id}/removal` | Moderador | Retira lo de otra persona, con motivo (RN-024) |
   | `GET /api/v1/users/me/listings` | Dueño | Sus publicaciones, paginado |
+
+  **Cuatro rutas más de las que esta tabla traía**, decididas al implementarla el
+  25 de agosto de 2026:
+
+  - `PATCH /price` y `PATCH /shipping` salen del `PATCH` general porque su
+    consecuencia es la contraria: editar contenido devuelve a moderación y
+    cambiar precio o envío no (criterios 27 y 28). Con un solo `PATCH`, el
+    controlador tendría que decidir por los campos del cuerpo cuál de las dos
+    cosas pasa, y eso es una regla de negocio en el borde.
+  - `DELETE /rejection` no estaba y hacía falta: `REJECTED → PENDING_REVIEW` no
+    es una transición válida y subir una toma no cambia el estado, así que a
+    quien le rechazaran por las fotos no le quedaba forma de reenviar sin tocar
+    además un texto que no tenía nada malo (criterio 23).
+  - `/archival` y `/removal` se separan porque son dos actos distintos: el
+    vendedor archiva lo suyo sin dar explicaciones y el moderador retira lo de
+    otra persona con un motivo que va en el correo. Con una sola ruta, la
+    autorización no puede exigir rol y el cuerpo tiene un campo obligatorio para
+    uno y prohibido para el otro.
 
   `docs/arquitectura/contrato-api.md` citaba `/listings/{id}/submit-for-review`
   como ejemplo de excepción con verbo. El código no hace eso en ninguna ruta, y
@@ -507,7 +529,9 @@ para que quien implemente no lo vuelva a abrir.
 - **La sección «Publicación de producto — Fase 2» de `textos-web.md`**, de donde
   salen las claves `listing.*`. Bloquea la interfaz, no el backend: ningún texto
   visible se escribe en la plantilla. La migración, el dominio y los endpoints se
-  pueden hacer sin ella.
+  pueden hacer sin ella. **Sigue siendo lo único que bloquea, y ahora es lo
+  único que falta antes de la interfaz:** el backend quedó cerrado el 25 de
+  agosto de 2026.
 
 El árbol de categorías **ya no bloquea**: se aprobó el 24 de agosto de 2026 y está
 en `docs/producto/categorias.md`, con el grupo de medida y los sistemas de talla

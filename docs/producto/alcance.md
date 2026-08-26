@@ -88,13 +88,18 @@ Es la fase en curso desde el 21 de agosto de 2026.
 - Publicación de producto con las cuatro tomas obligatorias y las intermedias, en
   las dos familias: moda —nueva y de segunda— y **tecnología, solo nueva**
   (RN-064). La tecnología se agregó al alcance el 24 de agosto de 2026 y entra en
-  esta fase porque HU-007 todavía no tiene código: meterla ahora cuesta menos que
-  reabrir el catálogo después. Moverla a una fase posterior es cambiar esta línea.
-  **HU-007, escrita el 24 de agosto de 2026 y pendiente de implementar.** Trae
-  también los endpoints de decisión del moderador sobre publicaciones, y con ella
-  quedaron cerradas las reglas que faltaban: RN-061, RN-062 y RN-063. Su
-  prerrequisito duro era el árbol de categorías, aprobado el 24 de agosto de 2026
-  en `docs/producto/categorias.md`. Ya no tiene nada que la bloquee.
+  esta fase porque HU-007 todavía no tenía código: meterla entonces costaba menos
+  que reabrir el catálogo después. Moverla a una fase posterior es cambiar esta
+  línea. Trae también los endpoints de decisión del moderador sobre
+  publicaciones, y con ella quedaron cerradas las reglas que faltaban: RN-061,
+  RN-062 y RN-063.
+  **HU-007: el backend está hecho y probado desde el 25 de agosto de 2026; la
+  interfaz sigue pendiente.** Están el dominio con su máquina de estados, los
+  diecisiete casos de uso, la persistencia, el aviso por correo al vendedor y los
+  diecisiete endpoints, detrás de `FEATURE_PUBLISHING`, hoy apagada. Lo que falta
+  para la interfaz es la sección de publicación de `docs/producto/textos-web.md`,
+  de donde salen las claves `listing.*`: sin ella no se puede escribir una
+  plantilla sin quemar texto visible en el código.
 - Panel de moderación y flujo de aprobación o rechazo con motivo. **Hecho a
   medias**: HU-006 entrega la bandeja de verificaciones de vendedor, y con ella
   `FEATURE_SELLER_VERIFICATION` ya se puede encender. La moderación de

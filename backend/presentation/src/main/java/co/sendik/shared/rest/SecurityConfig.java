@@ -145,6 +145,15 @@ public class SecurityConfig {
                                 .hasRole("MODERATOR");
                     }
 
+                    if (catalogoExpuesto) {
+                        // El arbol de categorias. Publico y sin token: son treinta y siete
+                        // nombres iguales para todo el mundo, y el catalogo publico pedira
+                        // esto mismo. Solo se declara con la bandera encendida, por lo
+                        // mismo que las de moderacion.
+                        rutas.requestMatchers(HttpMethod.GET, "/api/v1/categories")
+                                .permitAll();
+                    }
+
                     rutas
                             // Todo lo demas del catalogo lo hace el vendedor sobre lo suyo.
                             // Que sea suyo lo comprueba el repositorio, que solo devuelve la

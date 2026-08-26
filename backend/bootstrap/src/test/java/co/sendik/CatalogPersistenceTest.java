@@ -3,6 +3,7 @@ package co.sendik;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import co.sendik.catalog.dto.CategoryView;
 import co.sendik.catalog.exception.ListingConcurrentlyModifiedException;
 import co.sendik.catalog.model.AttentionReason;
 import co.sendik.catalog.model.Brand;
@@ -40,6 +41,7 @@ import co.sendik.shared.money.Money;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -264,6 +266,52 @@ class CatalogPersistenceTest {
     }
 
     // ------------------------------------------------------------------ apoyo
+
+    /**
+     * El arbol completo, contra lo que sembraron V9 y V11.
+     *
+     * <p>Es la unica prueba que ve los nombres visibles: no estan en el modelo de dominio,
+     * asi que ninguna prueba de dominio puede mirarlos. Y son texto que lee un comprador.
+     */
+    @Test
+    void deberia_armar_el_arbol_activo_con_sus_nombres() {
+        List<CategoryView> arbol = categorias.arbolActivo();
+
+        assertThat(arbol).hasSize(6).allSatisfy(familia -> {
+            assertThat(familia.esFamilia()).isTrue();
+            assertThat(familia.hijas()).isNotEmpty();
+        });
+
+        assertThat(arbol.stream().flatMap(familia -> familia.hijas().stream())).hasSize(31);
+    }
+
+    /** V11: los nombres se sembraron sin tildes y eso lo lee un comprador. */
+    @Test
+    void deberia_traer_los_nombres_del_espanol_bien_escritos() {
+        List<String> nombres = categorias.arbolActivo().stream()
+                .flatMap(familia -> java.util.stream.Stream.concat(
+                        java.util.stream.Stream.of(familia.nombreEs()),
+                        familia.hijas().stream().map(CategoryView::nombreEs)))
+                .toList();
+
+        assertThat(nombres)
+                .contains("Tecnología", "Suéteres, buzos y sacos", "Trajes de baño", "Cámaras")
+                .doesNotContain("Tecnologia", "Sueteres, buzos y sacos", "Trajes de bano", "Camaras");
+    }
+
+    /** RN-064: las siete de tecnologia no admiten lo usado, y el formulario lo necesita. */
+    @Test
+    void deberia_decir_que_la_tecnologia_no_admite_lo_usado_RN_064() {
+        CategoryView tecnologia = categorias.arbolActivo().stream()
+                .filter(familia -> "tech".equals(familia.slug()))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(tecnologia.hijas()).hasSize(7).allSatisfy(hija -> {
+            assertThat(hija.admiteUsado()).isFalse();
+            assertThat(hija.medidasObligatorias()).isNotEmpty();
+        });
+    }
 
     private Category categoriaPorSlug(String slug) {
         UUID id = jdbc.sql("SELECT id FROM categories WHERE slug = :s")

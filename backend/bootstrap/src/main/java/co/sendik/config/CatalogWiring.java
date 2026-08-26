@@ -10,6 +10,7 @@ import co.sendik.catalog.usecase.ArchiveListingUseCase;
 import co.sendik.catalog.usecase.ChangeListingPriceUseCase;
 import co.sendik.catalog.usecase.ChangeListingShippingUseCase;
 import co.sendik.catalog.usecase.CreateListingUseCase;
+import co.sendik.catalog.usecase.ListCategoriesUseCase;
 import co.sendik.catalog.usecase.ListSellerListingsUseCase;
 import co.sendik.catalog.usecase.PauseListingUseCase;
 import co.sendik.catalog.usecase.ReadListingUseCase;
@@ -195,5 +196,10 @@ public class CatalogWiring {
     @Bean
     ListSellerListingsUseCase listSellerListingsUseCase(ListingRepository publicaciones) {
         return new ListSellerListingsUseCase(publicaciones);
+    }
+
+    @Bean
+    ListCategoriesUseCase listCategoriesUseCase(Categories categorias) {
+        return new ListCategoriesUseCase(categorias);
     }
 }

@@ -1,5 +1,6 @@
 package co.sendik.catalog.persistence;
 
+import co.sendik.catalog.dto.CategoryView;
 import co.sendik.catalog.model.Category;
 import co.sendik.catalog.model.CategoryId;
 import co.sendik.catalog.model.MeasurementGroup;
@@ -8,11 +9,17 @@ import co.sendik.catalog.port.out.Categories;
 import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -43,6 +50,91 @@ public class JdbcCategories implements Categories {
                 .param("id", id.value())
                 .query(JdbcCategories::filaACategoria)
                 .optional();
+    }
+
+    /**
+     * El arbol activo, en dos pasos y una sola consulta.
+     *
+     * <p>Una consulta que trae todo y se arma en memoria, en vez de una por familia: son
+     * treinta y siete filas y el arbol tiene dos niveles por definicion. Un recorrido
+     * recursivo aqui seria complejidad para un problema que no existe.
+     *
+     * <p>El orden sale de la columna {@code position}, que es la que decide en que orden
+     * se le ofrecen al vendedor. Sin ella el desplegable cambiaria de orden entre
+     * peticiones.
+     */
+    @Override
+    public List<CategoryView> arbolActivo() {
+        List<Fila> filas = jdbc.sql("""
+                        SELECT id, slug, parent_id, name_es, name_en, size_systems,
+                               measurement_group, allows_used, position
+                        FROM categories
+                        WHERE active
+                        ORDER BY position
+                        """).query(JdbcCategories::fila).list();
+
+        Map<UUID, String> slugsDeFamilia =
+                filas.stream().filter(f -> f.padre() == null).collect(Collectors.toMap(Fila::id, Fila::slug));
+
+        Map<String, List<CategoryView>> hijasPorFamilia = new LinkedHashMap<>();
+        for (Fila hija : filas) {
+            if (hija.padre() == null) {
+                continue;
+            }
+            String familia = slugsDeFamilia.get(hija.padre());
+
+            // Una hija cuya familia esta inactiva no se ofrece: la familia entera se
+            // retiro, y colgarla de la nada la dejaria elegible sin donde encajar.
+            if (familia != null) {
+                hijasPorFamilia
+                        .computeIfAbsent(familia, cualquiera -> new ArrayList<>())
+                        .add(hija.aVista(familia, List.of()));
+            }
+        }
+
+        return filas.stream()
+                .filter(f -> f.padre() == null)
+                .map(familia -> familia.aVista(null, hijasPorFamilia.getOrDefault(familia.slug(), List.of())))
+                .toList();
+    }
+
+    /** Fila cruda: el mapeo a vista necesita saber antes quien es familia de quien. */
+    private record Fila(
+            UUID id,
+            String slug,
+            @Nullable UUID padre,
+            String nombreEs,
+            String nombreEn,
+            Set<SizeSystem> sistemas,
+            @Nullable MeasurementGroup grupo,
+            boolean admiteUsado) {
+
+        CategoryView aVista(@Nullable String familiaSlug, List<CategoryView> hijas) {
+            return new CategoryView(
+                    new CategoryId(id),
+                    slug,
+                    nombreEs,
+                    nombreEn,
+                    familiaSlug,
+                    sistemas,
+                    grupo == null ? Set.of() : grupo.obligatorias(),
+                    admiteUsado,
+                    hijas);
+        }
+    }
+
+    private static Fila fila(ResultSet fila, int numero) throws SQLException {
+        String grupo = fila.getString("measurement_group");
+
+        return new Fila(
+                fila.getObject("id", UUID.class),
+                fila.getString("slug"),
+                fila.getObject("parent_id", UUID.class),
+                fila.getString("name_es"),
+                fila.getString("name_en"),
+                sistemas(fila.getArray("size_systems")),
+                grupo == null ? null : MeasurementGroup.valueOf(grupo),
+                fila.getBoolean("allows_used"));
     }
 
     private static Category filaACategoria(ResultSet fila, int numero) throws SQLException {

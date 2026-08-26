@@ -19,6 +19,7 @@ import co.sendik.catalog.model.ShippingDimensions;
 import co.sendik.catalog.model.Size;
 import co.sendik.catalog.model.SizeSystem;
 import co.sendik.catalog.model.Title;
+import co.sendik.catalog.model.WarrantyMonths;
 import co.sendik.shared.file.FileKey;
 import co.sendik.shared.file.ImageContentType;
 import co.sendik.shared.file.ImageDimensions;
@@ -77,6 +78,46 @@ final class CatalogoDelBorde {
                 AHORA);
     }
 
+    /**
+     * Tecnologia sellada: cuatro tomas propias y una imagen de referencia.
+     *
+     * <p>Es la unica forma que admite una imagen de referencia (RN-066) y la unica que baja
+     * de ocho tomas a cuatro (RN-065), asi que los criterios 37, 39 y 41 se prueban con
+     * esta.
+     */
+    static Listing tecnologiaSellada(SellerId vendedor) {
+        Product telefono = new Product(
+                ProductId.nuevo(),
+                vendedor,
+                CategoryId.nuevo(),
+                new Title("Telefono nuevo sellado"),
+                new Description("Caja cerrada, factura incluida."),
+                null,
+                Condition.NEW,
+                Size.unica(),
+                new Measurements(Map.of()),
+                Color.BLACK,
+                Money.dePesos(2_400_000),
+                new ShippingDimensions(700, new BigDecimal("20.0"), new BigDecimal("12.0"), new BigDecimal("8.0")),
+                true,
+                new WarrantyMonths(12));
+
+        return Listing.existente(
+                ListingId.nuevo(),
+                telefono,
+                ListingStatus.DRAFT,
+                List.of(toma(0), toma(2), toma(4), toma(6), referencia(0)),
+                null,
+                null,
+                null,
+                null,
+                null,
+                Set.of(),
+                3L,
+                AHORA,
+                AHORA);
+    }
+
     static Product producto(SellerId vendedor) {
         Map<MeasurementKind, BigDecimal> medidas = new EnumMap<>(MeasurementKind.class);
         medidas.put(MeasurementKind.CHEST, new BigDecimal("52.0"));
@@ -96,6 +137,17 @@ final class CatalogoDelBorde {
                 new ShippingDimensions(600, new BigDecimal("30.0"), new BigDecimal("20.0"), new BigDecimal("10.0")),
                 null,
                 null);
+    }
+
+    /** Solo se admite en tecnologia sellada, y nunca cuenta como toma (RN-066). */
+    static ProductImage referencia(int posicion) {
+        return ProductImage.referencia(
+                ProductImageId.nuevo(),
+                new FileKey("productos/referencia-" + posicion + ".jpg"),
+                posicion,
+                new ImageDimensions(900, 1200),
+                90_000L,
+                ImageContentType.JPEG);
     }
 
     static ProductImage toma(int posicion) {

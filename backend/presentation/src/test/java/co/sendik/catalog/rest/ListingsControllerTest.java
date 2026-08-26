@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -18,13 +19,20 @@ import co.sendik.catalog.dto.ChangeListingPriceCommand;
 import co.sendik.catalog.dto.ChangeListingShippingCommand;
 import co.sendik.catalog.dto.CreateListingCommand;
 import co.sendik.catalog.dto.ReadListingQuery;
+import co.sendik.catalog.dto.RemoveListingImageCommand;
 import co.sendik.catalog.dto.SellerListingCommand;
+import co.sendik.catalog.dto.UpdateListingContentCommand;
 import co.sendik.catalog.dto.UploadListingImageCommand;
+import co.sendik.catalog.exception.ConditionNotAllowedException;
 import co.sendik.catalog.exception.IncompleteListingException;
 import co.sendik.catalog.exception.MeasurementsIncompleteException;
+import co.sendik.catalog.exception.ReferenceImageNotAllowedException;
 import co.sendik.catalog.exception.SellerNotEligibleException;
+import co.sendik.catalog.model.AttentionReason;
+import co.sendik.catalog.model.Condition;
 import co.sendik.catalog.model.ImageKind;
 import co.sendik.catalog.model.Listing;
+import co.sendik.catalog.model.ListingStatus;
 import co.sendik.catalog.model.MeasurementGroup;
 import co.sendik.catalog.model.MeasurementKind;
 import co.sendik.catalog.model.SellerId;
@@ -55,7 +63,10 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -128,11 +139,35 @@ class ListingsControllerTest {
             if (quien == null) {
                 return null;
             }
+            return token();
+        }
+
+        private Jwt token() {
             return Jwt.withTokenValue("da-igual")
                     .header("alg", "HS256")
-                    .subject(quien.value().toString())
+                    .subject(quien == null ? "sin-sesion" : quien.value().toString())
                     .claim("roles", moderador ? List.of("MODERATOR") : List.of())
                     .build();
+        }
+
+        /**
+         * La autenticacion, como la entrega Spring Security en produccion.
+         *
+         * <p>No sale de este resolvedor: un parametro {@code Authentication} lo resuelve
+         * {@code ServletRequestMethodArgumentResolver}, que es interno y va antes que los
+         * propios, leyendo {@code request.getUserPrincipal()}. Por eso las peticiones que
+         * la necesitan la ponen como principal.
+         *
+         * <p>Las autoridades llevan el prefijo {@code ROLE_}, que es el que pone el
+         * convertidor de {@code SecurityConfig}: un doble con otro prefijo daria verde
+         * sobre un controlador roto.
+         */
+        private @Nullable Authentication autenticacion() {
+            if (quien == null) {
+                return null;
+            }
+            return new JwtAuthenticationToken(
+                    token(), moderador ? List.of(new SimpleGrantedAuthority("ROLE_MODERATOR")) : List.of());
         }
     }
 
@@ -215,27 +250,32 @@ class ListingsControllerTest {
         when(leer.execute(any())).thenReturn(Optional.of(CatalogoDelBorde.publicada(VENDEDOR)));
         token.quien = null;
 
-        MvcResult resultado = mvc.perform(get("/api/v1/listings/" + java.util.UUID.randomUUID()))
+        MvcResult resultado = mvc.perform(leer(java.util.UUID.randomUUID().toString()))
                 .andExpect(status().isOk())
                 .andReturn();
 
         String cuerpo = resultado.getResponse().getContentAsString();
 
         assertThat(cuerpo)
+                // Lo que si tiene que estar. Sin esto, un cuerpo vacio pasaria todas las
+                // ausencias de abajo y la prueba diria que nada se filtra.
+                .contains(CatalogoDelBorde.TITULO)
+                .contains("\"id\"")
+                .contains("\"images\"")
+                // Y la cocina de la moderacion, que no.
                 .doesNotContain("version")
                 .doesNotContain("attentionReasons")
                 .doesNotContain("requiresAttention")
                 .doesNotContain("rejectionReason")
                 .doesNotContain("rejectionNote")
-                .doesNotContain("status")
-                .contains(CatalogoDelBorde.TITULO);
+                .doesNotContain("status");
     }
 
     @Test
     void deberia_contarle_todo_al_dueno() throws Exception {
         when(leer.execute(any())).thenReturn(Optional.of(CatalogoDelBorde.borrador(VENDEDOR)));
 
-        mvc.perform(get("/api/v1/listings/" + java.util.UUID.randomUUID()))
+        mvc.perform(leer(java.util.UUID.randomUUID().toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("DRAFT"))
                 .andExpect(jsonPath("$.version").value(7))
@@ -247,7 +287,7 @@ class ListingsControllerTest {
         when(leer.execute(any())).thenReturn(Optional.of(CatalogoDelBorde.borrador(OTRO)));
         token.moderador = true;
 
-        mvc.perform(get("/api/v1/listings/" + java.util.UUID.randomUUID()))
+        mvc.perform(leer(java.util.UUID.randomUUID().toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("DRAFT"));
     }
@@ -257,7 +297,7 @@ class ListingsControllerTest {
     void deberia_responder_404_cuando_no_hay_nada_que_ensenar_criterio_33() throws Exception {
         when(leer.execute(any())).thenReturn(Optional.empty());
 
-        mvc.perform(get("/api/v1/listings/" + java.util.UUID.randomUUID())).andExpect(status().isNotFound());
+        mvc.perform(leer(java.util.UUID.randomUUID().toString())).andExpect(status().isNotFound());
     }
 
     /** Sin token, la consulta va sin vendedor y sin rol: solo se responde lo publicado. */
@@ -266,7 +306,7 @@ class ListingsControllerTest {
         when(leer.execute(any())).thenReturn(Optional.empty());
         token.quien = null;
 
-        mvc.perform(get("/api/v1/listings/" + java.util.UUID.randomUUID())).andExpect(status().isNotFound());
+        mvc.perform(leer(java.util.UUID.randomUUID().toString())).andExpect(status().isNotFound());
 
         ArgumentCaptor<ReadListingQuery> consulta = ArgumentCaptor.forClass(ReadListingQuery.class);
         verify(leer).execute(consulta.capture());
@@ -283,9 +323,9 @@ class ListingsControllerTest {
         mvc.perform(post("/api/v1/listings/" + java.util.UUID.randomUUID() + "/submission"))
                 .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.code").value("CATALOG_LISTING_INCOMPLETE"))
-                .andExpect(jsonPath("$.errors[0].field").value("titulo"))
+                .andExpect(jsonPath("$.errors[0].field").value("title"))
                 .andExpect(jsonPath("$.errors[0].code").value("VALIDATION_REQUIRED"))
-                .andExpect(jsonPath("$.errors[1].field").value("precio"));
+                .andExpect(jsonPath("$.errors[1].field").value("price"));
     }
 
     /**
@@ -426,11 +466,169 @@ class ListingsControllerTest {
     void deberia_devolver_la_direccion_publica_de_cada_toma() throws Exception {
         when(leer.execute(any())).thenReturn(Optional.of(CatalogoDelBorde.borrador(VENDEDOR)));
 
-        mvc.perform(get("/api/v1/listings/" + java.util.UUID.randomUUID()))
+        mvc.perform(leer(java.util.UUID.randomUUID().toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.images[0].url").value("https://cdn.sendik.co/productos/clave-opaca-0.jpg"))
                 .andExpect(jsonPath("$.images[0].kind").value("SELLER_SHOT"))
                 .andExpect(jsonPath("$.images[0].angleDegrees").value(0));
+    }
+
+    // --- Criterios 5 y 27: guardar lo que lleva ------------------------------
+
+    /**
+     * Criterio 5: se guarda a medias y sigue en borrador.
+     *
+     * <p>El cuerpo trae solo la categoria y el titulo. Que el resto pueda faltar es la
+     * mitad del criterio; la otra mitad —que al volver este lo que se dejo— la prueba el
+     * caso de uso, que es quien guarda.
+     */
+    @Test
+    void deberia_guardar_un_borrador_a_medias_criterio_5() throws Exception {
+        when(editar.execute(any())).thenReturn(CatalogoDelBorde.borrador(VENDEDOR));
+
+        mvc.perform(patch("/api/v1/listings/" + java.util.UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"categoryId\":\"" + java.util.UUID.randomUUID() + "\",\"title\":\"Va a medias\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("DRAFT"));
+
+        ArgumentCaptor<UpdateListingContentCommand> comando =
+                ArgumentCaptor.forClass(UpdateListingContentCommand.class);
+        verify(editar).execute(comando.capture());
+        assertThat(comando.getValue().datos().titulo().value()).isEqualTo("Va a medias");
+        assertThat(comando.getValue().datos().precio()).isNull();
+        assertThat(comando.getValue().vendedor()).isEqualTo(VENDEDOR);
+    }
+
+    /** Criterio 27: editar contenido de una viva la devuelve a moderacion. */
+    @Test
+    void deberia_devolver_a_revision_al_editar_una_publicada_criterio_27() throws Exception {
+        when(editar.execute(any()))
+                .thenReturn(CatalogoDelBorde.con(VENDEDOR, ListingStatus.PENDING_REVIEW, null, null, Set.of()));
+
+        mvc.perform(patch("/api/v1/listings/" + java.util.UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(cuerpoDeProducto()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PENDING_REVIEW"));
+    }
+
+    @Test
+    void deberia_rechazar_una_edicion_sin_categoria() throws Exception {
+        mvc.perform(patch("/api/v1/listings/" + java.util.UUID.randomUUID())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"title\":\"Sin categoria\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].field").value("categoryId"));
+
+        verifyNoInteractions(editar);
+    }
+
+    @Test
+    void deberia_borrar_una_toma_por_su_identificador() throws Exception {
+        String id = java.util.UUID.randomUUID().toString();
+        String imagen = java.util.UUID.randomUUID().toString();
+        when(borrarImagen.execute(any())).thenReturn(CatalogoDelBorde.borrador(VENDEDOR));
+
+        mvc.perform(delete("/api/v1/listings/" + id + "/images/" + imagen)).andExpect(status().isOk());
+
+        ArgumentCaptor<RemoveListingImageCommand> comando = ArgumentCaptor.forClass(RemoveListingImageCommand.class);
+        verify(borrarImagen).execute(comando.capture());
+        assertThat(comando.getValue().imagen().value().toString()).isEqualTo(imagen);
+        assertThat(comando.getValue().vendedor()).isEqualTo(VENDEDOR);
+    }
+
+    // --- Criterios 12 y 35 a 42: tecnologia y marcas de atencion -------------
+
+    /**
+     * {@code isSealed} es el caso donde Jackson puede desayunarse el nombre.
+     *
+     * <p>Un componente de record llamado {@code isSealed} tiene accesor {@code isSealed()},
+     * y ahi es donde una convencion de nombres de propiedad puede serializar {@code sealed}
+     * y deserializar {@code isSealed}. Esta prueba lo recorre en las dos direcciones.
+     */
+    @Test
+    void deberia_llevar_y_traer_sellado_y_garantia_criterios_36_y_42() throws Exception {
+        when(crear.execute(any())).thenReturn(CatalogoDelBorde.tecnologiaSellada(VENDEDOR));
+
+        mvc.perform(post("/api/v1/listings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"categoryId\":\"" + java.util.UUID.randomUUID() + "\","
+                                + "\"title\":\"Telefono nuevo sellado\","
+                                + "\"condition\":\"NEW\","
+                                + "\"isSealed\":true,"
+                                + "\"warrantyMonths\":12}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.product.isSealed").value(true))
+                .andExpect(jsonPath("$.product.warrantyMonths").value(12));
+
+        ArgumentCaptor<CreateListingCommand> comando = ArgumentCaptor.forClass(CreateListingCommand.class);
+        verify(crear).execute(comando.capture());
+        assertThat(comando.getValue().datos().sellado()).isTrue();
+        assertThat(comando.getValue().datos().garantia().value()).isEqualTo(12);
+    }
+
+    /** Criterio 37: la sellada exige cuatro tomas y no ocho. Sale calculado del dominio. */
+    @Test
+    void deberia_decir_que_una_sellada_exige_cuatro_tomas_criterio_37() throws Exception {
+        when(leer.execute(any())).thenReturn(Optional.of(CatalogoDelBorde.tecnologiaSellada(VENDEDOR)));
+
+        mvc.perform(leer(java.util.UUID.randomUUID().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requiredShots").value(4));
+    }
+
+    /** RN-064: la categoria no admite lo usado. 422, no 500. */
+    @Test
+    void deberia_traducir_la_condicion_no_admitida_criterio_35() throws Exception {
+        when(crear.execute(any())).thenThrow(new ConditionNotAllowedException(Condition.GOOD));
+
+        mvc.perform(post("/api/v1/listings")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(cuerpoDeProducto()))
+                .andExpect(status().isUnprocessableContent())
+                .andExpect(jsonPath("$.code").value("CATALOG_CONDITION_NOT_ALLOWED"));
+    }
+
+    /** RN-066: imagen de referencia sobre algo que no es tecnologia sellada. 422, no 500. */
+    @Test
+    void deberia_traducir_la_referencia_no_admitida_criterio_39() throws Exception {
+        when(subirImagen.execute(any())).thenThrow(new ReferenceImageNotAllowedException("no esta sellada"));
+
+        mvc.perform(multipart("/api/v1/listings/" + java.util.UUID.randomUUID() + "/images")
+                        .file(new MockMultipartFile("archivo", "ref.jpg", "image/jpeg", JPEG))
+                        .param("position", "0")
+                        .param("kind", "REFERENCE"))
+                .andExpect(status().isUnprocessableContent())
+                .andExpect(jsonPath("$.code").value("CATALOG_REFERENCE_IMAGE_NOT_ALLOWED"));
+    }
+
+    /** RN-066: cada imagen de referencia va rotulada, y para eso el borde tiene que decirlo. */
+    @Test
+    void deberia_rotular_las_imagenes_de_referencia_criterio_41() throws Exception {
+        when(leer.execute(any())).thenReturn(Optional.of(CatalogoDelBorde.tecnologiaSellada(VENDEDOR)));
+
+        mvc.perform(leer(java.util.UUID.randomUUID().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.images[?(@.kind == 'REFERENCE')]").isNotEmpty())
+                .andExpect(jsonPath("$.images[?(@.kind == 'SELLER_SHOT')]").isNotEmpty());
+    }
+
+    /** Criterio 12: el precio fuera de rango se marca, y el moderador tiene que verlo. */
+    @Test
+    void deberia_publicar_la_marca_de_atencion_criterio_12() throws Exception {
+        when(leer.execute(any()))
+                .thenReturn(Optional.of(CatalogoDelBorde.con(
+                        VENDEDOR,
+                        ListingStatus.PENDING_REVIEW,
+                        null,
+                        null,
+                        Set.of(AttentionReason.PRICE_OUT_OF_RANGE))));
+
+        mvc.perform(leer(java.util.UUID.randomUUID().toString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requiresAttention").value(true))
+                .andExpect(jsonPath("$.attentionReasons[0]").value("PRICE_OUT_OF_RANGE"));
     }
 
     // --- Criterios 19, 20, 23, 29 y 30: los actos sobre el estado ------------
@@ -460,6 +658,19 @@ class ListingsControllerTest {
         verify(pausar).execute(new SellerListingCommand(VENDEDOR, co.sendik.catalog.model.ListingId.de(id)));
         verify(reanudar).execute(new SellerListingCommand(VENDEDOR, co.sendik.catalog.model.ListingId.de(id)));
         verify(archivar).execute(new SellerListingCommand(VENDEDOR, co.sendik.catalog.model.ListingId.de(id)));
+    }
+
+    /**
+     * Un GET de una publicacion, con su principal cuando hay sesion.
+     *
+     * <p>Es la unica ruta que mira la autenticacion, porque es la unica que decide con
+     * ella que forma de respuesta devuelve.
+     */
+    private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder leer(String id) {
+        var peticion = get("/api/v1/listings/" + id);
+        Authentication quienMira = token.autenticacion();
+
+        return quienMira == null ? peticion : peticion.principal(quienMira);
     }
 
     private static String cuerpoDeProducto() {

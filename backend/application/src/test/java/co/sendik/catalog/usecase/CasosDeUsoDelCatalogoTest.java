@@ -443,7 +443,11 @@ class CasosDeUsoDelCatalogoTest {
             Listing retomada = retomar().execute(new SellerListingCommand(vendedor, rechazada.id()));
 
             assertThat(retomada.status()).isEqualTo(ListingStatus.DRAFT);
-            assertThat(retomada.images()).hasSameSizeAs(rechazada.images());
+            // Las mismas, no otras tantas: hasSameSizeAs pasaria con ocho tomas distintas
+            // y el criterio dice "conserva sus tomas".
+            assertThat(retomada.images().stream().map(ProductImage::id))
+                    .containsExactlyElementsOf(
+                            rechazada.images().stream().map(ProductImage::id).toList());
             assertThat(retomada.product().title()).isEqualTo(rechazada.product().title());
         }
 

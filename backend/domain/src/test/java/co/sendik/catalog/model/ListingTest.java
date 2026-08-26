@@ -315,6 +315,10 @@ class ListingTest {
                     .isInstanceOf(InvalidListingTransitionException.class);
             assertThatThrownBy(() -> archivada.editarContenido(archivada.product(), AHORA))
                     .isInstanceOf(InvalidListingTransitionException.class);
+            // Tambien el envio. Sin esta linea, quitarle el exigirNoTerminal a
+            // cambiarEnvio no rompia ninguna prueba.
+            assertThatThrownBy(() -> archivada.cambiarEnvio(CatalogoDePrueba.envio(), AHORA))
+                    .isInstanceOf(InvalidListingTransitionException.class);
         }
     }
 

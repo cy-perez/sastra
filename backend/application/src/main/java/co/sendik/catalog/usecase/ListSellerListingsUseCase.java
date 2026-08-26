@@ -21,7 +21,7 @@ public class ListSellerListingsUseCase {
         this.publicaciones = publicaciones;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public List<Listing> execute(ListSellerListingsQuery consulta) {
         return publicaciones.buscarDelVendedor(consulta.vendedor(), consulta.pagina(), consulta.tamano());
     }

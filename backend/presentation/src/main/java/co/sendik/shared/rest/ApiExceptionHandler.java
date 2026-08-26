@@ -1,5 +1,7 @@
 package co.sendik.shared.rest;
 
+import co.sendik.catalog.exception.IncompleteListingException;
+import co.sendik.catalog.exception.MeasurementsIncompleteException;
 import co.sendik.identity.exception.AccountLockedException;
 import co.sendik.identity.exception.ResendLimitReachedException;
 import co.sendik.shared.error.DomainException;
@@ -10,6 +12,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,6 +51,7 @@ public class ApiExceptionHandler {
         LOG.info("Regla de negocio incumplida [{}] traceId={}: {}", e.code(), traceId, e.getMessage());
 
         ProblemDetail problema = construir(estado, e.code(), traceId);
+        camposQueFaltan(e).ifPresent(campos -> problema.setProperty("errors", campos));
 
         if (e instanceof ResendLimitReachedException) {
             return ResponseEntity.status(estado)
@@ -267,6 +271,36 @@ public class ApiExceptionHandler {
             case COMMON_TOO_MANY_REQUESTS -> HttpStatus.TOO_MANY_REQUESTS;
             case COMMON_UNEXPECTED -> HttpStatus.INTERNAL_SERVER_ERROR;
         };
+    }
+
+    /**
+     * Los campos que faltan para enviar a revision, uno por entrada.
+     *
+     * <p>El criterio 6 pide {@code errors} con una entrada por cada campo que falta, y no
+     * un mensaje suelto: el formulario tiene que poder marcar los campos, y para eso
+     * necesita saber cuales son. Las dos excepciones ya traen la lista; lo unico que pasa
+     * aqui es darle la forma que ya usa la validacion del borde, {@code field} y
+     * {@code code}.
+     *
+     * <p>Las medidas van con su grupo por delante —{@code measurements.CHEST}— porque en
+     * el formulario son un campo dentro de otro y no siete campos sueltos.
+     */
+    private static Optional<List<Map<String, String>>> camposQueFaltan(DomainException e) {
+        if (e instanceof IncompleteListingException incompleta) {
+            return Optional.of(incompleta.faltantes().stream()
+                    .map(ApiExceptionHandler::comoCampoObligatorio)
+                    .toList());
+        }
+        if (e instanceof MeasurementsIncompleteException medidas) {
+            return Optional.of(medidas.faltantes().stream()
+                    .map(medida -> comoCampoObligatorio("measurements." + medida.name()))
+                    .toList());
+        }
+        return Optional.empty();
+    }
+
+    private static Map<String, String> comoCampoObligatorio(String campo) {
+        return Map.of("field", campo, "code", "VALIDATION_REQUIRED");
     }
 
     /** El nombre de la restriccion incumplida, como codigo estable para el frontend. */

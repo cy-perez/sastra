@@ -2,6 +2,7 @@ package co.sendik.shared.rest;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -72,6 +73,38 @@ public class SecurityConfig {
                         // endpoint de sitio no se lleva su autorizacion por delante.
                         .requestMatchers("/api/v1/verifications/**")
                         .hasRole("MODERATOR")
+                        // Decision del moderador sobre una publicacion. **Rol, no solo
+                        // token**, y por metodo y patron en lugar de por prefijo: la
+                        // historia pone estas rutas bajo /listings/{id}, que es donde
+                        // tambien escribe el vendedor, asi que no hay prefijo que las
+                        // separe. Van antes que la regla generica de /listings/**, que
+                        // si no se las tragaria como "autenticado" y cualquiera con
+                        // sesion aprobaria su propia publicacion.
+                        //
+                        // Los metodos llevan ademas @PreAuthorize, redundante a
+                        // proposito, igual que en la revision de verificaciones.
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/v1/listings/*/approval",
+                                "/api/v1/listings/*/rejection",
+                                "/api/v1/listings/*/removal")
+                        .hasRole("MODERATOR")
+                        // Leer una publicacion es publico, y es deliberado: es la ruta
+                        // que va a usar el catalogo. **Quien decide que se ve no es esta
+                        // regla sino el caso de uso**, que responde vacio tanto si no
+                        // existe como si no es para quien pregunta, y sale como 404 y
+                        // nunca 403 (criterio 33). Con "authenticated" aqui, un 401
+                        // delataria que la publicacion existe.
+                        //
+                        // Con la bandera apagada el controlador no se crea y esta ruta
+                        // tampoco responde: la regla protege algo que no esta.
+                        .requestMatchers(HttpMethod.GET, "/api/v1/listings/*")
+                        .permitAll()
+                        // Todo lo demas del catalogo lo hace el vendedor sobre lo suyo.
+                        // Que sea suyo lo comprueba el repositorio, que solo devuelve la
+                        // publicacion si es de quien pregunta.
+                        .requestMatchers("/api/v1/listings/**")
+                        .authenticated()
                         // Todo lo que actua sobre la propia cuenta exige token. Aqui
                         // entra tambien la verificacion de vendedor
                         // (/api/v1/users/me/verification), que es de quien la pide.

@@ -27,7 +27,16 @@ public class ReadListingUseCase {
         this.publicaciones = publicaciones;
     }
 
-    @Transactional(readOnly = true)
+    /*
+     * Sin readOnly = true, aunque esto solo lee.
+     *
+     * El modulo presentation no declara spring-tx —solo application puede—, asi que al
+     * leer esta clase para inyectarla no encuentra la anotacion y avisa de que no puede
+     * resolver el atributo. Con -Xlint:all -Werror, ese aviso es un error de
+     * compilacion. La transaccion de lectura no cambia ningun comportamiento y ningun
+     * caso de uso del proyecto la usa; el aviso, en cambio, rompe el build.
+     */
+    @Transactional
     public Optional<Listing> execute(ReadListingQuery consulta) {
         return publicaciones.buscar(consulta.publicacion()).filter(publicacion -> puedeVerla(publicacion, consulta));
     }

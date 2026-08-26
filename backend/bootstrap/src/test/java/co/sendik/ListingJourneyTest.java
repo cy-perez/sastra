@@ -217,6 +217,42 @@ class ListingJourneyTest {
                 .andExpect(jsonPath("$.code").value("CATALOG_SHOTS_INCOMPLETE"));
     }
 
+    /**
+     * Criterios 14 y 15, y la prueba que faltaba: que la politica que corre sea la de las
+     * tomas y no la del avatar.
+     *
+     * <p>Las dos imagenes de aqui pasan la politica del avatar —200x200 de minimo, sin
+     * proporcion— y fallan la de las tomas. Mientras el catalogo recibio el bean del
+     * avatar, las dos subian con 201 y nadie se enteraba, porque el resto de las pruebas
+     * sube siempre imagenes que cumplen las dos.
+     */
+    @Test
+    void deberia_rechazar_una_toma_que_no_cumple_RN_018_ni_RN_019() throws Exception {
+        String suToken = tokenDe(vendedorVerificado());
+        String id = crearBorrador(suToken);
+
+        // Demasiado pequena. Es exactamente el minimo que acepta el avatar.
+        mvc.perform(multipart("/api/v1/listings/" + id + "/images")
+                        .file(new MockMultipartFile("archivo", "toma.png", "image/png", pngDe(200, 200)))
+                        .param("position", "0")
+                        .header("Authorization", "Bearer " + suToken))
+                .andExpect(status().isUnprocessableContent())
+                .andExpect(jsonPath("$.code").value("FILE_DIMENSIONS_TOO_SMALL"));
+
+        // Grande de sobra y apaisada: la proporcion 3:4 de RN-018 no se cumple.
+        mvc.perform(multipart("/api/v1/listings/" + id + "/images")
+                        .file(new MockMultipartFile("archivo", "toma.png", "image/png", pngDe(1600, 1200)))
+                        .param("position", "0")
+                        .header("Authorization", "Bearer " + suToken))
+                .andExpect(status().isUnprocessableContent())
+                .andExpect(jsonPath("$.code").value("FILE_DIMENSIONS_TOO_SMALL"));
+
+        // Y ninguna de las dos dejo fila ni archivo.
+        mvc.perform(get("/api/v1/listings/" + id).header("Authorization", "Bearer " + suToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.images.length()").value(0));
+    }
+
     // --- apoyo ---------------------------------------------------------------
 
     private String crearBorrador(String token) throws Exception {

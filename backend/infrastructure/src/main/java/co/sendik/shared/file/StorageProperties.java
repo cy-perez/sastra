@@ -49,6 +49,8 @@ public record StorageProperties(
         @Positive long maxImageBytes,
         @Positive int avatarMinWidth,
         @Positive int avatarMinHeight,
+        @Positive int listingMinWidth,
+        @Positive int listingMinHeight,
         @Nullable String projectId,
         @Nullable String publicBucket,
         @Nullable String restrictedBucket) {

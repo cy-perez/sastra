@@ -292,11 +292,28 @@ selfie, que nunca se sirven por una dirección pública (RN-046).
 | `STORAGE_MAX_IMAGE_BYTES` | Tope por imagen | `8388608` (8 MB) |
 | `STORAGE_AVATAR_MIN_WIDTH` | Ancho mínimo de la foto de perfil | `200` |
 | `STORAGE_AVATAR_MIN_HEIGHT` | Alto mínimo de la foto de perfil | `200` |
+| `STORAGE_LISTING_MIN_WIDTH` | Ancho mínimo de una toma de producto (RN-019) | `900` |
+| `STORAGE_LISTING_MIN_HEIGHT` | Alto mínimo de una toma de producto (RN-019) | `1200` |
+| `STORAGE_MAX_UPLOAD_SIZE` | Tope del cuerpo multipart | `10MB` |
 | `STORAGE_PUBLIC_BUCKET` | Cubo de lo que cualquiera ve | vacía; obligatoria con `gcs` |
 | `STORAGE_RESTRICTED_BUCKET` | Cubo de la cédula y la selfie | vacía; obligatoria con `gcs` |
 | `STORAGE_PROJECT_ID` | Proyecto de Google Cloud | vacía; la toma de las credenciales |
 
 Las tres últimas son solo de `gcs` y se ignoran con `local`.
+
+**Los dos mínimos de la toma de producto no son un valor de arranque como los del
+avatar: son RN-019.** Bajarlos incumple la regla. Existen como variable porque el
+resto del almacenamiento lo es, no porque se esperen otros valores. La proporción
+3:4 de RN-018 **no** se parametriza: se calcula de estos dos, para que no puedan
+contradecirse entre sí.
+
+**`STORAGE_MAX_UPLOAD_SIZE` es del resolvedor multipart y va por encima de
+`STORAGE_MAX_IMAGE_BYTES`**, para dejar sitio a la envoltura del multipart. Sin
+declararlo regía el 1 MB por omisión de Spring Boot, y con ese tope el de la
+imagen era inalcanzable: cualquier foto de teléfono moría en el resolvedor antes
+de que ninguna política la mirara, con un 500 que nadie podía explicar. Quien
+decide si el archivo se acepta sigue siendo la política de imagen; esto solo evita
+que el servidor se coma un cuerpo enorme antes de mirarlo.
 
 **Los dos cubos no pueden ser el mismo, y la aplicación no arranca si lo son.** La
 comprobación está en `StorageProperties` y existe porque es el error que no avisa:

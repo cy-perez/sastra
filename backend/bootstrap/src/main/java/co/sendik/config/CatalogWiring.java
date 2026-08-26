@@ -22,10 +22,15 @@ import co.sendik.catalog.usecase.TakeDownListingUseCase;
 import co.sendik.catalog.usecase.UpdateListingContentUseCase;
 import co.sendik.catalog.usecase.UploadListingImageUseCase;
 import co.sendik.catalog.usecase.WithdrawListingUseCase;
+import co.sendik.shared.config.FeatureFlags;
+import co.sendik.shared.file.ImageDimensions;
 import co.sendik.shared.file.ImagePolicy;
+import co.sendik.shared.file.StorageProperties;
 import co.sendik.shared.port.out.ImageNormalizer;
 import co.sendik.shared.port.out.PublicFileStore;
+import co.sendik.shared.rest.ExposedFeatures;
 import java.time.Clock;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -49,6 +54,21 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 public class CatalogWiring {
+
+    /**
+     * Lo que la cadena de seguridad necesita saber de las banderas.
+     *
+     * <p>Se declara aqui y no en {@code presentation} porque {@code FeatureFlags} vive en
+     * {@code infrastructure}, que ese modulo no ve. {@code bootstrap} es el unico que ve a
+     * todos, y cablear es su trabajo.
+     *
+     * <p>Sin esto, las rutas de decision del moderador responderian 403 con la bandera
+     * apagada, y el criterio 3 pide 404: la funcionalidad no esta, y un 403 diria que si.
+     */
+    @Bean
+    ExposedFeatures expuestas(FeatureFlags banderas) {
+        return new ExposedFeatures(banderas.publishing());
+    }
 
     @Bean
     CreateListingUseCase createListingUseCase(
@@ -77,12 +97,33 @@ public class CatalogWiring {
         return new ChangeListingShippingUseCase(publicaciones, reloj);
     }
 
+    /**
+     * La politica de las tomas de producto. RN-018 y RN-019.
+     *
+     * <p><strong>Propia, y con cualificador, porque hay otra.</strong> {@code IdentityWiring}
+     * declara {@code politicaDeAvatar} —200x200 y sin proporcion— y ya avisaba de que las
+     * tomas tendrian la suya. Sin este bean, pedir un {@code ImagePolicy} por tipo devolvia
+     * la del avatar: los criterios 14 y 15 quedaban sin aplicar y una imagen de 200x200 se
+     * aceptaba como toma de producto.
+     *
+     * <p>La proporcion se calcula del minimo y no se configura aparte. Dos numeros que
+     * pueden contradecirse entre si —3:4 por un lado y 900x1200 por otro— acaban
+     * contradiciendose.
+     */
+    @Bean
+    ImagePolicy politicaDeTomas(StorageProperties almacenamiento) {
+        ImageDimensions minimo =
+                new ImageDimensions(almacenamiento.listingMinWidth(), almacenamiento.listingMinHeight());
+
+        return new ImagePolicy(almacenamiento.maxImageBytes(), minimo, (double) minimo.width() / minimo.height());
+    }
+
     @Bean
     UploadListingImageUseCase uploadListingImageUseCase(
             ListingRepository publicaciones,
             PublicFileStore almacen,
             ImageNormalizer normalizador,
-            ImagePolicy politica,
+            @Qualifier("politicaDeTomas") ImagePolicy politica,
             Clock reloj) {
         return new UploadListingImageUseCase(publicaciones, almacen, normalizador, politica, reloj);
     }

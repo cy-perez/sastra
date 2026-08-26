@@ -10,6 +10,19 @@
 spring:
   application:
     name: sendik
+  servlet:
+    multipart:
+      # **Sin esto rige el 1MB por omision de Spring Boot**, y con el 1MB el tope de
+      # verdad —STORAGE_MAX_IMAGE_BYTES, 8MB— es inalcanzable: la peticion muere en el
+      # resolvedor multipart antes de que ninguna politica de imagen la mire. Una foto
+      # de telefono recortada a 3:4 pasa de 1MB casi siempre, asi que subir una toma
+      # fallaba con un 500 que nadie podia explicar.
+      #
+      # Va por encima del tope de la imagen para dejar sitio a la envoltura del
+      # multipart. Quien decide si el archivo es aceptable sigue siendo ImagePolicy;
+      # esto solo evita que el servidor se coma un cuerpo enorme antes de mirarlo.
+      max-file-size: ${STORAGE_MAX_UPLOAD_SIZE:10MB}
+      max-request-size: ${STORAGE_MAX_UPLOAD_SIZE:10MB}
   config:
     # El .env de la raiz del repositorio, si existe. En la nube no existe: alli
     # los valores llegan del gestor de secretos como variables de entorno.
@@ -142,6 +155,15 @@ sendik:
     # una historia y se anota en reglas-negocio.md.
     avatar-min-width: ${STORAGE_AVATAR_MIN_WIDTH:200}
     avatar-min-height: ${STORAGE_AVATAR_MIN_HEIGHT:200}
+    # Minimo para las TOMAS DE PRODUCTO. Esto si es regla de negocio: RN-019 fija
+    # 900x1200, y de ahi sale tambien la proporcion 3:4 que exige RN-018.
+    #
+    # Son parametrizables porque el resto del almacenamiento lo es, no porque se
+    # esperen otros valores: bajarlos incumple RN-019. La proporcion no se
+    # parametriza, se calcula de estos dos: dos numeros que se pueden contradecir
+    # entre si son un error esperando a pasar.
+    listing-min-width: ${STORAGE_LISTING_MIN_WIDTH:900}
+    listing-min-height: ${STORAGE_LISTING_MIN_HEIGHT:1200}
     # Las tres siguientes son solo de `gcs` y se ignoran con `local`.
     #
     # El proyecto es opcional: sin el, la libreria lo toma de las credenciales, que

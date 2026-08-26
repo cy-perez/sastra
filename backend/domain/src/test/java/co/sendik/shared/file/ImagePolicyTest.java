@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 /** Lo que una imagen tiene que cumplir para aceptarse. */
@@ -66,5 +67,57 @@ class ImagePolicyTest {
     void no_deberia_construirse_con_un_maximo_absurdo() {
         assertThatThrownBy(() -> new ImagePolicy(0, new ImageDimensions(1, 1)))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    /**
+     * La politica de las tomas de producto: RN-018 y RN-019.
+     *
+     * <p>El constructor de tres argumentos existia sin usarse ni probarse, y por eso nadie
+     * noto que el catalogo recibia la politica del avatar. Estas pruebas fijan lo que la
+     * regla dice: 900x1200 de minimo y proporcion 3:4.
+     */
+    @Nested
+    class ComoLaDeLasTomas {
+
+        private final ImagePolicy tomas = new ImagePolicy(MAXIMO, new ImageDimensions(900, 1200), 0.75);
+
+        @Test
+        void deberia_aceptar_el_minimo_exacto_de_RN_019() {
+            assertThatCode(() -> tomas.exigirDimensionesAceptadas(new ImageDimensions(900, 1200)))
+                    .doesNotThrowAnyException();
+        }
+
+        @Test
+        void deberia_aceptar_una_mas_grande_con_la_misma_proporcion() {
+            assertThatCode(() -> tomas.exigirDimensionesAceptadas(new ImageDimensions(1200, 1600)))
+                    .doesNotThrowAnyException();
+        }
+
+        /** El tamano que acepta el avatar. Si esta pasa, es que se aplico la politica que no era. */
+        @Test
+        void deberia_rechazar_lo_que_no_llega_al_minimo_RN_019() {
+            assertThatThrownBy(() -> tomas.exigirDimensionesAceptadas(new ImageDimensions(200, 200)))
+                    .isInstanceOf(ImageTooSmallException.class);
+        }
+
+        @Test
+        void deberia_rechazar_una_cuadrada_aunque_sea_grande_RN_018() {
+            assertThatThrownBy(() -> tomas.exigirDimensionesAceptadas(new ImageDimensions(1600, 1600)))
+                    .isInstanceOf(WrongImageRatioException.class);
+        }
+
+        /** Apaisada: cumple el minimo por los dos lados y la proporcion esta del reves. */
+        @Test
+        void deberia_rechazar_una_apaisada_RN_018() {
+            assertThatThrownBy(() -> tomas.exigirDimensionesAceptadas(new ImageDimensions(1600, 1200)))
+                    .isInstanceOf(WrongImageRatioException.class);
+        }
+
+        /** La tolerancia del 1% existe para el redondeo del recorte en cliente, no para otra forma. */
+        @Test
+        void deberia_aceptar_una_desviacion_dentro_de_la_tolerancia() {
+            assertThatCode(() -> tomas.exigirDimensionesAceptadas(new ImageDimensions(902, 1200)))
+                    .doesNotThrowAnyException();
+        }
     }
 }

@@ -59,6 +59,7 @@ import co.sendik.shared.port.out.PublicFileStore;
 import co.sendik.shared.port.out.RestrictedFileStore;
 import co.sendik.shared.rest.RefreshCookies;
 import java.time.Clock;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -249,9 +250,14 @@ public class IdentityWiring {
      * La politica de la foto de perfil.
      *
      * <p>Se llama asi y no "politica de imagenes" a proposito: las tomas de producto
-     * tendran la suya, con el minimo de RN-019, y son numeros distintos. Un unico
-     * bean compartido habria acabado aplicando 900x1200 al avatar, que rechaza casi
-     * cualquier foto que alguien tenga a mano.
+     * tienen la suya, {@code politicaDeTomas} en {@code CatalogWiring}, con el minimo
+     * de RN-019. Son numeros distintos: un unico bean compartido habria acabado
+     * aplicando 900x1200 al avatar, que rechaza casi cualquier foto que alguien tenga
+     * a mano.
+     *
+     * <p>Desde que existen los dos, cada inyeccion lleva {@link Qualifier}. Sin el, pedir
+     * un {@code ImagePolicy} por tipo es ambiguo y el contexto no arranca; y antes de que
+     * existiera el segundo bean, el catalogo recibia este sin que nada avisara.
      */
     @Bean
     ImagePolicy politicaDeAvatar(StorageProperties almacenamiento) {
@@ -262,7 +268,10 @@ public class IdentityWiring {
 
     @Bean
     UpdateAvatarUseCase updateAvatarUseCase(
-            UserRepository usuarios, PublicFileStore almacen, ImageNormalizer normalizador, ImagePolicy politica) {
+            UserRepository usuarios,
+            PublicFileStore almacen,
+            ImageNormalizer normalizador,
+            @Qualifier("politicaDeAvatar") ImagePolicy politica) {
         return new UpdateAvatarUseCase(usuarios, almacen, normalizador, politica);
     }
 
@@ -298,7 +307,7 @@ public class IdentityWiring {
             SellerVerificationRepository verificaciones,
             RestrictedFileStore almacen,
             ImageNormalizer normalizador,
-            ImagePolicy politica,
+            @Qualifier("politicaDeAvatar") ImagePolicy politica,
             Clock reloj) {
         return new SubmitIdentityDocumentUseCase(verificaciones, almacen, normalizador, politica, reloj);
     }
@@ -308,7 +317,7 @@ public class IdentityWiring {
             SellerVerificationRepository verificaciones,
             RestrictedFileStore almacen,
             ImageNormalizer normalizador,
-            ImagePolicy politica,
+            @Qualifier("politicaDeAvatar") ImagePolicy politica,
             Clock reloj) {
         return new SubmitSelfieUseCase(verificaciones, almacen, normalizador, politica, reloj);
     }

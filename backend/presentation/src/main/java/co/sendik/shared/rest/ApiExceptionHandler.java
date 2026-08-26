@@ -2,6 +2,7 @@ package co.sendik.shared.rest;
 
 import co.sendik.catalog.exception.IncompleteListingException;
 import co.sendik.catalog.exception.MeasurementsIncompleteException;
+import co.sendik.catalog.rest.mapper.ListingFields;
 import co.sendik.identity.exception.AccountLockedException;
 import co.sendik.identity.exception.ResendLimitReachedException;
 import co.sendik.shared.error.DomainException;
@@ -24,6 +25,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
@@ -110,6 +112,27 @@ public class ApiExceptionHandler {
         problema.setProperty("errors", errores);
 
         return ResponseEntity.badRequest().body(problema);
+    }
+
+    /**
+     * El cuerpo pasa del tope del resolvedor multipart.
+     *
+     * <p>Sin este manejador lo recogia el de {@code Exception} y respondia 500 con la traza
+     * entera en nivel {@code error}, a voluntad de cualquiera que subiera una foto grande.
+     * Y le decia al cliente que el servidor esta roto cuando lo que pasa es que el archivo
+     * no cabe.
+     *
+     * <p>Sale con el mismo {@code FILE_TOO_LARGE} que usa {@code ImagePolicy} cuando el
+     * tope que se pasa es el suyo: para quien sube, las dos situaciones son la misma y la
+     * respuesta util es la misma.
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ProblemDetail> archivoDemasiadoGrande(MaxUploadSizeExceededException e) {
+        String traceId = nuevoTraceId();
+        LOG.info("Subida por encima del tope del multipart traceId={}", traceId);
+
+        return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE)
+                .body(construir(HttpStatus.CONTENT_TOO_LARGE, ErrorCode.FILE_TOO_LARGE, traceId));
     }
 
     /**
@@ -282,12 +305,17 @@ public class ApiExceptionHandler {
      * aqui es darle la forma que ya usa la validacion del borde, {@code field} y
      * {@code code}.
      *
+     * <p>El nombre del campo se traduce al del contrato: el dominio se nombra en espanol
+     * y la peticion en ingles, y quien tiene que marcar el campo es el formulario. Ver
+     * {@link ListingFields}.
+     *
      * <p>Las medidas van con su grupo por delante —{@code measurements.CHEST}— porque en
      * el formulario son un campo dentro de otro y no siete campos sueltos.
      */
     private static Optional<List<Map<String, String>>> camposQueFaltan(DomainException e) {
         if (e instanceof IncompleteListingException incompleta) {
             return Optional.of(incompleta.faltantes().stream()
+                    .map(ListingFields::enElContrato)
                     .map(ApiExceptionHandler::comoCampoObligatorio)
                     .toList());
         }

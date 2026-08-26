@@ -78,6 +78,14 @@
     "moderationDetail": {
       "title": "Review verification",
       "description": "Details of a seller verification application."
+    },
+    "publish": {
+      "title": "List your product · Sendik",
+      "description": "Describe your product, add photos and send it for review."
+    },
+    "myListings": {
+      "title": "My listings · Sendik",
+      "description": "Your listings and the state each one is in."
     }
   },
   "layout": {
@@ -194,7 +202,16 @@
       "SELLER_DOCUMENT_ALREADY_VERIFIED": "That document is already verified on another account.",
       "SELLER_EMAIL_NOT_VERIFIED": "Verify your email before you start. You can resend the link from your account.",
       "SELLER_UNKNOWN_INSTITUTION": "That institution is not on our list. Pick one of the options.",
-      "SELLER_SELF_REVIEW_FORBIDDEN": "You cannot decide on your own application. Someone else reviews it."
+      "SELLER_SELF_REVIEW_FORBIDDEN": "You cannot decide on your own application. Someone else reviews it.",
+      "CATALOG_SELLER_NOT_VERIFIED": "You need to be a verified seller to list products.",
+      "CATALOG_LISTING_INVALID_STATE": "This listing changed while you were editing it. Load it again.",
+      "CATALOG_LISTING_INCOMPLETE": "Some data is missing before you can send it for review.",
+      "CATALOG_LISTING_NOT_EDITABLE": "You cannot edit it while it is in review.",
+      "CATALOG_SHOTS_INCOMPLETE": "You are missing shots before you can send it for review.",
+      "CATALOG_CONDITION_NOT_ALLOWED": "This category only takes new items.",
+      "CATALOG_REFERENCE_IMAGE_NOT_ALLOWED": "Reference images can only be added to sealed technology.",
+      "CATALOG_UNKNOWN_CATEGORY": "That category is no longer available. Pick another one.",
+      "CATALOG_SELF_MODERATION_FORBIDDEN": "You cannot decide on your own listing."
     }
   },
   "form": {
@@ -836,6 +853,177 @@
       "HOLDER_MISMATCH": "Holder does not match",
       "DOCUMENT_ALREADY_VERIFIED": "Document already verified on another account",
       "REQUIREMENTS_NOT_MET": "Does not meet the requirements"
+    }
+  },
+  "listing": {
+    "loading": "Loading…",
+    "intro": {
+      "title": "List your product",
+      "body": "Tell us what you are selling and show it well. You can leave halfway and come back whenever you want: we keep what you have so far.",
+      "start": "Start",
+      "notVerified": "Get verified as a seller to list products.",
+      "notVerifiedAction": "Start my verification"
+    },
+    "sections": {
+      "what": "What you are selling",
+      "how": "What it is like",
+      "price": "Price and shipping"
+    },
+    "form": {
+      "category": "Category",
+      "categoryHint": "Pick where it belongs. The measurements we ask for depend on it.",
+      "choose": "Choose an option",
+      "title": "Title",
+      "titleHint": "What it is, in a few words. 120 characters at most.",
+      "description": "Description",
+      "descriptionHint": "Describe the real condition, including what is not perfect.",
+      "brand": "Brand",
+      "condition": "Condition",
+      "size": "Size",
+      "sizeValue": "Size value",
+      "measurements": "Measurements",
+      "measurementsHint": "In centimetres, with the garment laid flat.",
+      "color": "Colour",
+      "price": "Price",
+      "priceHint": "In pesos, no cents.",
+      "shipping": "Shipping",
+      "optional": "Optional",
+      "saved": "Saved",
+      "saving": "Saving…"
+    },
+    "condition": {
+      "NEW": "New",
+      "LIKE_NEW": "Like new",
+      "GOOD": "Good condition",
+      "WITH_FLAWS": "With flaws",
+      "usedNotAllowed": "This category only takes new items."
+    },
+    "sizeSystem": {
+      "ALPHA": "Letter (XS to XXL)",
+      "NUMERIC_CO": "Number (Colombian size)",
+      "WAIST_INCHES": "Waist in inches",
+      "FOOTWEAR_CO": "Footwear (Colombian size)",
+      "ONE_SIZE": "One size"
+    },
+    "measurement": {
+      "CHEST": "Chest",
+      "WAIST": "Waist",
+      "HIP": "Hip",
+      "RISE": "Rise",
+      "SHOULDERS": "Shoulders",
+      "SLEEVE": "Sleeve",
+      "LENGTH": "Length",
+      "INSOLE": "Insole",
+      "HEIGHT": "Height",
+      "WIDTH": "Width",
+      "DEPTH": "Depth"
+    },
+    "color": {
+      "BLACK": "Black",
+      "WHITE": "White",
+      "GRAY": "Grey",
+      "BEIGE": "Beige",
+      "BROWN": "Brown",
+      "RED": "Red",
+      "PINK": "Pink",
+      "ORANGE": "Orange",
+      "YELLOW": "Yellow",
+      "GREEN": "Green",
+      "BLUE": "Blue",
+      "PURPLE": "Purple",
+      "GOLD": "Gold",
+      "SILVER": "Silver",
+      "MULTICOLOR": "Multicolour"
+    },
+    "shipping": {
+      "weight": "Weight in grams",
+      "length": "Length",
+      "width": "Width",
+      "height": "Height",
+      "help": "Measure the box with the product inside, not the product on its own."
+    },
+    "shots": {
+      "title": "The photos",
+      "body": "Eight shots turning the product, one every 45 degrees. They show what a single photo hides.",
+      "sealedBody": "Four shots of the sealed box: front, side, back and the other side.",
+      "progress": "{{puestas}} of {{exigidas}}",
+      "canonical": "This one is required",
+      "add": "Add photo",
+      "remove": "Remove",
+      "uploading": "Uploading…",
+      "requirements": "Portrait, at least 900 × 1200 pixels.",
+      "imageAlt": "Product shot at {{grados}} degrees",
+      "missingCanonical": "You are missing {{cuantas}} of the required shots."
+    },
+    "tech": {
+      "sealed": "It is sealed, unopened",
+      "sealedHelp": "If you declare it sealed we ask for four shots of the box instead of eight, and you can add manufacturer images.",
+      "warranty": "Months of manufacturer warranty",
+      "reference": "Reference image",
+      "referenceHelp": "From the manufacturer, to show the product inside. It never counts as one of your shots: without real photos we do not publish."
+    },
+    "submit": {
+      "action": "Send for review",
+      "body": "A moderator reviews it before it shows on Sendik.",
+      "reviewTime": "We reply within {{dias}} business days.",
+      "incomplete": "Something is still missing before you can send it.",
+      "sent": "Sent for review",
+      "withdraw": "Withdraw from review",
+      "withdrawHelp": "You can withdraw it while nobody has reviewed it."
+    },
+    "status": {
+      "DRAFT": "Draft",
+      "PENDING_REVIEW": "In review",
+      "PUBLISHED": "Published",
+      "REJECTED": "Rejected",
+      "PAUSED": "Paused",
+      "SOLD": "Sold",
+      "ARCHIVED": "Archived"
+    },
+    "statusHelp": {
+      "DRAFT": "Only you can see it. Send it for review when it is ready.",
+      "PENDING_REVIEW": "A moderator is looking at it. Meanwhile it cannot be edited.",
+      "PUBLISHED": "Anyone can see it and buy it.",
+      "REJECTED": "We could not publish it. We tell you why below.",
+      "PAUSED": "It stops showing until you reactivate it. Nobody else sees it.",
+      "SOLD": "It sold. It cannot be listed again.",
+      "ARCHIVED": "You removed it for good. It does not come back."
+    },
+    "rejected": {
+      "title": "We could not publish it",
+      "reasonLabel": "Reason",
+      "noteLabel": "Note from the reviewer",
+      "retry": "Fix it and send it again",
+      "retryHelp": "It keeps your data and your photos. You can send it again as many times as you need."
+    },
+    "rejectionReason": {
+      "PHOTOS_UNUSABLE": "The photos are unusable: blurry, too dark or below the minimum size",
+      "PHOTOS_MISMATCH": "The photos do not match what the listing describes",
+      "MEASUREMENTS_UNRELIABLE": "The measurements are missing or not believable",
+      "CONDITION_MISDECLARED": "The declared condition is not what the photos show",
+      "PROHIBITED_ITEM": "This product cannot be sold on Sendik",
+      "SUSPECTED_COUNTERFEIT": "We suspect it is not authentic",
+      "PRICE_OUT_OF_RANGE": "The price is outside the reasonable range for that category"
+    },
+    "live": {
+      "editPrice": "Change the price",
+      "editShipping": "Change shipping",
+      "noReview": "Price and shipping do not go through review.",
+      "backToReview": "If you change the photos or what describes the product, it goes back to review and stops showing until it is approved.",
+      "pause": "Pause",
+      "resume": "Reactivate",
+      "archive": "Archive",
+      "archiveConfirm": "Archiving is forever. The listing does not come back and its photos are deleted. Shall we?",
+      "archiveYes": "Yes, archive it",
+      "archiveNo": "No, keep it"
+    },
+    "mine": {
+      "title": "My listings",
+      "empty": "You have not listed anything yet.",
+      "emptyAction": "List my first product",
+      "new": "List a product",
+      "attention": "Needs attention",
+      "untitled": "Untitled listing"
     }
   }
 }

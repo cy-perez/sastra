@@ -118,6 +118,38 @@ export const routes: Routes = [
       ),
   },
   {
+    // HU-007. El formulario de publicar y el listado propio.
+    //
+    // **Sin enlace desde ninguna parte**, igual que las de HU-002 y HU-006: el backend
+    // responde 404 en estas rutas mientras FEATURE_PUBLISHING este apagada, y HU-004 y
+    // HU-005 prohiben dejar enlaces a algo que no funciona. La entrada en el menu se pone
+    // cuando la bandera se encienda.
+    //
+    // `/publicar` sin identificador es el paso previo: pide la categoria y crea el
+    // borrador. No es un capricho de navegacion —una toma se sube contra una publicacion
+    // que ya existe— y ademas de la categoria dependen las condiciones admisibles, los
+    // sistemas de talla y que medidas se piden.
+    path: 'publicar',
+    title: 'meta.publish.title',
+    data: { descriptionKey: 'meta.publish.description' },
+    loadComponent: () =>
+      import('./features/listing/presentation/publish-page').then((m) => m.PublishPage),
+  },
+  {
+    path: 'publicar/:id',
+    title: 'meta.publish.title',
+    data: { descriptionKey: 'meta.publish.description' },
+    loadComponent: () =>
+      import('./features/listing/presentation/publish-page').then((m) => m.PublishPage),
+  },
+  {
+    path: 'mis-publicaciones',
+    title: 'meta.myListings.title',
+    data: { descriptionKey: 'meta.myListings.description' },
+    loadComponent: () =>
+      import('./features/listing/presentation/my-listings-page').then((m) => m.MyListingsPage),
+  },
+  {
     path: 'verificar-correo',
     title: 'meta.verify.title',
     data: { descriptionKey: 'meta.verify.description' },

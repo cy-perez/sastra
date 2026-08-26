@@ -78,6 +78,14 @@
     "moderationDetail": {
       "title": "Revisar verificación",
       "description": "Detalle de una solicitud de verificación de vendedor."
+    },
+    "publish": {
+      "title": "Publica tu producto · Sendik",
+      "description": "Describe tu producto, súbele fotos y envíalo a revisión."
+    },
+    "myListings": {
+      "title": "Mis publicaciones · Sendik",
+      "description": "Tus publicaciones y en qué estado está cada una."
     }
   },
   "layout": {
@@ -194,7 +202,16 @@
       "SELLER_DOCUMENT_ALREADY_VERIFIED": "Ese documento ya está verificado en otra cuenta.",
       "SELLER_EMAIL_NOT_VERIFIED": "Verifica tu correo antes de empezar. Te reenviamos el enlace desde tu cuenta.",
       "SELLER_UNKNOWN_INSTITUTION": "Esa entidad no está en nuestra lista. Elige una de las opciones.",
-      "SELLER_SELF_REVIEW_FORBIDDEN": "No puedes decidir sobre tu propia solicitud. La revisa otra persona."
+      "SELLER_SELF_REVIEW_FORBIDDEN": "No puedes decidir sobre tu propia solicitud. La revisa otra persona.",
+      "CATALOG_SELLER_NOT_VERIFIED": "Necesitas ser vendedor verificado para publicar.",
+      "CATALOG_LISTING_INVALID_STATE": "Esta publicación cambió mientras la editabas. Vuelve a cargarla.",
+      "CATALOG_LISTING_INCOMPLETE": "Faltan datos para enviarla a revisión.",
+      "CATALOG_LISTING_NOT_EDITABLE": "No puedes editarla mientras está en revisión.",
+      "CATALOG_SHOTS_INCOMPLETE": "Te faltan tomas para enviarla a revisión.",
+      "CATALOG_CONDITION_NOT_ALLOWED": "En esta categoría solo se publica lo nuevo.",
+      "CATALOG_REFERENCE_IMAGE_NOT_ALLOWED": "Las imágenes de referencia solo se pueden agregar en tecnología sellada.",
+      "CATALOG_UNKNOWN_CATEGORY": "Esa categoría ya no está disponible. Elige otra.",
+      "CATALOG_SELF_MODERATION_FORBIDDEN": "No puedes decidir sobre tu propia publicación."
     }
   },
   "form": {
@@ -836,6 +853,177 @@
       "HOLDER_MISMATCH": "Titular no coincide",
       "DOCUMENT_ALREADY_VERIFIED": "Documento ya verificado en otra cuenta",
       "REQUIREMENTS_NOT_MET": "No cumple los requisitos"
+    }
+  },
+  "listing": {
+    "loading": "Cargando…",
+    "intro": {
+      "title": "Publica tu producto",
+      "body": "Cuéntanos qué vendes y muéstralo bien. Puedes salir a la mitad y volver cuando quieras: guardamos lo que llevas.",
+      "start": "Empezar",
+      "notVerified": "Verifícate como vendedor para poder publicar.",
+      "notVerifiedAction": "Empezar mi verificación"
+    },
+    "sections": {
+      "what": "Qué vendes",
+      "how": "Cómo es",
+      "price": "Precio y envío"
+    },
+    "form": {
+      "category": "Categoría",
+      "categoryHint": "Elige dónde encaja. De ella dependen las medidas que te pedimos.",
+      "choose": "Elige una opción",
+      "title": "Título",
+      "titleHint": "Qué es, en pocas palabras. Máximo 120 caracteres.",
+      "description": "Descripción",
+      "descriptionHint": "Cuenta el estado real, incluido lo que no está perfecto.",
+      "brand": "Marca",
+      "condition": "Condición",
+      "size": "Talla",
+      "sizeValue": "Valor de la talla",
+      "measurements": "Medidas",
+      "measurementsHint": "En centímetros, sobre la prenda estirada.",
+      "color": "Color",
+      "price": "Precio",
+      "priceHint": "En pesos, sin centavos.",
+      "shipping": "Envío",
+      "optional": "Opcional",
+      "saved": "Guardado",
+      "saving": "Guardando…"
+    },
+    "condition": {
+      "NEW": "Nuevo",
+      "LIKE_NEW": "Como nuevo",
+      "GOOD": "Buen estado",
+      "WITH_FLAWS": "Con detalles",
+      "usedNotAllowed": "En esta categoría solo se publica lo nuevo."
+    },
+    "sizeSystem": {
+      "ALPHA": "Letra (XS a XXL)",
+      "NUMERIC_CO": "Número (talla colombiana)",
+      "WAIST_INCHES": "Cintura en pulgadas",
+      "FOOTWEAR_CO": "Calzado (talla colombiana)",
+      "ONE_SIZE": "Talla única"
+    },
+    "measurement": {
+      "CHEST": "Pecho",
+      "WAIST": "Cintura",
+      "HIP": "Cadera",
+      "RISE": "Tiro",
+      "SHOULDERS": "Hombros",
+      "SLEEVE": "Manga",
+      "LENGTH": "Largo",
+      "INSOLE": "Plantilla",
+      "HEIGHT": "Alto",
+      "WIDTH": "Ancho",
+      "DEPTH": "Fondo"
+    },
+    "color": {
+      "BLACK": "Negro",
+      "WHITE": "Blanco",
+      "GRAY": "Gris",
+      "BEIGE": "Beige",
+      "BROWN": "Café",
+      "RED": "Rojo",
+      "PINK": "Rosado",
+      "ORANGE": "Naranja",
+      "YELLOW": "Amarillo",
+      "GREEN": "Verde",
+      "BLUE": "Azul",
+      "PURPLE": "Morado",
+      "GOLD": "Dorado",
+      "SILVER": "Plateado",
+      "MULTICOLOR": "Multicolor"
+    },
+    "shipping": {
+      "weight": "Peso en gramos",
+      "length": "Largo",
+      "width": "Ancho",
+      "height": "Alto",
+      "help": "Mide la caja con el producto dentro, no el producto suelto."
+    },
+    "shots": {
+      "title": "Las fotos",
+      "body": "Ocho tomas girando el producto, una cada 45 grados. Son las que dejan ver lo que una sola foto esconde.",
+      "sealedBody": "Cuatro tomas del empaque cerrado: frente, lado, atrás y el otro lado.",
+      "progress": "{{puestas}} de {{exigidas}}",
+      "canonical": "Esta no puede faltar",
+      "add": "Agregar foto",
+      "remove": "Quitar",
+      "uploading": "Subiendo…",
+      "requirements": "Vertical, mínimo 900 × 1200 píxeles.",
+      "imageAlt": "Toma del producto a {{grados}} grados",
+      "missingCanonical": "Te faltan {{cuantas}} de las tomas que no pueden faltar."
+    },
+    "tech": {
+      "sealed": "Está sellado, sin abrir",
+      "sealedHelp": "Si lo declaras sellado te pedimos cuatro tomas del empaque en vez de ocho, y puedes agregar imágenes del fabricante.",
+      "warranty": "Meses de garantía del fabricante",
+      "reference": "Imagen de referencia",
+      "referenceHelp": "Del fabricante, para mostrar el producto por dentro. Nunca cuenta como una de tus tomas: sin fotos reales no publicamos."
+    },
+    "submit": {
+      "action": "Enviar a revisión",
+      "body": "Un moderador la revisa antes de que se vea en Sendik.",
+      "reviewTime": "Te respondemos en máximo {{dias}} días hábiles.",
+      "incomplete": "Te falta completar algo antes de enviar.",
+      "sent": "Enviada a revisión",
+      "withdraw": "Retirar de revisión",
+      "withdrawHelp": "Puedes retirarla mientras nadie la haya revisado."
+    },
+    "status": {
+      "DRAFT": "Borrador",
+      "PENDING_REVIEW": "En revisión",
+      "PUBLISHED": "Publicada",
+      "REJECTED": "Rechazada",
+      "PAUSED": "Pausada",
+      "SOLD": "Vendida",
+      "ARCHIVED": "Archivada"
+    },
+    "statusHelp": {
+      "DRAFT": "Solo la ves tú. Envíala a revisión cuando esté lista.",
+      "PENDING_REVIEW": "Un moderador la está mirando. Mientras tanto no se puede editar.",
+      "PUBLISHED": "Cualquiera puede verla y comprarla.",
+      "REJECTED": "No pudimos publicarla. Abajo te decimos por qué.",
+      "PAUSED": "Deja de verse hasta que la reactives. Nadie más la ve.",
+      "SOLD": "Ya se vendió. No se puede volver a publicar.",
+      "ARCHIVED": "La retiraste para siempre. No vuelve."
+    },
+    "rejected": {
+      "title": "No pudimos publicarla",
+      "reasonLabel": "Motivo",
+      "noteLabel": "Nota de quien revisó",
+      "retry": "Corregir y volver a enviar",
+      "retryHelp": "Conserva tus datos y tus fotos. Puedes reenviarla las veces que haga falta."
+    },
+    "rejectionReason": {
+      "PHOTOS_UNUSABLE": "Las fotos no se pueden usar: están borrosas, muy oscuras o no cumplen el mínimo",
+      "PHOTOS_MISMATCH": "Las fotos no corresponden con lo que describe la publicación",
+      "MEASUREMENTS_UNRELIABLE": "Las medidas faltan o no son creíbles",
+      "CONDITION_MISDECLARED": "La condición declarada no es la que se ve en las fotos",
+      "PROHIBITED_ITEM": "El producto no se puede vender en Sendik",
+      "SUSPECTED_COUNTERFEIT": "Sospechamos que no es original",
+      "PRICE_OUT_OF_RANGE": "El precio está fuera del rango razonable para esa categoría"
+    },
+    "live": {
+      "editPrice": "Cambiar el precio",
+      "editShipping": "Cambiar el envío",
+      "noReview": "El precio y el envío no pasan por revisión.",
+      "backToReview": "Si cambias las fotos o lo que describe el producto, vuelve a revisión y deja de verse hasta que la aprueben.",
+      "pause": "Pausar",
+      "resume": "Reactivar",
+      "archive": "Archivar",
+      "archiveConfirm": "Archivar es para siempre. La publicación no vuelve y sus fotos se borran. ¿Seguimos?",
+      "archiveYes": "Sí, archivar",
+      "archiveNo": "No, dejarla"
+    },
+    "mine": {
+      "title": "Mis publicaciones",
+      "empty": "Todavía no has publicado nada.",
+      "emptyAction": "Publicar mi primer producto",
+      "new": "Publicar",
+      "attention": "Necesita atención",
+      "untitled": "Publicación sin título"
     }
   }
 }

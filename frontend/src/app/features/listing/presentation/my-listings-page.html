@@ -1,0 +1,121 @@
+<section class="mias">
+  <header class="mias__cabecera">
+    <h1 class="tipo-h1">{{ 'listing.mine.title' | transloco }}</h1>
+    <a class="btn-primario" routerLink="/publicar">{{ 'listing.mine.new' | transloco }}</a>
+  </header>
+
+  @if (consulta.isPending()) {
+    <p class="tipo-secundario" role="status">{{ 'listing.loading' | transloco }}</p>
+  } @else if (consulta.isError()) {
+    <p class="mias__error tipo-cuerpo" role="alert">
+      {{ claveDeError(consulta.error()) | transloco }}
+    </p>
+  } @else if (vacio()) {
+    <div class="mias__vacio">
+      <p class="tipo-cuerpo">{{ 'listing.mine.empty' | transloco }}</p>
+      <a class="btn-primario" routerLink="/publicar">{{
+        'listing.mine.emptyAction' | transloco
+      }}</a>
+    </div>
+  } @else {
+    <ul class="mias__lista">
+      @for (publicacion of publicaciones(); track publicacion.id) {
+        <li class="mias__fila">
+          @if (portadaDe(publicacion); as portada) {
+            <img
+              class="mias__portada"
+              [src]="portada"
+              [alt]="publicacion.product.title ?? ('listing.mine.untitled' | transloco)"
+              width="120"
+              height="160"
+            />
+          } @else {
+            <div class="mias__portada mias__portada--vacia" aria-hidden="true"></div>
+          }
+
+          <div class="mias__datos">
+            <h2 class="tipo-titulo-tarjeta">
+              <a [routerLink]="['/publicar', publicacion.id]">
+                {{ publicacion.product.title ?? ('listing.mine.untitled' | transloco) }}
+              </a>
+            </h2>
+
+            <p class="mias__estado tipo-secundario">
+              {{ 'listing.status.' + publicacion.status | transloco }}
+            </p>
+
+            @if (precioDe(publicacion); as precio) {
+              <p class="precio">{{ precio }}</p>
+            }
+
+            <p class="tipo-secundario">
+              {{
+                'listing.shots.progress'
+                  | transloco
+                    : { puestas: publicacion.images.length, exigidas: publicacion.requiredShots }
+              }}
+            </p>
+
+            @if (publicacion.requiresAttention) {
+              <p class="mias__atencion tipo-secundario">
+                {{ 'listing.mine.attention' | transloco }}
+              </p>
+            }
+          </div>
+
+          <div class="mias__acciones">
+            @switch (publicacion.status) {
+              @case ('PUBLISHED') {
+                <button
+                  type="button"
+                  class="btn-secundario"
+                  [disabled]="pausa.isPending()"
+                  (click)="pausar(publicacion.id)"
+                >
+                  {{ 'listing.live.pause' | transloco }}
+                </button>
+              }
+              @case ('PAUSED') {
+                <button
+                  type="button"
+                  class="btn-secundario"
+                  [disabled]="reanudacion.isPending()"
+                  (click)="reanudar(publicacion.id)"
+                >
+                  {{ 'listing.live.resume' | transloco }}
+                </button>
+              }
+            }
+
+            @if (publicacion.status !== 'SOLD' && publicacion.status !== 'ARCHIVED') {
+              @if (porArchivar() === publicacion.id) {
+                <p class="mias__confirmacion tipo-secundario" role="alert">
+                  {{ 'listing.live.archiveConfirm' | transloco }}
+                </p>
+                <button
+                  type="button"
+                  class="btn-secundario"
+                  [disabled]="archivo.isPending()"
+                  (click)="archivar(publicacion.id)"
+                >
+                  {{ 'listing.live.archiveYes' | transloco }}
+                </button>
+                <button type="button" class="btn-secundario" (click)="cancelarArchivo()">
+                  {{ 'listing.live.archiveNo' | transloco }}
+                </button>
+              } @else {
+                <button
+                  type="button"
+                  class="btn-secundario"
+                  (click)="pedirConfirmacion(publicacion.id)"
+                >
+                  {{ 'listing.live.archive' | transloco }}
+                </button>
+              }
+            }
+          </div>
+        </li>
+      }
+    </ul>
+  }
+</section>

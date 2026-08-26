@@ -1,0 +1,94 @@
+:host {
+  display: block;
+  max-width: var(--ancho-max);
+  margin: 0 auto;
+  padding: var(--esp-24) var(--esp-16);
+}
+
+.mias {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-24);
+}
+
+.mias__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--esp-16);
+  flex-wrap: wrap;
+}
+
+.mias__lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-16);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mias__fila {
+  display: flex;
+  gap: var(--esp-16);
+  padding: var(--esp-16);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  flex-wrap: wrap;
+}
+
+/* La foto de producto es 3:4 y el hueco ocupa lo mismo aunque no haya foto: sin eso
+   la lista salta de alto entre un borrador sin tomas y uno con ellas. */
+.mias__portada {
+  aspect-ratio: var(--relacion-foto);
+  width: var(--esp-96);
+  border-radius: var(--radio-sm);
+  object-fit: cover;
+}
+
+.mias__portada--vacia {
+  background-color: var(--color-superficie);
+  border: 1px dashed var(--color-borde);
+}
+
+.mias__datos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+  flex: 1 1 12rem;
+}
+
+.mias__acciones {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-8);
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+.mias__estado {
+  font-weight: 600;
+}
+
+.mias__atencion {
+  color: var(--color-aviso);
+}
+
+.mias__error {
+  color: var(--color-error);
+}
+
+.mias__vacio {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-12);
+  align-items: flex-start;
+  padding: var(--esp-24);
+  border: 1px dashed var(--color-borde);
+  border-radius: var(--radio-md);
+}
+
+.mias__confirmacion {
+  margin: 0;
+  color: var(--color-error);
+}

@@ -129,6 +129,23 @@ class AsyncMailSenderTest {
         public void enviarAvisoDeCorreoCambiado(User titular, Email anterior) {
             anotar("correo-cambiado:" + anterior.value());
         }
+
+        @Override
+        public void enviarAvisoDePublicacionAprobada(User titular, String tituloDeLaPublicacion) {
+            anotar("publicacion-aprobada");
+        }
+
+        @Override
+        public void enviarAvisoDePublicacionRechazada(
+                User titular, String tituloDeLaPublicacion, String motivo, String nota) {
+            anotar("publicacion-rechazada");
+        }
+
+        @Override
+        public void enviarAvisoDePublicacionRetirada(
+                User titular, String tituloDeLaPublicacion, String motivo, String nota) {
+            anotar("publicacion-retirada");
+        }
     }
 
     private static User cuenta() {

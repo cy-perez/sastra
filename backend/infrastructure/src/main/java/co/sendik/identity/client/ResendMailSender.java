@@ -326,6 +326,34 @@ public class ResendMailSender implements MailSender {
                                 + "right away from the contact page.</p>");
     }
 
+    // --- Decisiones sobre una publicacion. HU-007 criterio 26 ---------------
+
+    @Override
+    public void enviarAvisoDePublicacionAprobada(User titular, String tituloDeLaPublicacion) {
+        enviar(
+                titular.email().value(),
+                ListingMailTexts.asuntoDeAprobada(titular.locale()),
+                ListingMailTexts.cuerpoDeAprobada(titular.locale(), tituloDeLaPublicacion));
+    }
+
+    @Override
+    public void enviarAvisoDePublicacionRechazada(
+            User titular, String tituloDeLaPublicacion, String motivo, String nota) {
+        enviar(
+                titular.email().value(),
+                ListingMailTexts.asuntoDeRechazada(titular.locale()),
+                ListingMailTexts.cuerpoDeRechazada(titular.locale(), tituloDeLaPublicacion, motivo, nota));
+    }
+
+    @Override
+    public void enviarAvisoDePublicacionRetirada(
+            User titular, String tituloDeLaPublicacion, String motivo, String nota) {
+        enviar(
+                titular.email().value(),
+                ListingMailTexts.asuntoDeRetirada(titular.locale()),
+                ListingMailTexts.cuerpoDeRetirada(titular.locale(), tituloDeLaPublicacion, motivo, nota));
+    }
+
     private static String cuerpo(String titulo, String texto, String enlace, String etiquetaDelBoton) {
         return "<h1>" + titulo + "</h1><p>" + texto + "</p><p><a href=\"" + enlace + "\">" + etiquetaDelBoton
                 + "</a></p>";

@@ -166,6 +166,29 @@ public class AsyncMailSender implements MailSender {
      * de excepciones del hilo, sin nadie a quien contarselo. Se registra el tipo de
      * correo, nunca el destinatario ni el enlace.
      */
+    @Override
+    public void enviarAvisoDePublicacionAprobada(User titular, String tituloDeLaPublicacion) {
+        enDiferido(
+                "aviso de publicacion aprobada",
+                () -> transporte.enviarAvisoDePublicacionAprobada(titular, tituloDeLaPublicacion));
+    }
+
+    @Override
+    public void enviarAvisoDePublicacionRechazada(
+            User titular, String tituloDeLaPublicacion, String motivo, String nota) {
+        enDiferido(
+                "aviso de publicacion rechazada",
+                () -> transporte.enviarAvisoDePublicacionRechazada(titular, tituloDeLaPublicacion, motivo, nota));
+    }
+
+    @Override
+    public void enviarAvisoDePublicacionRetirada(
+            User titular, String tituloDeLaPublicacion, String motivo, String nota) {
+        enDiferido(
+                "aviso de publicacion retirada",
+                () -> transporte.enviarAvisoDePublicacionRetirada(titular, tituloDeLaPublicacion, motivo, nota));
+    }
+
     private void enDiferido(String queCorreo, Runnable envio) {
         ejecutor.execute(() -> {
             try {

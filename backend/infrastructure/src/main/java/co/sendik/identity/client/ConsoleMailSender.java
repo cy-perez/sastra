@@ -167,6 +167,25 @@ public class ConsoleMailSender implements MailSender {
      * imprime**: es texto de una persona sobre otra persona y el registro no es sitio
      * para eso (docs/operacion/datos-personales.md).
      */
+    // --- Decisiones sobre una publicacion. HU-007 criterio 26 ---------------
+
+    @Override
+    public void enviarAvisoDePublicacionAprobada(User titular, String tituloDeLaPublicacion) {
+        registrar("PUBLICACION APROBADA (criterio 21)", titular, "Ya es visible: " + tituloDeLaPublicacion);
+    }
+
+    @Override
+    public void enviarAvisoDePublicacionRechazada(
+            User titular, String tituloDeLaPublicacion, String motivo, String nota) {
+        registrar("PUBLICACION RECHAZADA (criterio 22)", titular, tituloDeLaPublicacion + ". Motivo: " + motivo);
+    }
+
+    @Override
+    public void enviarAvisoDePublicacionRetirada(
+            User titular, String tituloDeLaPublicacion, String motivo, String nota) {
+        registrar("PUBLICACION RETIRADA (RN-024, criterio 31)", titular, tituloDeLaPublicacion + ". Motivo: " + motivo);
+    }
+
     private static void registrar(String titulo, User titular, String detalle) {
         LOG.info("""
 

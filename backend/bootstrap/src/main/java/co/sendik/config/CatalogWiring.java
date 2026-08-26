@@ -1,0 +1,153 @@
+package co.sendik.config;
+
+import co.sendik.catalog.port.out.Categories;
+import co.sendik.catalog.port.out.ListingNotifier;
+import co.sendik.catalog.port.out.ListingRepository;
+import co.sendik.catalog.port.out.ModerationLog;
+import co.sendik.catalog.port.out.SellerEligibility;
+import co.sendik.catalog.usecase.ApproveListingUseCase;
+import co.sendik.catalog.usecase.ArchiveListingUseCase;
+import co.sendik.catalog.usecase.ChangeListingPriceUseCase;
+import co.sendik.catalog.usecase.ChangeListingShippingUseCase;
+import co.sendik.catalog.usecase.CreateListingUseCase;
+import co.sendik.catalog.usecase.ListSellerListingsUseCase;
+import co.sendik.catalog.usecase.PauseListingUseCase;
+import co.sendik.catalog.usecase.ReadListingUseCase;
+import co.sendik.catalog.usecase.RejectListingUseCase;
+import co.sendik.catalog.usecase.RemoveListingImageUseCase;
+import co.sendik.catalog.usecase.ReopenListingUseCase;
+import co.sendik.catalog.usecase.ResumeListingUseCase;
+import co.sendik.catalog.usecase.SubmitListingForReviewUseCase;
+import co.sendik.catalog.usecase.TakeDownListingUseCase;
+import co.sendik.catalog.usecase.UpdateListingContentUseCase;
+import co.sendik.catalog.usecase.UploadListingImageUseCase;
+import co.sendik.catalog.usecase.WithdrawListingUseCase;
+import co.sendik.shared.file.ImagePolicy;
+import co.sendik.shared.port.out.ImageNormalizer;
+import co.sendik.shared.port.out.PublicFileStore;
+import java.time.Clock;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+/**
+ * Cableado de los casos de uso del catalogo. HU-007.
+ *
+ * <p>Por lo mismo que {@link IdentityWiring}: los casos de uso no llevan {@code @Service}
+ * ni ninguna otra anotacion, porque el modulo {@code application} solo puede ver
+ * {@code spring-tx} y una prueba de arquitectura falla si aparece cualquier otra cosa de
+ * Spring. Se registran aqui, que es el modulo del cableado, y en sus pruebas se
+ * construyen con {@code new}, sin contexto y sin simular un contenedor.
+ *
+ * <p><strong>No van detras de la bandera.</strong> Los que se apagan con
+ * {@code FEATURE_PUBLISHING} son los controladores, que son la puerta; estos beans
+ * existen siempre y no hacen nada si nadie los llama. Ponerles la condicion aqui
+ * significaria que encender la bandera cambia que hay dentro del contexto y no solo que
+ * esta expuesto, que es mas dificil de razonar y de probar.
+ *
+ * <p>El {@code Clock} lo declara {@link IdentityWiring}: es uno solo para toda la
+ * aplicacion, en la zona de operacion y no en UTC.
+ */
+@Configuration
+public class CatalogWiring {
+
+    @Bean
+    CreateListingUseCase createListingUseCase(
+            ListingRepository publicaciones, Categories categorias, SellerEligibility elegibilidad, Clock reloj) {
+        return new CreateListingUseCase(publicaciones, categorias, elegibilidad, reloj);
+    }
+
+    @Bean
+    ReadListingUseCase readListingUseCase(ListingRepository publicaciones) {
+        return new ReadListingUseCase(publicaciones);
+    }
+
+    @Bean
+    UpdateListingContentUseCase updateListingContentUseCase(
+            ListingRepository publicaciones, Categories categorias, SellerEligibility elegibilidad, Clock reloj) {
+        return new UpdateListingContentUseCase(publicaciones, categorias, elegibilidad, reloj);
+    }
+
+    @Bean
+    ChangeListingPriceUseCase changeListingPriceUseCase(ListingRepository publicaciones, Clock reloj) {
+        return new ChangeListingPriceUseCase(publicaciones, reloj);
+    }
+
+    @Bean
+    ChangeListingShippingUseCase changeListingShippingUseCase(ListingRepository publicaciones, Clock reloj) {
+        return new ChangeListingShippingUseCase(publicaciones, reloj);
+    }
+
+    @Bean
+    UploadListingImageUseCase uploadListingImageUseCase(
+            ListingRepository publicaciones,
+            PublicFileStore almacen,
+            ImageNormalizer normalizador,
+            ImagePolicy politica,
+            Clock reloj) {
+        return new UploadListingImageUseCase(publicaciones, almacen, normalizador, politica, reloj);
+    }
+
+    @Bean
+    RemoveListingImageUseCase removeListingImageUseCase(
+            ListingRepository publicaciones, PublicFileStore almacen, Clock reloj) {
+        return new RemoveListingImageUseCase(publicaciones, almacen, reloj);
+    }
+
+    @Bean
+    SubmitListingForReviewUseCase submitListingForReviewUseCase(
+            ListingRepository publicaciones, Categories categorias, SellerEligibility elegibilidad, Clock reloj) {
+        return new SubmitListingForReviewUseCase(publicaciones, categorias, elegibilidad, reloj);
+    }
+
+    @Bean
+    WithdrawListingUseCase withdrawListingUseCase(ListingRepository publicaciones, Clock reloj) {
+        return new WithdrawListingUseCase(publicaciones, reloj);
+    }
+
+    @Bean
+    ReopenListingUseCase reopenListingUseCase(ListingRepository publicaciones, Clock reloj) {
+        return new ReopenListingUseCase(publicaciones, reloj);
+    }
+
+    @Bean
+    ApproveListingUseCase approveListingUseCase(
+            ListingRepository publicaciones, ModerationLog bitacora, ListingNotifier avisos, Clock reloj) {
+        return new ApproveListingUseCase(publicaciones, bitacora, avisos, reloj);
+    }
+
+    @Bean
+    RejectListingUseCase rejectListingUseCase(
+            ListingRepository publicaciones, ModerationLog bitacora, ListingNotifier avisos, Clock reloj) {
+        return new RejectListingUseCase(publicaciones, bitacora, avisos, reloj);
+    }
+
+    @Bean
+    TakeDownListingUseCase takeDownListingUseCase(
+            ListingRepository publicaciones,
+            ModerationLog bitacora,
+            ListingNotifier avisos,
+            PublicFileStore almacen,
+            Clock reloj) {
+        return new TakeDownListingUseCase(publicaciones, bitacora, avisos, almacen, reloj);
+    }
+
+    @Bean
+    PauseListingUseCase pauseListingUseCase(ListingRepository publicaciones, Clock reloj) {
+        return new PauseListingUseCase(publicaciones, reloj);
+    }
+
+    @Bean
+    ResumeListingUseCase resumeListingUseCase(ListingRepository publicaciones, Clock reloj) {
+        return new ResumeListingUseCase(publicaciones, reloj);
+    }
+
+    @Bean
+    ArchiveListingUseCase archiveListingUseCase(ListingRepository publicaciones, PublicFileStore almacen, Clock reloj) {
+        return new ArchiveListingUseCase(publicaciones, almacen, reloj);
+    }
+
+    @Bean
+    ListSellerListingsUseCase listSellerListingsUseCase(ListingRepository publicaciones) {
+        return new ListSellerListingsUseCase(publicaciones);
+    }
+}

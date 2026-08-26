@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import co.sendik.identity.model.BirthDate;
@@ -115,12 +116,24 @@ class ListingSecurityTest {
     }
 
     /**
-     * Con el rol, la peticion pasa la autorizacion y llega al caso de uso, que responde
-     * 404 porque esa publicacion no existe. Un 404 aqui es lo que se busca: la puerta se
-     * abrio.
+     * Con el rol, la peticion pasa la autorizacion y llega al controlador.
+     *
+     * <p><strong>Se comprueba con un identificador mal formado y un 400, no con un 404.</strong>
+     * Un 404 tambien es lo que responde una ruta que no existe, asi que una prueba que lo
+     * afirmara seguiria verde con el controlador borrado. El 400 solo puede salir de
+     * {@code ListingId.de}, que ya esta dentro del metodo: prueba que la puerta se abrio.
      */
     @Test
-    void deberia_dejar_pasar_a_un_moderador_hasta_el_caso_de_uso() throws Exception {
+    void deberia_dejar_pasar_a_un_moderador_hasta_el_controlador() throws Exception {
+        mvc.perform(post("/api/v1/listings/no-es-un-identificador/approval")
+                        .header("Authorization", "Bearer " + tokenCon(Role.MODERATOR)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COMMON_VALIDATION_FAILED"));
+    }
+
+    /** Y con una publicacion que no existe, 404: la del criterio 33, no la de la ruta ausente. */
+    @Test
+    void deberia_responder_404_a_un_moderador_sobre_una_publicacion_que_no_existe() throws Exception {
         mvc.perform(post("/api/v1/listings/" + CUALQUIERA + "/approval")
                         .header("Authorization", "Bearer " + tokenCon(Role.MODERATOR)))
                 .andExpect(status().isNotFound());
@@ -154,10 +167,15 @@ class ListingSecurityTest {
      * llevado por delante las del dueno.
      */
     @Test
-    void deberia_dejar_pasar_al_vendedor_hasta_el_caso_de_uso() throws Exception {
+    void deberia_dejar_pasar_al_vendedor_hasta_el_controlador() throws Exception {
+        // Mismo motivo que arriba: el 400 solo lo produce el controlador, el 404 lo
+        // produciria tambien la ausencia de ruta.
+        mvc.perform(post("/api/v1/listings/no-es-un-identificador/pause").with(conSesion()))
+                .andExpect(status().isBadRequest());
+        mvc.perform(post("/api/v1/listings/no-es-un-identificador/archival").with(conSesion()))
+                .andExpect(status().isBadRequest());
+
         mvc.perform(post("/api/v1/listings/" + CUALQUIERA + "/pause").with(conSesion()))
-                .andExpect(status().isNotFound());
-        mvc.perform(post("/api/v1/listings/" + CUALQUIERA + "/archival").with(conSesion()))
                 .andExpect(status().isNotFound());
     }
 

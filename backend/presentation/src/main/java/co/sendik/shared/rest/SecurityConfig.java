@@ -1,7 +1,5 @@
 package co.sendik.shared.rest;
 
-import co.sendik.catalog.rest.PublishingExposed;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -13,6 +11,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.RegexRequestMatcher;
 
 /**
  * Entrada de Spring Security al proyecto (HU-001, ADR-0003).
@@ -43,15 +42,15 @@ import org.springframework.security.web.SecurityFilterChain;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    @Bean
-    SecurityFilterChain cadenaDeFiltros(HttpSecurity http, ObjectProvider<PublishingExposed> publicacion)
-            throws Exception {
+    /** La forma de un UUID. Un identificador de publicacion, y nada mas. */
+    private static final String UUID = "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}";
 
-        // Con FEATURE_PUBLISHING apagada este marcador no existe, y entonces tampoco se
-        // declara la regla de rol de las rutas de moderacion. Sin esto respondian 403 con
-        // la bandera apagada, y un 403 confirma que la funcionalidad esta ahi: el criterio
-        // 3 pide 404. Ver PublishingExposed.
-        boolean catalogoExpuesto = publicacion.getIfAvailable() != null;
+    @Bean
+    SecurityFilterChain cadenaDeFiltros(HttpSecurity http, ExposedFeatures expuestas) throws Exception {
+        // Con FEATURE_PUBLISHING apagada no se declara la regla de rol de las rutas de
+        // moderacion. Sin esto respondian 403 con la bandera apagada, y un 403 confirma
+        // que la funcionalidad esta ahi: el criterio 3 pide 404. Ver ExposedFeatures.
+        boolean catalogoExpuesto = expuestas.publishing();
 
         http
                 // El origen permitido lo aporta un bean CorsConfigurationSource que
@@ -90,7 +89,16 @@ public class SecurityConfig {
                             // existe como si no es para quien pregunta, y sale como 404 y
                             // nunca 403 (criterio 33). Con "authenticated" aqui, un 401
                             // delataria que la publicacion existe.
-                            .requestMatchers(HttpMethod.GET, "/api/v1/listings/*")
+                            //
+                            // **Casa un identificador, no cualquier segmento.** Con
+                            // `/api/v1/listings/*` esta regla se tragaria tambien la
+                            // bandeja del moderador el dia que exista —`/pending`,
+                            // `/queue`, el nombre que sea es un segmento igual que un
+                            // id— y la dejaria publica, con el motivo del rechazo y la
+                            // nota de publicaciones ajenas dentro. Y el denyAll del
+                            // final no salva nada: permitAll casa primero y gana.
+                            .requestMatchers(
+                                    RegexRequestMatcher.regexMatcher(HttpMethod.GET, "/api/v1/listings/" + UUID))
                             .permitAll();
 
                     // Decision del moderador sobre una publicacion. **Rol, no solo

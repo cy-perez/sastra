@@ -36,12 +36,13 @@ import co.sendik.shared.port.out.PublicFileStore;
 import jakarta.validation.Valid;
 import java.io.IOException;
 import java.net.URI;
-import java.util.List;
 import java.util.Locale;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -80,6 +81,9 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("/api/v1/listings")
 @ConditionalOnProperty(prefix = "sendik.features", name = "publishing", havingValue = "true")
 public class ListingsController {
+
+    /** El prefijo lo pone el convertidor de {@code SecurityConfig}; {@code hasRole} lo asume. */
+    private static final String AUTORIDAD_DE_MODERADOR = "ROLE_MODERATOR";
 
     private final CreateListingUseCase casoDeCrear;
     private final ReadListingUseCase casoDeLeer;
@@ -156,8 +160,12 @@ public class ListingsController {
      * publico. Cuando no hay nadie identificado, solo se responde lo que esta publicado.
      */
     @GetMapping("/{id}")
-    public ResponseEntity<Object> una(@AuthenticationPrincipal @Nullable Jwt token, @PathVariable String id) {
-        boolean moderador = esModerador(token);
+    public ResponseEntity<Object> una(
+            @AuthenticationPrincipal @Nullable Jwt token,
+            @Nullable Authentication autenticacion,
+            @PathVariable String id) {
+
+        boolean moderador = esModerador(autenticacion);
         SellerId quienMira = token == null ? null : vendedorDe(token);
 
         return casoDeLeer
@@ -325,17 +333,22 @@ public class ListingsController {
     }
 
     /**
-     * El rol sale del mismo claim del que lo saca la cadena de filtros.
+     * El rol sale de las autoridades que ya calculo la cadena de filtros.
      *
-     * <p>Se lee aqui y no por {@code @PreAuthorize} porque esto no autoriza nada: la ruta
-     * es publica a proposito, y lo unico que decide el rol es cuanto se cuenta.
+     * <p><strong>No se lee el claim a mano.</strong> Lo intente asi y era la unica lectura
+     * de autorizacion del repositorio que no pasaba por Spring Security: el dia que el
+     * convertidor de {@code SecurityConfig} cambie de claim o de prefijo, esto y
+     * {@code hasRole} dejarian de coincidir en silencio, y lo que se rompe es cuanto se
+     * cuenta de la publicacion de otra persona.
+     *
+     * <p>Se decide aqui y no con {@code @PreAuthorize} porque no autoriza el acceso —la
+     * ruta es publica a proposito— sino que elige la representacion.
      */
-    private static boolean esModerador(@Nullable Jwt token) {
-        if (token == null) {
+    private static boolean esModerador(@Nullable Authentication autenticacion) {
+        if (autenticacion == null) {
             return false;
         }
-        List<String> roles = token.getClaimAsStringList("roles");
-        return roles != null && roles.contains("MODERATOR");
+        return autenticacion.getAuthorities().contains(new SimpleGrantedAuthority(AUTORIDAD_DE_MODERADOR));
     }
 
     /**

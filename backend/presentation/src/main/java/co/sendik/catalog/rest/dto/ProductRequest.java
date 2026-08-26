@@ -2,6 +2,7 @@ package co.sendik.catalog.rest.dto;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
@@ -16,6 +17,10 @@ import org.jspecify.annotations.Nullable;
  * <p>La categoria es la excepcion porque sin ella no se sabe que condiciones admite la
  * publicacion ni en que escala se mide (RN-064).
  *
+ * <p>Los topes de longitud repiten los del dominio a proposito: CLAUDE.md pide las dos
+ * validaciones, no una. La del borde rechaza con la lista de campos que el formulario sabe
+ * marcar; la del dominio es la que de verdad no se puede saltar.
+ *
  * <p>Las listas cerradas viajan como cadenas y se convierten en el mapeador. Con la
  * enumeracion en la firma, un valor desconocido produce un fallo de conversion de Spring
  * que nadie mapea y sale como 500; convertido a mano, sale como el 400 de validacion que
@@ -23,9 +28,9 @@ import org.jspecify.annotations.Nullable;
  */
 public record ProductRequest(
         @NotBlank String categoryId,
-        @Nullable String title,
-        @Nullable String description,
-        @Nullable String brand,
+        @Nullable @Size(max = 120) String title,
+        @Nullable @Size(max = 4000) String description,
+        @Nullable @Size(max = 60) String brand,
         @Nullable String condition,
         @Nullable SizePayload size,
         @Nullable Map<String, BigDecimal> measurements,

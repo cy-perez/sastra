@@ -64,15 +64,21 @@ public class MailListingNotifier implements ListingNotifier {
     }
 
     /**
-     * El titulo, o una etiqueta neutra si no lo tiene.
+     * El titulo. Una publicacion sobre la que un moderador decide siempre paso por
+     * revision, y para pasar por revision el titulo es obligatorio.
      *
-     * <p>Una publicacion sobre la que un moderador decide siempre paso por revision, y
-     * para pasar por revision el titulo es obligatorio. La alternativa no es que falte,
-     * es que el correo diga «null» el dia que algo cambie.
+     * <p>Si faltara, el correo no se manda: es preferible a inventar aqui un texto
+     * visible, que CLAUDE.md prohibe, y a escribir «null» en el buzon de alguien. Que el
+     * caso no se puede dar lo garantiza el dominio; que si se diera no pase inadvertido lo
+     * garantiza esta excepcion.
      */
     private static String tituloDe(Listing publicacion) {
         Title titulo = publicacion.product().title();
-        return titulo == null ? "tu publicacion" : titulo.value();
+
+        if (titulo == null) {
+            throw new IllegalStateException("La publicacion " + publicacion.id() + " llego a moderacion sin titulo");
+        }
+        return titulo.value();
     }
 
     /**
@@ -81,6 +87,11 @@ public class MailListingNotifier implements ListingNotifier {
      */
     private static String motivoDe(Listing publicacion, User vendedor) {
         ListingRejectionReason motivo = publicacion.rejectionReason();
-        return motivo == null ? "" : ListingRejectionTexts.de(vendedor.locale(), motivo);
+
+        if (motivo == null) {
+            throw new IllegalStateException(
+                    "La publicacion " + publicacion.id() + " se rechazo o se retiro sin motivo");
+        }
+        return ListingRejectionTexts.de(vendedor.locale(), motivo);
     }
 }

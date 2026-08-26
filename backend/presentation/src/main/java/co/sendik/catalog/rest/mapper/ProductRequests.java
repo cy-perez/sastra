@@ -157,7 +157,16 @@ public final class ProductRequests {
         Map<MeasurementKind, BigDecimal> convertidas = new EnumMap<>(MeasurementKind.class);
 
         if (valores != null) {
-            valores.forEach((medida, centimetros) -> convertidas.put(tipoDeMedida(medida), centimetros));
+            valores.forEach((medida, centimetros) -> {
+                // Un valor nulo sobrevive a Jackson y el EnumMap lo admite; quien lo
+                // rechazaba era Measurements, con un NullPointerException que no tiene
+                // manejador y salia como 500 con traza. Aqui es lo que de verdad es: una
+                // peticion mal formada.
+                if (centimetros == null) {
+                    throw new IllegalArgumentException("Una medida no puede venir vacia");
+                }
+                convertidas.put(tipoDeMedida(medida), centimetros);
+            });
         }
         return new Measurements(convertidas);
     }
@@ -166,7 +175,9 @@ public final class ProductRequests {
         try {
             return MeasurementKind.valueOf(normalizar(valor));
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("La medida " + valor + " no esta en la lista cerrada", e);
+            // Sin interpolar lo que mando el cliente: ese mensaje acaba en el registro,
+            // y el traceId ya identifica la peticion.
+            throw new IllegalArgumentException("Una de las medidas no esta en la lista cerrada", e);
         }
     }
 

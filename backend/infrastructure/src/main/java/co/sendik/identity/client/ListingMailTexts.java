@@ -48,12 +48,13 @@ final class ListingMailTexts {
      */
     static String cuerpoDeRechazada(UserLocale idioma, String titulo, String motivo, @Nullable String nota) {
         String nombre = escapar(titulo);
+        String porQue = escapar(motivo);
 
         return (espanol(idioma)
                         ? "<p>Revisamos <strong>" + nombre + "</strong> y no pudimos publicarla.</p>" + "<p>Motivo: "
-                                + motivo + "</p>"
+                                + porQue + "</p>"
                         : "<p>We reviewed <strong>" + nombre + "</strong> and could not publish it.</p>" + "<p>Reason: "
-                                + motivo + "</p>")
+                                + porQue + "</p>")
                 + notaComoParrafo(idioma, nota)
                 + (espanol(idioma)
                         ? "<p>Puedes corregirla y volver a enviarla las veces que haga falta. Conserva sus datos y sus fotos.</p>"
@@ -70,12 +71,13 @@ final class ListingMailTexts {
      */
     static String cuerpoDeRetirada(UserLocale idioma, String titulo, String motivo, @Nullable String nota) {
         String nombre = escapar(titulo);
+        String porQue = escapar(motivo);
 
         return (espanol(idioma)
                         ? "<p>Retiramos <strong>" + nombre + "</strong> y ya no se ve en Sendik.</p>" + "<p>Motivo: "
-                                + motivo + "</p>"
+                                + porQue + "</p>"
                         : "<p>We removed <strong>" + nombre + "</strong> and it is no longer visible on Sendik.</p>"
-                                + "<p>Reason: " + motivo + "</p>")
+                                + "<p>Reason: " + porQue + "</p>")
                 + notaComoParrafo(idioma, nota)
                 + (espanol(idioma)
                         ? "<p>Si crees que fue un error, escribenos desde la pagina de contacto.</p>"

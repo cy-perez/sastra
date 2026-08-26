@@ -11,6 +11,7 @@ import co.sendik.identity.model.User;
 import co.sendik.identity.model.UserId;
 import co.sendik.identity.model.UserLocale;
 import co.sendik.identity.port.out.MailSender;
+import co.sendik.shared.port.out.MailTransport;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -36,7 +37,7 @@ class AsyncMailSenderTest {
     private static final Instant AHORA = Instant.parse("2026-08-20T15:00:00Z");
 
     /** Transporte de mentira que anota lo que le llega y puede fallar a voluntad. */
-    private static final class TransporteEspia implements MailSender {
+    private static final class TransporteEspia implements MailSender, MailTransport {
 
         private final List<String> enviados = new CopyOnWriteArrayList<>();
         private final CountDownLatch llegadas;
@@ -130,21 +131,10 @@ class AsyncMailSenderTest {
             anotar("correo-cambiado:" + anterior.value());
         }
 
+        /** El envio generico de {@link MailTransport}, por el que salen los de otros contextos. */
         @Override
-        public void enviarAvisoDePublicacionAprobada(User titular, String tituloDeLaPublicacion) {
-            anotar("publicacion-aprobada");
-        }
-
-        @Override
-        public void enviarAvisoDePublicacionRechazada(
-                User titular, String tituloDeLaPublicacion, String motivo, String nota) {
-            anotar("publicacion-rechazada");
-        }
-
-        @Override
-        public void enviarAvisoDePublicacionRetirada(
-                User titular, String tituloDeLaPublicacion, String motivo, String nota) {
-            anotar("publicacion-retirada");
+        public void enviar(String destinatario, String asunto, String cuerpoHtml) {
+            anotar("generico:" + asunto);
         }
     }
 
@@ -162,7 +152,7 @@ class AsyncMailSenderTest {
     @Test
     void deberia_entregar_el_correo_al_transporte_con_su_token() throws InterruptedException {
         TransporteEspia espia = new TransporteEspia(1, false);
-        AsyncMailSender diferido = new AsyncMailSender(espia);
+        AsyncMailSender diferido = new AsyncMailSender(espia, espia);
 
         diferido.enviarVerificacionDeCorreo(cuenta(), "token-en-claro");
 
@@ -178,7 +168,7 @@ class AsyncMailSenderTest {
     @Test
     void deberia_delegar_todos_los_mensajes_del_sistema() throws InterruptedException {
         TransporteEspia espia = new TransporteEspia(10, false);
-        AsyncMailSender diferido = new AsyncMailSender(espia);
+        AsyncMailSender diferido = new AsyncMailSender(espia, espia);
         User titular = cuenta();
 
         diferido.enviarVerificacionDeCorreo(titular, "t1");
@@ -215,7 +205,7 @@ class AsyncMailSenderTest {
     @Test
     void no_deberia_propagar_el_fallo_del_proveedor_a_quien_llamo() throws InterruptedException {
         TransporteEspia caido = new TransporteEspia(1, true);
-        AsyncMailSender diferido = new AsyncMailSender(caido);
+        AsyncMailSender diferido = new AsyncMailSender(caido, caido);
 
         assertThatCode(() -> diferido.enviarVerificacionDeCorreo(cuenta(), "token"))
                 .doesNotThrowAnyException();
@@ -232,7 +222,7 @@ class AsyncMailSenderTest {
     @Test
     void deberia_vaciar_la_cola_antes_de_apagarse() throws InterruptedException {
         TransporteEspia espia = new TransporteEspia(20, false);
-        AsyncMailSender diferido = new AsyncMailSender(espia);
+        AsyncMailSender diferido = new AsyncMailSender(espia, espia);
         User titular = cuenta();
 
         for (int i = 0; i < 20; i++) {

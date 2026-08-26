@@ -1,4 +1,4 @@
-package co.sendik.identity.client;
+package co.sendik.catalog.client;
 
 import co.sendik.identity.model.UserLocale;
 import org.jspecify.annotations.Nullable;
@@ -7,7 +7,7 @@ import org.jspecify.annotations.Nullable;
  * Los textos de los tres correos de decision sobre una publicacion. HU-007 criterio 26.
  *
  * <p>Estan aqui y no repartidos entre los dos adaptadores por lo mismo que
- * {@link VerificationMailTexts}: para que el de consola y el de Resend digan lo mismo, y
+ * {@code VerificationMailTexts}: para que el de consola y el de Resend digan lo mismo, y
  * lo que se lee al probar sea lo que recibe una persona.
  *
  * <p><strong>El motivo llega ya traducido y no como enumeracion.</strong> La lista de

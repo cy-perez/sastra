@@ -148,28 +148,4 @@ public interface MailSender {
      * enlace.
      */
     void enviarAvisoDeCorreoCambiado(User titular, Email anterior);
-
-    // --- Decisiones sobre una publicacion. HU-007 criterio 26 ----------------
-    //
-    // Los tres avisos que otra persona provoca sobre algo que el vendedor
-    // publico. No hay aviso de enviar a revision: lo hace el propio vendedor y lo
-    // ve en pantalla, igual que en la verificacion.
-    //
-    // **Los parametros son cadenas y no tipos de catalog, y eso es a proposito.**
-    // Este puerto es de identity: si su firma nombrara ListingRejectionReason o
-    // Listing, el contexto de identidad quedaria atado al modelo del catalogo y
-    // cualquier cambio alla romperia esto. El motivo llega ya traducido al idioma
-    // del destinatario desde MailListingNotifier, que es quien conoce la
-    // enumeracion y quien tiene delante a la persona.
-
-    /** Criterio 21 y 26: aprobada y ya visible. */
-    void enviarAvisoDePublicacionAprobada(User titular, String tituloDeLaPublicacion);
-
-    /** Criterio 22 y 26: rechazada, con el motivo y la nota que escribio el moderador. */
-    void enviarAvisoDePublicacionRechazada(
-            User titular, String tituloDeLaPublicacion, String motivo, @Nullable String nota);
-
-    /** Criterio 31: el moderador bajo algo que ya era visible (RN-024). */
-    void enviarAvisoDePublicacionRetirada(
-            User titular, String tituloDeLaPublicacion, String motivo, @Nullable String nota);
 }

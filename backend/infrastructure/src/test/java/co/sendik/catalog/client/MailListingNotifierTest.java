@@ -2,6 +2,8 @@ package co.sendik.catalog.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -24,8 +26,8 @@ import co.sendik.identity.model.User;
 import co.sendik.identity.model.UserId;
 import co.sendik.identity.model.UserLocale;
 import co.sendik.identity.model.UserStatus;
-import co.sendik.identity.port.out.MailSender;
 import co.sendik.identity.usecase.ReadProfileUseCase;
+import co.sendik.shared.port.out.MailTransport;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -52,7 +54,7 @@ class MailListingNotifierTest {
     private static final String TITULO = "Camisa de lino color hueso";
 
     private final ReadProfileUseCase perfiles = mock(ReadProfileUseCase.class);
-    private final MailSender correo = mock(MailSender.class);
+    private final MailTransport correo = mock(MailTransport.class);
     private final MailListingNotifier avisos = new MailListingNotifier(perfiles, correo);
 
     @Test
@@ -62,7 +64,7 @@ class MailListingNotifierTest {
 
         avisos.publicacionAprobada(publicacion(vendedor, ListingStatus.PUBLISHED, null));
 
-        verify(correo).enviarAvisoDePublicacionAprobada(cuenta, TITULO);
+        verify(correo).enviar(eq(cuenta.email().value()), any(), contains(TITULO));
     }
 
     @Test
@@ -74,7 +76,7 @@ class MailListingNotifierTest {
                 publicacion(vendedor, ListingStatus.REJECTED, ListingRejectionReason.PHOTOS_UNUSABLE),
                 "Se ven borrosas.");
 
-        assertThat(motivoEnviado()).contains("las fotos no se pueden usar");
+        assertThat(cuerpoDelRechazo()).contains("las fotos no se pueden usar");
     }
 
     /**
@@ -89,7 +91,7 @@ class MailListingNotifierTest {
         avisos.publicacionRechazada(
                 publicacion(vendedor, ListingStatus.REJECTED, ListingRejectionReason.SUSPECTED_COUNTERFEIT), null);
 
-        assertThat(motivoEnviado()).isEqualTo("we suspect it is not authentic");
+        assertThat(cuerpoDelRechazo()).contains("we suspect it is not authentic");
     }
 
     @Test
@@ -100,9 +102,13 @@ class MailListingNotifierTest {
         avisos.publicacionRetirada(
                 publicacion(vendedor, ListingStatus.ARCHIVED, ListingRejectionReason.PROHIBITED_ITEM), "No se admite.");
 
-        verify(correo)
-                .enviarAvisoDePublicacionRetirada(
-                        cuenta, TITULO, "el producto no se puede vender en Sendik", "No se admite.");
+        ArgumentCaptor<String> cuerpo = ArgumentCaptor.forClass(String.class);
+        verify(correo).enviar(eq(cuenta.email().value()), any(), cuerpo.capture());
+
+        assertThat(cuerpo.getValue())
+                .contains(TITULO)
+                .contains("el producto no se puede vender en Sendik")
+                .contains("No se admite.");
     }
 
     /**
@@ -120,7 +126,7 @@ class MailListingNotifierTest {
 
         avisos.publicacionRechazada(publicacion(vendedor, ListingStatus.REJECTED, motivo), null);
 
-        assertThat(motivoEnviado())
+        assertThat(cuerpoDelRechazo())
                 .doesNotContain(motivo.name())
                 .doesNotContain("_")
                 .isNotBlank();
@@ -143,10 +149,17 @@ class MailListingNotifierTest {
         assertThat(preguntado.getValue().value()).isEqualTo(identificador);
     }
 
-    private String motivoEnviado() {
-        ArgumentCaptor<String> motivo = ArgumentCaptor.forClass(String.class);
-        verify(correo).enviarAvisoDePublicacionRechazada(any(), any(), motivo.capture(), any());
-        return motivo.getValue();
+    /**
+     * El cuerpo del correo de rechazo.
+     *
+     * <p>Se mira el cuerpo entero y no un parametro suelto porque desde ADR-0023 el
+     * transporte recibe texto ya armado: lo que hay que comprobar es lo que de verdad le
+     * llega a la persona.
+     */
+    private String cuerpoDelRechazo() {
+        ArgumentCaptor<String> cuerpo = ArgumentCaptor.forClass(String.class);
+        verify(correo).enviar(any(), any(), cuerpo.capture());
+        return cuerpo.getValue();
     }
 
     private User cuentaDe(SellerId vendedor, UserLocale idioma) {

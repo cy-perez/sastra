@@ -25,9 +25,14 @@
     @for (casilla of casillas(); track casilla.posicion) {
       <li class="tomas__casilla" [class.tomas__casilla--canonica]="casilla.canonica">
         @if (casilla.toma; as toma) {
+          <!--
+            width y height no son el tamano del archivo —una toma mide 900x1200 como
+            minimo— sino la proporcion 3:4 que la directiva usa para reservar el hueco.
+            Sin ellos la rejilla salta de alto cuando cada imagen termina de cargar.
+          -->
           <img
             class="tomas__foto"
-            [src]="toma.url"
+            [ngSrc]="toma.url"
             [alt]="'listing.shots.imageAlt' | transloco: { grados: casilla.grados }"
             width="300"
             height="400"

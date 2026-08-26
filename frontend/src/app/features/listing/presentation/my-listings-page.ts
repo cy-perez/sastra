@@ -7,6 +7,7 @@ import {
   Injector,
   signal,
 } from '@angular/core';
+import { NgOptimizedImage } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
@@ -26,7 +27,7 @@ import { precioFormateado, tomasDelVendedor, type Listing } from '../domain/list
  */
 @Component({
   selector: 'sendik-my-listings-page',
-  imports: [RouterLink, TranslocoPipe],
+  imports: [NgOptimizedImage, RouterLink, TranslocoPipe],
   templateUrl: './my-listings-page.html',
   styleUrl: './my-listings-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

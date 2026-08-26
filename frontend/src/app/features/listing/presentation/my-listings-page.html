@@ -25,12 +25,18 @@
       @for (publicacion of publicaciones(); track publicacion.id) {
         <li class="mias__fila">
           @if (portadaDe(publicacion); as portada) {
+            <!--
+              La primera va con `priority`: esta sobre el pliegue y es la candidata a
+              ser el elemento mas grande que se pinta. Las demas se cargan cuando se
+              acercan, que es lo que hace la directiva por omision.
+            -->
             <img
               class="mias__portada"
-              [src]="portada"
+              [ngSrc]="portada"
               [alt]="publicacion.product.title ?? ('listing.mine.untitled' | transloco)"
               width="120"
               height="160"
+              [priority]="$index === 0"
             />
           } @else {
             <div class="mias__portada mias__portada--vacia" aria-hidden="true"></div>

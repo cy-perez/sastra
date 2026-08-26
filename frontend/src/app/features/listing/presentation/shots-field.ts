@@ -1,3 +1,4 @@
+import { NgOptimizedImage } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 
@@ -39,7 +40,7 @@ export interface Casilla {
  */
 @Component({
   selector: 'sendik-shots-field',
-  imports: [TranslocoPipe],
+  imports: [NgOptimizedImage, TranslocoPipe],
   templateUrl: './shots-field.html',
   styleUrl: './shots-field.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

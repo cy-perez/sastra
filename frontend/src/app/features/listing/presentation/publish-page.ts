@@ -1,13 +1,15 @@
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
   effect,
   inject,
+  Injector,
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { FormBuilder, FormControl, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 import { debounceTime } from 'rxjs';
@@ -64,6 +66,7 @@ export class PublishPage {
   private readonly ruta = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly formularios = inject(FormBuilder);
+  private readonly inyector = inject(Injector);
 
   /** El plazo que se promete, por configuración y nunca quemado en el texto. */
   protected readonly diasDeRevision = inject(APP_CONFIG).business.listingReviewDays;
@@ -87,8 +90,31 @@ export class PublishPage {
 
   protected readonly publicacion = computed<Listing | null>(() => this.consulta.data() ?? null);
 
-  /** La categoría elegida antes de que exista el borrador. */
-  protected readonly categoriaNueva = new FormControl<string>('', { nonNullable: true });
+  /**
+   * La categoría elegida antes de que exista el borrador.
+   *
+   * <p>Va en un {@code FormGroup} y no en un {@code FormControl} suelto porque el
+   * formulario usa {@code (ngSubmit)}, y esa salida la aporta {@code FormGroupDirective}.
+   * Con un control suelto, Angular compilaba {@code ngSubmit} como un evento del DOM que
+   * no dispara nadie: el botón, que es {@code type="submit"}, hacía un envío nativo y
+   * recargaba la página sin crear nada.
+   */
+  protected readonly formularioDeInicio = this.formularios.nonNullable.group({
+    categoryId: '',
+  });
+
+  /**
+   * La categoría elegida, como señal.
+   *
+   * <p>Leer {@code formularioDeInicio.value} dentro de un {@code computed} no sirve: con
+   * detección de cambios sin zonas, el estado de un {@code FormControl} no vuelve a
+   * evaluar el cálculo cuando cambia. Es la misma razón por la que {@code TextField}
+   * recibe el error ya decidido desde arriba.
+   */
+  private readonly categoriaDeInicio = toSignal(
+    this.formularioDeInicio.controls.categoryId.valueChanges,
+    { initialValue: '' },
+  );
 
   protected readonly formulario = this.formularios.nonNullable.group({
     categoryId: '',
@@ -151,6 +177,42 @@ export class PublishPage {
     return actual !== null && puedeIntentarEnviar(actual);
   });
 
+  /** No hay categoría elegida, o ya se está creando. */
+  protected readonly noSePuedeCrear = computed(
+    () => this.categoriaDeInicio().length === 0 || this.creacion.isPending(),
+  );
+
+  /**
+   * Lo que se anuncia a un lector de pantalla.
+   *
+   * <p>Sale por una región viva permanente y no por un {@code role="status"} que aparece
+   * con el texto ya dentro: esa forma no se anuncia de manera fiable, porque la región
+   * tiene que existir antes de que el contenido cambie.
+   */
+  protected readonly anuncio = computed<string | null>(() => {
+    if (this.consulta.isPending() || this.arbol.isPending()) {
+      return 'listing.a11y.loading';
+    }
+    if (this.subiendo() !== null) {
+      return 'listing.a11y.uploading';
+    }
+    if (this.guardado.isPending()) {
+      return 'listing.form.saving';
+    }
+    if (this.guardado.isSuccess()) {
+      return 'listing.a11y.saved';
+    }
+    // Nada que anunciar. La region se queda vacia pero sigue en el DOM, que es lo que
+    // la hace fiable.
+    return null;
+  });
+
+  /** Los datos de la clave anunciada. Vacío para las que no llevan ninguno. */
+  protected readonly anuncioDatos = computed<Record<string, number>>(() => {
+    const posicion = this.subiendo();
+    return posicion === null ? {} : ({ posicion: posicion + 1 } as Record<string, number>);
+  });
+
   /** Los campos que el servidor dijo que faltan, para marcarlos uno a uno. */
   protected readonly camposQueFaltan = computed<readonly string[]>(() =>
     ListingStore.camposQueFaltan(this.envio.error()),
@@ -178,7 +240,7 @@ export class PublishPage {
 
   /** Crea el borrador con la categoría elegida y lleva a su formulario. */
   protected async crear(): Promise<void> {
-    const categoryId = this.categoriaNueva.value;
+    const categoryId = this.formularioDeInicio.getRawValue().categoryId;
     if (categoryId.length === 0) {
       return;
     }
@@ -210,8 +272,29 @@ export class PublishPage {
   protected enviarARevision(): void {
     const actual = this.publicacion();
     if (actual !== null) {
-      this.envio.mutate(actual.id);
+      this.envio.mutate(actual.id, { onError: () => this.enfocarElPrimeroQueFalta() });
     }
+  }
+
+  /**
+   * Lleva el foco al primer campo que el servidor dijo que falta.
+   *
+   * <p>Sin esto, quien pulsa enviar y recibe el 422 se queda donde estaba: el mensaje
+   * aparece al final de la página y hay que ir a buscarlo. Se hace tras pintar, porque
+   * antes el atributo de invalidez todavía no está puesto.
+   */
+  private enfocarElPrimeroQueFalta(): void {
+    afterNextRender(
+      () => {
+        const primero = this.camposQueFaltan()[0];
+        if (primero === undefined) {
+          return;
+        }
+        const control = document.querySelector<HTMLElement>(`[aria-invalid="true"]`);
+        control?.focus();
+      },
+      { injector: this.inyector },
+    );
   }
 
   protected retirar(): void {
@@ -244,6 +327,16 @@ export class PublishPage {
 
   protected falta(campo: string): boolean {
     return this.camposQueFaltan().includes(campo);
+  }
+
+  /**
+   * Lo que describe a un campo: su ayuda y, si falta, el mensaje que lo nombra.
+   *
+   * <p>Sin la segunda parte, quien navega con lector se encuentra un campo marcado como
+   * inválido y la explicación al final de la página, sin nada que las una.
+   */
+  protected describe(ayuda: string, campo: string): string {
+    return this.falta(campo) ? `${ayuda} falta-${campo}` : ayuda;
   }
 
   /**

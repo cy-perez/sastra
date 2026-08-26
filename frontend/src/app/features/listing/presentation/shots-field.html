@@ -1,8 +1,15 @@
 <section class="tomas" aria-labelledby="tomas-titulo">
   <div class="tomas__encabezado">
     <h2 id="tomas-titulo" class="tipo-titulo-tarjeta">{{ 'listing.shots.title' | transloco }}</h2>
-    <p class="tipo-secundario tomas__cuenta" aria-live="polite">
+    <!--
+      El número visible va junto al encabezado, que le da contexto. El anuncio lleva el
+      sustantivo aparte: sin él, un lector de pantalla dice «3 de 8» y nada más.
+    -->
+    <p class="tipo-secundario tomas__cuenta" aria-hidden="true">
       {{ 'listing.shots.progress' | transloco: { puestas: puestas(), exigidas: exigidas() } }}
+    </p>
+    <p class="solo-lectores" aria-live="polite">
+      {{ 'listing.shots.progressAria' | transloco: { puestas: puestas(), exigidas: exigidas() } }}
     </p>
   </div>
 
@@ -27,7 +34,7 @@
           />
           <button
             type="button"
-            class="btn-secundario tomas__quitar"
+            class="btn btn-secundario tomas__quitar"
             [disabled]="deshabilitado()"
             (click)="quitar.emit(toma.id)"
           >
@@ -44,17 +51,17 @@
             <span class="tomas__anadir">{{ 'listing.shots.add' | transloco }}</span>
           </label>
           <input
-            class="tomas__archivo"
+            class="tomas__archivo solo-lectores"
             [id]="'toma-' + casilla.posicion"
             type="file"
             accept="image/jpeg,image/png"
-            [disabled]="deshabilitado() || subiendo() !== null"
+            [disabled]="deshabilitado() || subiendo() === casilla.posicion"
             (change)="alElegir($event, casilla.posicion)"
           />
         }
 
         @if (subiendo() === casilla.posicion) {
-          <p class="tomas__subiendo tipo-secundario" role="status">
+          <p class="tomas__subiendo tipo-secundario" aria-hidden="true">
             {{ 'listing.shots.uploading' | transloco }}
           </p>
         }

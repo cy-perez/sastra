@@ -889,7 +889,8 @@
       "shipping": "Envío",
       "optional": "Opcional",
       "saved": "Guardado",
-      "saving": "Guardando…"
+      "saving": "Guardando…",
+      "sizeSystem": "Sistema de talla"
     },
     "condition": {
       "NEW": "Nuevo",
@@ -953,7 +954,8 @@
       "uploading": "Subiendo…",
       "requirements": "Vertical, mínimo 900 × 1200 píxeles.",
       "imageAlt": "Toma del producto a {{grados}} grados",
-      "missingCanonical": "Te faltan {{cuantas}} de las tomas que no pueden faltar."
+      "missingCanonical": "Te faltan {{cuantas}} de las tomas que no pueden faltar.",
+      "progressAria": "{{puestas}} de {{exigidas}} fotos"
     },
     "tech": {
       "sealed": "Está sellado, sin abrir",
@@ -1024,6 +1026,14 @@
       "new": "Publicar",
       "attention": "Necesita atención",
       "untitled": "Publicación sin título"
+    },
+    "a11y": {
+      "loading": "Cargando la publicación",
+      "uploading": "Subiendo la foto {{posicion}}",
+      "saved": "Cambios guardados"
+    },
+    "edit": {
+      "title": "Tu publicación"
     }
   }
 }

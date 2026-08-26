@@ -889,7 +889,8 @@
       "shipping": "Shipping",
       "optional": "Optional",
       "saved": "Saved",
-      "saving": "Saving…"
+      "saving": "Saving…",
+      "sizeSystem": "Size system"
     },
     "condition": {
       "NEW": "New",
@@ -953,7 +954,8 @@
       "uploading": "Uploading…",
       "requirements": "Portrait, at least 900 × 1200 pixels.",
       "imageAlt": "Product shot at {{grados}} degrees",
-      "missingCanonical": "You are missing {{cuantas}} of the required shots."
+      "missingCanonical": "You are missing {{cuantas}} of the required shots.",
+      "progressAria": "{{puestas}} of {{exigidas}} photos"
     },
     "tech": {
       "sealed": "It is sealed, unopened",
@@ -1024,6 +1026,14 @@
       "new": "List a product",
       "attention": "Needs attention",
       "untitled": "Untitled listing"
+    },
+    "a11y": {
+      "loading": "Loading the listing",
+      "uploading": "Uploading photo {{posicion}}",
+      "saved": "Changes saved"
+    },
+    "edit": {
+      "title": "Your listing"
     }
   }
 }

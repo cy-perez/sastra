@@ -1,4 +1,12 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  afterNextRender,
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  Injector,
+  signal,
+} from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
@@ -25,6 +33,7 @@ import { precioFormateado, tomasDelVendedor, type Listing } from '../domain/list
 })
 export class MyListingsPage {
   private readonly store = inject(ListingStore);
+  private readonly inyector = inject(Injector);
 
   protected readonly consulta = this.store.mine;
   protected readonly pausa = this.store.pause;
@@ -52,24 +61,45 @@ export class MyListingsPage {
     return tomasDelVendedor(publicacion)[0]?.url ?? null;
   }
 
-  protected pausar(id: string): void {
-    this.pausa.mutate(id);
+  /** Pausar y reanudar solo tienen sentido sobre algo que se ve o se veia. */
+  protected admitePausa(publicacion: Listing): boolean {
+    return publicacion.status === 'PUBLISHED' || publicacion.status === 'PAUSED';
   }
 
-  protected reanudar(id: string): void {
-    this.reanudacion.mutate(id);
+  protected alternarPausa(publicacion: Listing): void {
+    if (publicacion.status === 'PAUSED') {
+      this.reanudacion.mutate(publicacion.id);
+    } else {
+      this.pausa.mutate(publicacion.id);
+    }
   }
 
+  /**
+   * Abre la confirmación y lleva el foco a ella.
+   *
+   * <p>Es lo más parecido a un diálogo de toda la historia: el botón que la abre se
+   * destruye al abrirla, así que sin mover el foco se quedaría en el body y quien navega
+   * con teclado no sabría que ha pasado nada.
+   */
   protected pedirConfirmacion(id: string): void {
     this.porArchivar.set(id);
+    this.enfocar('.mias__confirmar');
   }
 
+  /** Al cancelar, el foco vuelve a donde estaba: al botón de archivar de esa fila. */
   protected cancelarArchivo(): void {
     this.porArchivar.set(null);
+    this.enfocar('.mias__archivar');
   }
 
   protected archivar(id: string): void {
     this.archivo.mutate(id, { onSettled: () => this.porArchivar.set(null) });
+  }
+
+  private enfocar(selector: string): void {
+    afterNextRender(() => document.querySelector<HTMLElement>(selector)?.focus(), {
+      injector: this.inyector,
+    });
   }
 
   protected claveDeError(fallo: unknown): string {

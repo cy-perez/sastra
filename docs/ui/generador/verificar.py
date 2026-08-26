@@ -119,6 +119,10 @@ PARES = [
     ("Mensaje de exito sobre tarjeta",        "--color-exito",          "--color-superficie",     AA_TEXTO),
     ("Mensaje de aviso sobre tarjeta",        "--color-aviso",          "--color-superficie",     AA_TEXTO),
     ("Mensaje de error sobre tarjeta",        "--color-error",          "--color-superficie",     AA_TEXTO),
+    # Y los mismos sobre el fondo de pagina, que es donde caen en las pantallas de
+    # publicacion: alli el mensaje no vive dentro de una tarjeta.
+    ("Mensaje de aviso sobre el fondo",       "--color-aviso",          "--color-fondo",          AA_TEXTO),
+    ("Mensaje de error sobre el fondo",       "--color-error",          "--color-fondo",          AA_TEXTO),
     ("Anillo de foco sobre el fondo",         "--color-foco",           "--color-fondo",          AA_GRANDE),
     ("Anillo de foco sobre tarjeta",          "--color-foco",           "--color-superficie",     AA_GRANDE),
     ("Borde de campo de formulario",          "--color-borde-control",  "--color-superficie",     AA_GRANDE),

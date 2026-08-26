@@ -1,17 +1,48 @@
-@if (id() === null) {
-  <!-- Paso previo: sin borrador no hay dónde subir una toma. -->
-  <section class="publicar">
-    <h1 class="tipo-h1">{{ 'listing.intro.title' | transloco }}</h1>
+<!--
+  El encabezado vive fuera del @if a propósito: dentro, las ramas de carga y de error se
+  pintaban sin h1 y sin región con nombre, y la de carga es justo la que renderiza el
+  servidor.
+-->
+<section class="publicar">
+  <header class="publicar__cabecera">
+    <h1 class="tipo-h1">
+      {{ (id() === null ? 'listing.intro.title' : 'listing.edit.title') | transloco }}
+    </h1>
+    @if (publicacion(); as actual) {
+      <p class="publicar__estado tipo-secundario">
+        {{ 'listing.status.' + actual.status | transloco }}
+      </p>
+      <p class="tipo-cuerpo">{{ 'listing.statusHelp.' + actual.status | transloco }}</p>
+    }
+  </header>
+
+  <!--
+    Región viva permanente. Un role="status" que se inserta en el DOM ya con su texto
+    dentro no se anuncia de forma fiable: la región tiene que existir antes de que el
+    contenido cambie.
+  -->
+  <p class="solo-lectores" role="status">
+    @if (anuncio(); as clave) {
+      {{ clave | transloco: anuncioDatos() }}
+    }
+  </p>
+
+  @if (id() === null) {
     <p class="tipo-cuerpo">{{ 'listing.intro.body' | transloco }}</p>
 
     @if (arbol.isPending()) {
-      <p class="tipo-secundario" role="status">{{ 'listing.loading' | transloco }}</p>
+      <p class="esqueleto publicar__esqueleto" aria-hidden="true"></p>
     } @else if (arbol.isError()) {
       <p class="tipo-cuerpo publicar__error" role="alert">
         {{ claveDeError(arbol.error()) | transloco }}
       </p>
     } @else {
-      <form class="publicar__inicio" (ngSubmit)="crear()">
+      <form
+        class="publicar__inicio"
+        [formGroup]="formularioDeInicio"
+        (ngSubmit)="crear()"
+        novalidate
+      >
         <label class="publicar__etiqueta" for="categoria-nueva">
           {{ 'listing.form.category' | transloco }}
         </label>
@@ -22,7 +53,7 @@
           id="categoria-nueva"
           class="publicar__control"
           aria-describedby="categoria-nueva-ayuda"
-          [formControl]="categoriaNueva"
+          formControlName="categoryId"
         >
           <option value="">{{ 'listing.form.choose' | transloco }}</option>
           @for (familia of arbol.data(); track familia.id) {
@@ -34,11 +65,7 @@
           }
         </select>
 
-        <button
-          type="submit"
-          class="btn-primario"
-          [disabled]="categoriaNueva.value.length === 0 || creacion.isPending()"
-        >
+        <button type="submit" class="btn btn-primario" [disabled]="noSePuedeCrear()">
           {{ 'listing.intro.start' | transloco }}
         </button>
 
@@ -49,23 +76,17 @@
         }
       </form>
     }
-  </section>
-} @else if (consulta.isPending()) {
-  <p class="tipo-secundario" role="status">{{ 'listing.loading' | transloco }}</p>
-} @else if (consulta.isError()) {
-  <p class="tipo-cuerpo publicar__error" role="alert">
-    {{ claveDeError(consulta.error()) | transloco }}
-  </p>
-} @else if (publicacion(); as actual) {
-  <section class="publicar">
-    <header class="publicar__cabecera">
-      <h1 class="tipo-h1">{{ 'listing.intro.title' | transloco }}</h1>
-      <p class="publicar__estado tipo-secundario">
-        {{ 'listing.status.' + actual.status | transloco }}
-      </p>
-      <p class="tipo-cuerpo">{{ 'listing.statusHelp.' + actual.status | transloco }}</p>
-    </header>
-
+  } @else if (consulta.isPending()) {
+    <div class="publicar__cargando" aria-hidden="true">
+      <p class="esqueleto publicar__esqueleto"></p>
+      <p class="esqueleto publicar__esqueleto"></p>
+      <p class="esqueleto publicar__esqueleto publicar__esqueleto--alto"></p>
+    </div>
+  } @else if (consulta.isError()) {
+    <p class="tipo-cuerpo publicar__error" role="alert">
+      {{ claveDeError(consulta.error()) | transloco }}
+    </p>
+  } @else if (publicacion(); as actual) {
     @if (actual.status === 'REJECTED') {
       <section class="publicar__rechazo" aria-labelledby="rechazo-titulo">
         <h2 id="rechazo-titulo" class="tipo-titulo-tarjeta">
@@ -85,17 +106,32 @@
         <p class="tipo-secundario">{{ 'listing.rejected.retryHelp' | transloco }}</p>
         <button
           type="button"
-          class="btn-primario"
+          class="btn btn-primario"
           [disabled]="retomada.isPending()"
           (click)="retomar()"
         >
           {{ 'listing.rejected.retry' | transloco }}
         </button>
+        @if (retomada.isError()) {
+          <p class="publicar__error tipo-cuerpo" role="alert">
+            {{ claveDeError(retomada.error()) | transloco }}
+          </p>
+        }
       </section>
     }
 
     @if (volveraARevision()) {
       <p class="publicar__aviso tipo-cuerpo">{{ 'listing.live.backToReview' | transloco }}</p>
+    }
+
+    <!--
+      El árbol también hace falta aquí: sin él, el desplegable de categoría sale sin una
+      sola opción y la sección «Cómo es» se colapsa entera sin decir por qué.
+    -->
+    @if (arbol.isError()) {
+      <p class="tipo-cuerpo publicar__error" role="alert">
+        {{ claveDeError(arbol.error()) | transloco }}
+      </p>
     }
 
     <form class="publicar__formulario" [formGroup]="formulario">
@@ -115,9 +151,9 @@
           }
         </select>
 
-        <label class="publicar__etiqueta" for="titulo">{{
-          'listing.form.title' | transloco
-        }}</label>
+        <label class="publicar__etiqueta" for="titulo">
+          {{ 'listing.form.title' | transloco }}
+        </label>
         <p id="titulo-ayuda" class="tipo-secundario">{{ 'listing.form.titleHint' | transloco }}</p>
         <input
           id="titulo"
@@ -125,7 +161,7 @@
           type="text"
           maxlength="120"
           formControlName="title"
-          aria-describedby="titulo-ayuda"
+          [attr.aria-describedby]="describe('titulo-ayuda', 'title')"
           [attr.aria-invalid]="falta('title') ? 'true' : null"
         />
 
@@ -141,7 +177,7 @@
           rows="4"
           maxlength="4000"
           formControlName="description"
-          aria-describedby="descripcion-ayuda"
+          [attr.aria-describedby]="describe('descripcion-ayuda', 'description')"
           [attr.aria-invalid]="falta('description') ? 'true' : null"
         ></textarea>
 
@@ -174,23 +210,32 @@
           }
         </fieldset>
 
-        <label class="publicar__etiqueta" for="sistema-talla">
-          {{ 'listing.form.size' | transloco }}
-        </label>
-        <div class="publicar__pareja">
-          <select id="sistema-talla" class="publicar__control" formControlName="sizeSystem">
-            <option value="">{{ 'listing.form.choose' | transloco }}</option>
-            @for (sistema of sistemasDeTalla(); track sistema) {
-              <option [value]="sistema">{{ 'listing.sizeSystem.' + sistema | transloco }}</option>
-            }
-          </select>
-          <input
-            class="publicar__control"
-            type="text"
-            formControlName="sizeValue"
-            [attr.aria-label]="'listing.form.sizeValue' | transloco"
-          />
-        </div>
+        <!--
+          La talla son dos controles y una sola etiqueta visible. Van en su propio
+          fieldset para que el nombre del grupo lo lleve el legend: con un solo label
+          apuntando al select, el segundo control se quedaba con un aria-label suelto,
+          que es ARIA donde había HTML nativo.
+        -->
+        <fieldset class="publicar__opciones">
+          <legend class="publicar__etiqueta">{{ 'listing.form.size' | transloco }}</legend>
+          <div class="publicar__pareja">
+            <label class="publicar__medida">
+              {{ 'listing.form.sizeSystem' | transloco }}
+              <select class="publicar__control" formControlName="sizeSystem">
+                <option value="">{{ 'listing.form.choose' | transloco }}</option>
+                @for (sistema of sistemasDeTalla(); track sistema) {
+                  <option [value]="sistema">
+                    {{ 'listing.sizeSystem.' + sistema | transloco }}
+                  </option>
+                }
+              </select>
+            </label>
+            <label class="publicar__medida">
+              {{ 'listing.form.sizeValue' | transloco }}
+              <input class="publicar__control" type="text" formControlName="sizeValue" />
+            </label>
+          </div>
+        </fieldset>
 
         @if (medidasPedidas().length > 0) {
           <fieldset class="publicar__opciones">
@@ -246,9 +291,9 @@
       <fieldset class="publicar__bloque" [disabled]="!editable()">
         <legend class="tipo-titulo-tarjeta">{{ 'listing.sections.price' | transloco }}</legend>
 
-        <label class="publicar__etiqueta" for="precio">{{
-          'listing.form.price' | transloco
-        }}</label>
+        <label class="publicar__etiqueta" for="precio">
+          {{ 'listing.form.price' | transloco }}
+        </label>
         <p id="precio-ayuda" class="tipo-secundario">{{ 'listing.form.priceHint' | transloco }}</p>
         <input
           id="precio"
@@ -258,38 +303,45 @@
           min="1"
           step="1"
           formControlName="price"
-          aria-describedby="precio-ayuda"
+          [attr.aria-describedby]="describe('precio-ayuda', 'price')"
           [attr.aria-invalid]="falta('price') ? 'true' : null"
         />
 
-        <label class="publicar__etiqueta" for="peso">{{
-          'listing.shipping.weight' | transloco
-        }}</label>
-        <p id="envio-ayuda" class="tipo-secundario">{{ 'listing.shipping.help' | transloco }}</p>
-        <input
-          id="peso"
-          class="publicar__control"
-          type="number"
-          min="1"
-          formControlName="weightGrams"
-          aria-describedby="envio-ayuda"
-          [attr.aria-invalid]="falta('shipping') ? 'true' : null"
-        />
+        <!--
+          El peso y las tres medidas son un grupo: el envío se guarda entero o no se
+          guarda, así que su nombre lo lleva el legend y no el label del peso.
+        -->
+        <fieldset class="publicar__opciones">
+          <legend class="publicar__etiqueta">{{ 'listing.form.shipping' | transloco }}</legend>
+          <p id="envio-ayuda" class="tipo-secundario">{{ 'listing.shipping.help' | transloco }}</p>
 
-        <div class="publicar__pareja">
           <label class="publicar__medida">
-            {{ 'listing.shipping.length' | transloco }}
-            <input class="publicar__control" type="number" min="1" formControlName="lengthCm" />
+            {{ 'listing.shipping.weight' | transloco }}
+            <input
+              class="publicar__control"
+              type="number"
+              min="1"
+              formControlName="weightGrams"
+              [attr.aria-describedby]="describe('envio-ayuda', 'shipping')"
+              [attr.aria-invalid]="falta('shipping') ? 'true' : null"
+            />
           </label>
-          <label class="publicar__medida">
-            {{ 'listing.shipping.width' | transloco }}
-            <input class="publicar__control" type="number" min="1" formControlName="widthCm" />
-          </label>
-          <label class="publicar__medida">
-            {{ 'listing.shipping.height' | transloco }}
-            <input class="publicar__control" type="number" min="1" formControlName="heightCm" />
-          </label>
-        </div>
+
+          <div class="publicar__pareja">
+            <label class="publicar__medida">
+              {{ 'listing.shipping.length' | transloco }}
+              <input class="publicar__control" type="number" min="1" formControlName="lengthCm" />
+            </label>
+            <label class="publicar__medida">
+              {{ 'listing.shipping.width' | transloco }}
+              <input class="publicar__control" type="number" min="1" formControlName="widthCm" />
+            </label>
+            <label class="publicar__medida">
+              {{ 'listing.shipping.height' | transloco }}
+              <input class="publicar__control" type="number" min="1" formControlName="heightCm" />
+            </label>
+          </div>
+        </fieldset>
       </fieldset>
     </form>
 
@@ -306,15 +358,30 @@
         {{ claveDeError(subida.error()) | transloco }}
       </p>
     }
+    @if (borradoDeImagen.isError()) {
+      <p class="publicar__error tipo-cuerpo" role="alert">
+        {{ claveDeError(borradoDeImagen.error()) | transloco }}
+      </p>
+    }
 
     <footer class="publicar__acciones">
-      <p class="tipo-secundario" aria-live="polite">
-        @if (guardado.isPending()) {
-          {{ 'listing.form.saving' | transloco }}
-        } @else if (guardado.isSuccess()) {
-          {{ 'listing.form.saved' | transloco }}
-        }
-      </p>
+      <!--
+        El guardado fallaba en silencio: la pantalla promete que no se pierde nada, así
+        que el error tiene que verse.
+      -->
+      @if (guardado.isError()) {
+        <p class="publicar__error tipo-cuerpo" role="alert">
+          {{ claveDeError(guardado.error()) | transloco }}
+        </p>
+      } @else {
+        <p class="tipo-secundario" aria-hidden="true">
+          @if (guardado.isPending()) {
+            {{ 'listing.form.saving' | transloco }}
+          } @else if (guardado.isSuccess()) {
+            {{ 'listing.form.saved' | transloco }}
+          }
+        </p>
+      }
 
       @if (actual.status === 'DRAFT') {
         <p class="tipo-secundario">
@@ -322,7 +389,7 @@
         </p>
         <button
           type="button"
-          class="btn-primario"
+          class="btn btn-primario"
           [disabled]="!puedeEnviar() || envio.isPending()"
           (click)="enviarARevision()"
         >
@@ -332,12 +399,17 @@
         <p class="tipo-secundario">{{ 'listing.submit.withdrawHelp' | transloco }}</p>
         <button
           type="button"
-          class="btn-secundario"
+          class="btn btn-secundario"
           [disabled]="retirada.isPending()"
           (click)="retirar()"
         >
           {{ 'listing.submit.withdraw' | transloco }}
         </button>
+        @if (retirada.isError()) {
+          <p class="publicar__error tipo-cuerpo" role="alert">
+            {{ claveDeError(retirada.error()) | transloco }}
+          </p>
+        }
       }
 
       @if (envio.isError()) {
@@ -346,12 +418,21 @@
           @if (camposQueFaltan().length > 0) {
             <ul class="publicar__faltantes">
               @for (campo of camposQueFaltan(); track campo) {
-                <li class="tipo-secundario">{{ 'listing.form.' + campo | transloco }}</li>
+                <li class="tipo-secundario" [id]="'falta-' + campo">
+                  {{ 'listing.form.' + campo | transloco }}
+                </li>
               }
             </ul>
           }
         </div>
       }
     </footer>
-  </section>
-}
+  } @else {
+    <!--
+      La consulta resolvió sin datos. No debería pasar —el caso de uso responde 404 y eso
+      entra por la rama de error—, pero sin este @else la página se quedaba completamente
+      en blanco, que es la peor forma de fallar.
+    -->
+    <p class="tipo-cuerpo publicar__error" role="alert">{{ 'errors.fallback' | transloco }}</p>
+  }
+</section>

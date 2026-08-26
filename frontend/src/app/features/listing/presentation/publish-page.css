@@ -18,7 +18,7 @@
 }
 
 .publicar__estado {
-  font-weight: 600;
+  font-weight: var(--peso-fuerte);
 }
 
 .publicar__formulario,
@@ -48,18 +48,18 @@
 }
 
 .publicar__etiqueta {
-  font-weight: 500;
+  font-weight: var(--peso-medio);
 }
 
 .publicar__control {
   width: 100%;
   max-width: var(--medida-formulario);
-  /* 44px de destino tactil como minimo, sin excepcion. Es el mismo alto que usan
-     los controles del sistema; sale de la escala de espaciado y no de un pixel
-     suelto. */
-  min-height: var(--esp-48);
+  /* El token que el sistema creo para esto, y no una medida de la escala de
+     espaciado que da la casualidad de cumplirlo. */
+  min-height: var(--destino-tactil);
   padding: var(--esp-8) var(--esp-12);
-  border: 1px solid var(--color-borde);
+  /* El borde de un control, no el de un separador: --color-borde da 1.27:1. */
+  border: 1px solid var(--color-borde-control);
   border-radius: var(--radio-sm);
   background-color: var(--color-superficie);
   color: var(--color-texto);
@@ -88,7 +88,7 @@
   display: flex;
   align-items: center;
   gap: var(--esp-8);
-  min-height: var(--esp-48);
+  min-height: var(--destino-tactil);
 }
 
 .publicar__medida {
@@ -128,4 +128,20 @@
 .publicar__faltantes {
   margin: var(--esp-4) 0 0;
   padding-left: var(--esp-16);
+}
+
+/* El esqueleto de carga. marca.css pone el brillo; el tamano, cada pantalla. */
+.publicar__cargando {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-12);
+}
+
+.publicar__esqueleto {
+  height: var(--esp-24);
+  margin: 0;
+}
+
+.publicar__esqueleto--alto {
+  height: var(--esp-96);
 }

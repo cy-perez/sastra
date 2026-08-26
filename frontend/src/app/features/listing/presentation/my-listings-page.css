@@ -48,14 +48,16 @@
 
 .mias__portada--vacia {
   background-color: var(--color-superficie);
-  border: 1px dashed var(--color-borde);
+  border: 1px dashed var(--color-borde-control);
 }
 
 .mias__datos {
   display: flex;
   flex-direction: column;
   gap: var(--esp-4);
-  flex: 1 1 12rem;
+  /* Que la columna de datos ceda antes que la portada al estrecharse. */
+  flex: 1 1 var(--medida-formulario);
+  min-width: 0;
 }
 
 .mias__acciones {
@@ -67,7 +69,7 @@
 }
 
 .mias__estado {
-  font-weight: 600;
+  font-weight: var(--peso-fuerte);
 }
 
 .mias__atencion {
@@ -84,11 +86,29 @@
   gap: var(--esp-12);
   align-items: flex-start;
   padding: var(--esp-24);
-  border: 1px dashed var(--color-borde);
+  border: 1px dashed var(--color-borde-control);
   border-radius: var(--radio-md);
 }
 
 .mias__confirmacion {
   margin: 0;
   color: var(--color-error);
+}
+
+/* marca.css define el aspecto del boton, no su tamano: el borde de un secundario lo
+   pone su color de texto. */
+.mias__acciones .btn-secundario {
+  border-color: currentColor;
+}
+
+/* El esqueleto de carga. marca.css pone el brillo; el tamano, cada pantalla. */
+.mias__cargando {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-12);
+}
+
+.mias__esqueleto {
+  height: var(--esp-96);
+  margin: 0;
 }

@@ -292,7 +292,13 @@ class ProductoYCategoriaTest {
         void deberia_admitir_las_dos_escalas_que_los_jeans_necesitan() {
             assertThat(SizeSystem.WAIST_INCHES.admite("32")).isTrue();
             assertThat(SizeSystem.NUMERIC_CO.admite("10")).isTrue();
-            assertThat(SizeSystem.WAIST_INCHES.admite("33")).isFalse();
+            // El 33 se vende: es talla corriente de jean de hombre en Colombia. Estuvo
+            // fuera mientras la lista iba de dos en dos.
+            assertThat(SizeSystem.WAIST_INCHES.admite("33")).isTrue();
+            // Los extremos si quedan fuera: por debajo de 34 el calzado ya es infantil.
+            assertThat(SizeSystem.FOOTWEAR_CO.admite("33")).isFalse();
+            assertThat(SizeSystem.FOOTWEAR_CO.admite("35")).isTrue();
+            assertThat(SizeSystem.NUMERIC_CO.admite("22")).isTrue();
         }
 
         @Test

@@ -315,15 +315,17 @@ Qué grupo declara cada categoría está en `docs/producto/categorias.md`.
 | Código | Visible | Valores |
 |---|---|---|
 | `ALPHA` | Talla por letra | XS, S, M, L, XL, XXL |
-| `NUMERIC_CO` | Talla numérica | 4, 6, 8, 10, 12, 14, 16, 18, 20 |
-| `WAIST_INCHES` | Talla de cintura en pulgadas | 26 a 46, de dos en dos |
-| `FOOTWEAR_CO` | Talla de calzado | 33 a 46 |
+| `NUMERIC_CO` | Talla numérica | 4 a 22, de dos en dos |
+| `WAIST_INCHES` | Talla de cintura en pulgadas | 26 a 44, de uno en uno |
+| `FOOTWEAR_CO` | Talla de calzado | 34 a 45 |
 | `ONE_SIZE` | Talla única | Un solo valor |
 
-**Estos valores hay que confirmarlos con alguien que venda ropa en Colombia.**
-Son la lista mínima defendible para poder escribir criterios verificables, no una
-decisión de producto ya tomada. Corregirlos no cambia el esquema: `size_system` y
-`size_value` lo soportan igual.
+**Confirmados el 26 de agosto de 2026** contra las guías de talla de tiendas que
+venden en Colombia. Tres cambiaron respecto a lo que esta historia había anotado
+como provisional, y el motivo de cada uno está en
+`docs/producto/categorias.md`, sección «Los valores de cada sistema de talla». El
+que más importa: `WAIST_INCHES` pasa a ir **de uno en uno**, porque el 33 es una
+talla corriente de jean de hombre y con el paso de dos no se podía publicar.
 
 **Una categoría admite más de un sistema, no uno solo.** Sin eje de género, unos
 jeans se venden en talla numérica y en pulgadas de cintura, así que la categoría
@@ -545,14 +547,20 @@ esta historia, ya aplicadas: `categories.size_systems` es plural, y el grupo
 
 **No bloquea, pero conviene decidirlo antes de encender la bandera:**
 
-- **Los valores de talla** de la tabla de referencia, que hay que confirmar con
-  alguien que venda ropa en Colombia. Corregirlos no toca el esquema.
-- **Los nombres visibles de las veinticuatro categorías en inglés**, que van en la
-  migración que las siembra.
-- **`LISTING_REVIEW_DAYS`**, o la decisión de no prometer plazo. Mientras no se
-  decida, la interfaz no promete nada.
-- **Si hay límite de publicaciones activas por vendedor**, ya anotado como
-  pendiente en `textos-web.md`. Sin decisión no hay límite, y eso también es una
-  decisión.
-- **Plazo máximo de despacho del vendedor**, anotado en `textos-web.md`. No toca
-  esta historia; sí la Fase 3.
+- ~~**Los valores de talla** de la tabla de referencia.~~ **Confirmados el 26 de
+  agosto de 2026** contra las guías de talla del mercado colombiano. Tres
+  cambiaron; ver arriba.
+- ~~**Los nombres visibles de las categorías en inglés.**~~ **Ya estaban** en la
+  migración que las siembra, para las treinta y una. Lo que faltaba era la
+  ortografía del español, corregida en `V11`.
+- ~~**`LISTING_REVIEW_DAYS`**, o la decisión de no prometer plazo.~~ **Decidido el
+  26 de agosto de 2026: dos días hábiles.** Va por configuración porque la pantalla
+  lo dice en voz alta y cambiarlo no puede exigir un despliegue. Nadie lo hace
+  cumplir: una publicación que tarda más no cambia de estado sola.
+- ~~**Si hay límite de publicaciones activas por vendedor.**~~ **Decidido el 26 de
+  agosto de 2026: no hay límite, para empezar.** No es una regla que se implemente
+  sino una que no existe: no hay contador, no hay validación y ningún texto lo
+  insinúa. El día que se ponga uno, entra por una regla de negocio y por su
+  historia, no por una constante.
+- **Plazo máximo de despacho del vendedor**, anotado en `textos-web.md`. Sigue sin
+  decidir. No toca esta historia; sí la Fase 3.

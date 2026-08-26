@@ -69,6 +69,18 @@ export interface BusinessFigures {
    * cumplir: una solicitud que tarda mas no cambia de estado sola.
    */
   readonly verificationReviewDays: number;
+  /**
+   * Dias habiles que se promete tardar en revisar una publicacion (HU-007).
+   *
+   * Decidido el 26 de agosto de 2026: dos. Hasta entonces la interfaz de publicar no
+   * prometia nada, porque no habia plazo que prometer.
+   *
+   * Es una cifra aparte de la de la verificacion y no la misma reutilizada: son dos
+   * promesas distintas, a dos personas y en dos momentos distintos. Revisar una cedula y
+   * revisar unas fotos no tienen por que tardar lo mismo, y atarlas obligaria a mover las
+   * dos para cambiar una.
+   */
+  readonly listingReviewDays: number;
 }
 
 export interface AppConfig {

@@ -384,11 +384,20 @@ para `dev` y para `prod`.
 | `SUPPORT_EMAIL` | `hola@sendik.co` | no, el pie lo omite si falta |
 | `COMMISSION_RATE` | `0.05` | no, RN-026 por omisión |
 | `CLAIM_WINDOW_DAYS` | `3` | no, RN-051 por omisión |
+| `LISTING_REVIEW_DAYS` | `2` | no, 2 por omisión |
 
 Las dos últimas son las cifras que el sitio informativo **anuncia**: la comisión
 en el recorrido del vendedor y la ventana de reclamo en el del comprador
 (HU-005). Viajan al navegador porque las páginas las dicen en voz alta, y no son
 secretas: cualquiera que entre las lee.
+
+**`LISTING_REVIEW_DAYS` es del frontend y no del backend, a diferencia de
+`VERIFICATION_REVIEW_DAYS`, que está en los dos.** El motivo es concreto: el plazo
+de la verificación lo dice la pantalla **y** el correo de «recibimos tu solicitud»,
+así que el backend también lo necesita; el de la publicación hoy solo lo dice la
+pantalla, porque no se manda ningún correo al enviar a revisión. Declararlo también
+en el backend sería configuración que nadie lee. El día que exista ese correo, entra
+allí con el mismo nombre.
 
 Se validan al leerlas, no al pintarlas. `COMMISSION_RATE` es una **fracción**
 mayor que `0` y hasta `0.5`: `0.05` es el 5%, quien declare `5` estaría

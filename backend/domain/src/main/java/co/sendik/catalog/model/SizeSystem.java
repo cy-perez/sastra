@@ -21,11 +21,31 @@ import java.util.stream.IntStream;
 public enum SizeSystem {
     ALPHA(List.of("XS", "S", "M", "L", "XL", "XXL")),
 
-    NUMERIC_CO(numeros(4, 20, 2)),
+    /**
+     * Talla numerica colombiana. Va hasta 22 y no hasta 20: las guias de talla del
+     * mercado colombiano llegan a 18 en su rango corriente y las tallas grandes siguen
+     * en 20 y 22, que se venden y hoy no se podrian publicar.
+     */
+    NUMERIC_CO(numeros(4, 22, 2)),
 
-    WAIST_INCHES(numeros(26, 46, 2)),
+    /**
+     * Cintura en pulgadas, <strong>de uno en uno</strong>.
+     *
+     * <p>Iba de dos en dos y dejaba fuera las impares. El 33 existe y se vende: es una
+     * talla corriente de jean de hombre en Colombia, y con el paso de dos quien la tuviera
+     * no podia publicarla ni con la talla de al lado, porque la lista es cerrada.
+     */
+    WAIST_INCHES(numeros(26, 44, 1)),
 
-    FOOTWEAR_CO(numeros(33, 46, 1)),
+    /**
+     * Calzado, en la numeracion colombiana, que coincide con la europea.
+     *
+     * <p>El rango corriente del mercado es 35 a 40 en calzado de mujer y 38 a 43 en el de
+     * hombre. Este va de 34 a 45 <strong>a proposito</strong>: el catalogo no tiene eje de
+     * genero, asi que una sola lista cubre los dos, y los extremos existen aunque se
+     * vendan poco. Por debajo de 34 ya es calzado infantil, que no esta en el arbol.
+     */
+    FOOTWEAR_CO(numeros(34, 45, 1)),
 
     /** Un dispositivo no tiene talla, y un bolso tampoco. */
     ONE_SIZE(List.of("U"));

@@ -35,7 +35,12 @@ const testConfig: AppConfig = {
   // inventadas: una prueba que pase con el 8% no demuestra que la pagina diga lo
   // que el negocio cobra. La que compruebe que la cifra sale de configuracion y
   // no de la plantilla sobrescribe APP_CONFIG en su propio TestBed.
-  business: { commissionRate: 0.05, claimWindowDays: 3, verificationReviewDays: 2 },
+  business: {
+    commissionRate: 0.05,
+    claimWindowDays: 3,
+    verificationReviewDays: 2,
+    listingReviewDays: 2,
+  },
 };
 
 const providers: (Provider | EnvironmentProviders)[] = [

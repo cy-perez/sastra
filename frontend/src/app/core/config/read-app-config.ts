@@ -90,6 +90,9 @@ const REVISION_POR_OMISION = 2;
 /** Un mes laboral: mas alla de eso ya no es una promesa, es un aviso. */
 const REVISION_MAXIMA = 20;
 
+/** Decidido el 26 de agosto de 2026: dos dias habiles para revisar una publicacion. */
+const REVISION_DE_PUBLICACION = 2;
+
 function leerCifrasDeNegocio(env: EnvironmentVariables): BusinessFigures {
   const commissionRate = numeroOpcional(env, 'COMMISSION_RATE', COMISION_POR_OMISION);
   const claimWindowDays = numeroOpcional(env, 'CLAIM_WINDOW_DAYS', VENTANA_DE_RECLAMO_POR_OMISION);
@@ -98,6 +101,7 @@ function leerCifrasDeNegocio(env: EnvironmentVariables): BusinessFigures {
     'VERIFICATION_REVIEW_DAYS',
     REVISION_POR_OMISION,
   );
+  const listingReviewDays = numeroOpcional(env, 'LISTING_REVIEW_DAYS', REVISION_DE_PUBLICACION);
 
   /*
    * Los dos bordes estan cerrados a proposito. El cero entraba por abajo, y un
@@ -141,7 +145,24 @@ function leerCifrasDeNegocio(env: EnvironmentVariables): BusinessFigures {
     );
   }
 
-  return { commissionRate, claimWindowDays, verificationReviewDays };
+  /*
+   * Lo mismo para la revision de una publicacion. Es una variable aparte y no la
+   * misma de la verificacion porque son dos promesas distintas a dos personas en
+   * dos momentos distintos: revisar una cedula y revisar unas fotos no tienen por
+   * que tardar lo mismo, y atarlas obligaria a cambiar las dos para mover una.
+   */
+  if (
+    !Number.isInteger(listingReviewDays) ||
+    listingReviewDays < 1 ||
+    listingReviewDays > REVISION_MAXIMA
+  ) {
+    throw new Error(
+      `LISTING_REVIEW_DAYS es "${listingReviewDays}" y tiene que ser un entero de dias ` +
+        `habiles entre 1 y ${REVISION_MAXIMA} (HU-007).`,
+    );
+  }
+
+  return { commissionRate, claimWindowDays, verificationReviewDays, listingReviewDays };
 }
 
 /** Una variable ausente o en blanco toma el valor por omision; una con basura, no. */
@@ -284,6 +305,7 @@ export function readAppConfigForBootstrap(env: EnvironmentVariables): AppConfig 
         commissionRate: COMISION_POR_OMISION,
         claimWindowDays: VENTANA_DE_RECLAMO_POR_OMISION,
         verificationReviewDays: REVISION_POR_OMISION,
+        listingReviewDays: REVISION_DE_PUBLICACION,
       },
     };
   }

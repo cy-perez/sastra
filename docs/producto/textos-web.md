@@ -814,10 +814,16 @@ ocho, y puedes agregar imágenes del fabricante.
 `.referenceHelp`: Del fabricante, para mostrar el producto por dentro. Nunca cuenta
 como una de tus tomas: sin fotos reales no publicamos.
 
-⚠️ **Cómo se enuncia la garantía en la ficha sigue sin escribirse.** RN-067 dice
-que responde el vendedor y no Sendik, y ese texto no se redacta hasta que pase
-revisión de abogado, igual que los tres documentos legales. Lo de aquí arriba es el
-rótulo del campo del formulario, que es otra cosa: nombra el dato, no promete nada.
+⚠️ **Cómo se enuncia la garantía en la ficha se redacta al final del proyecto,
+junto con los textos legales** (decisión del 26 de agosto de 2026). RN-067 dice que
+responde el vendedor y no Sendik: eso reparte una responsabilidad entre dos partes
+y una tercera que no la asume, así que se escribe con la misma revisión que los
+términos, la política de datos y la de cookies, y en la misma tanda. Está anotado
+en «Revisión legal antes de abrir».
+
+Lo de aquí arriba es el rótulo del campo del formulario, que es otra cosa: nombra
+el dato, no promete nada. **El formulario no se bloquea por esto**; la ficha de
+producto, que es otra historia, sí.
 
 ⚠️ **El rótulo de la imagen de referencia en la ficha y en el carrusel tampoco.**
 `.reference` es del formulario. RN-066 exige rotularlas también donde se ven, y eso
@@ -833,11 +839,16 @@ llega con la ficha de producto, que es otra historia.
 `.withdraw`: Retirar de revisión
 `.withdrawHelp`: Puedes retirarla mientras nadie la haya revisado.
 
-**Ningún texto promete un plazo**, y es deliberado: `LISTING_REVIEW_DAYS` no está
-decidido, y a diferencia de la verificación de vendedor —que sí anuncia un plazo
-configurable— aquí no hay ninguno que anunciar. El día que se decida, entra una
-clave `.reviewTime` con la misma forma que `sellerVerification.intro.reviewTime` y
-el valor por variable, nunca en el texto.
+`.reviewTime`: Te respondemos en máximo `{{dias}}` días hábiles.
+
+**Decidido el 26 de agosto de 2026: dos días hábiles**, y por eso este texto ya
+existe. El valor llega por `LISTING_REVIEW_DAYS`, nunca escrito en la frase: en
+Colombia lo anunciado es exigible, así que un plazo quemado en un archivo de
+traducción es una promesa que no se puede corregir sin desplegar.
+
+Es una variable propia y no la de la verificación de vendedor, aunque hoy las dos
+valgan dos: son dos promesas distintas a dos personas en dos momentos distintos, y
+atarlas obligaría a mover las dos para cambiar una.
 
 ### Estados — `listing.status.*`
 
@@ -936,9 +947,9 @@ lleve la copia, no de paso.
 
 ### Lo que no se escribe aquí, y por qué
 
-- **Ningún plazo de revisión.** Ver arriba.
-- **Ningún límite de publicaciones activas.** No está decidido, y sin decisión no
-  hay límite: un texto que lo insinúe crea la regla por la puerta de atrás.
+- **Ningún límite de publicaciones activas.** Decidido el 26 de agosto de 2026:
+  **no hay límite, para empezar.** Y por eso no hay texto: una regla que no existe
+  no se anuncia, y un texto que la insinúe la crearía por la puerta de atrás.
 - **Ningún plazo de despacho.** Es de Fase 3 y sigue sin decidir.
 - **Nada sobre el visor 360.** La ficha con el visor es HU-003; aquí solo se suben
   las tomas que ese visor usará.
@@ -1009,15 +1020,20 @@ Lo que falta escribir:
 - [ ] Los tres pasos de la portada y el recorrido de `/como-funciona` hablan solo
       de prendas, tallas y medidas. Hay que decidir si se generalizan o si se
       separan los dos recorridos.
-- [ ] Los nombres visibles de las siete categorías de tecnología, en los dos
-      idiomas.
+- [x] Los nombres visibles de las siete categorías de tecnología, en los dos
+      idiomas. **Ya estaban** en la migración que las siembra, junto con los de las
+      otras veinticuatro. Lo que faltaba era la ortografía del español, corregida
+      en `V11__category_names_with_accents.sql`.
 - [ ] El rótulo de las imágenes de referencia **en la ficha y en el carrusel**, que
       RN-066 exige en los dos idiomas. El del formulario de publicación sí está
       escrito, en «Publicación de producto — Fase 2»; el de la ficha llega con la
       ficha, que es otra historia.
 - [ ] Cómo se enuncia la garantía del fabricante en la ficha sin usar la palabra
-      Respaldo ni parecerse a ella (RN-067). **No se escribe hasta que pase
-      revisión de abogado**, igual que los tres documentos legales.
+      Respaldo ni parecerse a ella (RN-067). **Se redacta al final del proyecto,
+      en la misma tanda que los tres documentos legales** (decisión del 26 de
+      agosto de 2026): reparte responsabilidad entre el vendedor, el comprador y
+      una plataforma que no la asume, y eso no se escribe sin abogado. Bloquea la
+      ficha de producto, no el formulario de publicación.
 
 ## Decisiones de producto
 
@@ -1029,8 +1045,9 @@ Lo que falta escribir:
       tipo de producto. "Dama" y "Caballero" siguen sin ser categorías del
       proyecto. Faltan los nombres visibles en inglés.
 - [ ] Plazo máximo de despacho del vendedor.
-- [ ] Si hay límite de publicaciones activas por vendedor. Mientras no se decida no
-      hay límite, y ningún texto de publicación lo insinúa.
+- [x] Si hay límite de publicaciones activas por vendedor. **Decidido el 26 de
+      agosto de 2026: no hay límite, para empezar.** No se implementa nada y ningún
+      texto lo menciona; el día que se ponga uno entra por regla de negocio.
 - [ ] Si se le exige al vendedor entregar la prenda limpia.
 - [ ] Si existe chat comprador–vendedor. Hoy es Fase 4 (`alcance.md`), así que
       ningún texto puede decir "pregúntale al vendedor".
@@ -1038,11 +1055,9 @@ Lo que falta escribir:
 
 ## Datos que faltan
 
-- [ ] `LISTING_REVIEW_DAYS`, o la decisión de no prometer plazo para revisar una
-      publicación. Mientras no se decida, la interfaz de publicar **no promete
-      nada**, a diferencia de la verificación de vendedor, que sí anuncia un plazo
-      configurable. El día que se decida, entra como `listing.submit.reviewTime`
-      con el valor por variable.
+- [x] `LISTING_REVIEW_DAYS`. **Decidido el 26 de agosto de 2026: dos días
+      hábiles.** Ya está escrito, en `listing.submit.reviewTime`, con el valor por
+      variable.
 
 - [ ] Días hábiles que tarda el desembolso en llegar a la cuenta del vendedor.
       Decidido en Fase 3 (`alcance.md`); hasta entonces ningún texto lo enuncia.
@@ -1073,6 +1088,11 @@ Lo que falta escribir:
       es sostenible para una plataforma que además cobra comisión, y redactar
       cómo se enuncia sin rozar la palabra Respaldo. **Bloquea abrir la venta de
       tecnología**, no el resto del sitio.
+
+      **Confirmado el 26 de agosto de 2026: se redacta al final del proyecto, en
+      esta misma tanda.** No antes y no por separado. El formulario de publicación
+      no espera por esto —su campo se llama «Meses de garantía del fabricante» y
+      no promete nada—; la ficha de producto sí.
 
 ## Traducción
 

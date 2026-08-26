@@ -26,6 +26,9 @@ import org.springframework.web.context.WebApplicationContext;
  * que no hay nada, que es la verdad mientras la bandera este apagada. Lo consigue el
  * {@code @ConditionalOnProperty} de los controladores: no se crean, asi que no hay ruta.
  *
+ * <p>Cubre tambien la revision de verificaciones de HU-002, que tenia el mismo hueco: su
+ * regla de rol tampoco distinguia entre "no tienes permiso" y "esto no existe".
+ *
  * <p>Es una clase aparte y no un metodo mas de {@link ListingSecurityTest} porque la
  * bandera es una propiedad del contexto: encenderla y apagarla dentro de la misma clase no
  * se puede sin levantar dos contextos igualmente.
@@ -97,6 +100,32 @@ class PublishingDisabledTest {
         mvc.perform(post("/api/v1/listings/" + CUALQUIERA + "/archival").with(jwt()))
                 .andExpect(status().isNotFound());
         mvc.perform(get("/api/v1/users/me/listings").with(jwt())).andExpect(status().isNotFound());
+    }
+
+    /**
+     * Y la revision de verificaciones de HU-002, por lo mismo.
+     *
+     * <p>Tenia el mismo hueco y nadie lo probaba: la regla de rol de
+     * {@code /api/v1/verifications/**} se evalua en el filtro, asi que con
+     * {@code FEATURE_SELLER_VERIFICATION} apagada respondia 403 aunque el controlador no
+     * existiera. HU-002 dice lo mismo que HU-007: con la bandera apagada las rutas no
+     * estan, y un 403 diria que si.
+     *
+     * <p>Esta clase no enciende ninguna de las dos banderas, asi que sirve para las dos.
+     */
+    @Test
+    void no_deberia_existir_la_revision_de_verificaciones_HU_002() throws Exception {
+        mvc.perform(get("/api/v1/verifications").with(jwt())).andExpect(status().isNotFound());
+        mvc.perform(post("/api/v1/verifications/" + CUALQUIERA + "/approval").with(jwt()))
+                .andExpect(status().isNotFound());
+        mvc.perform(post("/api/v1/verifications/" + CUALQUIERA + "/rejection")
+                        .with(jwt())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\":\"ILLEGIBLE_PHOTOS\"}"))
+                .andExpect(status().isNotFound());
+        mvc.perform(get("/api/v1/verifications/" + CUALQUIERA + "/images/document-front")
+                        .with(jwt()))
+                .andExpect(status().isNotFound());
     }
 
     /**

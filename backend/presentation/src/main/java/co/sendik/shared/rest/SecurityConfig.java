@@ -51,6 +51,7 @@ public class SecurityConfig {
         // moderacion. Sin esto respondian 403 con la bandera apagada, y un 403 confirma
         // que la funcionalidad esta ahi: el criterio 3 pide 404. Ver ExposedFeatures.
         boolean catalogoExpuesto = expuestas.publishing();
+        boolean verificacionExpuesta = expuestas.sellerVerification();
 
         http
                 // El origen permitido lo aporta un bean CorsConfigurationSource que
@@ -73,16 +74,6 @@ public class SecurityConfig {
                             // necesita quien se esta verificando.
                             .requestMatchers("/api/v1/financial-institutions")
                             .authenticated()
-                            // Revision de verificaciones: ver la cedula de otra persona y
-                            // decidir sobre su solicitud. **Rol, no solo token.**
-                            //
-                            // Vive en su propia ruta y no bajo /users/** precisamente por
-                            // esto: alli la regla es "autenticado", y cualquiera con token
-                            // podria aprobar su propia verificacion. Los metodos llevan
-                            // ademas @PreAuthorize, que es redundante a proposito: mover un
-                            // endpoint de sitio no se lleva su autorizacion por delante.
-                            .requestMatchers("/api/v1/verifications/**")
-                            .hasRole("MODERATOR")
                             // Leer una publicacion es publico, y es deliberado: es la ruta
                             // que va a usar el catalogo. **Quien decide que se ve no es esta
                             // regla sino el caso de uso**, que responde vacio tanto si no
@@ -100,6 +91,35 @@ public class SecurityConfig {
                             .requestMatchers(
                                     RegexRequestMatcher.regexMatcher(HttpMethod.GET, "/api/v1/listings/" + UUID))
                             .permitAll();
+
+                    // Revision de verificaciones: ver la cedula de otra persona y decidir
+                    // sobre su solicitud. **Rol, no solo token.**
+                    //
+                    // Vive en su propia ruta y no bajo /users/** precisamente por esto:
+                    // alli la regla es "autenticado", y cualquiera con token podria
+                    // aprobar su propia verificacion. Los metodos llevan ademas
+                    // @PreAuthorize, que es redundante a proposito: mover un endpoint de
+                    // sitio no se lleva su autorizacion por delante.
+                    //
+                    // **Solo se declara si la verificacion esta expuesta**, por lo mismo
+                    // que las del catalogo: con FEATURE_SELLER_VERIFICATION apagada, el
+                    // controlador no se crea y esta regla contestaba 403 en el filtro,
+                    // antes de que nadie buscara un manejador. HU-002 pide 404 con la
+                    // bandera apagada, igual que HU-007.
+                    if (verificacionExpuesta) {
+                        rutas.requestMatchers("/api/v1/verifications/**").hasRole("MODERATOR");
+                    } else {
+                        // Con la bandera apagada hace falta igualmente una regla, y no vale
+                        // omitirla: sin ninguna, la peticion cae en el denyAll del final y
+                        // vuelve a salir 403, que es lo que se queria evitar. Con
+                        // "authenticated" atraviesa la cadena, no encuentra manejador
+                        // —el controlador no existe— y sale el 404 que corresponde.
+                        //
+                        // Sigue exigiendo token a proposito: si algun dia apareciera un
+                        // manejador bajo esta ruta sin actualizar esto, quedaria detras de
+                        // una sesion y no abierto.
+                        rutas.requestMatchers("/api/v1/verifications/**").authenticated();
+                    }
 
                     // Decision del moderador sobre una publicacion. **Rol, no solo
                     // token**, y por metodo y patron en lugar de por prefijo: la historia

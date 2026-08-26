@@ -64,10 +64,15 @@ public class CatalogWiring {
      *
      * <p>Sin esto, las rutas de decision del moderador responderian 403 con la bandera
      * apagada, y el criterio 3 pide 404: la funcionalidad no esta, y un 403 diria que si.
+     * Lo mismo vale para la revision de verificaciones de HU-002.
+     *
+     * <p>Vive en {@code CatalogWiring} porque es la historia que lo trajo. Si un tercer
+     * contexto necesitara declarar rutas condicionadas, este bean se muda a un cableado
+     * propio; con dos banderas no vale la pena todavia.
      */
     @Bean
     ExposedFeatures expuestas(FeatureFlags banderas) {
-        return new ExposedFeatures(banderas.publishing());
+        return new ExposedFeatures(banderas.sellerVerification(), banderas.publishing());
     }
 
     @Bean

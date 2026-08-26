@@ -230,6 +230,14 @@ bandera el controlador no se crea y las rutas responden 404: no es que rechacen,
 no están, que es para lo que existen las banderas. Un 403 le diría a cualquiera que la
 funcionalidad está ahí.
 
+**Corregido el 26 de agosto de 2026.** Eso era cierto para el controlador y no para la
+cadena de seguridad: la regla `hasRole("MODERATOR")` de `/api/v1/verifications/**` se
+evalúa en el filtro, antes de que nadie busque un manejador, así que con la bandera
+apagada las rutas de revisión respondían **403** —y un 403 confirma que la funcionalidad
+está ahí, que es justo lo que la bandera existe para no decir—. La regla ahora solo se
+declara si la funcionalidad está expuesta. Lo encontró la prueba que HU-007 escribió para
+su propia bandera; ninguna prueba de esta historia lo miraba.
+
 ### Endpoints del moderador
 
 Bajo `/api/v1/verifications`, **fuera de `users/**` a propósito**: esa ruta solo exige

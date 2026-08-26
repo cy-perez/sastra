@@ -7,7 +7,8 @@ package co.sendik.shared.rest;
  * de que nadie busque un manejador: una ruta protegida por rol responde 403 aunque su
  * controlador no exista, y un 403 confirma que la funcionalidad esta ahi. Eso es
  * exactamente lo que una bandera existe para no decir, y lo que el criterio 3 de HU-007
- * prohibe. Con esto, la regla solo se declara si la ruta va a existir.
+ * prohibe, y lo mismo dice HU-002 de la suya. Con esto, la regla solo se declara si la
+ * ruta va a existir.
  *
  * <p><strong>El valor lo aporta {@code bootstrap}</strong>, que es el modulo del cableado y
  * el unico que ve {@code FeatureFlags}: {@code presentation} no puede leer configuracion
@@ -17,4 +18,4 @@ package co.sendik.shared.rest;
  * dependencias: la cadena de seguridad es comun, y no puede necesitar a {@code catalog}
  * para compilar.
  */
-public record ExposedFeatures(boolean publishing) {}
+public record ExposedFeatures(boolean sellerVerification, boolean publishing) {}

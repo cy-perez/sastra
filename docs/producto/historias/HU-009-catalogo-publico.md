@@ -1,6 +1,9 @@
 # HU-009 — Catálogo público
 
-**Fase:** 2 | **Estado:** pendiente
+**Fase:** 2 | **Estado:** hecha el 27 de agosto de 2026.
+Al implementarla apareció que **ninguna pantalla del proyecto renderizaba datos remotos en
+servidor**: el catálogo, la ficha y el perfil se servían con su esqueleto de carga. Lo
+destapó la prueba de extremo a extremo de esta historia y lo resuelve ADR-0025.
 **Reglas que aplica:** RN-015, RN-016, RN-017, RN-020, RN-021, RN-024, RN-025,
 RN-061, RN-064, RN-066, RN-067
 

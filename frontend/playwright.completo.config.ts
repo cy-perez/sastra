@@ -194,6 +194,11 @@ export default defineConfig({
         FEATURE_PUBLISHING: 'true',
         LISTING_REVIEW_DAYS: '2',
 
+        // HU-009. Sin ella el catalogo publico no existe: sus endpoints responden 404 y el
+        // recorrido que cierra la fase -alguien sin cuenta encuentra lo que se aprobo- no
+        // tendria contra que correr.
+        FEATURE_CATALOG: 'true',
+
         COMPANY_NAME: 'Sendik S.A.S.',
         COMPANY_TAX_ID: '000000000-0',
         COMPANY_ADDRESS: 'Medellin, Colombia',

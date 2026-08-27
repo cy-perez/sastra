@@ -42,6 +42,12 @@ const rutaDelArchivo = (relativa: string): string => join(__dirname, '..', 'src'
  */
 const EJEMPLOS: Readonly<Record<string, string>> = {
   ':id': '00000000-0000-7000-8000-000000000000',
+  // Los dos del catalogo son slugs y no identificadores: la direccion navega el arbol
+  // por nombre para que un enlace compartido se pueda leer. Estos dos existen en la
+  // migracion que lo siembra, aunque para esta prueba dara igual: mide que la ruta
+  // responda, no que la categoria tenga algo.
+  ':familia': 'tops',
+  ':categoria': 'camisas-y-blusas',
 };
 
 /**

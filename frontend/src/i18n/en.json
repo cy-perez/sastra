@@ -94,6 +94,14 @@
     "listingReviewDetail": {
       "title": "Review listing",
       "description": "Details of a listing under review."
+    },
+    "catalog": {
+      "title": "Catalogue",
+      "description": "New and second-hand fashion and new technology, with verified sellers and reviewed listings."
+    },
+    "catalogCategory": {
+      "title": "{{categoria}}",
+      "description": "{{categoria}} on Sendik. Reviewed listings and verified sellers."
     }
   },
   "layout": {
@@ -1110,6 +1118,29 @@
       "PROHIBITED_ITEM": "Prohibited product",
       "SUSPECTED_COUNTERFEIT": "Suspected counterfeit",
       "PRICE_OUT_OF_RANGE": "Price out of range"
+    }
+  },
+  "catalog": {
+    "list": {
+      "title": "What's on sale",
+      "intro": "Everything you see was reviewed before it was published.",
+      "empty": "Nothing has been published yet.",
+      "emptyInCategory": "Nothing has been published in this category yet.",
+      "loading": "Loading the catalogue",
+      "error": "We couldn't load the catalogue. Try again.",
+      "retry": "Try again",
+      "more": "See more"
+    },
+    "categories": {
+      "title": "Categories",
+      "all": "All",
+      "family": "Families",
+      "backToAll": "See the whole catalogue",
+      "error": "We couldn't load the categories.",
+      "notFound": "This category does not exist."
+    },
+    "card": {
+      "a11yLink": "View {{titulo}}"
     }
   }
 }

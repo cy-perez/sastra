@@ -27,6 +27,36 @@ export const routes: Routes = [
     data: { descriptionKey: 'meta.home.description' },
     loadComponent: () => import('./features/home/presentation/home-page').then((m) => m.HomePage),
   },
+  // El catalogo publico. HU-009.
+  //
+  // Tres rutas y un solo componente: son el mismo listado con distinto filtro, y
+  // separarlas duplicaria los tres estados de carga y la rejilla.
+  //
+  // Las tres existen aunque FEATURE_CATALOG este apagada. No se esconden: la API
+  // responde 404 y la pantalla muestra su estado de error, que es lo mismo que hace
+  // /publicar y lo que permite que rutas.spec.ts las recorra sin saber que bandera
+  // esta encendida.
+  {
+    path: 'catalogo',
+    title: 'meta.catalog.title',
+    data: { descriptionKey: 'meta.catalog.description' },
+    loadComponent: () =>
+      import('./features/catalog/presentation/catalog-page').then((m) => m.CatalogPage),
+  },
+  {
+    path: 'catalogo/:familia',
+    title: 'meta.catalog.title',
+    data: { descriptionKey: 'meta.catalog.description' },
+    loadComponent: () =>
+      import('./features/catalog/presentation/catalog-page').then((m) => m.CatalogPage),
+  },
+  {
+    path: 'catalogo/:familia/:categoria',
+    title: 'meta.catalog.title',
+    data: { descriptionKey: 'meta.catalog.description' },
+    loadComponent: () =>
+      import('./features/catalog/presentation/catalog-page').then((m) => m.CatalogPage),
+  },
   {
     path: 'registro',
     title: 'meta.register.title',

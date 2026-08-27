@@ -174,11 +174,12 @@ public class SecurityConfig {
                         rutas.requestMatchers("/api/v1/moderation/**").authenticated();
                     }
 
-                    if (catalogoExpuesto) {
+                    if (catalogoExpuesto || catalogoPublicoExpuesto) {
                         // El arbol de categorias. Publico y sin token: son treinta y siete
-                        // nombres iguales para todo el mundo, y el catalogo publico pedira
-                        // esto mismo. Solo se declara con la bandera encendida, por lo
-                        // mismo que las de moderacion.
+                        // nombres iguales para todo el mundo, y el catalogo publico pide
+                        // esto mismo. Se declara si esta encendida cualquiera de las dos
+                        // banderas, igual que su controlador: publicar lo necesita para el
+                        // formulario y el catalogo para navegar.
                         rutas.requestMatchers(HttpMethod.GET, "/api/v1/categories")
                                 .permitAll();
                     } else {

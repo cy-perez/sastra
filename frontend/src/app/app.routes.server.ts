@@ -69,6 +69,13 @@ export const serverRoutes: ServerRoute[] = [
   // "no existe" (criterio 2).
   { path: 'moderacion/publicaciones', renderMode: RenderMode.Server },
   { path: 'moderacion/publicaciones/:id', renderMode: RenderMode.Server },
+  // HU-009, el catalogo publico. **Es donde este archivo importa mas que en ninguna otra
+  // ruta.** Las demas se sirven a quien ya decidio entrar; estas tres existen para que un
+  // buscador las indexe y traiga compradores, asi que servirlas con 404 -aunque se pinten
+  // enteras- las dejaria fuera del unico canal que las justifica.
+  { path: 'catalogo', renderMode: RenderMode.Server },
+  { path: 'catalogo/:familia', renderMode: RenderMode.Server },
+  { path: 'catalogo/:familia/:categoria', renderMode: RenderMode.Server },
   {
     path: '**',
     renderMode: RenderMode.Server,

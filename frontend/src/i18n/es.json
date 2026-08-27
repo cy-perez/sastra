@@ -94,6 +94,14 @@
     "listingReviewDetail": {
       "title": "Revisar publicación",
       "description": "Detalle de una publicación en revisión."
+    },
+    "catalog": {
+      "title": "Catálogo",
+      "description": "Moda nueva y de segunda y tecnología nueva, con vendedores verificados y publicaciones revisadas."
+    },
+    "catalogCategory": {
+      "title": "{{categoria}}",
+      "description": "{{categoria}} en Sendik. Publicaciones revisadas y vendedores verificados."
     }
   },
   "layout": {
@@ -1110,6 +1118,29 @@
       "PROHIBITED_ITEM": "Producto prohibido",
       "SUSPECTED_COUNTERFEIT": "Sospecha de réplica",
       "PRICE_OUT_OF_RANGE": "Precio fuera de rango"
+    }
+  },
+  "catalog": {
+    "list": {
+      "title": "Qué se está vendiendo",
+      "intro": "Todo lo que ves pasó por revisión antes de publicarse.",
+      "empty": "Todavía no hay nada publicado.",
+      "emptyInCategory": "Todavía no hay nada publicado en esta categoría.",
+      "loading": "Cargando el catálogo",
+      "error": "No pudimos cargar el catálogo. Inténtalo de nuevo.",
+      "retry": "Reintentar",
+      "more": "Ver más"
+    },
+    "categories": {
+      "title": "Categorías",
+      "all": "Todo",
+      "family": "Familias",
+      "backToAll": "Ver todo el catálogo",
+      "error": "No pudimos cargar las categorías.",
+      "notFound": "Esta categoría no existe."
+    },
+    "card": {
+      "a11yLink": "Ver {{titulo}}"
     }
   }
 }

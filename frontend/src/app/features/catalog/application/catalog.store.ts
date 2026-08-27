@@ -1,0 +1,110 @@
+import { computed, inject, Injectable, signal } from '@angular/core';
+import { injectInfiniteQuery, injectQuery } from '@tanstack/angular-query-experimental';
+
+import type { Category } from '../../../shared/domain/listing';
+import type { CatalogPage, PublicListing } from '../domain/public-listing';
+import { CatalogApi } from '../infrastructure/catalog.api';
+import { queryKeys } from './query-keys';
+
+/**
+ * El estado del catálogo público. HU-009.
+ *
+ * <p>Envuelve TanStack Query para que los componentes no vean la librería
+ * (frontend/CLAUDE.md).
+ *
+ * <p><strong>El listado es una consulta infinita y no una paginada</strong>, porque el
+ * contrato lo pagina por cursor: no hay número de página que pedir, hay un «por dónde
+ * seguir» que sale de la respuesta anterior. TanStack lo encadena y esta clase expone lo
+ * único que a una pantalla le importa —los elementos acumulados y si queda más—, no la
+ * lista de tramos.
+ *
+ * <p>Ninguna consulta reintenta. Con los tres reintentos de por omisión, quien se queda
+ * sin catálogo mira un esqueleto siete segundos antes de que la pantalla le diga que algo
+ * falló.
+ */
+@Injectable({ providedIn: 'root' })
+export class CatalogStore {
+  private readonly api = inject(CatalogApi);
+
+  /**
+   * Qué categoría se está viendo.
+   *
+   * <p>Tres valores y no dos, y el tercero es el que importa: `undefined` significa
+   * **todavía no se sabe**, y con él la consulta no sale. En una dirección de categoría el
+   * identificador no se conoce hasta que llega el árbol, así que sin este estado la
+   * pantalla pedía el catálogo entero primero y la categoría después: dos viajes, y el
+   * primero pintaba un instante lo que no era.
+   *
+   * <p>`null` es «todo el catálogo» y sí pide.
+   *
+   * <p>Es una señal y no un parámetro: la página la fija al resolver la ruta y TanStack
+   * vuelve a pedir sola cuando cambia, que es lo que hace falta al navegar entre
+   * categorías sin recargar.
+   */
+  private readonly categoria = signal<string | null | undefined>(undefined);
+
+  /** El árbol activo. Con frescura larga: lo cambia una migración, no el uso. */
+  readonly categories = injectQuery(() => ({
+    queryKey: queryKeys.categories,
+    queryFn: () => this.api.categorias(),
+    staleTime: 60 * 60 * 1000,
+    retry: false,
+  }));
+
+  readonly listado = injectInfiniteQuery(() => ({
+    queryKey: queryKeys.list(this.categoria() ?? null),
+    queryFn: ({ pageParam }: { pageParam: string | null }) =>
+      this.api.listado({ cursor: pageParam, categoria: this.categoria() ?? null }),
+    // Sin esto sale un viaje de más en cada dirección de categoría: ver `categoria`.
+    enabled: this.categoria() !== undefined,
+    initialPageParam: null as string | null,
+    // Nulo significa «no hay más», que es como TanStack sabe que llegó al final. Es
+    // exactamente lo que el servidor manda en `nextCursor` del último tramo.
+    getNextPageParam: (ultimo: CatalogPage) => ultimo.nextCursor,
+    retry: false,
+  }));
+
+  /**
+   * Todo lo traído hasta ahora, en un solo arreglo.
+   *
+   * <p>La pantalla pinta una rejilla de publicaciones, no una lista de tramos: que la
+   * respuesta venga por tramos es del transporte y no tiene por qué llegar a la plantilla.
+   */
+  readonly publicaciones = computed<readonly PublicListing[]>(
+    () => this.listado.data()?.pages.flatMap((tramo) => tramo.items) ?? [],
+  );
+
+  readonly hayMas = computed(() => this.listado.hasNextPage());
+
+  readonly trayendoMas = computed(() => this.listado.isFetchingNextPage());
+
+  /** La página fija cuál categoría se está viendo al resolver la ruta. */
+  abrir(categoria: string | null): void {
+    this.categoria.set(categoria);
+  }
+
+  /**
+   * Mientras no se sepa qué filtro va, no se pide nada.
+   *
+   * <p>Lo usa la pantalla al salir de una categoría hacia otra que todavía no ha
+   * resuelto: sin esto se quedaría pintando el listado de la anterior.
+   */
+  esperar(): void {
+    this.categoria.set(undefined);
+  }
+
+  siguienteTramo(): void {
+    if (this.listado.hasNextPage() && !this.listado.isFetchingNextPage()) {
+      void this.listado.fetchNextPage();
+    }
+  }
+
+  reintentar(): void {
+    void this.listado.refetch();
+  }
+
+  /** El árbol tal como llegó, o vacío mientras carga o si falló. */
+  arbol(): readonly Category[] {
+    return this.categories.data() ?? [];
+  }
+}

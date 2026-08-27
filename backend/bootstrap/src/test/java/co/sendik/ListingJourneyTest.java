@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -191,6 +192,60 @@ class ListingJourneyTest {
                 .andExpect(jsonPath("$.status").value("PUBLISHED"));
 
         assertThat(bitacoraDe(id)).containsExactly("REJECTED", "APPROVED");
+    }
+
+    /**
+     * Criterio 5, por la puerta por la que entra todo el mundo.
+     *
+     * <p>El formulario de publicar manda {@code {"categoryId": ...}} y nada mas: la
+     * categoria se elige antes de que exista el borrador porque de ella dependen las
+     * condiciones admisibles y las medidas que se piden. Todas las demas pruebas de esta
+     * clase crean el producto completo, asi que este camino —el primero de la historia—
+     * no se habia ejercitado nunca contra PostgreSQL, y no funcionaba: doce columnas
+     * {@code NOT NULL} y el repositorio desreferenciando lo anulable. La respuesta era
+     * 500 en la primera peticion de la pantalla.
+     *
+     * <p>Se recorre entero: nace vacio, se relee vacio, se completa y se envia. Guardar
+     * el borrador y poder retomarlo son las dos mitades del criterio.
+     */
+    @Test
+    void deberia_crear_un_borrador_con_solo_la_categoria_y_completarlo_despues_criterio_5() throws Exception {
+        String suToken = tokenDe(vendedorVerificado());
+
+        MvcResult creada = mvc.perform(post("/api/v1/listings")
+                        .header("Authorization", "Bearer " + suToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"categoryId\":\"" + categoriaPorSlug("camisas-y-blusas") + "\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("DRAFT"))
+                .andExpect(jsonPath("$.product.title").doesNotExist())
+                .andExpect(jsonPath("$.product.price").doesNotExist())
+                .andReturn();
+
+        String id = JSON.readTree(creada.getResponse().getContentAsString())
+                .get("id")
+                .asString();
+
+        // Volver a el es la otra mitad del criterio: si la lectura no soportara los
+        // nulos, el borrador se guardaria y no habria forma de retomarlo.
+        mvc.perform(get("/api/v1/listings/" + id).header("Authorization", "Bearer " + suToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("DRAFT"))
+                .andExpect(jsonPath("$.product.condition").doesNotExist())
+                .andExpect(jsonPath("$.product.shipping").doesNotExist());
+
+        mvc.perform(patch("/api/v1/listings/" + id)
+                        .header("Authorization", "Bearer " + suToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(cuerpoDeCamisa()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.product.title").value("Camisa de lino color hueso"));
+
+        subirLasOchoTomas(suToken, id);
+
+        mvc.perform(post("/api/v1/listings/" + id + "/submission").header("Authorization", "Bearer " + suToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("PENDING_REVIEW"));
     }
 
     /** RN-011: sin el sello no se publica, por mucho que la cuenta sea valida. */

@@ -119,6 +119,77 @@ class CatalogPersistenceTest {
         assertThat(leida.tomasDelVendedor()).hasSize(8);
     }
 
+    /**
+     * El borrador recien nacido, con la categoria y nada mas. Criterio 5.
+     *
+     * <p>Es como empieza toda publicacion: el formulario pide la categoria, pulsa
+     * «Empezar» y manda {@code {"categoryId": ...}} sin un solo campo mas. Ninguna
+     * prueba lo cubria —todas creaban el producto completo— y contra PostgreSQL de
+     * verdad no funcionaba: doce columnas {@code NOT NULL} en V9 y un repositorio que
+     * desreferenciaba lo anulable sin guarda. La pantalla de publicar respondia 500 en
+     * su primera peticion.
+     */
+    @Test
+    void deberia_guardar_y_releer_un_borrador_con_solo_la_categoria_criterio_5() {
+        Listing vacio = borradorVacio();
+
+        Listing guardada = publicaciones.guardar(vacio);
+        Listing leida = publicaciones.buscar(guardada.id()).orElseThrow();
+
+        assertThat(leida.status()).isEqualTo(ListingStatus.DRAFT);
+        assertThat(leida.product().categoryId()).isEqualTo(vacio.product().categoryId());
+        assertThat(leida.product().title()).isNull();
+        assertThat(leida.product().description()).isNull();
+        assertThat(leida.product().brand()).isNull();
+        assertThat(leida.product().condition()).isNull();
+        assertThat(leida.product().size()).isNull();
+        assertThat(leida.product().color()).isNull();
+        assertThat(leida.product().price()).isNull();
+        assertThat(leida.product().shipping()).isNull();
+        assertThat(leida.product().measurements().valores()).isEmpty();
+        assertThat(leida.images()).isEmpty();
+    }
+
+    /**
+     * «Salir a la mitad y volver retoma donde iba», que es la otra frase del criterio 5.
+     *
+     * <p>Va aparte de la anterior porque ejercita la otra rama del guardado: la fila ya
+     * existe, asi que entra por el {@code ON CONFLICT DO UPDATE}, y lo que se comprueba
+     * es que las columnas pasan de nulo a valor sin dejar nada por el camino.
+     */
+    @Test
+    void deberia_completar_despues_el_borrador_que_nacio_vacio_criterio_5() {
+        Listing vacio = publicaciones.guardar(borradorVacio());
+
+        Listing completado = publicaciones.guardar(vacio.editarContenido(
+                Product.crear(
+                        vacio.product().id(),
+                        vacio.product().sellerId(),
+                        categoriaPorSlug("camisas-y-blusas"),
+                        new Title("Camisa de lino color hueso"),
+                        new Description("Usada dos veces."),
+                        new Brand("Zara"),
+                        Condition.LIKE_NEW,
+                        new Size(SizeSystem.ALPHA, "M"),
+                        medidasDe(MeasurementGroup.TOP),
+                        Color.BEIGE,
+                        Money.dePesos(185_000),
+                        envio(),
+                        null,
+                        null),
+                AHORA));
+
+        Product leido = publicaciones.buscar(completado.id()).orElseThrow().product();
+
+        assertThat(leido.title()).isEqualTo(new Title("Camisa de lino color hueso"));
+        assertThat(leido.condition()).isEqualTo(Condition.LIKE_NEW);
+        assertThat(leido.size()).isEqualTo(new Size(SizeSystem.ALPHA, "M"));
+        assertThat(leido.color()).isEqualTo(Color.BEIGE);
+        assertThat(leido.price()).isEqualTo(Money.dePesos(185_000));
+        assertThat(leido.shipping()).isEqualTo(envio());
+        assertThat(leido.measurements().valores()).isNotEmpty();
+    }
+
     // Las medidas viajan en jsonb. Un double por el camino las estropearia.
     @Test
     void deberia_conservar_las_medidas_con_su_decimal_exacto_RN_021() {
@@ -490,6 +561,27 @@ class CatalogPersistenceTest {
     private Listing publicada() {
         Listing enRevision = publicaciones.guardar(borradorConTomas().enviarARevision(AHORA));
         return publicaciones.guardar(enRevision.aprobar(new ModeratorId(nuevoUsuario()), AHORA));
+    }
+
+    /** Lo que crea «Empezar»: la categoria y nada mas. Criterio 5. */
+    private Listing borradorVacio() {
+        Product producto = Product.crear(
+                ProductId.nuevo(),
+                new SellerId(nuevoUsuario()),
+                categoriaPorSlug("camisas-y-blusas"),
+                null,
+                null,
+                null,
+                null,
+                null,
+                Measurements.vacias(),
+                null,
+                null,
+                null,
+                null,
+                null);
+
+        return Listing.crearBorrador(ListingId.nuevo(), producto, AHORA);
     }
 
     private Listing borradorDe(Measurements medidas) {

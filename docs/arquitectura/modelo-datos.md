@@ -156,6 +156,14 @@ Qué claves lleva `measurements` no es libre: lo determina el
 números positivos en centímetros (RN-021). `size_system` es el que el vendedor
 eligió de entre los que admite la categoría, y se guarda en el producto para que
 cambiar la categoría después no reinterprete una talla ya declarada. `brand` es texto libre y opcional; `color` es lista cerrada.
+**Salvo `id`, `seller_id`, `category_id` y `measurements`, todas las columnas
+admiten nulo.** No es laxitud: el criterio 5 de HU-007 dice que un borrador
+incompleto se guarda sin exigir que esté completo, y una columna `NOT NULL` no
+puede distinguir un borrador a medias de una publicación que se quiere publicar
+sin terminar. Lo obligatorio lo exige el dominio al enviar a revisión, con una
+entrada en `errors` por cada campo que falta (criterio 6). `measurements` se
+queda `NOT NULL` porque el modelo nunca la produce nula: un producto sin medidas
+declaradas tiene el mapa vacío y se guarda como `{}`.
 
 **listings**: `id`, `product_id`, `status`, `submitted_at`, `published_at`,
 `sold_at`, `moderated_by`, `moderated_at`, `rejection_reason`, `rejection_note`,

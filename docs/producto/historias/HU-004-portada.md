@@ -213,9 +213,10 @@ diga qué se le promete públicamente al visitante, habría que escribirla.
 **Glosario.** Resuelto: **respaldo** entra como `Backing`, y con él la retención
 y la liberación del pago y la moderación. `Escrow`, custodia y garantía quedan
 en la lista de palabras que no se usan, porque describen figuras financieras que
-Sendik no ejerce (RN-031). **Tarjeta de confianza** y **franja oscura** no van
-al glosario: son términos de interfaz, no de dominio, y ya están nombrados en
-`docs/ui/README.md`.
+Sendik no ejerce (RN-031). **Tarjeta de confianza** y **franja de tinta** no van
+al glosario: son términos de interfaz, no de dominio, y viven donde se definen,
+`frontend/src/styles/marca.css`. La franja se llamaba «franja oscura» hasta el
+cambio de identidad; hoy es `.franja-tinta` (ADR-0022).
 
 **Configuración.** Los cuatro campos de empresa y la decisión sobre
 `COMMISSION_RATE` descritos en las notas técnicas.

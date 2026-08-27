@@ -82,6 +82,28 @@
   --ancho-min-imagen-revision: 200px;
   --alto-max-imagen-revision: 260px;
 
+  /* La bandeja de moderacion de publicaciones (HU-008).
+
+     La miniatura de la cola es la foto de producto en pequeno, y respeta 3:4 como manda
+     ADR-0010: 80x107 es lo que cabe en una fila de lista sin robarle sitio al titulo. Las
+     dos medidas existen para el hueco que se reserva cuando la toma frontal no esta; la
+     imagen las lleva ademas en sus atributos, que es lo que exige NgOptimizedImage. */
+  --ancho-miniatura-cola: 80px;
+  --alto-miniatura-cola: 107px;
+
+  /* Ancho minimo de una toma en el detalle. Con esto la rejilla cae sola en dos columnas
+     en un telefono y en cuatro en escritorio, sin puntos de quiebre propios: por debajo,
+     una toma de prenda deja de servir para decidir si la foto es usable (RN-018). */
+  --ancho-min-toma-revision: 160px;
+
+  /* El hueco de una toma que falta. Ocupa lo mismo que la foto que deberia estar, para
+     que la rejilla no se descoloque y se vea cual falta. */
+  --alto-min-toma-ausente: 200px;
+
+  /* El esqueleto del detalle mientras carga. Un solo bloque y no ocho: la publicacion
+     llega entera en una respuesta, asi que no hay estados intermedios que dibujar. */
+  --alto-esqueleto-detalle: 320px;
+
   /* Grosor de la barra lateral de una caja de aviso. Estaba como 4px suelto en el
      aviso de borrador de los documentos legales y en el de error de la bandeja. */
   --grosor-barra-aviso: 4px;

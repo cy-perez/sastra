@@ -1,8 +1,9 @@
-# Despliegue del backend (docs/operacion/entornos.md).
+# Despliegue (docs/operacion/entornos.md).
 #
-# Solo el backend: el frontend no tiene trabajo de despliegue porque no hay
-# proveedor de hospedaje elegido (ADR-0019). Se escribe el dia que se contrate, con
-# los requisitos que esa ADR deja anotados.
+# Las dos piezas van a Cloud Run, en la misma region y desde el mismo commit
+# verificado: el backend en Java y el frontend con renderizado en servidor en Node
+# (ADR-0024). GoDaddy es el registrador de sendik.co y sirve el DNS; no ejecuta
+# nada.
 #
 #   rama de trabajo -> pull request -> verificación -> main -> dev automático
 #                                                          -> prod con etiqueta y aprobación
@@ -43,8 +44,8 @@ jobs:
 
   # Decide a qué entorno va esto. Una etiqueta de versión va a producción; un
   # empujón a main, a desarrollo. Se calcula en un trabajo aparte porque `if` no
-  # puede definir un `environment`, y porque el despliegue del frontend volverá a
-  # necesitar lo mismo cuando exista (ADR-0019).
+  # puede definir un `environment`, y porque los dos despliegues —backend y
+  # frontend— necesitan la misma decisión sin repetirla.
   destino:
     name: Destino
     needs: verificar
@@ -73,11 +74,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: |
-          echo "::notice::No hay nada desplegado todavía, y es una decisión."
-          echo "El flujo está completo y la verificación ya pasó. El sitio se publica"
-          echo "cuando el proyecto esté lo más completo posible; para el backend faltan"
-          echo "el proyecto de Google Cloud, la base gestionada y los secretos. El"
-          echo "procedimiento, en orden, está en:"
+          echo "::notice::Falta configurar el proyecto de Google Cloud."
+          echo "El flujo está completo y la verificación ya pasó, pero sin GCP_PROJECT_ID"
+          echo "no hay dónde publicar. Hacen falta el proyecto de Google Cloud, la base"
+          echo "gestionada, los secretos, la federación de identidades y las variables de"
+          echo "los dos servicios de Cloud Run. El procedimiento, en orden, está en:"
           echo "  docs/operacion/despliegue.md"
 
   backend:
@@ -125,6 +126,17 @@ jobs:
       # entornos.md —migrar antes de servir— se cumple sin un paso aparte, y por
       # eso toda migración tiene que seguir siendo compatible hacia atrás: durante
       # el cambio conviven la revisión vieja y la nueva.
+      #
+      # Las dos claves de cifrado son tan obligatorias como la de firma: sin ellas
+      # `AesGcmSensitiveDataCipher` no se construye y la aplicación no arranca. Estaban
+      # documentadas como obligatorias en docs/operacion/configuracion.md y no las
+      # pasaba nadie, así que este despliegue moría al iniciar. No se veía porque los
+      # dos trabajos se omiten mientras no haya proyecto de Google Cloud.
+      #
+      # Lo vigila el trabajo «Ensayo del despliegue» de verificacion.yml, que arranca
+      # esta misma imagen con el perfil `dev` y esta misma lista de variables: si aquí
+      # falta una obligatoria, allí el contenedor no levanta y el pull request se pone
+      # rojo antes de integrar.
       - name: Desplegar la revisión
         env:
           IMAGEN: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/sendik/backend
@@ -159,7 +171,9 @@ jobs:
             --set-secrets "DB_PASSWORD=sendik-db-password:latest" \
             --set-secrets "JWT_SECRET=sendik-jwt-secret:latest" \
             --set-secrets "JWT_ISSUER=sendik-jwt-issuer:latest" \
-            --set-secrets "MAIL_PROVIDER_API_KEY=sendik-mail-api-key:latest"
+            --set-secrets "MAIL_PROVIDER_API_KEY=sendik-mail-api-key:latest" \
+            --set-secrets "CRYPTO_DATA_KEY_V1=sendik-crypto-data-key-v1:latest" \
+            --set-secrets "CRYPTO_LOOKUP_KEY=sendik-crypto-lookup-key:latest"
 
       # Que el despliegue termine sin error no significa que la aplicación
       # responda: comprobarlo aquí es lo que convierte un despliegue roto en un
@@ -171,6 +185,100 @@ jobs:
           echo "Comprobando $DIRECCION/actuator/health"
           for intento in $(seq 1 20); do
             if curl --fail --silent --show-error "$DIRECCION/actuator/health" > /dev/null; then
+              echo "Responde."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "No respondió tras 100 segundos."
+          exit 1
+
+  frontend:
+    name: Frontend en Cloud Run
+    needs: [verificar, destino]
+    # Se omite mientras no haya proyecto de Google Cloud configurado, por lo mismo
+    # que el backend: una canalización que está roja siempre deja de leerse.
+    if: vars.GCP_PROJECT_ID != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: ${{ needs.destino.outputs.entorno }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Autenticarse en Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Preparar el acceso a Artifact Registry
+        run: gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev --quiet
+
+      - name: Construir y publicar la imagen
+        env:
+          IMAGEN: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/sendik/frontend
+        run: |
+          docker build -t "$IMAGEN:${{ needs.destino.outputs.etiqueta }}" frontend
+          docker push "$IMAGEN:${{ needs.destino.outputs.etiqueta }}"
+
+      # La configuración va por variables de entorno y no compilada dentro del
+      # paquete: el mismo artefacto sirve para dev y para prod, y cambiar la
+      # dirección de la API no exige volver a construir (ADR-0019).
+      #
+      # Ninguna es secreta. El frontend solo recibe lo que el sitio dice en voz
+      # alta —las cifras que anuncia, los datos de la empresa, las versiones de los
+      # legales— y la dirección de la API. Nada que no pueda leer cualquiera que
+      # abra el navegador, y por eso aquí no hay `--set-secrets`.
+      #
+      # `APP_API_BASE_URL` cambia de nombre a `API_BASE_URL` porque asi lo lee
+      # `read-app-config.ts`. Es el mismo valor que recibe el backend, declarado una
+      # sola vez, y lleva el prefijo `/api/v1`: el frontend cuelga las rutas de ahi
+      # sin agregar nada.
+      - name: Desplegar la revisión
+        env:
+          IMAGEN: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/sendik/frontend
+        run: |
+          gcloud run deploy ${{ vars.CLOUD_RUN_WEB_SERVICE }} \
+            --image "$IMAGEN:${{ needs.destino.outputs.etiqueta }}" \
+            --region ${{ vars.GCP_REGION }} \
+            --platform managed \
+            --port 4000 \
+            --min-instances ${{ vars.CLOUD_RUN_WEB_MIN_INSTANCES }} \
+            --max-instances ${{ vars.CLOUD_RUN_WEB_MAX_INSTANCES }} \
+            --memory ${{ vars.CLOUD_RUN_WEB_MEMORY }} \
+            --service-account ${{ vars.CLOUD_RUN_WEB_SERVICE_ACCOUNT }} \
+            --allow-unauthenticated \
+            --set-env-vars "API_BASE_URL=${{ vars.APP_API_BASE_URL }}" \
+            --set-env-vars "NG_ALLOWED_HOSTS=${{ vars.NG_ALLOWED_HOSTS }}" \
+            --set-env-vars "DEFAULT_LOCALE=${{ vars.DEFAULT_LOCALE }}" \
+            --set-env-vars "AVAILABLE_LOCALES=${{ vars.AVAILABLE_LOCALES }}" \
+            --set-env-vars "COMPANY_NAME=${{ vars.COMPANY_NAME }}" \
+            --set-env-vars "COMPANY_TAX_ID=${{ vars.COMPANY_TAX_ID }}" \
+            --set-env-vars "COMPANY_ADDRESS=${{ vars.COMPANY_ADDRESS }}" \
+            --set-env-vars "SUPPORT_EMAIL=${{ vars.SUPPORT_EMAIL }}" \
+            --set-env-vars "COMMISSION_RATE=${{ vars.COMMISSION_RATE }}" \
+            --set-env-vars "CLAIM_WINDOW_DAYS=${{ vars.CLAIM_WINDOW_DAYS }}" \
+            --set-env-vars "VERIFICATION_REVIEW_DAYS=${{ vars.VERIFICATION_REVIEW_DAYS }}" \
+            --set-env-vars "LISTING_REVIEW_DAYS=${{ vars.LISTING_REVIEW_DAYS }}" \
+            --set-env-vars "LEGAL_TERMS_VERSION=${{ vars.LEGAL_TERMS_VERSION }}" \
+            --set-env-vars "LEGAL_PRIVACY_VERSION=${{ vars.LEGAL_PRIVACY_VERSION }}" \
+            --set-env-vars "LEGAL_COOKIES_VERSION=${{ vars.LEGAL_COOKIES_VERSION }}"
+
+      # Que el despliegue termine sin error no significa que el sitio responda.
+      # Aquí se pide la portada y no una sonda: es la ruta que de verdad renderiza,
+      # así que un fallo del servidor de SSR sale a la luz ahora y no cuando entre
+      # alguien.
+      - name: Comprobar que responde
+        run: |
+          DIRECCION=$(gcloud run services describe ${{ vars.CLOUD_RUN_WEB_SERVICE }} \
+            --region ${{ vars.GCP_REGION }} --format 'value(status.url)')
+          echo "Comprobando $DIRECCION"
+          for intento in $(seq 1 20); do
+            if curl --fail --silent --show-error "$DIRECCION/" > /dev/null; then
               echo "Responde."
               exit 0
             fi

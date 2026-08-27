@@ -3,6 +3,7 @@ package co.sendik;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import co.sendik.catalog.dto.CategoryView;
 import co.sendik.catalog.exception.ListingConcurrentlyModifiedException;
 import co.sendik.catalog.model.AttentionReason;
 import co.sendik.catalog.model.Brand;
@@ -38,8 +39,10 @@ import co.sendik.shared.file.ImageContentType;
 import co.sendik.shared.file.ImageDimensions;
 import co.sendik.shared.money.Money;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -114,6 +117,77 @@ class CatalogPersistenceTest {
         assertThat(leida.product().title()).isEqualTo(guardada.product().title());
         assertThat(leida.product().price()).isEqualTo(Money.dePesos(185_000));
         assertThat(leida.tomasDelVendedor()).hasSize(8);
+    }
+
+    /**
+     * El borrador recien nacido, con la categoria y nada mas. Criterio 5.
+     *
+     * <p>Es como empieza toda publicacion: el formulario pide la categoria, pulsa
+     * «Empezar» y manda {@code {"categoryId": ...}} sin un solo campo mas. Ninguna
+     * prueba lo cubria —todas creaban el producto completo— y contra PostgreSQL de
+     * verdad no funcionaba: doce columnas {@code NOT NULL} en V9 y un repositorio que
+     * desreferenciaba lo anulable sin guarda. La pantalla de publicar respondia 500 en
+     * su primera peticion.
+     */
+    @Test
+    void deberia_guardar_y_releer_un_borrador_con_solo_la_categoria_criterio_5() {
+        Listing vacio = borradorVacio();
+
+        Listing guardada = publicaciones.guardar(vacio);
+        Listing leida = publicaciones.buscar(guardada.id()).orElseThrow();
+
+        assertThat(leida.status()).isEqualTo(ListingStatus.DRAFT);
+        assertThat(leida.product().categoryId()).isEqualTo(vacio.product().categoryId());
+        assertThat(leida.product().title()).isNull();
+        assertThat(leida.product().description()).isNull();
+        assertThat(leida.product().brand()).isNull();
+        assertThat(leida.product().condition()).isNull();
+        assertThat(leida.product().size()).isNull();
+        assertThat(leida.product().color()).isNull();
+        assertThat(leida.product().price()).isNull();
+        assertThat(leida.product().shipping()).isNull();
+        assertThat(leida.product().measurements().valores()).isEmpty();
+        assertThat(leida.images()).isEmpty();
+    }
+
+    /**
+     * «Salir a la mitad y volver retoma donde iba», que es la otra frase del criterio 5.
+     *
+     * <p>Va aparte de la anterior porque ejercita la otra rama del guardado: la fila ya
+     * existe, asi que entra por el {@code ON CONFLICT DO UPDATE}, y lo que se comprueba
+     * es que las columnas pasan de nulo a valor sin dejar nada por el camino.
+     */
+    @Test
+    void deberia_completar_despues_el_borrador_que_nacio_vacio_criterio_5() {
+        Listing vacio = publicaciones.guardar(borradorVacio());
+
+        Listing completado = publicaciones.guardar(vacio.editarContenido(
+                Product.crear(
+                        vacio.product().id(),
+                        vacio.product().sellerId(),
+                        categoriaPorSlug("camisas-y-blusas"),
+                        new Title("Camisa de lino color hueso"),
+                        new Description("Usada dos veces."),
+                        new Brand("Zara"),
+                        Condition.LIKE_NEW,
+                        new Size(SizeSystem.ALPHA, "M"),
+                        medidasDe(MeasurementGroup.TOP),
+                        Color.BEIGE,
+                        Money.dePesos(185_000),
+                        envio(),
+                        null,
+                        null),
+                AHORA));
+
+        Product leido = publicaciones.buscar(completado.id()).orElseThrow().product();
+
+        assertThat(leido.title()).isEqualTo(new Title("Camisa de lino color hueso"));
+        assertThat(leido.condition()).isEqualTo(Condition.LIKE_NEW);
+        assertThat(leido.size()).isEqualTo(new Size(SizeSystem.ALPHA, "M"));
+        assertThat(leido.color()).isEqualTo(Color.BEIGE);
+        assertThat(leido.price()).isEqualTo(Money.dePesos(185_000));
+        assertThat(leido.shipping()).isEqualTo(envio());
+        assertThat(leido.measurements().valores()).isNotEmpty();
     }
 
     // Las medidas viajan en jsonb. Un double por el camino las estropearia.
@@ -221,6 +295,77 @@ class CatalogPersistenceTest {
                 .containsExactlyInAnyOrder(AttentionReason.PRICE_OUT_OF_RANGE, AttentionReason.GALLERY_UPLOAD);
     }
 
+    // V12: la cola del moderador, contra el indice parcial y la base de verdad.
+    @Test
+    void deberia_devolver_en_la_cola_solo_lo_que_espera_revision_HU_008() {
+        Listing esperando = publicaciones.guardar(borradorConTomas().enviarARevision(AHORA));
+        publicaciones.guardar(borradorConTomas());
+        publicada();
+
+        var cola = publicaciones.pendientesDeRevision(0, 50);
+
+        assertThat(cola)
+                .as("la cola no puede traer nada que no este esperando")
+                .allSatisfy(publicacion -> assertThat(publicacion.status()).isEqualTo(ListingStatus.PENDING_REVIEW));
+        assertThat(cola).extracting(Listing::id).contains(esperando.id());
+    }
+
+    @Test
+    void deberia_ordenar_la_cola_por_lo_que_lleva_mas_tiempo_esperando_HU_008() {
+        Instant temprano = AHORA.minus(Duration.ofHours(6));
+        Instant mediodia = AHORA.minus(Duration.ofHours(2));
+
+        Listing tercera = publicaciones.guardar(borradorConTomas().enviarARevision(AHORA));
+        Listing primera = publicaciones.guardar(borradorConTomas().enviarARevision(temprano));
+        Listing segunda = publicaciones.guardar(borradorConTomas().enviarARevision(mediodia));
+
+        var cola = publicaciones.pendientesDeRevision(0, 50);
+
+        assertThat(cola).extracting(Listing::id).containsSubsequence(primera.id(), segunda.id(), tercera.id());
+    }
+
+    /** La razon de que exista la columna: con `updated_at`, esta prueba fallaria. */
+    @Test
+    void no_deberia_perder_el_turno_por_cambiar_el_precio_mientras_espera_HU_008() {
+        Instant temprano = AHORA.minus(Duration.ofHours(6));
+
+        Listing primera = publicaciones.guardar(borradorConTomas().enviarARevision(temprano));
+        Listing segunda = publicaciones.guardar(borradorConTomas().enviarARevision(AHORA));
+
+        publicaciones.guardar(publicaciones
+                .buscar(primera.id())
+                .orElseThrow()
+                .cambiarPrecio(Money.dePesos(190_000), AHORA.plus(Duration.ofHours(1))));
+
+        var cola = publicaciones.pendientesDeRevision(0, 50);
+
+        assertThat(cola).extracting(Listing::id).containsSubsequence(primera.id(), segunda.id());
+        assertThat(cola)
+                .filteredOn(publicacion -> publicacion.id().equals(primera.id()))
+                .singleElement()
+                .satisfies(publicacion -> assertThat(publicacion.submittedAt()).isEqualTo(temprano));
+    }
+
+    /**
+     * La cola trae la frontal y nada mas.
+     *
+     * <p>Antes traia las ocho de cada fila —una consulta por publicacion— para pintar una
+     * miniatura. Esta prueba fija las dos mitades: que la frontal esta, y que las otras
+     * siete no viajan.
+     */
+    @Test
+    void deberia_traer_solo_la_toma_frontal_en_la_cola_HU_008() {
+        Listing esperando = publicaciones.guardar(borradorConTomas().enviarARevision(AHORA));
+
+        Listing enLaCola = publicaciones.pendientesDeRevision(0, 50).stream()
+                .filter(p -> p.id().equals(esperando.id()))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(enLaCola.images()).hasSize(1);
+        assertThat(enLaCola.images().getFirst().position()).isZero();
+    }
+
     @Test
     void deberia_conservar_motivo_y_nota_de_un_rechazo_RN_022() {
         Listing enRevision = publicaciones.guardar(borradorConTomas().enviarARevision(AHORA));
@@ -265,6 +410,131 @@ class CatalogPersistenceTest {
 
     // ------------------------------------------------------------------ apoyo
 
+    /**
+     * El arbol completo, contra lo que sembraron V9 y V11.
+     *
+     * <p>Es la unica prueba que ve los nombres visibles: no estan en el modelo de dominio,
+     * asi que ninguna prueba de dominio puede mirarlos. Y son texto que lee un comprador.
+     */
+    @Test
+    void deberia_armar_el_arbol_activo_con_sus_nombres() {
+        List<CategoryView> arbol = categorias.arbolActivo();
+
+        assertThat(arbol).hasSize(6).allSatisfy(familia -> {
+            assertThat(familia.esFamilia()).isTrue();
+            assertThat(familia.hijas()).isNotEmpty();
+        });
+
+        assertThat(arbol.stream().flatMap(familia -> familia.hijas().stream())).hasSize(31);
+    }
+
+    /** V11: los nombres se sembraron sin tildes y eso lo lee un comprador. */
+    @Test
+    void deberia_traer_los_nombres_del_espanol_bien_escritos() {
+        List<String> nombres = categorias.arbolActivo().stream()
+                .flatMap(familia -> java.util.stream.Stream.concat(
+                        java.util.stream.Stream.of(familia.nombreEs()),
+                        familia.hijas().stream().map(CategoryView::nombreEs)))
+                .toList();
+
+        assertThat(nombres)
+                .contains("Tecnología", "Suéteres, buzos y sacos", "Trajes de baño", "Cámaras")
+                .doesNotContain("Tecnologia", "Sueteres, buzos y sacos", "Trajes de bano", "Camaras");
+    }
+
+    /** RN-064: las siete de tecnologia no admiten lo usado, y el formulario lo necesita. */
+    @Test
+    void deberia_decir_que_la_tecnologia_no_admite_lo_usado_RN_064() {
+        CategoryView tecnologia = categorias.arbolActivo().stream()
+                .filter(familia -> "tech".equals(familia.slug()))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(tecnologia.hijas()).hasSize(7).allSatisfy(hija -> {
+            assertThat(hija.admiteUsado()).isFalse();
+            assertThat(hija.medidasObligatorias()).isNotEmpty();
+        });
+    }
+
+    /**
+     * Una categoria retirada no se ofrece, y la publicacion que ya la tenia la conserva.
+     *
+     * <p>Es el caso borde de la historia, y hasta ahora el {@code WHERE active} se podia
+     * quitar sin que ninguna prueba se enterara: las tres leian el arbol sembrado, donde
+     * todo esta activo.
+     */
+    @Test
+    void no_deberia_ofrecer_una_categoria_retirada() {
+        Category gafas = categoriaPorSlug("gafas");
+        retirar("gafas");
+
+        try {
+            List<String> hojas = categorias.arbolActivo().stream()
+                    .flatMap(familia -> familia.hijas().stream())
+                    .map(CategoryView::slug)
+                    .toList();
+
+            assertThat(hojas).doesNotContain("gafas").hasSize(30);
+            // Y sigue existiendo para quien ya la tenia: no se borra, se retira.
+            assertThat(categorias.buscar(gafas.id())).isPresent();
+        } finally {
+            devolver("gafas");
+        }
+    }
+
+    /** Retirada la familia, sus hojas no cuelgan de la nada: desaparecen con ella. */
+    @Test
+    void no_deberia_ofrecer_las_hojas_de_una_familia_retirada() {
+        retirar("tech");
+
+        try {
+            List<CategoryView> arbol = categorias.arbolActivo();
+
+            assertThat(arbol).hasSize(5).noneMatch(familia -> "tech".equals(familia.slug()));
+            assertThat(arbol.stream().flatMap(familia -> familia.hijas().stream()))
+                    .hasSize(24)
+                    .noneMatch(hoja -> "celulares-y-tabletas".equals(hoja.slug()));
+        } finally {
+            devolver("tech");
+        }
+    }
+
+    /**
+     * El orden sale de la columna {@code position}.
+     *
+     * <p>Su motivo declarado es que el desplegable no cambie de orden entre peticiones, y
+     * eso no lo comprueba contar cuantas hay.
+     */
+    @Test
+    void deberia_devolver_las_familias_en_el_orden_sembrado() {
+        List<String> familias =
+                categorias.arbolActivo().stream().map(CategoryView::slug).toList();
+
+        assertThat(familias).containsExactly("tops", "bottoms", "full-body", "footwear", "accessories", "tech");
+    }
+
+    /** Retira una categoria o una familia, como haria una migracion futura. */
+    private void retirar(String slug) {
+        cambiarActiva(slug, false);
+    }
+
+    /**
+     * Devuelve al arbol lo que la prueba retiro.
+     *
+     * <p>Esta clase comparte la base entre pruebas: sin deshacerlo, las que cuentan el
+     * arbol entero empiezan a fallar por culpa de esta.
+     */
+    private void devolver(String slug) {
+        cambiarActiva(slug, true);
+    }
+
+    private void cambiarActiva(String slug, boolean activa) {
+        jdbc.sql("UPDATE categories SET active = :activa WHERE slug = :slug")
+                .param("activa", activa)
+                .param("slug", slug)
+                .update();
+    }
+
     private Category categoriaPorSlug(String slug) {
         UUID id = jdbc.sql("SELECT id FROM categories WHERE slug = :s")
                 .param("s", slug)
@@ -291,6 +561,27 @@ class CatalogPersistenceTest {
     private Listing publicada() {
         Listing enRevision = publicaciones.guardar(borradorConTomas().enviarARevision(AHORA));
         return publicaciones.guardar(enRevision.aprobar(new ModeratorId(nuevoUsuario()), AHORA));
+    }
+
+    /** Lo que crea «Empezar»: la categoria y nada mas. Criterio 5. */
+    private Listing borradorVacio() {
+        Product producto = Product.crear(
+                ProductId.nuevo(),
+                new SellerId(nuevoUsuario()),
+                categoriaPorSlug("camisas-y-blusas"),
+                null,
+                null,
+                null,
+                null,
+                null,
+                Measurements.vacias(),
+                null,
+                null,
+                null,
+                null,
+                null);
+
+        return Listing.crearBorrador(ListingId.nuevo(), producto, AHORA);
     }
 
     private Listing borradorDe(Measurements medidas) {

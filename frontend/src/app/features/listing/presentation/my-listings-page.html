@@ -1,0 +1,134 @@
+<section class="mias">
+  <header class="mias__cabecera">
+    <h1 class="tipo-h1">{{ 'listing.mine.title' | transloco }}</h1>
+    <a class="btn btn-primario" routerLink="/publicar">{{ 'listing.mine.new' | transloco }}</a>
+  </header>
+
+  @if (consulta.isPending()) {
+    <div class="mias__cargando" aria-hidden="true">
+      <p class="esqueleto mias__esqueleto"></p>
+      <p class="esqueleto mias__esqueleto"></p>
+    </div>
+  } @else if (consulta.isError()) {
+    <p class="mias__error tipo-cuerpo" role="alert">
+      {{ claveDeError(consulta.error()) | transloco }}
+    </p>
+  } @else if (vacio()) {
+    <div class="mias__vacio">
+      <p class="tipo-cuerpo">{{ 'listing.mine.empty' | transloco }}</p>
+      <a class="btn btn-primario" routerLink="/publicar">{{
+        'listing.mine.emptyAction' | transloco
+      }}</a>
+    </div>
+  } @else {
+    <ul class="mias__lista">
+      @for (publicacion of publicaciones(); track publicacion.id) {
+        <li class="mias__fila">
+          @if (portadaDe(publicacion); as portada) {
+            <!--
+              La primera va con `priority`: esta sobre el pliegue y es la candidata a
+              ser el elemento mas grande que se pinta. Las demas se cargan cuando se
+              acercan, que es lo que hace la directiva por omision.
+            -->
+            <img
+              class="mias__portada"
+              [ngSrc]="portada"
+              [alt]="publicacion.product.title ?? ('listing.mine.untitled' | transloco)"
+              width="120"
+              height="160"
+              [priority]="$index === 0"
+            />
+          } @else {
+            <div class="mias__portada mias__portada--vacia" aria-hidden="true"></div>
+          }
+
+          <div class="mias__datos">
+            <h2 class="tipo-titulo-tarjeta">
+              <a [routerLink]="['/publicar', publicacion.id]">
+                {{ publicacion.product.title ?? ('listing.mine.untitled' | transloco) }}
+              </a>
+            </h2>
+
+            <p class="mias__estado tipo-secundario">
+              {{ 'listing.status.' + publicacion.status | transloco }}
+            </p>
+
+            @if (precioDe(publicacion); as precio) {
+              <p class="precio">{{ precio }}</p>
+            }
+
+            <p class="tipo-secundario">
+              {{
+                'listing.shots.progress'
+                  | transloco
+                    : { puestas: publicacion.images.length, exigidas: publicacion.requiredShots }
+              }}
+            </p>
+
+            @if (publicacion.requiresAttention) {
+              <p class="mias__atencion tipo-secundario">
+                {{ 'listing.mine.attention' | transloco }}
+              </p>
+            }
+          </div>
+
+          <div class="mias__acciones">
+            <!--
+              Un solo boton con la etiqueta calculada, y no dos ramas de un @switch: con
+              dos, pulsar «Pausar» destruia el boton que tenia el foco y el foco caia al
+              body. El elemento sobrevive al cambio de estado.
+            -->
+            @if (admitePausa(publicacion)) {
+              <button
+                type="button"
+                class="btn btn-secundario"
+                [disabled]="pausa.isPending() || reanudacion.isPending()"
+                (click)="alternarPausa(publicacion)"
+              >
+                {{
+                  (publicacion.status === 'PAUSED' ? 'listing.live.resume' : 'listing.live.pause')
+                    | transloco
+                }}
+              </button>
+            }
+
+            @if (publicacion.status !== 'SOLD' && publicacion.status !== 'ARCHIVED') {
+              @if (porArchivar() === publicacion.id) {
+                <p class="mias__confirmacion tipo-secundario" role="alert">
+                  {{ 'listing.live.archiveConfirm' | transloco }}
+                </p>
+                <button
+                  #confirmarBoton
+                  type="button"
+                  class="btn btn-secundario mias__confirmar"
+                  [disabled]="archivo.isPending()"
+                  (click)="archivar(publicacion.id)"
+                >
+                  {{ 'listing.live.archiveYes' | transloco }}
+                </button>
+                <button type="button" class="btn btn-secundario" (click)="cancelarArchivo()">
+                  {{ 'listing.live.archiveNo' | transloco }}
+                </button>
+              } @else {
+                <button
+                  #archivarBoton
+                  type="button"
+                  class="btn btn-secundario mias__archivar"
+                  (click)="pedirConfirmacion(publicacion.id)"
+                >
+                  {{ 'listing.live.archive' | transloco }}
+                </button>
+              }
+            }
+          </div>
+        </li>
+      }
+    </ul>
+
+    @if (pausa.isError() || reanudacion.isError() || archivo.isError()) {
+      <p class="mias__error tipo-cuerpo" role="alert">
+        {{ claveDeError(pausa.error() ?? reanudacion.error() ?? archivo.error()) | transloco }}
+      </p>
+    }
+  }
+</section>

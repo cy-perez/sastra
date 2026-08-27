@@ -1,5 +1,8 @@
 package co.sendik.shared.rest;
 
+import co.sendik.catalog.exception.IncompleteListingException;
+import co.sendik.catalog.exception.MeasurementsIncompleteException;
+import co.sendik.catalog.rest.mapper.ListingFields;
 import co.sendik.identity.exception.AccountLockedException;
 import co.sendik.identity.exception.ResendLimitReachedException;
 import co.sendik.shared.error.DomainException;
@@ -10,6 +13,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,10 +21,13 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
@@ -48,6 +55,7 @@ public class ApiExceptionHandler {
         LOG.info("Regla de negocio incumplida [{}] traceId={}: {}", e.code(), traceId, e.getMessage());
 
         ProblemDetail problema = construir(estado, e.code(), traceId);
+        camposQueFaltan(e).ifPresent(campos -> problema.setProperty("errors", campos));
 
         if (e instanceof ResendLimitReachedException) {
             return ResponseEntity.status(estado)
@@ -109,6 +117,27 @@ public class ApiExceptionHandler {
     }
 
     /**
+     * El cuerpo pasa del tope del resolvedor multipart.
+     *
+     * <p>Sin este manejador lo recogia el de {@code Exception} y respondia 500 con la traza
+     * entera en nivel {@code error}, a voluntad de cualquiera que subiera una foto grande.
+     * Y le decia al cliente que el servidor esta roto cuando lo que pasa es que el archivo
+     * no cabe.
+     *
+     * <p>Sale con el mismo {@code FILE_TOO_LARGE} que usa {@code ImagePolicy} cuando el
+     * tope que se pasa es el suyo: para quien sube, las dos situaciones son la misma y la
+     * respuesta util es la misma.
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ProblemDetail> archivoDemasiadoGrande(MaxUploadSizeExceededException e) {
+        String traceId = nuevoTraceId();
+        LOG.info("Subida por encima del tope del multipart traceId={}", traceId);
+
+        return ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE)
+                .body(construir(HttpStatus.CONTENT_TOO_LARGE, ErrorCode.FILE_TOO_LARGE, traceId));
+    }
+
+    /**
      * Un recurso estatico que no existe. Es un 404, no un error del servidor.
      *
      * <p>Sin este manejador lo recogia el de {@code Exception} y respondia 500,
@@ -129,6 +158,46 @@ public class ApiExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(construir(HttpStatus.NOT_FOUND, ErrorCode.COMMON_NOT_FOUND, traceId));
+    }
+
+    /**
+     * La seguridad de metodo denego. 403, no 500.
+     *
+     * <p>{@code @PreAuthorize} lanza dentro de la invocacion del controlador, asi que la
+     * recoge este consejo y no el filtro de Spring Security. Sin este manejador caia en el
+     * de {@code Exception}: 500 con la traza entera en nivel error, y un 500 confirma que
+     * la ruta existe igual que un 403.
+     *
+     * <p>Hoy no se llega aqui porque la regla de la cadena deniega antes, pero la
+     * redundancia entre regla de ruta y anotacion existe precisamente para el dia en que
+     * alguien mueva un endpoint y se quede sin regla. Ese dia tiene que responder 403.
+     *
+     * <p>Se registra en {@code info} y sin traza: no hay nada que investigar en que
+     * alguien pida lo que no le toca.
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ProblemDetail> sinPermiso(AccessDeniedException e) {
+        String traceId = nuevoTraceId();
+        LOG.info("Acceso denegado por seguridad de metodo traceId={}", traceId);
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(construir(HttpStatus.FORBIDDEN, ErrorCode.COMMON_FORBIDDEN, traceId));
+    }
+
+    /**
+     * Un parametro con el tipo equivocado. 400, no 500.
+     *
+     * <p>{@code ?page=abc} sobre un {@code int} lanza esto, y sin manejador caia en el de
+     * {@code Exception}: cada peticion mal escrita dejaba una traza completa en nivel
+     * error. Es una peticion invalida, y se responde como tal.
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ProblemDetail> parametroConTipoEquivocado(MethodArgumentTypeMismatchException e) {
+        String traceId = nuevoTraceId();
+        LOG.debug("Parametro con tipo equivocado traceId={} nombre={}", traceId, e.getName());
+
+        return ResponseEntity.badRequest()
+                .body(construir(HttpStatus.BAD_REQUEST, ErrorCode.COMMON_VALIDATION_FAILED, traceId));
     }
 
     /**
@@ -263,10 +332,46 @@ public class ApiExceptionHandler {
             // 400 y no 422: lo que se escribio no coincide con lo que se pedia
             // escribir, que es un problema de la peticion y no del negocio.
             case AUTH_CLOSE_CONFIRMATION_MISMATCH, COMMON_VALIDATION_FAILED -> HttpStatus.BAD_REQUEST;
+            case COMMON_FORBIDDEN -> HttpStatus.FORBIDDEN;
             case COMMON_NOT_FOUND -> HttpStatus.NOT_FOUND;
             case COMMON_TOO_MANY_REQUESTS -> HttpStatus.TOO_MANY_REQUESTS;
             case COMMON_UNEXPECTED -> HttpStatus.INTERNAL_SERVER_ERROR;
         };
+    }
+
+    /**
+     * Los campos que faltan para enviar a revision, uno por entrada.
+     *
+     * <p>El criterio 6 pide {@code errors} con una entrada por cada campo que falta, y no
+     * un mensaje suelto: el formulario tiene que poder marcar los campos, y para eso
+     * necesita saber cuales son. Las dos excepciones ya traen la lista; lo unico que pasa
+     * aqui es darle la forma que ya usa la validacion del borde, {@code field} y
+     * {@code code}.
+     *
+     * <p>El nombre del campo se traduce al del contrato: el dominio se nombra en espanol
+     * y la peticion en ingles, y quien tiene que marcar el campo es el formulario. Ver
+     * {@link ListingFields}.
+     *
+     * <p>Las medidas van con su grupo por delante —{@code measurements.CHEST}— porque en
+     * el formulario son un campo dentro de otro y no siete campos sueltos.
+     */
+    private static Optional<List<Map<String, String>>> camposQueFaltan(DomainException e) {
+        if (e instanceof IncompleteListingException incompleta) {
+            return Optional.of(incompleta.faltantes().stream()
+                    .map(ListingFields::enElContrato)
+                    .map(ApiExceptionHandler::comoCampoObligatorio)
+                    .toList());
+        }
+        if (e instanceof MeasurementsIncompleteException medidas) {
+            return Optional.of(medidas.faltantes().stream()
+                    .map(medida -> comoCampoObligatorio("measurements." + medida.name()))
+                    .toList());
+        }
+        return Optional.empty();
+    }
+
+    private static Map<String, String> comoCampoObligatorio(String campo) {
+        return Map.of("field", campo, "code", "VALIDATION_REQUIRED");
     }
 
     /** El nombre de la restriccion incumplida, como codigo estable para el frontend. */

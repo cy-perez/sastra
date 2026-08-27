@@ -21,7 +21,7 @@ se anuncie en el idioma que se anuncie.
 | Usuario | `User` | Cuenta con credenciales. Puede ser comprador, vendedor o ambos. |
 | Comprador | `Buyer` | Rol del usuario cuando compra. |
 | Vendedor | `Seller` | Rol del usuario cuando publica y vende. Persona natural. |
-| Vendedor verificado | `VerifiedSeller` | Vendedor que superó identidad, selfie y validación bancaria. Muestra sello. |
+| Vendedor verificado | `VerifiedSeller` | Vendedor que superó identidad, selfie y validación bancaria. Lleva la insignia de vendedor verificado, que es la única pieza de la interfaz que va en bronce (`docs/marca/manual.md`). |
 | Moderador | `Moderator` | Persona de Sendik que aprueba o rechaza publicaciones y verificaciones de vendedor. Es el único rol que ve la cédula y la selfie de alguien, y solo a través de un endpoint que registra cada lectura (RN-046, ADR-0018). |
 | Administrador | `Admin` | Persona de Sendik con acceso a la operación completa: configuración, cuentas y resolución de disputas. No es un moderador con más permisos: el moderador decide sobre lo que se publica y sobre quién queda verificado, y nada más. |
 
@@ -48,7 +48,7 @@ panel que los usa llega en Fase 4 (`docs/producto/alcance.md`).
 | De segunda | `SecondHand` | Todo lo que no es nuevo, es decir las otras tres condiciones. Es el par comercial de "nuevo" en menús, filtros y textos. Solo aplica a moda. |
 | Borrador | `Draft` | Publicación que el vendedor todavía está armando. No es visible para nadie más y se guarda incompleta. |
 | Categoría | `Category` | Árbol de clasificación de la prenda. Cada categoría declara sus sistemas de talla admisibles y su grupo de medida. El árbol vive en `docs/producto/categorias.md`. |
-| Familia | `CategoryFamily` | Primer nivel del árbol: parte superior, parte inferior, prenda entera, calzado y accesorios. No se publica en una familia, sino en una categoría suya. |
+| Familia | `CategoryFamily` | Primer nivel del árbol: parte superior, parte inferior, prenda entera, calzado, accesorios y tecnología. Son seis, y la sexta es la que decide que una categoría solo admita condición nueva (RN-064). No se publica en una familia, sino en una categoría suya. |
 | Talla | `Size` | Talla declarada, en uno de los sistemas que admite la categoría. |
 | Sistema de talla | `SizeSystem` | Qué escala se usa: por letra, numérica, en pulgadas de cintura, de calzado o única. Una categoría admite más de una y el vendedor elige. Lista cerrada en HU-007. |
 | Medidas | `Measurements` | Medidas reales en centímetros tomadas por el vendedor. |

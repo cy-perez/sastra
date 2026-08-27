@@ -53,4 +53,33 @@ test.describe('cascaron del sitio', () => {
 
     await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
   });
+
+  /**
+   * La reticula de iconos del manual: trazo de 2 y terminaciones RECTAS, la
+   * misma decision que los cortes rectos del isotipo. Se mide el estilo
+   * CALCULADO y no el atributo del SVG a proposito: el atributo es lo que hay
+   * que dejar de escribir, y una prueba que lo buscara premiaria justo el error.
+   * Los cuatro iconos de la cabecera iban a 1.75 con terminaciones por omision,
+   * y como son los unicos del sitio, el set entero estaba fuera de norma sin que
+   * nada lo dijera.
+   */
+  test('los iconos siguen la reticula de marca', async ({ page }) => {
+    await page.goto('/');
+
+    const iconos = page.locator('header svg');
+    await expect(iconos).not.toHaveCount(0);
+
+    for (const icono of await iconos.all()) {
+      const trazo = await icono.evaluate((elemento) => {
+        const estilo = getComputedStyle(elemento);
+        return {
+          grosor: estilo.strokeWidth,
+          terminacion: estilo.strokeLinecap,
+          union: estilo.strokeLinejoin,
+        };
+      });
+
+      expect(trazo).toEqual({ grosor: '2px', terminacion: 'butt', union: 'miter' });
+    }
+  });
 });

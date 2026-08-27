@@ -20,7 +20,7 @@ public final class MeasurementsIncompleteException extends DomainException {
     private final transient Set<MeasurementKind> faltantes;
 
     public MeasurementsIncompleteException(MeasurementGroup grupo, Set<MeasurementKind> faltantes) {
-        super(ErrorCode.COMMON_VALIDATION_FAILED, "Faltan medidas del grupo " + grupo + ": " + faltantes);
+        super(ErrorCode.CATALOG_LISTING_INCOMPLETE, "Faltan medidas del grupo " + grupo + ": " + faltantes);
         this.faltantes = Set.copyOf(faltantes);
     }
 

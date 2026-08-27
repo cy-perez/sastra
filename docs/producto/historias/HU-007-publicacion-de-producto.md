@@ -1,6 +1,6 @@
 # HU-007 — Publicación de producto
 
-**Fase:** 2 | **Estado:** pendiente
+**Fase:** 2 | **Estado:** hecha. Backend el 25 de agosto de 2026, interfaz el 26
 **Reglas que aplica:** RN-011, RN-013, RN-015 a RN-025, RN-029, RN-030,
 RN-061, RN-062, RN-063
 
@@ -315,15 +315,17 @@ Qué grupo declara cada categoría está en `docs/producto/categorias.md`.
 | Código | Visible | Valores |
 |---|---|---|
 | `ALPHA` | Talla por letra | XS, S, M, L, XL, XXL |
-| `NUMERIC_CO` | Talla numérica | 4, 6, 8, 10, 12, 14, 16, 18, 20 |
-| `WAIST_INCHES` | Talla de cintura en pulgadas | 26 a 46, de dos en dos |
-| `FOOTWEAR_CO` | Talla de calzado | 33 a 46 |
+| `NUMERIC_CO` | Talla numérica | 4 a 22, de dos en dos |
+| `WAIST_INCHES` | Talla de cintura en pulgadas | 26 a 44, de uno en uno |
+| `FOOTWEAR_CO` | Talla de calzado | 34 a 45 |
 | `ONE_SIZE` | Talla única | Un solo valor |
 
-**Estos valores hay que confirmarlos con alguien que venda ropa en Colombia.**
-Son la lista mínima defendible para poder escribir criterios verificables, no una
-decisión de producto ya tomada. Corregirlos no cambia el esquema: `size_system` y
-`size_value` lo soportan igual.
+**Confirmados el 26 de agosto de 2026** contra las guías de talla de tiendas que
+venden en Colombia. Tres cambiaron respecto a lo que esta historia había anotado
+como provisional, y el motivo de cada uno está en
+`docs/producto/categorias.md`, sección «Los valores de cada sistema de talla». El
+que más importa: `WAIST_INCHES` pasa a ir **de uno en uno**, porque el 33 es una
+talla corriente de jean de hombre y con el paso de dos no se podía publicar.
 
 **Una categoría admite más de un sistema, no uno solo.** Sin eje de género, unos
 jeans se venden en talla numérica y en pulgadas de cintura, así que la categoría
@@ -415,17 +417,39 @@ pase por moderación.
   |---|---|---|
   | `POST /api/v1/listings` | Vendedor verificado | Crea el borrador |
   | `GET /api/v1/listings/{id}` | Dueño, moderador, o cualquiera si está publicada | Lee una publicación |
-  | `PATCH /api/v1/listings/{id}` | Dueño | Guarda datos del producto |
+  | `PATCH /api/v1/listings/{id}` | Dueño | Guarda datos del producto. Vuelve a moderación (RN-062) |
+  | `PATCH /api/v1/listings/{id}/price` | Dueño | Solo el precio. No pasa por moderación |
+  | `PATCH /api/v1/listings/{id}/shipping` | Dueño | Solo peso y medidas de la caja. No pasa por moderación |
   | `POST /api/v1/listings/{id}/images` | Dueño | Sube una toma, multipart. El cuerpo lleva el `kind` |
   | `DELETE /api/v1/listings/{id}/images/{imageId}` | Dueño | Borra una toma o una imagen de referencia |
   | `POST /api/v1/listings/{id}/submission` | Dueño | Envía a revisión |
   | `DELETE /api/v1/listings/{id}/submission` | Dueño | Retira la solicitud |
+  | `DELETE /api/v1/listings/{id}/rejection` | Dueño | Retoma una rechazada y la devuelve a borrador |
   | `POST /api/v1/listings/{id}/approval` | Moderador | Aprueba |
   | `POST /api/v1/listings/{id}/rejection` | Moderador | Rechaza con motivo |
   | `POST /api/v1/listings/{id}/pause` | Dueño | Pausa |
   | `DELETE /api/v1/listings/{id}/pause` | Dueño | Reanuda |
-  | `POST /api/v1/listings/{id}/archival` | Dueño o moderador | Archiva |
+  | `POST /api/v1/listings/{id}/archival` | Dueño | Archiva lo suyo, sin motivo |
+  | `POST /api/v1/listings/{id}/removal` | Moderador | Retira lo de otra persona, con motivo (RN-024) |
   | `GET /api/v1/users/me/listings` | Dueño | Sus publicaciones, paginado |
+
+  **Cuatro rutas más de las que esta tabla traía**, decididas al implementarla el
+  25 de agosto de 2026:
+
+  - `PATCH /price` y `PATCH /shipping` salen del `PATCH` general porque su
+    consecuencia es la contraria: editar contenido devuelve a moderación y
+    cambiar precio o envío no (criterios 27 y 28). Con un solo `PATCH`, el
+    controlador tendría que decidir por los campos del cuerpo cuál de las dos
+    cosas pasa, y eso es una regla de negocio en el borde.
+  - `DELETE /rejection` no estaba y hacía falta: `REJECTED → PENDING_REVIEW` no
+    es una transición válida y subir una toma no cambia el estado, así que a
+    quien le rechazaran por las fotos no le quedaba forma de reenviar sin tocar
+    además un texto que no tenía nada malo (criterio 23).
+  - `/archival` y `/removal` se separan porque son dos actos distintos: el
+    vendedor archiva lo suyo sin dar explicaciones y el moderador retira lo de
+    otra persona con un motivo que va en el correo. Con una sola ruta, la
+    autorización no puede exigir rol y el cuerpo tiene un campo obligatorio para
+    uno y prohibido para el otro.
 
   `docs/arquitectura/contrato-api.md` citaba `/listings/{id}/submit-for-review`
   como ejemplo de excepción con verbo. El código no hace eso en ninguna ruta, y
@@ -504,10 +528,16 @@ para que quien implemente no lo vuelva a abrir.
 
 **Bloquea la implementación:**
 
-- **La sección «Publicación de producto — Fase 2» de `textos-web.md`**, de donde
-  salen las claves `listing.*`. Bloquea la interfaz, no el backend: ningún texto
-  visible se escribe en la plantilla. La migración, el dominio y los endpoints se
-  pueden hacer sin ella.
+- ~~**La sección «Publicación de producto — Fase 2» de `textos-web.md`**, de donde
+  salen las claves `listing.*`.~~ **Escrita el 26 de agosto de 2026.** Con ella y
+  con el backend cerrado el 25 de agosto, **esta historia ya no tiene nada que la
+  bloquee**: lo que falta es implementar la interfaz.
+
+  Dos cosas de esa sección siguen sin redactar a propósito, y ninguna bloquea el
+  formulario: cómo se enuncia la garantía del fabricante en la ficha (RN-067, no
+  se escribe hasta que pase revisión de abogado) y el rótulo de las imágenes de
+  referencia en la ficha y el carrusel (RN-066). Las dos son de la ficha de
+  producto, que es otra historia.
 
 El árbol de categorías **ya no bloquea**: se aprobó el 24 de agosto de 2026 y está
 en `docs/producto/categorias.md`, con el grupo de medida y los sistemas de talla
@@ -517,14 +547,20 @@ esta historia, ya aplicadas: `categories.size_systems` es plural, y el grupo
 
 **No bloquea, pero conviene decidirlo antes de encender la bandera:**
 
-- **Los valores de talla** de la tabla de referencia, que hay que confirmar con
-  alguien que venda ropa en Colombia. Corregirlos no toca el esquema.
-- **Los nombres visibles de las veinticuatro categorías en inglés**, que van en la
-  migración que las siembra.
-- **`LISTING_REVIEW_DAYS`**, o la decisión de no prometer plazo. Mientras no se
-  decida, la interfaz no promete nada.
-- **Si hay límite de publicaciones activas por vendedor**, ya anotado como
-  pendiente en `textos-web.md`. Sin decisión no hay límite, y eso también es una
-  decisión.
-- **Plazo máximo de despacho del vendedor**, anotado en `textos-web.md`. No toca
-  esta historia; sí la Fase 3.
+- ~~**Los valores de talla** de la tabla de referencia.~~ **Confirmados el 26 de
+  agosto de 2026** contra las guías de talla del mercado colombiano. Tres
+  cambiaron; ver arriba.
+- ~~**Los nombres visibles de las categorías en inglés.**~~ **Ya estaban** en la
+  migración que las siembra, para las treinta y una. Lo que faltaba era la
+  ortografía del español, corregida en `V11`.
+- ~~**`LISTING_REVIEW_DAYS`**, o la decisión de no prometer plazo.~~ **Decidido el
+  26 de agosto de 2026: dos días hábiles.** Va por configuración porque la pantalla
+  lo dice en voz alta y cambiarlo no puede exigir un despliegue. Nadie lo hace
+  cumplir: una publicación que tarda más no cambia de estado sola.
+- ~~**Si hay límite de publicaciones activas por vendedor.**~~ **Decidido el 26 de
+  agosto de 2026: no hay límite, para empezar.** No es una regla que se implemente
+  sino una que no existe: no hay contador, no hay validación y ningún texto lo
+  insinúa. El día que se ponga uno, entra por una regla de negocio y por su
+  historia, no por una constante.
+- **Plazo máximo de despacho del vendedor**, anotado en `textos-web.md`. Sigue sin
+  decidir. No toca esta historia; sí la Fase 3.

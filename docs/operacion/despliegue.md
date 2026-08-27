@@ -9,40 +9,33 @@ procedimiento.
 
 ## Cuándo se ejecuta esta lista
 
-**No ahora, y a propósito.** El despliegue del sitio —dominio y hospedaje— se hace
-cuando el proyecto esté lo más completo posible; la decisión y su motivo están en
-`entornos.md`. Este documento se queda escrito y listo para ese día.
+**Ahora, para `dev`.** El dominio `sendik.co` se contrató en GoDaddy el 26 de
+agosto de 2026 y con eso se cerró la última decisión que faltaba, la del hospedaje
+(ADR-0024). **La lista se sigue entera**, de principio a fin.
 
-Lo que sí se hace desde ya es **crear las cuentas de GCP que se necesiten en capa
-gratuita** para probar en local contra los servicios de verdad: Cloud Storage para
-las imágenes es el primer caso, y llegarán los que hagan falta. De esta lista, eso
-es el paso 1 (el proyecto), el paso 3 (los dos cubos) y la cuenta de servicio
-`sendik-backend` del paso 5, que es la identidad con la que el backend lee y
-escribe en los cubos y la que da credenciales a la máquina de desarrollo. Nada de
-eso cuesta.
+Los nueve pasos hacen falta para levantar `dev`: el proyecto (1), la base de datos
+en capa gratuita (2), los dos cubos (3), los secretos en Secret Manager (4), las
+cuentas de servicio (5), la federación de identidades con GitHub (6), el hospedaje
+y el DNS (7), los entornos de GitHub con sus variables (8) y la comprobación (9).
 
-Esperan los pasos que solo sirven para poner el sitio en pie: los secretos de
-Secret Manager (4), que en local llegan por `.env`; la cuenta de servicio de
-despliegue (5); la federación de identidades con GitHub (6); el hospedaje del
-sitio (7), que además todavía no tiene proveedor; y los entornos de GitHub con su
-aprobación manual (8).
+Del paso 8, lo único que es exclusivo de producción es el revisor obligatorio y la
+columna `prod` de las tablas de variables: se pueden dejar para después sin que
+`dev` se resienta, aunque cuesta menos configurarlas de una vez.
 
-La diferencia importa porque son dos cosas que suelen confundirse: probar contra
-la nube no es estar en la nube. Se prueba contra Cloud Storage real desde la
-máquina de desarrollo, con una cuenta gratuita y un bucket de pruebas, y nada de
-eso implica un sitio publicado, un dominio comprado ni una instancia encendida.
+**Y sigue costando cero.** Cloud Run escala a cero en las dos piezas, la base de
+datos es Neon o Supabase en capa gratuita, Cloud Storage entra en sus 5GB
+gratuitos, el certificado lo gestiona Google sin cobrar y el DNS va incluido con el
+dominio. Lo único ya pagado es el dominio, que era la condición para llegar aquí.
 
-Los servicios de pago —el dominio `sendik.co`, la instancia mínima siempre activa,
-Cloud SQL, el balanceador con certificado— se contratan justo antes del
-lanzamiento inicial, no antes.
+Lo que **sigue esperando** es producción: la instancia mínima siempre activa, Cloud
+SQL —que cobra por hora encendida aunque nadie lo use— y el dominio raíz
+`sendik.co`, que no se apunta a ningún sitio hasta que haya algo terminado detrás.
 
 > **Antes de desplegar a producción de verdad**, falta una cosa que no es
 > técnica: los tres textos legales siguen siendo `borrador-local`, que es relleno
 > sin valor legal (`textos-legales.md`). Publicar el registro con un consentimiento
-> que apunta a un borrador no es aceptable. Con el despliegue aplazado esto deja de
-> ser urgente, pero sigue siendo bloqueante: los textos tienen que estar antes de
-> que exista un `prod`, y también antes de un `dev` al que entre alguien que no sea
-> quien lo construye.
+> que apunta a un borrador no es aceptable. **Para `dev` no bloquea mientras solo
+> entre quien lo construye**; en cuanto entre alguien más, sí.
 
 ## Lo que hace el flujo
 
@@ -60,10 +53,9 @@ extremo completas.
 la ejecución sale en verde con un aviso que apunta a este documento. Es
 deliberado: si fallaran, cada integración a `main` dejaría una ejecución roja, y
 una canalización que está roja siempre deja de leerse justo antes del día en que
-se rompe de verdad. El interruptor es la presencia de `GCP_PROJECT_ID`; en cuanto exista, el backend
-empieza a desplegarse. El frontend no tiene trabajo de despliegue todavía, porque
-no hay proveedor de hospedaje elegido (ADR-0019): se escribe el día que se
-contrate.
+se rompe de verdad. El interruptor es la presencia de `GCP_PROJECT_ID`; en cuanto exista, **las dos
+piezas empiezan a desplegarse**: el backend en Java y el frontend con renderizado
+en servidor, las dos a Cloud Run y desde el mismo commit verificado (ADR-0024).
 
 Los secretos no pasan por GitHub Actions. Cloud Run los lee de Secret Manager y
 el flujo solo dice qué secreto va en qué variable de entorno. Consecuencia
@@ -98,8 +90,7 @@ gcloud artifacts repositories create sendik \
 
 ## 2. La base de datos
 
-En la etapa de prototipo es Neon o Supabase en capa gratuita; al lanzar, Cloud
-SQL. Lo único que necesita el backend es la cadena de conexión JDBC, el usuario y
+En `dev` es Neon o Supabase en capa gratuita; al lanzar `prod`, Cloud SQL. Lo único que necesita el backend es la cadena de conexión JDBC, el usuario y
 la contraseña.
 
 Crea la base y guarda los tres valores como secretos. **Con Cloud SQL hace falta
@@ -285,7 +276,7 @@ de una cuenta de nube ni de que haya red.
 
 ## 4. Los secretos
 
-Seis secretos, con estos nombres exactos porque son los que nombra el flujo:
+Ocho secretos, con estos nombres exactos porque son los que nombra el flujo:
 
 ```bash
 crear_secreto() {
@@ -300,11 +291,23 @@ crear_secreto sendik-mail-api-key 're_LA-CLAVE-DE-RESEND'
 
 # La clave de firma de los tokens. Se genera, no se elige: 32 bytes de verdad.
 crear_secreto sendik-jwt-secret "$(openssl rand -base64 48)"
+
+# Las dos de cifrado en columna (RN-046, ADR-0020). También se generan, y tienen
+# que ser DISTINTAS entre sí: la aplicación no arranca si son iguales.
+crear_secreto sendik-crypto-data-key-v1 "$(openssl rand -base64 32)"
+crear_secreto sendik-crypto-lookup-key "$(openssl rand -base64 32)"
 ```
 
 `JWT_SECRET` pide mínimo 32 caracteres y lo valida al arrancar. Cambiarlo
 invalida todos los tokens de acceso emitidos: la gente tiene que volver a entrar.
 No es motivo para no rotarlo, sí para hacerlo a una hora tranquila.
+
+**Las dos de cifrado no se rotan igual, y perderlas no es lo mismo.** Cambiar
+`JWT_SECRET` obliga a volver a entrar; perder `CRYPTO_DATA_KEY_V1` deja ilegibles
+para siempre el número de documento y el de cuenta bancaria ya guardados, porque
+nada más los puede descifrar. Rotarla es agregar la versión siguiente al mapa y
+mover `CRYPTO_CURRENT_KEY_VERSION`, dejando la vieja mientras exista una fila que
+la use; el detalle está en `docs/operacion/configuracion.md`.
 
 ## 5. Las dos cuentas de servicio
 
@@ -321,7 +324,8 @@ gcloud iam service-accounts create sendik-backend \
   --display-name="Backend de Sendik en ejecución"
 
 for secreto in sendik-db-url sendik-db-username sendik-db-password \
-               sendik-jwt-secret sendik-jwt-issuer sendik-mail-api-key; do
+               sendik-jwt-secret sendik-jwt-issuer sendik-mail-api-key \
+               sendik-crypto-data-key-v1 sendik-crypto-lookup-key; do
   gcloud secrets add-iam-policy-binding $secreto \
     --member="serviceAccount:sendik-backend@$PROYECTO.iam.gserviceaccount.com" \
     --role="roles/secretmanager.secretAccessor"
@@ -368,27 +372,119 @@ Cambia `TU-USUARIO/sendik` por el repositorio real en los dos sitios. El
 `attribute-condition` es la pieza que importa: es lo que impide que otro
 repositorio pida el mismo token.
 
-## 7. El hospedaje del sitio
+## 7. El hospedaje del sitio y el dominio
 
-**Este paso no se puede seguir todavía: no hay proveedor.** Vercel quedó
-descartado y el hospedaje se contrata junto con el dominio, así que el proveedor se
-elige ese día (ADR-0019). Lo que sí está decidido es qué tiene que cumplir, y la
-lista está en esa ADR: ejecución de Node 22 para el renderizado en servidor,
-latencia comparable a `us-east1`, configuración por variable de entorno,
-publicación del artefacto que ya pasó la verificación y que no toque las cabeceras
-que manda la aplicación. Las cabeceras de seguridad y las políticas de caché ya no
-son cosa del hospedaje: están en `frontend/src/server.ts` y las comprueba
-`frontend/e2e/cabeceras.spec.ts`.
+**Decidido el 26 de agosto de 2026 (ADR-0024): el frontend va a Cloud Run, junto
+al backend, y GoDaddy es el registrador de `sendik.co` y el servidor de DNS.**
 
-Cuando exista proveedor, este paso pasa a ser el suyo y hay que escribir a la vez
-el trabajo de despliegue del frontend en `despliegue.yml`, que hoy no existe.
+El plan de alojamiento compartido de GoDaddy **no ejecuta el sitio** y no hace
+falta tocarlo: su cPanel no trae Node de forma nativa y este frontend no es un
+sitio estático —`server.ts` resuelve el idioma y el tema antes de pintar, manda
+las cuatro cabeceras de seguridad y decide la caché de `/fuentes/` y de
+`/legal/`—. El motivo largo está en ADR-0024.
 
-Dos cosas que ya se sabrán ese día y conviene no volver a deducir: las variables
-del frontend —`API_BASE_URL`, `COMPANY_*`, `SUPPORT_EMAIL`, `LEGAL_*_VERSION`, con
-la lista completa en `configuracion.md`— se configuran **en el hospedaje**, no en
-este repositorio; y la región tiene que quedar en la misma zona que `us-east1` de
-Google, para que la llamada del renderizado del servidor a la API no cruce el
-continente.
+### 7.1 El servicio de Cloud Run del frontend
+
+Es un segundo servicio en el mismo proyecto y la misma región que el backend. La
+imagen la construye `frontend/Dockerfile`, en dos etapas: Node 22 para construir,
+Node 22 sin las dependencias de desarrollo para ejecutar, sin privilegios y
+leyendo `PORT`.
+
+No hay nada que crear a mano: el primer despliegue crea el servicio. Lo que sí hay
+que crear una vez es su **cuenta de servicio**, que es distinta de la del backend y
+mucho más pobre —el frontend no toca la base de datos, ni los cubos, ni los
+secretos—:
+
+```bash
+gcloud iam service-accounts create sendik-frontend \
+  --display-name "Frontend de Sendik en Cloud Run"
+```
+
+**Sin un solo permiso, y no es un olvido.** El servidor de renderizado solo habla
+HTTP con la API pública; darle acceso a algo de GCP sería ampliar la superficie sin
+motivo. Si algún día necesita leer un secreto, se le concede ese secreto y nada
+más.
+
+Y hay que dejar que el desplegador publique en su nombre, igual que con el backend:
+
+```bash
+gcloud iam service-accounts add-iam-policy-binding \
+  sendik-frontend@sendik-col.iam.gserviceaccount.com \
+  --member "serviceAccount:sendik-despliegue@sendik-col.iam.gserviceaccount.com" \
+  --role roles/iam.serviceAccountUser
+```
+
+### 7.2 Los dos nombres, mapeados a los dos servicios
+
+Cloud Run mapea un dominio propio y **gestiona el certificado sin costo**. Se hace
+una vez por nombre y por entorno:
+
+```bash
+# Primero hay que demostrar que el dominio es tuyo. Abre lo que diga el comando y
+# sigue el proceso; deja un registro TXT que se agrega en GoDaddy (paso 7.3).
+gcloud domains verify sendik.co
+
+# El sitio de dev y su API.
+gcloud beta run domain-mappings create \
+  --service sendik-web-dev --domain dev.sendik.co --region us-east1
+
+gcloud beta run domain-mappings create \
+  --service sendik-backend-dev --domain api-dev.sendik.co --region us-east1
+```
+
+Cada comando responde con **los registros DNS que hay que crear**. Anótalos: son
+los del paso siguiente y no se inventan, se copian de esa salida.
+
+> **Si el mapeo de dominios no está disponible en la región**, la alternativa sin
+> costo es Firebase Hosting delante de Cloud Run, que da el mismo dominio propio y
+> el mismo certificado gestionado. No se documenta aquí porque hoy no hace falta;
+> si algún día hace falta, es un cambio de este paso y de nada más: la aplicación
+> no se entera.
+
+### 7.3 El DNS, en GoDaddy
+
+En **GoDaddy → Mis productos → `sendik.co` → DNS → Administrar zonas**, agrega lo
+que devolvió el paso anterior. Para un subdominio, Cloud Run pide un `CNAME`:
+
+| Tipo | Nombre | Valor | Para qué |
+|---|---|---|---|
+| `CNAME` | `dev` | `ghs.googlehosted.com.` | El sitio de dev |
+| `CNAME` | `api-dev` | `ghs.googlehosted.com.` | La API de dev |
+| `TXT` | `@` | el que dé `gcloud domains verify` | Demostrar que el dominio es tuyo |
+
+**El dominio raíz `sendik.co` se queda como está por ahora.** En `dev` no se usa, y
+tocarlo antes de tener `prod` solo consigue que el sitio que la gente encuentre sea
+uno a medias. El día del lanzamiento, la raíz necesita registros `A` y `AAAA` —un
+`CNAME` no se puede poner en la raíz de una zona— y esos también los da
+`gcloud beta run domain-mappings describe`.
+
+**Quita antes lo que GoDaddy pone por su cuenta.** Un plan de alojamiento agrega
+registros que apuntan a sus propios servidores, y un `A` de GoDaddy conviviendo con
+lo de Cloud Run manda una parte del tráfico a un sitio vacío. Revisa que en la zona
+no quede ningún `A`, `AAAA` o `CNAME` apuntando a GoDaddy para los nombres de la
+tabla.
+
+### 7.4 Comprobarlo
+
+El DNS tarda: de minutos a un par de horas. Mientras tanto, el servicio ya responde
+por su dirección de `run.app`, que es la que usa la comprobación del flujo.
+
+```bash
+# Que el nombre resuelva a Google y no a GoDaddy.
+nslookup dev.sendik.co
+
+# Que responda por el nombre propio, con su certificado.
+curl -I https://dev.sendik.co
+
+# Y que las cabeceras sigan puestas al pasar por el nombre propio: es lo que
+# ADR-0019 exige del hospedaje, y ahora se puede comprobar de verdad.
+curl -sI https://dev.sendik.co | grep -iE 'x-frame|x-content|strict-transport|referrer'
+```
+
+Las cuatro cabeceras y las dos políticas de caché son de la aplicación, no del
+hospedaje: viven en `frontend/src/server.ts` y las comprueba
+`frontend/e2e/cabeceras.spec.ts`. Cloud Run no las toca, que era el sexto requisito
+de ADR-0019.
 
 ## 8. Los entornos de GitHub
 
@@ -402,9 +498,10 @@ Conviene también marcar en `prod` que solo puede desplegarse desde etiquetas.
 
 ### Secretos
 
-Ninguno, por ahora. La autenticación contra Google es por federación de
-identidades y no lleva clave (paso 6), y el token que hacía falta para publicar el
-frontend dependía del proveedor de hospedaje, que está por definir (ADR-0019).
+Ninguno. La autenticación contra Google es por federación de identidades y no
+lleva clave (paso 6), y el frontend se publica por la misma vía: al ir también a
+Cloud Run no hace falta ningún token de un proveedor externo (ADR-0024). Es una
+consecuencia agradable de la decisión y no su motivo.
 
 ### Variables
 
@@ -434,12 +531,47 @@ aparezcan tachadas en los registros cuando haga falta leerlas.
 | `STORAGE_PROVIDER` | `gcs` | `gcs` |
 | `STORAGE_PUBLIC_BASE_URL` | `https://storage.googleapis.com/sendik-publico-dev` | el dominio del CDN |
 
+Y las del frontend, que desde ADR-0024 también se despliega desde aquí. Van en el
+mismo sitio y por la misma razón: ninguna es secreta —el sitio las dice en voz alta
+o son direcciones públicas—, y el mismo artefacto sirve para los dos entornos
+porque la configuración llega por entorno y no compilada dentro.
+
+| Variable | `dev` | `prod` |
+|---|---|---|
+| `CLOUD_RUN_WEB_SERVICE` | `sendik-web-dev` | `sendik-web` |
+| `CLOUD_RUN_WEB_SERVICE_ACCOUNT` | `sendik-frontend@…` | ídem |
+| `CLOUD_RUN_WEB_MIN_INSTANCES` | `0` | `1` |
+| `CLOUD_RUN_WEB_MAX_INSTANCES` | `2` | `10` |
+| `CLOUD_RUN_WEB_MEMORY` | `512Mi` | `1Gi` |
+| `NG_ALLOWED_HOSTS` | `dev.sendik.co` | `sendik.co` |
+| `DEFAULT_LOCALE`, `AVAILABLE_LOCALES` | `es`, `es,en` | ídem |
+| `CLAIM_WINDOW_DAYS` | `3` | `3` |
+| `VERIFICATION_REVIEW_DAYS` | `2` | `2` |
+| `LISTING_REVIEW_DAYS` | `2` | `2` |
+| `LEGAL_TERMS_VERSION`, `LEGAL_PRIVACY_VERSION`, `LEGAL_COOKIES_VERSION` | `borrador-local` hasta que existan los textos | la versión real |
+
+El frontend reusa `APP_API_BASE_URL` —que le llega como `API_BASE_URL`, el nombre
+con el que lo lee `read-app-config.ts`—, `SUPPORT_EMAIL`, `COMPANY_*` y
+`COMMISSION_RATE` de la tabla de arriba: son el mismo valor para las dos piezas, y
+declararlos dos veces es la forma de que un día dejen de coincidir.
+
+`STORAGE_PUBLIC_BASE_URL` **no** va al frontend: las direcciones de las imágenes
+llegan ya formadas en la respuesta de la API y el navegador no compone ninguna.
+
+**Las versiones de los legales tienen que valer lo mismo en las dos piezas.** El
+backend guarda la versión con el consentimiento y el frontend sirve el texto: si no
+son la misma, la prueba del consentimiento no vale
+(`docs/operacion/datos-personales.md`). Las dos piezas leen el mismo nombre
+—`LEGAL_TERMS_VERSION`, `LEGAL_PRIVACY_VERSION`, `LEGAL_COOKIES_VERSION`—, así que
+se declara una vez por entorno y las dos lo reciben.
+
 `min-instances = 0` en `dev` es lo que hace que no cueste nada: Cloud Run escala
 a cero y sin tráfico no cobra. En `prod` se pone 1 para no pagar el arranque en
 frío en la primera visita del día, como dice `entornos.md`.
 
-`CLOUD_RUN_MIN_INSTANCES = 0` implica arranque en frío de varios segundos. Es lo
-aceptable en la etapa de prototipo.
+`CLOUD_RUN_MIN_INSTANCES = 0` implica arranque en frío de varios segundos, y con
+las dos piezas escaladas a cero son dos los que pueden arrancar. En `dev` es
+aceptable, y es justo lo que lo mantiene sin costo.
 
 ## 9. Comprobarlo
 
@@ -481,14 +613,10 @@ al menos un despliegue.
 
 Se anota para no confundir lo que falta con lo que está:
 
-- **Dominio y certificado.** `sendik.co` no está comprado, por decisión y no por
-  olvido: se contrata antes del lanzamiento inicial, junto con el resto de los
-  servicios de pago y con el hospedaje del sitio. Hasta entonces, la única
-  dirección asignada sola es la que da Cloud Run al backend, y las variables de
-  arriba llevan esa.
-
-- **El despliegue del frontend.** No existe: no hay proveedor de hospedaje elegido
-  (ADR-0019). El flujo publica solo el backend.
+- **El dominio raíz `sendik.co`.** No apunta a ningún sitio todavía, a propósito:
+  en `dev` no se usa, y apuntarlo antes de tener `prod` haría que lo que la gente
+  encuentre sea un sitio a medias. Necesita registros `A` y `AAAA`, no un `CNAME`
+  (paso 7.3).
 - **Registro y métricas.** Cloud Logging recoge la salida sin configurar nada,
   pero no hay ninguna alerta. Sentry para los errores del frontend está en
   `entornos.md` y aún no está conectado.

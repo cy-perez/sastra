@@ -1,6 +1,8 @@
 // Los adaptadores: base de datos, clientes externos, almacenamiento y la
 // configuracion tipada. Todo lo sucio y todo lo reemplazable.
 
+import java.util.concurrent.Callable
+
 plugins {
     id("sendik.spring-conventions")
 }
@@ -52,25 +54,44 @@ dependencies {
     testRuntimeOnly(libs.postgresql)
 }
 
-// Los seis repositorios JDBC no se pueden probar desde este modulo: necesitan el
-// esquema, el esquema lo define Flyway y las migraciones viven en `bootstrap`, que
-// esta mas arriba en el grafo. Sus pruebas de integracion estan alli
-// (SessionLifecycleTest, ProfileAndEmailChangeTest) y su cobertura se anota en el
-// archivo de ejecucion de ese modulo.
+// Los repositorios JDBC de este modulo no se pueden probar desde aqui: necesitan
+// el esquema, el esquema lo define Flyway y las migraciones viven en `bootstrap`,
+// que esta mas arriba en el grafo. Sus pruebas de integracion estan alli
+// (CatalogPersistenceTest, SessionLifecycleTest, SellerVerificationPersistenceTest,
+// ProfileAndEmailChangeTest) y su cobertura se anota en el archivo de ejecucion de
+// ese modulo, no en el de este.
 //
-// Por eso la regla de este modulo mide todo menos `persistence`: es lo que puede
-// alcanzar con pruebas propias, y sobre eso si exige el 80%. Lo que queda fuera no
-// queda sin medir, lo mide `verificarCoberturaAgregada` en la raiz, que une los
-// cinco modulos. Antes de esa tarea, este modulo no tenia ninguna prueba y la
-// verificacion se saltaba completa sin decir nada.
-val clasesConPruebaPropia = the<SourceSetContainer>()
-    .named("main")
-    .get()
-    .output
-    .classesDirs
-    .asFileTree
-    .matching { exclude("co/sendik/identity/persistence/**") }
+// Antes la regla resolvia eso excluyendo `identity/persistence` de la medicion: lo
+// que no podia alcanzar, no lo miraba. Esa lista quedo desactualizada en cuanto
+// llego `catalog/persistence`, y una exclusion que hay que recordar ampliar cada
+// vez que nace un adaptador no es una salvaguarda, es una trampa que estalla en el
+// commit siguiente.
+//
+// Ahora la regla lee los dos archivos de ejecucion, el propio y el de `bootstrap`,
+// y mide todas las clases del modulo. Una clase cubierta desde las pruebas de
+// integracion cuenta como lo que es: cubierta. No hay nada que excluir ni que
+// mantener al dia.
+//
+// Todo se resuelve con `Callable`, igual que la agregada de la raiz: los archivos
+// `.exec` no existen hasta que las pruebas corren, asi que la ruta se resuelve en
+// tiempo de ejecucion y no de configuracion.
+val datosDeEjecucion = files(Callable {
+    listOf(project, project(":bootstrap")).map { modulo ->
+        modulo.fileTree(modulo.layout.buildDirectory.dir("jacoco")) { include("*.exec") }
+    }
+})
 
-tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
-    classDirectories.setFrom(clasesConPruebaPropia)
+// El informe lee exactamente los mismos datos que la regla. Si solo cambiara la
+// regla, el HTML de este modulo seguiria diciendo 57% mientras la verificacion
+// pasa, y quien lo abriera no sabria a cual de los dos creerle.
+listOf(
+    tasks.named<JacocoCoverageVerification>("jacocoTestCoverageVerification"),
+    tasks.named<JacocoReport>("jacocoTestReport"),
+).forEach { tarea ->
+    tarea {
+        // Sin esto la tarea leeria un `.exec` de `bootstrap` viejo o inexistente y
+        // daria un numero que no corresponde al codigo que se esta verificando.
+        dependsOn(":bootstrap:test")
+        executionData.setFrom(datosDeEjecucion)
+    }
 }

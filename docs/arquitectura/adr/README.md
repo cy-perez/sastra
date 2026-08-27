@@ -41,7 +41,9 @@ la referencia.
 | 0016 | Accesibilidad automatizada con axe-core en las pruebas de extremo a extremo | Aceptada |
 | 0017 | Una suite de extremo a extremo que cruza las dos mitades | Aceptada |
 | 0018 | Almacenamiento de archivos: dos almacenes y subida por el backend | Aceptada |
-| 0019 | Un solo hospedaje, elegido al contratar el dominio | Aceptada |
+| 0019 | Un solo hospedaje, elegido al contratar el dominio | Aceptada; su decisión abierta la cierra ADR-0024 |
 | 0020 | Cifrado de datos sensibles: AES-GCM en la aplicación con HMAC indexado | Aceptada |
 | 0021 | Guard de ruta por rol, y qué se renderiza en el servidor | Aceptada |
 | 0022 | Cambio de identidad a Sendik y sustitución del sistema visual | Aceptada |
+| 0023 | Transporte de correo compartido entre contextos | Aceptada |
+| 0024 | El sitio se hospeda en Cloud Run; GoDaddy es el registrador y el DNS | Aceptada |

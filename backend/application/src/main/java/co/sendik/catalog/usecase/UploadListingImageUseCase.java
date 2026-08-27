@@ -35,6 +35,11 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>La imagen se guarda antes que la fila. De los dos fallos posibles se elige el que
  * se puede limpiar despues: un archivo huerfano en el almacen se barre, una fila que
  * apunta a un archivo que no existe rompe la ficha.
+ *
+ * <p>Eso vale para un fallo de la base de datos, que nadie puede prever. Lo que si se
+ * puede prever es que el agregado rechace la imagen —posicion fuera de rango, referencia
+ * sobre algo que no es tecnologia sellada, estado que no admite cambios—, y ahi el archivo
+ * se borra en el acto: es un caso que el cliente puede repetir a voluntad.
  */
 public class UploadListingImageUseCase {
 
@@ -77,13 +82,27 @@ public class UploadListingImageUseCase {
 
         Optional<FileKey> reemplazada = claveEnLaMismaPosicion(actual, comando);
 
-        ProductImage nueva = construir(comando, clave, imagen);
-        Listing conImagen = actual.conImagen(nueva, ahora);
+        Listing guardada;
+        try {
+            ProductImage nueva = construir(comando, clave, imagen);
+            Listing conImagen = actual.conImagen(nueva, ahora);
 
-        if (comando.desdeGaleria()) {
-            conImagen = conImagen.marcarCargaDesdeGaleria(ahora);
+            if (comando.desdeGaleria()) {
+                conImagen = conImagen.marcarCargaDesdeGaleria(ahora);
+            }
+            guardada = publicaciones.guardar(conImagen);
+        } catch (RuntimeException rechazada) {
+            // El archivo ya esta en el almacen publico y la publicacion no lo quiso: una
+            // posicion fuera de rango, una imagen de referencia sobre algo que no es
+            // tecnologia sellada (RN-066) o un estado que no admite cambios. La
+            // transaccion revierte la fila; el almacen no es transaccional y nadie mas va
+            // a volver por el.
+            //
+            // Sin esto, repetir una peticion invalida deja un archivo publico por intento
+            // y nada lo limita: esta ruta no pasa por el limitador de tasa.
+            almacen.borrar(clave);
+            throw rechazada;
         }
-        Listing guardada = publicaciones.guardar(conImagen);
 
         // Criterio 16: «la anterior se borra del almacen». Despues de guardar la fila,
         // por el mismo motivo que en el avatar: de los dos fallos posibles se elige el

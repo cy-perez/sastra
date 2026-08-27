@@ -173,25 +173,26 @@ class ObjetosDeValorTest {
         void deberia_reconstruir_lo_guardado_sin_revalidar() {
             Listing original = CatalogoDePrueba.publicada();
 
-            Listing reconstruida = Listing.existente(
-                    original.id(),
-                    original.product(),
-                    original.status(),
-                    original.images(),
-                    original.publishedAt(),
-                    original.moderatedBy(),
-                    original.moderatedAt(),
-                    original.rejectionReason(),
-                    original.rejectionNote(),
-                    original.attentionReasons(),
-                    original.version(),
-                    original.createdAt(),
-                    original.updatedAt());
+            Listing reconstruida = Listing.reconstruir()
+                    .id(original.id())
+                    .producto(original.product())
+                    .estado(original.status())
+                    .imagenes(original.images())
+                    .enviada(original.submittedAt())
+                    .publicada(original.publishedAt())
+                    .decididaPor(original.moderatedBy(), original.moderatedAt())
+                    .rechazadaPor(original.rejectionReason(), original.rejectionNote())
+                    .marcas(original.attentionReasons())
+                    .version(original.version())
+                    .creada(original.createdAt())
+                    .tocada(original.updatedAt())
+                    .armar();
 
             assertThat(reconstruida.status()).isEqualTo(ListingStatus.PUBLISHED);
             assertThat(reconstruida.sellerId()).isEqualTo(original.sellerId());
             assertThat(reconstruida.images()).hasSize(8);
             assertThat(reconstruida.updatedAt()).isEqualTo(original.updatedAt());
+            assertThat(reconstruida.submittedAt()).isEqualTo(original.submittedAt());
         }
 
         @Test

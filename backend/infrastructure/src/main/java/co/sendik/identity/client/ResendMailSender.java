@@ -8,6 +8,7 @@ import co.sendik.identity.model.User;
 import co.sendik.identity.model.UserLocale;
 import co.sendik.identity.port.out.MailSender;
 import co.sendik.shared.config.AppProperties;
+import co.sendik.shared.port.out.MailTransport;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -38,7 +39,7 @@ import org.springframework.web.client.RestClientResponseException;
 // AsyncMailSender pide "transporteDeCorreo" sin saber cual le toco.
 @Component("transporteDeCorreo")
 @ConditionalOnProperty(prefix = "sendik.mail", name = "provider", havingValue = "resend", matchIfMissing = true)
-public class ResendMailSender implements MailSender {
+public class ResendMailSender implements MailSender, MailTransport {
 
     private static final Logger LOG = LoggerFactory.getLogger(ResendMailSender.class);
     private static final Duration TIEMPO_DE_ESPERA = Duration.ofSeconds(10);
@@ -331,7 +332,13 @@ public class ResendMailSender implements MailSender {
                 + "</a></p>";
     }
 
-    private void enviar(String destinatario, String asunto, String html) {
+    /**
+     * El envio de verdad. Es tambien {@link MailTransport}: lo que hace es exactamente lo
+     * que ese puerto promete, y asi cualquier contexto puede mandar un correo sin pasar
+     * por el puerto de identidad (ADR-0023).
+     */
+    @Override
+    public void enviar(String destinatario, String asunto, String html) {
         Map<String, Object> peticion =
                 Map.of("from", propiedades.from(), "to", List.of(destinatario), "subject", asunto, "html", html);
 

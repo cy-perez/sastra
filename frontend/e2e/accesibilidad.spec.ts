@@ -59,6 +59,14 @@ const RUTAS_PUBLICAS: readonly { readonly ruta: string; readonly nombre: string 
   { ruta: '/registro', nombre: 'registro' },
   { ruta: '/ingresar', nombre: 'ingreso' },
   { ruta: '/recuperar-contrasena', nombre: 'recuperacion' },
+  // Las dos de publicar. **Lo que se audita aqui es su rama sin backend**: sin API,
+  // el arbol de categorias falla y el listado propio se queda sin sesion, asi que lo
+  // que axe recorre es el encabezado, el estado de carga y el mensaje de error. Es
+  // menos que el formulario entero y sigue siendo mas que nada: son ramas que una
+  // persona ve de verdad, y hasta que FEATURE_PUBLISHING se encienda no hay forma de
+  // llegar al formulario en una suite sin backend.
+  { ruta: '/publicar', nombre: 'publicar' },
+  { ruta: '/mis-publicaciones', nombre: 'mis publicaciones' },
   // El comodin. Es una pagina como cualquier otra y se llega a ella por error,
   // que es justo cuando conviene que no este rota.
   { ruta: '/esta-ruta-no-existe', nombre: 'no encontrada' },

@@ -51,6 +51,20 @@ public final class Listing {
     private final ListingStatus status;
     private final List<ProductImage> images;
 
+    /**
+     * Cuando entro a revision, para que la bandeja del moderador ordene por espera real
+     * (HU-008, criterio 1).
+     *
+     * <p>No sirve {@code updatedAt}: cambiar el precio de algo que espera turno tambien
+     * lo mueve, y ordenar por el haria que tocar el precio retrasara la propia revision.
+     *
+     * <p>Lo sella {@link #selloDeRevision} en <strong>toda</strong> entrada a
+     * {@code PENDING_REVIEW}, no solo en {@link #enviarARevision}: RN-062 tambien trae
+     * de vuelta lo que se edita, y una publicacion que vuelve con el sello viejo se
+     * quedaria para siempre a la cabeza de la cola.
+     */
+    private final @Nullable Instant submittedAt;
+
     private final @Nullable Instant publishedAt;
     private final @Nullable ModeratorId moderatedBy;
     private final @Nullable Instant moderatedAt;
@@ -68,82 +82,211 @@ public final class Listing {
     private final Instant createdAt;
     private final Instant updatedAt;
 
-    private Listing(
-            ListingId id,
-            Product product,
-            ListingStatus status,
-            List<ProductImage> images,
-            @Nullable Instant publishedAt,
-            @Nullable ModeratorId moderatedBy,
-            @Nullable Instant moderatedAt,
-            @Nullable ListingRejectionReason rejectionReason,
-            @Nullable String rejectionNote,
-            Set<AttentionReason> attentionReasons,
-            long version,
-            Instant createdAt,
-            Instant updatedAt) {
-        this.id = Objects.requireNonNull(id, "El identificador es obligatorio");
-        this.product = Objects.requireNonNull(product, "El producto es obligatorio");
-        this.status = Objects.requireNonNull(status, "El estado es obligatorio");
-        this.images = List.copyOf(images);
-        this.publishedAt = publishedAt;
-        this.moderatedBy = moderatedBy;
-        this.moderatedAt = moderatedAt;
-        this.rejectionReason = rejectionReason;
-        this.rejectionNote = rejectionNote;
-        this.attentionReasons = attentionReasons.isEmpty() ? Set.of() : Set.copyOf(EnumSet.copyOf(attentionReasons));
-        this.version = version;
-        this.createdAt = Objects.requireNonNull(createdAt, "La fecha de creacion es obligatoria");
-        this.updatedAt = Objects.requireNonNull(updatedAt, "La fecha de actualizacion es obligatoria");
+    private Listing(Builder datos) {
+        this.id = Objects.requireNonNull(datos.id, "El identificador es obligatorio");
+        this.product = Objects.requireNonNull(datos.product, "El producto es obligatorio");
+        this.status = Objects.requireNonNull(datos.status, "El estado es obligatorio");
+        this.images = List.copyOf(datos.images);
+        this.submittedAt = datos.submittedAt;
+        this.publishedAt = datos.publishedAt;
+        this.moderatedBy = datos.moderatedBy;
+        this.moderatedAt = datos.moderatedAt;
+        this.rejectionReason = datos.rejectionReason;
+        this.rejectionNote = datos.rejectionNote;
+        this.attentionReasons =
+                datos.attentionReasons.isEmpty() ? Set.of() : Set.copyOf(EnumSet.copyOf(datos.attentionReasons));
+        this.version = Objects.requireNonNull(datos.version, "La version es obligatoria (criterio 34)");
+        this.createdAt = Objects.requireNonNull(datos.createdAt, "La fecha de creacion es obligatoria");
+        this.updatedAt = Objects.requireNonNull(datos.updatedAt, "La fecha de actualizacion es obligatoria");
+
+        // El invariante que V12 introduce, y el unico sitio por el que pasan los dos
+        // caminos de construccion. Sin esto era solo un comentario: `estado(valor)` mueve
+        // el estado sin tocar el sello, asi que reconstruir una fila en revision sin el se
+        // podia, y esa publicacion se quedaba a la cabeza de la cola para siempre.
+        if (this.status == ListingStatus.PENDING_REVIEW && this.submittedAt == null) {
+            throw new IllegalArgumentException("Una publicacion en revision lleva sello de entrada (V12)");
+        }
     }
 
     /** Criterio 4: nace en borrador, sin imagenes, y con la marca de RN-020 si toca. */
     public static Listing crearBorrador(ListingId id, Product producto, Instant ahora) {
-        return new Listing(
-                id,
-                producto,
-                ListingStatus.DRAFT,
-                List.of(),
-                null,
-                null,
-                null,
-                null,
-                null,
-                marcaPorPrecio(producto.price(), Set.of()),
-                0L,
-                ahora,
-                ahora);
+        return new Builder()
+                .id(id)
+                .producto(producto)
+                .estado(ListingStatus.DRAFT)
+                .marcas(marcaPorPrecio(producto.price(), Set.of()))
+                .version(0L)
+                .creada(ahora)
+                .tocada(ahora)
+                .armar();
     }
 
-    /** Reconstruye lo guardado. Solo lo usa la capa de persistencia. */
-    public static Listing existente(
-            ListingId id,
-            Product product,
-            ListingStatus status,
-            List<ProductImage> images,
-            @Nullable Instant publishedAt,
-            @Nullable ModeratorId moderatedBy,
-            @Nullable Instant moderatedAt,
-            @Nullable ListingRejectionReason rejectionReason,
-            @Nullable String rejectionNote,
-            Set<AttentionReason> attentionReasons,
-            long version,
-            Instant createdAt,
-            Instant updatedAt) {
-        return new Listing(
-                id,
-                product,
-                status,
-                images,
-                publishedAt,
-                moderatedBy,
-                moderatedAt,
-                rejectionReason,
-                rejectionNote,
-                attentionReasons,
-                version,
-                createdAt,
-                updatedAt);
+    /**
+     * Reconstruye lo guardado. Solo lo usa la capa de persistencia.
+     *
+     * <p>Por nombre y no por posicion, y no es cosmetica: cuatro de los campos son
+     * {@code Instant} y varios admiten nulo, asi que dos argumentos intercambiados
+     * compilaban sin protestar. Ademas un campo nuevo deja de romper a quien reconstruye
+     * —solo se anade una llamada mas— que es exactamente lo que costo {@code
+     * submittedAt}.
+     */
+    public static Builder reconstruir() {
+        return new Builder();
+    }
+
+    /** Este mismo, listo para cambiarle lo que haga falta. */
+    private Builder copia() {
+        return new Builder()
+                .id(id)
+                .producto(product)
+                .estado(status)
+                .imagenes(images)
+                .enviada(submittedAt)
+                .publicada(publishedAt)
+                .decididaPor(moderatedBy, moderatedAt)
+                .rechazadaPor(rejectionReason, rejectionNote)
+                .marcas(attentionReasons)
+                .version(version)
+                .creada(createdAt)
+                .tocada(updatedAt);
+    }
+
+    /**
+     * Arma una publicacion nombrando lo que se le pone.
+     *
+     * <p>Sirve para dos cosas: reconstruir una fila guardada y copiar esta publicacion
+     * cambiandole algo. Los nombres de los metodos van en espanol como el resto del
+     * dominio; el del tipo, en ingles como todos los tipos del proyecto.
+     */
+    public static final class Builder {
+
+        private @Nullable ListingId id;
+        private @Nullable Product product;
+        private @Nullable ListingStatus status;
+        private List<ProductImage> images = List.of();
+        private @Nullable Instant submittedAt;
+        private @Nullable Instant publishedAt;
+        private @Nullable ModeratorId moderatedBy;
+        private @Nullable Instant moderatedAt;
+        private @Nullable ListingRejectionReason rejectionReason;
+        private @Nullable String rejectionNote;
+        private Set<AttentionReason> attentionReasons = Set.of();
+
+        /**
+         * Envuelta para que omitirla no compile en silencio.
+         *
+         * <p>Con el constructor posicional era obligatoria por construccion. Con el
+         * ensamblador, un `long` sin poner vale 0, que ademas es una version valida para
+         * una fila nueva: el sintoma seria un UPDATE que no afecta ninguna fila y sale como
+         * conflicto optimista donde no lo habia (criterio 34).
+         */
+        private @Nullable Long version;
+
+        private @Nullable Instant createdAt;
+        private @Nullable Instant updatedAt;
+
+        private Builder() {}
+
+        public Builder id(ListingId valor) {
+            this.id = valor;
+            return this;
+        }
+
+        public Builder producto(Product valor) {
+            this.product = valor;
+            return this;
+        }
+
+        public Builder estado(ListingStatus valor) {
+            this.status = valor;
+            return this;
+        }
+
+        /**
+         * Mueve el estado y sella la entrada a revision en el mismo gesto.
+         *
+         * <p>Van juntos porque separarlos deja escribir uno sin el otro, y eso es
+         * justamente el error: una publicacion que entra a la cola sin sello, o que
+         * vuelve conservando el viejo, se queda a la cabeza para siempre.
+         */
+        public Builder estado(ListingStatus valor, Instant ahora) {
+            this.submittedAt = selloDeRevision(valor, ahora);
+            this.status = valor;
+            return tocada(ahora);
+        }
+
+        /**
+         * Sella si y solo si la publicacion entra a revision.
+         *
+         * <p>No hace falta preguntar si ya estaba en revision: {@code PENDING_REVIEW} no
+         * es destino de si mismo en {@link ListingStatus}, y todos los caminos que llaman
+         * aqui pasan antes por {@code exigirTransicion} o por {@code destinoTrasEditar},
+         * que lanzan. Se comprobo que esa rama era inalcanzable y se quito en vez de
+         * dejarla como una defensa que ninguna prueba podia cubrir.
+         *
+         * <p>Lo que si protege contra un cambio futuro de esa tabla es el guardia del
+         * constructor, que rechaza una publicacion en revision sin sello.
+         */
+        private @Nullable Instant selloDeRevision(ListingStatus destino, Instant ahora) {
+            return destino == ListingStatus.PENDING_REVIEW ? ahora : submittedAt;
+        }
+
+        public Builder imagenes(List<ProductImage> valor) {
+            this.images = valor;
+            return this;
+        }
+
+        /** Solo para reconstruir: en una copia lo decide el propio cambio de estado. */
+        public Builder enviada(@Nullable Instant valor) {
+            this.submittedAt = valor;
+            return this;
+        }
+
+        public Builder publicada(@Nullable Instant valor) {
+            this.publishedAt = valor;
+            return this;
+        }
+
+        public Builder decididaPor(@Nullable ModeratorId moderador, @Nullable Instant cuando) {
+            this.moderatedBy = moderador;
+            this.moderatedAt = cuando;
+            return this;
+        }
+
+        public Builder rechazadaPor(@Nullable ListingRejectionReason motivo, @Nullable String nota) {
+            this.rejectionReason = motivo;
+            this.rejectionNote = nota;
+            return this;
+        }
+
+        /** Aprobar borra el rechazo anterior: una publicacion viva no arrastra motivo. */
+        public Builder sinRechazo() {
+            return rechazadaPor(null, null);
+        }
+
+        public Builder marcas(Set<AttentionReason> valor) {
+            this.attentionReasons = valor;
+            return this;
+        }
+
+        public Builder version(long valor) {
+            this.version = valor;
+            return this;
+        }
+
+        public Builder creada(Instant valor) {
+            this.createdAt = valor;
+            return this;
+        }
+
+        public Builder tocada(Instant valor) {
+            this.updatedAt = valor;
+            return this;
+        }
+
+        public Listing armar() {
+            return new Listing(this);
+        }
     }
 
     // ------------------------------------------------------------------ imagenes
@@ -243,20 +386,11 @@ public final class Listing {
         Objects.requireNonNull(moderador, "El moderador es obligatorio");
         exigirTransicion(ListingStatus.PUBLISHED);
 
-        return new Listing(
-                id,
-                product,
-                ListingStatus.PUBLISHED,
-                images,
-                ahora,
-                moderador,
-                ahora,
-                null,
-                null,
-                attentionReasons,
-                version,
-                createdAt,
-                ahora);
+        return copia().estado(ListingStatus.PUBLISHED, ahora)
+                .publicada(ahora)
+                .decididaPor(moderador, ahora)
+                .sinRechazo()
+                .armar();
     }
 
     /** Criterio 22: motivo de la lista cerrada y nota opcional. */
@@ -266,20 +400,10 @@ public final class Listing {
         Objects.requireNonNull(motivo, "El motivo de rechazo es obligatorio (RN-022)");
         exigirTransicion(ListingStatus.REJECTED);
 
-        return new Listing(
-                id,
-                product,
-                ListingStatus.REJECTED,
-                images,
-                publishedAt,
-                moderador,
-                ahora,
-                motivo,
-                nota,
-                attentionReasons,
-                version,
-                createdAt,
-                ahora);
+        return copia().estado(ListingStatus.REJECTED, ahora)
+                .decididaPor(moderador, ahora)
+                .rechazadaPor(motivo, nota)
+                .armar();
     }
 
     /** Criterio 29: pausar y reanudar no pasan por moderacion. */
@@ -314,20 +438,11 @@ public final class Listing {
 
         List<ProductImage> nuevas = editado.estaSellado() ? images : soloTomas();
 
-        return new Listing(
-                id,
-                editado,
-                destino,
-                nuevas,
-                publishedAt,
-                moderatedBy,
-                moderatedAt,
-                rejectionReason,
-                rejectionNote,
-                marcaPorPrecio(editado.price(), attentionReasons),
-                version,
-                createdAt,
-                ahora);
+        return copia().producto(editado)
+                .imagenes(nuevas)
+                .estado(destino, ahora)
+                .marcas(marcaPorPrecio(editado.price(), attentionReasons))
+                .armar();
     }
 
     /**
@@ -339,40 +454,17 @@ public final class Listing {
     public Listing cambiarPrecio(Money nuevo, Instant ahora) {
         exigirNoTerminal();
 
-        return new Listing(
-                id,
-                product.conPrecio(nuevo),
-                status,
-                images,
-                publishedAt,
-                moderatedBy,
-                moderatedAt,
-                rejectionReason,
-                rejectionNote,
-                marcaPorPrecio(nuevo, attentionReasons),
-                version,
-                createdAt,
-                ahora);
+        return copia().producto(product.conPrecio(nuevo))
+                .marcas(marcaPorPrecio(nuevo, attentionReasons))
+                .tocada(ahora)
+                .armar();
     }
 
     /** Tampoco pasa por moderacion: no altera lo que un moderador aprobo. */
     public Listing cambiarEnvio(ShippingDimensions nuevo, Instant ahora) {
         exigirNoTerminal();
 
-        return new Listing(
-                id,
-                product.conEnvio(nuevo),
-                status,
-                images,
-                publishedAt,
-                moderatedBy,
-                moderatedAt,
-                rejectionReason,
-                rejectionNote,
-                attentionReasons,
-                version,
-                createdAt,
-                ahora);
+        return copia().producto(product.conEnvio(nuevo)).tocada(ahora).armar();
     }
 
     /** Criterio 18: la toma vino de galeria, asi que se mira con mas atencion. */
@@ -383,20 +475,7 @@ public final class Listing {
         marcas.addAll(attentionReasons);
         marcas.add(AttentionReason.GALLERY_UPLOAD);
 
-        return new Listing(
-                id,
-                product,
-                status,
-                images,
-                publishedAt,
-                moderatedBy,
-                moderatedAt,
-                rejectionReason,
-                rejectionNote,
-                marcas,
-                version,
-                createdAt,
-                ahora);
+        return copia().marcas(marcas).tocada(ahora).armar();
     }
 
     // ------------------------------------------------------------------ consultas
@@ -427,20 +506,7 @@ public final class Listing {
 
     /** Tras guardar, la fila queda una version por delante. */
     public Listing conVersion(long nueva) {
-        return new Listing(
-                id,
-                product,
-                status,
-                images,
-                publishedAt,
-                moderatedBy,
-                moderatedAt,
-                rejectionReason,
-                rejectionNote,
-                attentionReasons,
-                nueva,
-                createdAt,
-                updatedAt);
+        return copia().version(nueva).armar();
     }
 
     public boolean esVisible() {
@@ -454,6 +520,11 @@ public final class Listing {
 
     public boolean requiereAtencion() {
         return !attentionReasons.isEmpty();
+    }
+
+    /** Cuando entro a revision por ultima vez, o nulo si nunca ha entrado. */
+    public @Nullable Instant submittedAt() {
+        return submittedAt;
     }
 
     public Set<AttentionReason> attentionReasons() {
@@ -567,19 +638,6 @@ public final class Listing {
     }
 
     private Listing conEstadoEImagenes(ListingStatus nuevoEstado, List<ProductImage> nuevasImagenes, Instant ahora) {
-        return new Listing(
-                id,
-                product,
-                nuevoEstado,
-                nuevasImagenes,
-                publishedAt,
-                moderatedBy,
-                moderatedAt,
-                rejectionReason,
-                rejectionNote,
-                attentionReasons,
-                version,
-                createdAt,
-                ahora);
+        return copia().imagenes(nuevasImagenes).estado(nuevoEstado, ahora).armar();
     }
 }

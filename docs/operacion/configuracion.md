@@ -40,7 +40,7 @@ correo, ningún NIT, ningún porcentaje de comisión.
 | `RATE_LIMIT_SESSION_WINDOW` | `PT1M` | no, `PT1M` por omisión |
 | `RATE_LIMIT_MAX_KEYS` | `50000` | no, `50000` por omisión |
 | `APP_BASE_URL` | `https://sendik.co` | sí |
-| `APP_API_BASE_URL` | `https://api.sendik.co` | sí |
+| `APP_API_BASE_URL` | `https://api.sendik.co/api/v1` | sí |
 | `APP_TIME_ZONE` | `America/Bogota` | no, `America/Bogota` por omisión |
 | `CORS_ALLOWED_ORIGINS` | lista separada por comas | sí |
 | `COMMISSION_RATE` | `0.05` | sí |
@@ -292,11 +292,28 @@ selfie, que nunca se sirven por una dirección pública (RN-046).
 | `STORAGE_MAX_IMAGE_BYTES` | Tope por imagen | `8388608` (8 MB) |
 | `STORAGE_AVATAR_MIN_WIDTH` | Ancho mínimo de la foto de perfil | `200` |
 | `STORAGE_AVATAR_MIN_HEIGHT` | Alto mínimo de la foto de perfil | `200` |
+| `STORAGE_LISTING_MIN_WIDTH` | Ancho mínimo de una toma de producto (RN-019) | `900` |
+| `STORAGE_LISTING_MIN_HEIGHT` | Alto mínimo de una toma de producto (RN-019) | `1200` |
+| `STORAGE_MAX_UPLOAD_SIZE` | Tope del cuerpo multipart | `10MB` |
 | `STORAGE_PUBLIC_BUCKET` | Cubo de lo que cualquiera ve | vacía; obligatoria con `gcs` |
 | `STORAGE_RESTRICTED_BUCKET` | Cubo de la cédula y la selfie | vacía; obligatoria con `gcs` |
 | `STORAGE_PROJECT_ID` | Proyecto de Google Cloud | vacía; la toma de las credenciales |
 
 Las tres últimas son solo de `gcs` y se ignoran con `local`.
+
+**Los dos mínimos de la toma de producto no son un valor de arranque como los del
+avatar: son RN-019.** Bajarlos incumple la regla. Existen como variable porque el
+resto del almacenamiento lo es, no porque se esperen otros valores. La proporción
+3:4 de RN-018 **no** se parametriza: se calcula de estos dos, para que no puedan
+contradecirse entre sí.
+
+**`STORAGE_MAX_UPLOAD_SIZE` es del resolvedor multipart y va por encima de
+`STORAGE_MAX_IMAGE_BYTES`**, para dejar sitio a la envoltura del multipart. Sin
+declararlo regía el 1 MB por omisión de Spring Boot, y con ese tope el de la
+imagen era inalcanzable: cualquier foto de teléfono moría en el resolvedor antes
+de que ninguna política la mirara, con un 500 que nadie podía explicar. Quien
+decide si el archivo se acepta sigue siendo la política de imagen; esto solo evita
+que el servidor se coma un cuerpo enorme antes de mirarlo.
 
 **Los dos cubos no pueden ser el mismo, y la aplicación no arranca si lo son.** La
 comprobación está en `StorageProperties` y existe porque es el error que no avisa:
@@ -354,7 +371,7 @@ para `dev` y para `prod`.
 
 | Variable | Ejemplo | Obligatoria |
 |---|---|---|
-| `API_BASE_URL` | `https://api.sendik.co/api/v1` | sí |
+| `API_BASE_URL` | `https://api.sendik.co/api/v1` | sí, es `APP_API_BASE_URL` con otro nombre |
 | `NG_ALLOWED_HOSTS` | `sendik.co,www.sendik.co` | sí |
 | `DEFAULT_LOCALE` | `es` | no, `es` por omisión |
 | `AVAILABLE_LOCALES` | `es,en` | no, `es,en` por omisión |
@@ -367,11 +384,20 @@ para `dev` y para `prod`.
 | `SUPPORT_EMAIL` | `hola@sendik.co` | no, el pie lo omite si falta |
 | `COMMISSION_RATE` | `0.05` | no, RN-026 por omisión |
 | `CLAIM_WINDOW_DAYS` | `3` | no, RN-051 por omisión |
+| `LISTING_REVIEW_DAYS` | `2` | no, 2 por omisión |
 
 Las dos últimas son las cifras que el sitio informativo **anuncia**: la comisión
 en el recorrido del vendedor y la ventana de reclamo en el del comprador
 (HU-005). Viajan al navegador porque las páginas las dicen en voz alta, y no son
 secretas: cualquiera que entre las lee.
+
+**`LISTING_REVIEW_DAYS` es del frontend y no del backend, a diferencia de
+`VERIFICATION_REVIEW_DAYS`, que está en los dos.** El motivo es concreto: el plazo
+de la verificación lo dice la pantalla **y** el correo de «recibimos tu solicitud»,
+así que el backend también lo necesita; el de la publicación hoy solo lo dice la
+pantalla, porque no se manda ningún correo al enviar a revisión. Declararlo también
+en el backend sería configuración que nadie lee. El día que exista ese correo, entra
+allí con el mismo nombre.
 
 Se validan al leerlas, no al pintarlas. `COMMISSION_RATE` es una **fracción**
 mayor que `0` y hasta `0.5`: `0.05` es el 5%, quien declare `5` estaría
@@ -395,6 +421,14 @@ renderizado entero por una dirección que falta cambiaría un pie incompleto por
 sitio caído. `SUPPORT_EMAIL` merece atención especial: es el canal por el que se
 ejercen los derechos del titular de los datos, así que un pie sin él incumple
 `docs/operacion/datos-personales.md`.
+
+**`API_BASE_URL` y `APP_API_BASE_URL` son el mismo valor con dos nombres**, y por
+eso se declara uno solo por entorno: el flujo de despliegue le pasa
+`APP_API_BASE_URL` a las dos piezas y el frontend lo recibe como `API_BASE_URL`,
+que es el nombre con el que lo lee `read-app-config.ts`. **Incluye el prefijo
+`/api/v1`**: el frontend cuelga las rutas de ahí sin agregar nada, así que sin el
+prefijo todas las peticiones caen en 404. Es lo que ya hacen las dos pruebas de
+extremo a extremo en `playwright.completo.config.ts`.
 
 `NG_ALLOWED_HOSTS` es la lista de dominios a los que el servidor acepta
 responder y protege contra falsificación de peticiones del lado del servidor. La

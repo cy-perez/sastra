@@ -33,6 +33,8 @@ porque el kit anterior las entregaba acopladas. Mantener esa cadena obligaba a
 parchear a mano treinta fragmentos de la plantilla en cada entrega nueva, y era
 justo lo que impedia reemplazar el kit cuando diseno mandaba una version nueva.
 """
+import json
+import re
 import shutil
 import subprocess
 import sys
@@ -69,6 +71,7 @@ def main() -> None:
         shutil.copy(f, KIT / f.name)
 
     enlazar_fuentes_locales()
+    corregir_peso_fuerte()
 
     print("\nListo. El kit esta en docs/ui/.")
     print("Siguiente paso: python3 verificar.py, o directamente publicar.py,")
@@ -114,6 +117,58 @@ def enlazar_fuentes_locales() -> None:
          + h[corte + len(fin):])
     indice.write_text(h, encoding="utf-8")
     print("  index.html enlaza fuentes.css (autoalojadas)")
+
+
+def corregir_peso_fuerte() -> None:
+    """Pone en la documentacion generada el peso fuerte que dice tokens.json.
+
+    kit_ui.py lo tiene quemado en 700 y no lo lee de ningun sitio: sale asi en la
+    columna Peso de tipografia.md y en las dos tablas de la guia. Aqui el peso
+    fuerte es 600, el unico que la marca define para Archivo y el maximo que usa
+    Inter (manual de marca, ADR-0011). Sin este parche la documentacion generada
+    contradice a tokens.css, que si lo deriva bien de tokens.json, y la fila de
+    familias de la guia llega a contradecirse sola: pinta la muestra a 700 con la
+    columna de pesos diciendo 600.
+
+    Es el mismo tipo de defecto que las italicas de fuentes.py y esta anotado
+    junto a el en docs/ui/ubicacion-de-activos.md: **esta por reportar a
+    diseno**. El dia que kit_ui.py lea el peso de tokens.json, esta funcion no
+    encontrara nada que cambiar y se podra borrar; mientras tanto no estorba,
+    porque no hace nada si el valor ya es correcto.
+
+    Va aqui y no en kit_ui.py a proposito. kit_ui.py es entregable de diseno: un
+    arreglo dentro de el o lo pisa la siguiente entrega o hay que rehacerlo con
+    ella. Un parche en este archivo, que es del proyecto, sobrevive al reemplazo
+    del generador, que es justo lo que ADR-0022 decidio proteger.
+    """
+    tokens = json.loads((AQUI / "tokens.json").read_text(encoding="utf-8"))
+    fuerte = (tokens.get("tipografia", {}).get("pesos") or {}).get("fuerte")
+    if not fuerte or int(fuerte) == 700:
+        return
+    fuerte = str(int(fuerte))
+
+    # La guia: solo los pesos EN LINEA de las celdas que genera kit_ui.py.
+    # Terminan en comilla porque cierran ahi el atributo style; los de la hoja de
+    # la plantilla van seguidos de `;` o de `}` y no se tocan, que es lo
+    # correcto: son el estilo de la guia, no el sistema que la guia documenta.
+    indice = KIT / "index.html"
+    h = indice.read_text(encoding="utf-8")
+    cuantos = h.count('font-weight:700"')
+    if cuantos:
+        indice.write_text(h.replace('font-weight:700"', 'font-weight:' + fuerte + '"'),
+                          encoding="utf-8")
+        print("  index.html: {} muestras de tipo pasan a peso {}".format(cuantos, fuerte))
+
+    # tipografia.md: la ultima columna de la tabla de escala, y solo en las filas
+    # de la familia display, que son las unicas donde kit_ui.py escribe 700.
+    hoja = KIT / "tipografia.md"
+    t = hoja.read_text(encoding="utf-8")
+    t2, cuantas = re.subn(
+        r"^(\| `--texto-[^|]*\|[^|]*\|[^|]*\|[^|]*\|[^|]*\| )700 \|$",
+        r"\g<1>" + fuerte + " |", t, flags=re.M)
+    if cuantas:
+        hoja.write_text(t2, encoding="utf-8")
+        print("  tipografia.md: {} filas de la escala pasan a peso {}".format(cuantas, fuerte))
 
 
 if __name__ == "__main__":

@@ -9,9 +9,13 @@ la contemple y aunque sea fácil. Lo que no está en la fase actual, se anota.
 Quedan dos cosas fuera de esa afirmación, las dos por decisión y las dos anotadas
 donde corresponde:
 
-- **El primer despliegue está aplazado** hasta tener el proyecto lo más completo
-  posible (`docs/operacion/entornos.md`). El flujo está escrito y probado; lo que
-  no se ha hecho es ejecutarlo.
+- ~~**El primer despliegue está aplazado**~~ **Resuelto el 26 de agosto de 2026.**
+  Se contrató `sendik.co` en GoDaddy y con eso se cerró la decisión que faltaba:
+  el sitio se hospeda en Cloud Run junto al backend, y GoDaddy queda como
+  registrador y DNS (ADR-0024). `dev` se despliega desde la integración continua,
+  con las dos piezas, y sigue costando cero. **Producción sigue aplazada**, ahora
+  por lo que de verdad la bloquea: los textos legales del punto siguiente y las
+  piezas que cobran por hora encendida (`docs/operacion/entornos.md`).
 - **Los tres textos legales siguen siendo `borrador-local`**, que es relleno sin
   valor legal (`docs/operacion/textos-legales.md`). El mecanismo completo está: las
   tres rutas, el resolutor que sirve el texto dentro del HTML renderizado, la
@@ -36,15 +40,14 @@ donde corresponde:
 - Internacionalización ES/EN funcionando con SSR.
 - Canalización de integración continua: compilar, probar, analizar y desplegar.
   Los cuatro pasos existen: `.github/workflows/verificacion.yml` compila, prueba
-  y analiza, y `despliegue.yml` publica el backend en `dev` con cada integración a
-  `main` y en `prod` con etiqueta y aprobación. **El despliegue del frontend no
-  existe todavía** y es deliberado: no hay proveedor de hospedaje elegido
-  (ADR-0019), y escribirlo exige saber contra qué. **Ejecutarlo por primera vez está aplazado
-  por decisión**, no por falta de trabajo: el sitio se despliega —dominio y
-  hospedaje— cuando el proyecto esté lo más completo posible. Hasta entonces se
-  prueba en local integrado contra los servicios de GCP en capa gratuita, y los
-  servicios de pago se contratan antes del lanzamiento inicial. El motivo está en
-  `docs/operacion/entornos.md` y el procedimiento, listo para ese día, en
+  y analiza, y `despliegue.yml` publica **las dos piezas** —backend y frontend con
+  renderizado en servidor— en `dev` con cada integración a `main`, y en `prod` con
+  etiqueta y aprobación. El despliegue del frontend se escribió el 26 de agosto de
+  2026, cuando contratar `sendik.co` cerró la decisión de hospedaje: va a Cloud Run
+  junto al backend y GoDaddy queda como registrador y DNS (ADR-0024). **`prod`
+  sigue aplazado por decisión**, no por falta de trabajo, y ahora por lo que de
+  verdad lo bloquea: los textos legales y las piezas que cobran por hora encendida.
+  El motivo está en `docs/operacion/entornos.md` y el procedimiento en
   `docs/operacion/despliegue.md`.
 - Base de datos con migraciones y esquema inicial de usuarios.
 
@@ -88,26 +91,39 @@ Es la fase en curso desde el 21 de agosto de 2026.
 - Publicación de producto con las cuatro tomas obligatorias y las intermedias, en
   las dos familias: moda —nueva y de segunda— y **tecnología, solo nueva**
   (RN-064). La tecnología se agregó al alcance el 24 de agosto de 2026 y entra en
-  esta fase porque HU-007 todavía no tiene código: meterla ahora cuesta menos que
-  reabrir el catálogo después. Moverla a una fase posterior es cambiar esta línea.
-  **HU-007, escrita el 24 de agosto de 2026 y pendiente de implementar.** Trae
-  también los endpoints de decisión del moderador sobre publicaciones, y con ella
-  quedaron cerradas las reglas que faltaban: RN-061, RN-062 y RN-063. Su
-  prerrequisito duro era el árbol de categorías, aprobado el 24 de agosto de 2026
-  en `docs/producto/categorias.md`. Ya no tiene nada que la bloquee.
+  esta fase porque HU-007 todavía no tenía código: meterla entonces costaba menos
+  que reabrir el catálogo después. Moverla a una fase posterior es cambiar esta
+  línea. Trae también los endpoints de decisión del moderador sobre
+  publicaciones, y con ella quedaron cerradas las reglas que faltaban: RN-061,
+  RN-062 y RN-063.
+  **HU-007 está hecha**: el backend el 25 de agosto de 2026 y la interfaz el 26.
+  Están el dominio con su máquina de estados, los diecisiete casos de uso, la
+  persistencia, el aviso por correo al vendedor, los diecisiete endpoints y las
+  tres pantallas del vendedor —`/publicar`, `/publicar/:id` y
+  `/mis-publicaciones`—, todo detrás de `FEATURE_PUBLISHING`, hoy apagada. Las
+  cuatro decisiones de producto que la historia enumeraba se tomaron el 26 de
+  agosto. **Lo que impide encender la bandera ya no es HU-007 sino HU-008:** sin
+  bandeja del moderador, nada puede salir de `PENDING_REVIEW`.
 - Panel de moderación y flujo de aprobación o rechazo con motivo. **Hecho a
   medias**: HU-006 entrega la bandeja de verificaciones de vendedor, y con ella
   `FEATURE_SELLER_VERIFICATION` ya se puede encender. La moderación de
-  publicaciones —RN-015, la otra mitad de este punto— tiene ya sus reglas y sus
-  endpoints en HU-007; lo que falta es la bandeja con la que se usan, que se
-  separó a propósito con el mismo corte que hubo entre HU-002 y HU-006 y todavía
-  no tiene historia. Revocar un sello ya otorgado queda fuera de HU-006 y también
-  sin historia: el endpoint existe, pero no hay forma de llegar a una
-  verificación ya aprobada desde la interfaz.
+  publicaciones —RN-015, la otra mitad de este punto— tiene sus reglas y sus
+  endpoints de decisión en HU-007, y **HU-008 la cerró el 27 de agosto de 2026**: la
+  cola, la bandeja y el detalle donde se decide. Con ella este punto queda completo.
+  **Con una salvedad anotada**: el recorrido de punta a punta del ciclo está escrito en
+  `e2e-completo/` y tres de sus seis pruebas siguen en rojo, con su diagnóstico en la
+  historia. Las que pasan son las de acceso; las que no, las que publican. Fuera de las dos historias
+  quedan, con el mismo argumento y cada una esperando la suya, revocar un sello ya
+  otorgado y bajar una publicación ya visible (RN-024): los endpoints existen,
+  pero no hay forma de llegar a esos identificadores desde la interfaz.
 - Catálogo, categorías, ficha de producto y favoritos. Sin historia escrita. Ya no
   está bloqueado —el árbol se aprobó—, pero espera a que HU-007 exista: sin
   publicaciones no hay catálogo que mostrar.
-- Panel del vendedor con sus publicaciones y su estado. Sin historia escrita.
+- Panel del vendedor con sus publicaciones y su estado. **Hecho a medias** y sin
+  historia propia: `/mis-publicaciones` llegó con HU-007 y da la lista con el
+  estado de cada una, que es lo que hacía falta para retomar un borrador. Lo que
+  no hay es panel: ni cifras, ni ventas, ni el rastro de lo que pasó con cada
+  publicación.
 
 ## Fase 3 — transacción
 

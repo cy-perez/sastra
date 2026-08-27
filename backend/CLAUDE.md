@@ -202,8 +202,12 @@ su autorización y nada queda abierto por omisión.
   contaba, y un módulo sin pruebas propias no tenía datos de ejecución y se
   saltaba la verificación entera sin decir nada. Ver
   `docs/arquitectura/pruebas.md`.
-- La regla del módulo `infrastructure` excluye `persistence`, que es lo único que
-  no puede cubrir con pruebas propias. Lo que queda fuera lo mide la agregada.
+- La regla del módulo `infrastructure` mide **todas** sus clases, y para eso lee
+  dos archivos de ejecución: el suyo y el de `bootstrap`. Así, un repositorio JDBC
+  cubierto por una prueba de integración cuenta como cubierto. Antes la regla
+  excluía `identity/persistence` en vez de leer ese segundo archivo; la exclusión
+  quedó desactualizada en cuanto llegó `catalog/persistence` y el build empezó a
+  fallar con un 57% que no reflejaba lo que estaba probado.
 - Testcontainers 2 movió las clases de sitio. Es
   `org.testcontainers.postgresql.PostgreSQLContainer`, sin parámetro de tipo, no
   `org.testcontainers.containers.PostgreSQLContainer<?>` de la versión 1.

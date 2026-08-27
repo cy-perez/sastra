@@ -100,6 +100,15 @@ tabular-nums` sobre Inter. Tres pesos: 400, 500 y 600.
   del isotipo repetido fuera del logo. No se sustituye por una línea continua, y
   va una sola vez por pieza —si ya hay una insignia de verificado a la vista, la
   regla no.
+- **Los iconos se dibujan con `.icono`, nunca con atributos propios de trazo.**
+  Retícula de 24, área viva de 20, trazo de 2 y terminaciones **rectas**
+  (`butt` / `miter`), que es la misma decisión que los cortes rectos del
+  isotipo; `stroke="currentColor"` para que hereden el color y funcionen en
+  claro, oscuro y deshabilitado sin variantes. Todo eso lo pone la clase, que
+  vive en `marca.css`. Un `stroke-width` en el SVG no compite con ella —el CSS
+  gana— pero deja la duda de dónde se decide, así que no se escribe. Mezclar
+  grosores o terminaciones es lo que hace que un set de iconos se vea amateur.
+  `.icono-lg` es la única variante: sube el área viva a 24.
 
 ## Accesibilidad
 
@@ -159,9 +168,12 @@ Es requisito de aceptación, no un extra. Cada componente entra con:
 - Extremo a extremo con Playwright, en **dos suites** que no se mezclan:
   `e2e/` comprueba el HTML que sale del servidor sin llamar a la API (ADR-0006), y
   `e2e-completo/` levanta el backend y PostgreSQL de verdad y recorre los caminos
-  de cuentas y la verificación de vendedor por la interfaz. La segunda existe porque
-  la primera no puede ver un contrato roto entre las dos mitades. Publicación y
-  compra llegan con sus fases.
+  de cuentas, la verificación de vendedor y **el ciclo de publicación y moderación**
+  por la interfaz. La segunda existe porque la primera no puede ver un contrato roto
+  entre las dos mitades: el acuerdo sobre el código `CATALOG_LISTING_INVALID_STATE`
+  entre el backend y `ListingReviewStore` solo se comprueba ahí, porque una prueba de
+  componente inventa ese código ella misma al simular la respuesta. La compra llega
+  con su fase.
 - **La cámara en `e2e-completo/` es la falsa de Chromium**, con
   `--use-fake-device-for-media-stream` y el permiso concedido en el proyecto. Su
   patrón tiene zonas de degradado suave y algunos fotogramas caen por debajo del

@@ -105,7 +105,8 @@ mismos archivos; están listados arriba para que la copia sea mecánica.
 
 ## Divergencias conocidas con el kit
 
-Dos, y las dos deliberadas:
+Tres. Las dos primeras son decisiones del proyecto; la tercera es un defecto
+del generador que aquí se corrige.
 
 **Proporción de la foto de producto: 3:4, no 1:1.** El kit de Sendik fija 1:1 con
 mínimo de 800×800. Aquí manda **ADR-0010** y su razonamiento no ha cambiado: una
@@ -118,6 +119,19 @@ ADR nueva, no un cambio de token.
 como serif y le pone Georgia detrás. Archivo es una sans: con Georgia de
 respaldo, el salto al cargar cambia de género tipográfico y se ve como un error.
 `tipografia.css` sobrescribe la familia con un respaldo sans ajustado.
+
+⚠️ **El generador documenta el peso fuerte como 700 y son 600.** `kit_ui.py`
+lo tiene quemado y no lo lee de `tokens.json`: sale así en la columna Peso de
+`tipografia.md` y en las muestras de las dos tablas de `index.html`. La fila de
+familias de la guía llegaba a contradecirse sola, pintando Archivo a 700 con la
+columna de pesos diciendo 600. El peso correcto es **600**: es el único que la
+marca define para Archivo y el máximo que usa Inter (manual de marca, ADR-0011),
+y `tokens.css` sí lo deriva bien. Lo corrige `corregir_peso_fuerte()` en
+`construir.py` después de cada generación, por lo mismo que el caso de las
+itálicas: `kit_ui.py` es entregable de diseño y un arreglo dentro de él se pierde
+con la entrega siguiente. **Está por reportar a diseño**, junto con `fuentes.py`.
+El día que el generador lea el peso de `tokens.json`, la función deja de
+encontrar nada que cambiar y se puede borrar.
 
 ## Lo que NO va al frontend
 

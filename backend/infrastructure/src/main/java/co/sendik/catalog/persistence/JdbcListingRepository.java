@@ -36,9 +36,11 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -65,7 +67,7 @@ import org.springframework.stereotype.Repository;
 public class JdbcListingRepository implements ListingRepository {
 
     private static final String SELECT_BASE = """
-            SELECT l.id, l.status, l.published_at, l.sold_at,
+            SELECT l.id, l.status, l.submitted_at, l.published_at, l.sold_at,
                    l.moderated_by, l.moderated_at, l.rejection_reason, l.rejection_note,
                    l.attention_reasons, l.version,
                    l.created_at, l.updated_at,
@@ -126,8 +128,86 @@ public class JdbcListingRepository implements ListingRepository {
                 .toList();
     }
 
+    /**
+     * La cola del moderador. Va contra el indice parcial de V12, que es esta consulta
+     * escrita como indice: filtra por estado y ordena por espera.
+     *
+     * <p>{@code NULLS LAST} no deberia hacer falta —el dominio sella al entrar— pero
+     * cubre las filas que quedaron en revision antes de que existiera la columna sin
+     * mandarlas a la cabeza de la cola.
+     */
+    @Override
+    public List<Listing> pendientesDeRevision(int pagina, int tamano) {
+        List<Listing> cola = jdbc.sql(SELECT_BASE + """
+                         WHERE l.status = 'PENDING_REVIEW'
+                         ORDER BY l.submitted_at ASC NULLS LAST
+                         LIMIT :limite OFFSET :salto
+                        """)
+                .param("limite", tamano)
+                .param("salto", (long) pagina * tamano)
+                .query(JdbcListingRepository::filaAPublicacion)
+                .list();
+
+        return conPortadas(cola);
+    }
+
+    /**
+     * Las tomas frontales de toda la pagina, en una sola consulta.
+     *
+     * <p>Lo natural aqui era {@code .map(this::conImagenes)}, y es lo que hacia: una
+     * consulta de imagenes por fila, veintiuna para pintar veinte miniaturas, cargando ocho
+     * tomas de cada publicacion para quedarse con una. La bandeja es la primera pantalla del
+     * moderador y la que mas veces se abre.
+     *
+     * <p>Se traen **solo las de posicion 0**, que es la frontal de RN-016 y lo unico que la
+     * fila muestra. El detalle si carga el agregado entero, por {@code buscar}.
+     */
+    private List<Listing> conPortadas(List<Listing> cola) {
+        if (cola.isEmpty()) {
+            return cola;
+        }
+
+        List<UUID> productos = cola.stream().map(p -> p.product().id().value()).toList();
+
+        Map<UUID, ProductImage> frontales = jdbc
+                .sql("""
+                        SELECT product_id, id, kind, object_key, position, angle_degrees,
+                               width, height, bytes, content_type
+                        FROM product_images
+                        WHERE product_id IN (:productos) AND kind = 'SELLER_SHOT' AND position = 0
+                        """)
+                .param("productos", productos)
+                .query((fila, numero) -> Map.entry(fila.getObject("product_id", UUID.class), filaAImagen(fila, numero)))
+                .list()
+                .stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        return cola.stream()
+                .map(publicacion -> {
+                    ProductImage frontal =
+                            frontales.get(publicacion.product().id().value());
+                    return frontal == null ? publicacion : conSoloEstasImagenes(publicacion, List.of(frontal));
+                })
+                .toList();
+    }
+
     // ------------------------------------------------------------------ escritura
 
+    /**
+     * Escribe el producto, completo o a medias.
+     *
+     * <p><strong>Casi todo puede faltar, y por eso ningun campo se desreferencia
+     * directo.</strong> El criterio 5 dice que un borrador incompleto se guarda sin
+     * exigir que este completo, asi que el titulo, la descripcion, la condicion, la
+     * talla, el color, el precio y la caja de envio llegan aqui en nulo cada vez que
+     * alguien pulsa «Empezar» y todavia no ha escrito nada. Escrito como
+     * {@code producto.title().value()}, eso era una excepcion de puntero nulo y un 500
+     * en la unica peticion con la que empieza toda publicacion.
+     *
+     * <p>Lo obligatorio lo exige {@code Listing.enviarARevision} (criterio 6), no esta
+     * tabla: una columna no puede distinguir un borrador a medias de una publicacion
+     * que se quiere publicar sin terminar. V13 quito esos {@code NOT NULL}.
+     */
     private void guardarProducto(Product producto) {
         jdbc.sql("""
                         INSERT INTO products (
@@ -162,25 +242,23 @@ public class JdbcListingRepository implements ListingRepository {
                 .param("id", producto.id().value())
                 .param("vendedor", producto.sellerId().value())
                 .param("categoria", producto.categoryId().value())
-                .param("titulo", producto.title().value())
-                .param("descripcion", producto.description().value())
+                .param("titulo", siEsta(producto.title(), Title::value))
+                .param("descripcion", siEsta(producto.description(), Description::value))
+                .param("marca", siEsta(producto.brand(), Brand::value))
+                .param("condicion", siEsta(producto.condition(), Condition::name))
                 .param(
-                        "marca",
-                        producto.brand() == null ? null : producto.brand().value())
-                .param("condicion", producto.condition().name())
-                .param("sistemaTalla", producto.size().system().name())
-                .param("talla", producto.size().value())
+                        "sistemaTalla",
+                        siEsta(producto.size(), talla -> talla.system().name()))
+                .param("talla", siEsta(producto.size(), Size::value))
                 .param("medidas", MeasurementsJson.aJson(producto.measurements()))
-                .param("color", producto.color().name())
-                .param("precio", producto.price().enPesos())
-                .param("gramos", producto.shipping().weightGrams())
-                .param("largo", producto.shipping().lengthCm())
-                .param("ancho", producto.shipping().widthCm())
-                .param("alto", producto.shipping().heightCm())
+                .param("color", siEsta(producto.color(), Color::name))
+                .param("precio", siEsta(producto.price(), Money::enPesos))
+                .param("gramos", siEsta(producto.shipping(), ShippingDimensions::weightGrams))
+                .param("largo", siEsta(producto.shipping(), ShippingDimensions::lengthCm))
+                .param("ancho", siEsta(producto.shipping(), ShippingDimensions::widthCm))
+                .param("alto", siEsta(producto.shipping(), ShippingDimensions::heightCm))
                 .param("sellado", producto.isSealed())
-                .param(
-                        "garantia",
-                        producto.warranty() == null ? null : producto.warranty().value())
+                .param("garantia", siEsta(producto.warranty(), WarrantyMonths::value))
                 .update();
     }
 
@@ -199,17 +277,18 @@ public class JdbcListingRepository implements ListingRepository {
         if (esNueva(publicacion)) {
             jdbc.sql("""
                             INSERT INTO listings (
-                                id, product_id, status, published_at, sold_at,
+                                id, product_id, status, submitted_at, published_at, sold_at,
                                 moderated_by, moderated_at, rejection_reason, rejection_note,
                                 attention_reasons, version, created_at, updated_at)
                             VALUES (
-                                :id, :producto, :estado, :publicado, NULL,
+                                :id, :producto, :estado, :enviado, :publicado, NULL,
                                 :moderador, :moderado, :motivo, :nota,
                                 :marcas, 0, :creado, :actualizado)
                             """)
                     .param("id", publicacion.id().value())
                     .param("producto", producto.id().value())
                     .param("estado", publicacion.status().name())
+                    .param("enviado", marca(publicacion.submittedAt()))
                     .param("publicado", marca(publicacion.publishedAt()))
                     .param(
                             "moderador",
@@ -233,6 +312,7 @@ public class JdbcListingRepository implements ListingRepository {
         int filas = jdbc.sql("""
                         UPDATE listings SET
                             status             = :estado,
+                            submitted_at       = :enviado,
                             published_at       = :publicado,
                             moderated_by       = :moderador,
                             moderated_at       = :moderado,
@@ -246,6 +326,7 @@ public class JdbcListingRepository implements ListingRepository {
                 .param("id", publicacion.id().value())
                 .param("version", versionLeida)
                 .param("estado", publicacion.status().name())
+                .param("enviado", marca(publicacion.submittedAt()))
                 .param("publicado", marca(publicacion.publishedAt()))
                 .param(
                         "moderador",
@@ -326,20 +407,25 @@ public class JdbcListingRepository implements ListingRepository {
                 .query(JdbcListingRepository::filaAImagen)
                 .list();
 
-        return Listing.existente(
-                publicacion.id(),
-                publicacion.product(),
-                publicacion.status(),
-                imagenes,
-                publicacion.publishedAt(),
-                publicacion.moderatedBy(),
-                publicacion.moderatedAt(),
-                publicacion.rejectionReason(),
-                publicacion.rejectionNote(),
-                publicacion.attentionReasons(),
-                publicacion.version(),
-                publicacion.createdAt(),
-                publicacion.updatedAt());
+        return conSoloEstasImagenes(publicacion, imagenes);
+    }
+
+    /** Reconstruye la publicacion con las imagenes que se le den y nada mas. */
+    private static Listing conSoloEstasImagenes(Listing publicacion, List<ProductImage> imagenes) {
+        return Listing.reconstruir()
+                .id(publicacion.id())
+                .producto(publicacion.product())
+                .estado(publicacion.status())
+                .imagenes(imagenes)
+                .enviada(publicacion.submittedAt())
+                .publicada(publicacion.publishedAt())
+                .decididaPor(publicacion.moderatedBy(), publicacion.moderatedAt())
+                .rechazadaPor(publicacion.rejectionReason(), publicacion.rejectionNote())
+                .marcas(publicacion.attentionReasons())
+                .version(publicacion.version())
+                .creada(publicacion.createdAt())
+                .tocada(publicacion.updatedAt())
+                .armar();
     }
 
     private static Listing filaAPublicacion(ResultSet fila, int numero) throws SQLException {
@@ -348,46 +434,89 @@ public class JdbcListingRepository implements ListingRepository {
         String motivoRechazo = fila.getString("rejection_reason");
         UUID moderador = fila.getObject("moderated_by", UUID.class);
 
-        return Listing.existente(
-                new ListingId(fila.getObject("id", UUID.class)),
-                producto,
-                ListingStatus.valueOf(fila.getString("status")),
-                List.of(),
-                instante(fila.getTimestamp("published_at")),
-                moderador == null ? null : new ModeratorId(moderador),
-                instante(fila.getTimestamp("moderated_at")),
-                motivoRechazo == null ? null : ListingRejectionReason.valueOf(motivoRechazo),
-                fila.getString("rejection_note"),
-                marcas(fila.getArray("attention_reasons")),
-                fila.getLong("version"),
-                instante(fila.getTimestamp("created_at")),
-                instante(fila.getTimestamp("updated_at")));
+        return Listing.reconstruir()
+                .id(new ListingId(fila.getObject("id", UUID.class)))
+                .producto(producto)
+                .estado(ListingStatus.valueOf(fila.getString("status")))
+                .imagenes(List.of())
+                .enviada(instante(fila.getTimestamp("submitted_at")))
+                .publicada(instante(fila.getTimestamp("published_at")))
+                .decididaPor(
+                        moderador == null ? null : new ModeratorId(moderador),
+                        instante(fila.getTimestamp("moderated_at")))
+                .rechazadaPor(
+                        motivoRechazo == null ? null : ListingRejectionReason.valueOf(motivoRechazo),
+                        fila.getString("rejection_note"))
+                .marcas(marcas(fila.getArray("attention_reasons")))
+                .version(fila.getLong("version"))
+                .creada(instante(fila.getTimestamp("created_at")))
+                .tocada(instante(fila.getTimestamp("updated_at")))
+                .armar();
     }
 
+    /**
+     * Reconstruye el producto, que puede estar a medias.
+     *
+     * <p>Simetrico a {@link #guardarProducto}: lo que se puede escribir en nulo se
+     * tiene que poder leer en nulo. {@code Condition.valueOf(null)} y
+     * {@code fila.getLong("price")} sobre una columna nula eran, respectivamente, una
+     * excepcion de puntero nulo y un precio de cero pesos que el propio {@code Product}
+     * rechaza: las dos formas de no poder releer nunca un borrador recien creado.
+     */
     private static Product filaAProducto(ResultSet fila) throws SQLException {
-        String marca = fila.getString("brand");
-        Object sellado = fila.getObject("is_sealed");
+        String condicion = fila.getString("condition");
+        String sistemaDeTalla = fila.getString("size_system");
+        String color = fila.getString("color");
+        Object precio = fila.getObject("price");
         Object garantia = fila.getObject("manufacturer_warranty_months");
+        Object sellado = fila.getObject("is_sealed");
 
         return new Product(
                 new ProductId(fila.getObject("product_id", UUID.class)),
                 new SellerId(fila.getObject("seller_id", UUID.class)),
                 new CategoryId(fila.getObject("category_id", UUID.class)),
-                new Title(fila.getString("title")),
-                new Description(fila.getString("description")),
-                marca == null ? null : new Brand(marca),
-                Condition.valueOf(fila.getString("condition")),
-                new Size(SizeSystem.valueOf(fila.getString("size_system")), fila.getString("size_value")),
+                siEsta(fila.getString("title"), Title::new),
+                siEsta(fila.getString("description"), Description::new),
+                siEsta(fila.getString("brand"), Brand::new),
+                siEsta(condicion, Condition::valueOf),
+                sistemaDeTalla == null
+                        ? null
+                        : new Size(SizeSystem.valueOf(sistemaDeTalla), fila.getString("size_value")),
                 MeasurementsJson.deJson(fila.getString("measurements")),
-                Color.valueOf(fila.getString("color")),
-                Money.dePesos(fila.getLong("price")),
-                new ShippingDimensions(
-                        fila.getInt("weight_grams"),
-                        fila.getBigDecimal("length_cm"),
-                        fila.getBigDecimal("width_cm"),
-                        fila.getBigDecimal("height_cm")),
+                siEsta(color, Color::valueOf),
+                siEsta(precio, valor -> Money.dePesos(((Number) valor).longValue())),
+                envio(fila),
                 sellado == null ? null : (Boolean) sellado,
-                garantia == null ? null : new WarrantyMonths(((Number) garantia).intValue()));
+                siEsta(garantia, meses -> new WarrantyMonths(((Number) meses).intValue())));
+    }
+
+    /**
+     * La caja del envio, o nada.
+     *
+     * <p>Se pregunta por el peso y no por cada medida: media caja no es una caja, y
+     * {@code ShippingDimensions} no admite nulos dentro. Las cuatro columnas se escriben
+     * juntas o no se escribe ninguna.
+     */
+    private static @Nullable ShippingDimensions envio(ResultSet fila) throws SQLException {
+        Object gramos = fila.getObject("weight_grams");
+        if (gramos == null) {
+            return null;
+        }
+        return new ShippingDimensions(
+                ((Number) gramos).intValue(),
+                fila.getBigDecimal("length_cm"),
+                fila.getBigDecimal("width_cm"),
+                fila.getBigDecimal("height_cm"));
+    }
+
+    /**
+     * El valor derivado de algo que puede no estar todavia.
+     *
+     * <p>Existe porque el borrador del criterio 5 tiene casi todos los campos en nulo y
+     * el ternario repetido dieciseis veces esconde justo al que se olvida.
+     */
+    private static <T, R> @Nullable R siEsta(@Nullable T valor, Function<T, R> como) {
+        return valor == null ? null : como.apply(valor);
     }
 
     private static ProductImage filaAImagen(ResultSet fila, int numero) throws SQLException {

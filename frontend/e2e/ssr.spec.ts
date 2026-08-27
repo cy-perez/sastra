@@ -14,7 +14,7 @@ test.describe('renderizado en servidor', () => {
 
     expect(response.status()).toBe(200);
     expect(html).toContain('lang="es"');
-    expect(html).toContain('Compra y vende moda con respaldo');
+    expect(html).toContain('Compra y vende de forma ágil y segura');
   });
 
   /**
@@ -27,7 +27,7 @@ test.describe('renderizado en servidor', () => {
     const html = await (await request.get('/')).text();
 
     // Hero
-    expect(html).toContain('Compra y vende moda con respaldo');
+    expect(html).toContain('Compra y vende de forma ágil y segura');
     expect(html).toContain('Publicar es gratis');
     // Los tres pasos
     expect(html).toContain('Publicas tu prenda');
@@ -100,8 +100,8 @@ test.describe('renderizado en servidor', () => {
 
     expect(response.status()).toBe(200);
     expect(html).toContain('lang="en"');
-    expect(html).toContain('Buy and sell fashion');
-    expect(html).not.toContain('Compra y vende moda');
+    expect(html).toContain('Buy and sell quickly and safely');
+    expect(html).not.toContain('Compra y vende');
   });
 
   /**
@@ -144,7 +144,7 @@ test.describe('renderizado en servidor', () => {
     const response = await request.get('/', { headers: { 'Accept-Language': 'en' } });
     const html = await response.text();
 
-    expect(html).toContain('<meta name="description" content="Buy and sell fashion');
+    expect(html).toContain('<meta name="description" content="Buy and sell quickly and safely');
     expect(html).toContain('<meta property="og:locale" content="en">');
   });
 

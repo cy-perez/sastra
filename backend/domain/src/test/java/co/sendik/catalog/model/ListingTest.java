@@ -8,6 +8,8 @@ import co.sendik.catalog.exception.InvalidListingTransitionException;
 import co.sendik.catalog.exception.ReferenceImageNotAllowedException;
 import co.sendik.catalog.exception.ShotsIncompleteException;
 import co.sendik.shared.money.Money;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.UUID;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -145,6 +147,81 @@ class ListingTest {
 
             assertThatThrownBy(() -> borrador.aprobar(MODERADOR, AHORA))
                     .isInstanceOf(InvalidListingTransitionException.class);
+        }
+    }
+
+    /**
+     * El sello que ordena la bandeja del moderador (HU-008, criterio 1).
+     *
+     * <p>Estas pruebas son el motivo de que exista la columna: si bastara con
+     * {@code updatedAt}, la segunda de ellas fallaria.
+     */
+    @Nested
+    class SelloDeRevision {
+
+        private static final Instant DESPUES = AHORA.plus(Duration.ofHours(3));
+
+        @Test
+        void deberia_estar_vacio_mientras_es_borrador() {
+            assertThat(CatalogoDePrueba.borradorCompleto().submittedAt()).isNull();
+        }
+
+        @Test
+        void deberia_sellarse_al_enviar_a_revision() {
+            Listing enRevision = CatalogoDePrueba.borradorCompleto().enviarARevision(AHORA);
+
+            assertThat(enRevision.submittedAt()).isEqualTo(AHORA);
+        }
+
+        @Test
+        void no_deberia_moverse_al_cambiar_el_precio_mientras_espera_turno() {
+            Listing enRevision = CatalogoDePrueba.borradorCompleto().enviarARevision(AHORA);
+
+            Listing conOtroPrecio = enRevision.cambiarPrecio(Money.dePesos(190_000), DESPUES);
+
+            assertThat(conOtroPrecio.submittedAt()).isEqualTo(AHORA);
+            assertThat(conOtroPrecio.updatedAt()).isEqualTo(DESPUES);
+        }
+
+        @Test
+        void no_deberia_moverse_al_cambiar_el_envio_mientras_espera_turno() {
+            Listing enRevision = CatalogoDePrueba.borradorCompleto().enviarARevision(AHORA);
+
+            Listing conOtroEnvio = enRevision.cambiarEnvio(CatalogoDePrueba.envio(), DESPUES);
+
+            assertThat(conOtroEnvio.submittedAt()).isEqualTo(AHORA);
+        }
+
+        @Test
+        void deberia_volver_a_sellarse_cuando_RN_062_la_devuelve_a_revision() {
+            Listing publicada = CatalogoDePrueba.publicada();
+            assertThat(publicada.submittedAt()).isEqualTo(AHORA);
+
+            Listing devuelta = publicada.editarContenido(CatalogoDePrueba.camisaCon(Money.dePesos(190_000)), DESPUES);
+
+            assertThat(devuelta.status()).isEqualTo(ListingStatus.PENDING_REVIEW);
+            assertThat(devuelta.submittedAt())
+                    .as("una publicacion que vuelve a la cola no puede conservar el turno viejo")
+                    .isEqualTo(DESPUES);
+        }
+
+        @Test
+        void deberia_conservarse_despues_de_que_se_decida() {
+            Listing publicada =
+                    CatalogoDePrueba.borradorCompleto().enviarARevision(AHORA).aprobar(MODERADOR, DESPUES);
+
+            assertThat(publicada.submittedAt()).isEqualTo(AHORA);
+        }
+
+        @Test
+        void deberia_reiniciarse_al_retomar_una_rechazada_y_volver_a_enviarla() {
+            Listing rechazada = CatalogoDePrueba.borradorCompleto()
+                    .enviarARevision(AHORA)
+                    .rechazar(MODERADOR, ListingRejectionReason.PHOTOS_UNUSABLE, null, AHORA);
+
+            Listing reenviada = rechazada.retomar(DESPUES).enviarARevision(DESPUES);
+
+            assertThat(reenviada.submittedAt()).isEqualTo(DESPUES);
         }
     }
 
@@ -314,6 +391,10 @@ class ListingTest {
             assertThatThrownBy(() -> archivada.cambiarPrecio(Money.dePesos(50_000), AHORA))
                     .isInstanceOf(InvalidListingTransitionException.class);
             assertThatThrownBy(() -> archivada.editarContenido(archivada.product(), AHORA))
+                    .isInstanceOf(InvalidListingTransitionException.class);
+            // Tambien el envio. Sin esta linea, quitarle el exigirNoTerminal a
+            // cambiarEnvio no rompia ninguna prueba.
+            assertThatThrownBy(() -> archivada.cambiarEnvio(CatalogoDePrueba.envio(), AHORA))
                     .isInstanceOf(InvalidListingTransitionException.class);
         }
     }

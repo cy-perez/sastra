@@ -1,9 +1,11 @@
 package co.sendik.catalog.usecase;
 
+import co.sendik.catalog.dto.CategoryView;
 import co.sendik.catalog.model.Category;
 import co.sendik.catalog.model.CategoryId;
 import co.sendik.catalog.model.Listing;
 import co.sendik.catalog.model.ListingId;
+import co.sendik.catalog.model.ListingStatus;
 import co.sendik.catalog.model.MeasurementGroup;
 import co.sendik.catalog.model.ModerationAction;
 import co.sendik.catalog.model.ModeratorId;
@@ -24,6 +26,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
@@ -71,6 +74,17 @@ final class CatalogoEnMemoria {
             return suyas.subList(desde, Math.min(desde + tamano, suyas.size()));
         }
 
+        @Override
+        public List<Listing> pendientesDeRevision(int pagina, int tamano) {
+            List<Listing> esperando = filas.values().stream()
+                    .filter(publicacion -> publicacion.status() == ListingStatus.PENDING_REVIEW)
+                    .sorted(Comparator.comparing(Listing::submittedAt, Comparator.nullsLast(Comparator.naturalOrder())))
+                    .toList();
+
+            int desde = Math.min(pagina * tamano, esperando.size());
+            return esperando.subList(desde, Math.min(desde + tamano, esperando.size()));
+        }
+
         int cuantas() {
             return filas.size();
         }
@@ -79,6 +93,45 @@ final class CatalogoEnMemoria {
     static final class Arbol implements Categories {
 
         private final Map<CategoryId, Category> filas = new HashMap<>();
+
+        /**
+         * El arbol como lo pide una pantalla.
+         *
+         * <p>Los nombres visibles no estan en {@code Category}, asi que aqui se componen
+         * del slug: a estas pruebas les importa que el arbol salga armado por familias,
+         * no como se llama cada categoria.
+         */
+        @Override
+        public List<CategoryView> arbolActivo() {
+            Map<CategoryId, List<CategoryView>> hijas = new LinkedHashMap<>();
+
+            filas.values().stream()
+                    .filter(categoria -> !categoria.esFamilia() && categoria.active())
+                    .forEach(hija -> hijas.computeIfAbsent(
+                                    Objects.requireNonNull(hija.parentId()), cualquiera -> new ArrayList<>())
+                            .add(vista(hija, "familia", List.of())));
+
+            return filas.values().stream()
+                    .filter(Category::esFamilia)
+                    .filter(Category::active)
+                    .map(familia -> vista(familia, null, hijas.getOrDefault(familia.id(), List.of())))
+                    .toList();
+        }
+
+        private static CategoryView vista(Category categoria, @Nullable String familiaSlug, List<CategoryView> hijas) {
+            return new CategoryView(
+                    categoria.id(),
+                    categoria.slug(),
+                    categoria.slug(),
+                    categoria.slug(),
+                    familiaSlug,
+                    categoria.sizeSystems(),
+                    categoria.measurementGroup() == null
+                            ? Set.of()
+                            : categoria.measurementGroup().obligatorias(),
+                    categoria.allowsUsed(),
+                    hijas);
+        }
 
         Category agregar(Category categoria) {
             filas.put(categoria.id(), categoria);

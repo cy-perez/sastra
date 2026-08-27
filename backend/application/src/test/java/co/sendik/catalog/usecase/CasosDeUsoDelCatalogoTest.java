@@ -5,9 +5,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import co.sendik.catalog.dto.ApproveListingCommand;
 import co.sendik.catalog.dto.ChangeListingPriceCommand;
+import co.sendik.catalog.dto.ChangeListingShippingCommand;
 import co.sendik.catalog.dto.CreateListingCommand;
+import co.sendik.catalog.dto.ListPendingListingsQuery;
 import co.sendik.catalog.dto.ListSellerListingsQuery;
 import co.sendik.catalog.dto.ProductData;
+import co.sendik.catalog.dto.ReadListingQuery;
 import co.sendik.catalog.dto.RejectListingCommand;
 import co.sendik.catalog.dto.SellerListingCommand;
 import co.sendik.catalog.dto.TakeDownListingCommand;
@@ -24,6 +27,7 @@ import co.sendik.catalog.model.Color;
 import co.sendik.catalog.model.Condition;
 import co.sendik.catalog.model.Description;
 import co.sendik.catalog.model.Listing;
+import co.sendik.catalog.model.ListingId;
 import co.sendik.catalog.model.ListingRejectionReason;
 import co.sendik.catalog.model.ListingStatus;
 import co.sendik.catalog.model.MeasurementGroup;
@@ -381,6 +385,224 @@ class CasosDeUsoDelCatalogoTest {
         }
     }
 
+    /** La cola del moderador. HU-008, criterios 1 y 4. */
+    @Nested
+    class BandejaDelModerador {
+
+        private static final Instant TEMPRANO = Instant.parse("2026-08-24T09:00:00Z");
+        private static final Instant MEDIODIA = Instant.parse("2026-08-24T12:00:00Z");
+        private static final Instant TARDE = Instant.parse("2026-08-24T17:00:00Z");
+
+        @Test
+        void deberia_estar_vacia_cuando_no_hay_nada_esperando_criterio_4() {
+            borradorConTomas();
+
+            assertThat(bandeja().execute(new ListPendingListingsQuery(0, 20))).isEmpty();
+        }
+
+        @Test
+        void deberia_devolver_solo_lo_que_espera_revision() {
+            Listing enRevision = borradorConTomas();
+            enviar().execute(new SellerListingCommand(vendedor, enRevision.id()));
+
+            Listing yaPublicada = borradorConTomas();
+            enviar().execute(new SellerListingCommand(vendedor, yaPublicada.id()));
+            aprobar().execute(new ApproveListingCommand(new ModeratorId(UUID.randomUUID()), yaPublicada.id()));
+
+            borradorConTomas();
+
+            var cola = bandeja().execute(new ListPendingListingsQuery(0, 20));
+
+            assertThat(cola).singleElement().satisfies(publicacion -> {
+                assertThat(publicacion.id()).isEqualTo(enRevision.id());
+                assertThat(publicacion.status()).isEqualTo(ListingStatus.PENDING_REVIEW);
+            });
+        }
+
+        @Test
+        void deberia_poner_primero_lo_que_lleva_mas_tiempo_esperando_criterio_1() {
+            Listing tarde = borradorConTomas();
+            Listing temprano = borradorConTomas();
+            Listing mediodia = borradorConTomas();
+
+            enviarEn(TARDE).execute(new SellerListingCommand(vendedor, tarde.id()));
+            enviarEn(TEMPRANO).execute(new SellerListingCommand(vendedor, temprano.id()));
+            enviarEn(MEDIODIA).execute(new SellerListingCommand(vendedor, mediodia.id()));
+
+            var cola = bandeja().execute(new ListPendingListingsQuery(0, 20));
+
+            assertThat(cola).extracting(Listing::id).containsExactly(temprano.id(), mediodia.id(), tarde.id());
+        }
+
+        /**
+         * La razon de que exista {@code submitted_at}: con {@code updated_at}, cambiar el
+         * precio mandaria la publicacion al final de su propia cola.
+         */
+        @Test
+        void no_deberia_perder_el_turno_por_cambiar_el_precio_mientras_espera() {
+            Listing primera = borradorConTomas();
+            Listing segunda = borradorConTomas();
+            enviarEn(TEMPRANO).execute(new SellerListingCommand(vendedor, primera.id()));
+            enviarEn(MEDIODIA).execute(new SellerListingCommand(vendedor, segunda.id()));
+
+            new ChangeListingPriceUseCase(publicaciones, Clock.fixed(TARDE, ZoneOffset.UTC))
+                    .execute(new ChangeListingPriceCommand(vendedor, primera.id(), Money.dePesos(190_000)));
+
+            var cola = bandeja().execute(new ListPendingListingsQuery(0, 20));
+
+            assertThat(cola).extracting(Listing::id).containsExactly(primera.id(), segunda.id());
+        }
+
+        @Test
+        void deberia_paginar_sin_repetir_ni_saltarse_ninguna() {
+            Listing temprano = borradorConTomas();
+            Listing mediodia = borradorConTomas();
+            Listing tarde = borradorConTomas();
+            enviarEn(TEMPRANO).execute(new SellerListingCommand(vendedor, temprano.id()));
+            enviarEn(MEDIODIA).execute(new SellerListingCommand(vendedor, mediodia.id()));
+            enviarEn(TARDE).execute(new SellerListingCommand(vendedor, tarde.id()));
+
+            var primera = bandeja().execute(new ListPendingListingsQuery(0, 2));
+            var segunda = bandeja().execute(new ListPendingListingsQuery(1, 2));
+
+            assertThat(primera).extracting(Listing::id).containsExactly(temprano.id(), mediodia.id());
+            assertThat(segunda).extracting(Listing::id).containsExactly(tarde.id());
+        }
+
+        @Test
+        void deberia_rechazar_una_pagina_o_un_tamano_absurdos() {
+            assertThatThrownBy(() -> new ListPendingListingsQuery(-1, 20)).isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new ListPendingListingsQuery(0, 51)).isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new ListPendingListingsQuery(0, 0)).isInstanceOf(IllegalArgumentException.class);
+        }
+
+        private ListPendingListingsUseCase bandeja() {
+            return new ListPendingListingsUseCase(publicaciones);
+        }
+    }
+
+    @Nested
+    class Lectura {
+
+        @Test
+        void deberia_dejar_ver_una_publicada_a_cualquiera_criterio_33() {
+            Listing publicada = publicada();
+
+            assertThat(leer().execute(new ReadListingQuery(publicada.id(), null, false)))
+                    .isPresent();
+        }
+
+        @Test
+        void deberia_esconder_lo_que_no_esta_publicado_a_quien_no_es_su_dueno_criterio_33() {
+            Listing borrador = borradorConTomas();
+            SellerId otro = new SellerId(UUID.randomUUID());
+
+            assertThat(leer().execute(new ReadListingQuery(borrador.id(), null, false)))
+                    .isEmpty();
+            assertThat(leer().execute(new ReadListingQuery(borrador.id(), otro, false)))
+                    .isEmpty();
+        }
+
+        @Test
+        void deberia_dejar_al_dueno_ver_su_propio_borrador() {
+            Listing borrador = borradorConTomas();
+
+            assertThat(leer().execute(new ReadListingQuery(borrador.id(), vendedor, false)))
+                    .isPresent();
+        }
+
+        @Test
+        void deberia_dejar_al_moderador_ver_un_borrador_ajeno() {
+            Listing borrador = borradorConTomas();
+
+            assertThat(leer().execute(new ReadListingQuery(borrador.id(), null, true)))
+                    .isPresent();
+        }
+
+        /**
+         * Lo mismo que si existiera y no fuera para quien pregunta, y a proposito: el
+         * criterio 33 exige que las dos situaciones sean indistinguibles desde fuera.
+         */
+        @Test
+        void deberia_devolver_vacio_cuando_no_existe() {
+            assertThat(leer().execute(new ReadListingQuery(ListingId.nuevo(), vendedor, true)))
+                    .isEmpty();
+        }
+    }
+
+    @Nested
+    class Retomar {
+
+        @Test
+        void deberia_devolver_a_borrador_conservando_datos_y_tomas_criterio_23() {
+            Listing rechazada = rechazada();
+
+            Listing retomada = retomar().execute(new SellerListingCommand(vendedor, rechazada.id()));
+
+            assertThat(retomada.status()).isEqualTo(ListingStatus.DRAFT);
+            // Las mismas, no otras tantas: hasSameSizeAs pasaria con ocho tomas distintas
+            // y el criterio dice "conserva sus tomas".
+            assertThat(retomada.images().stream().map(ProductImage::id))
+                    .containsExactlyElementsOf(
+                            rechazada.images().stream().map(ProductImage::id).toList());
+            assertThat(retomada.product().title()).isEqualTo(rechazada.product().title());
+        }
+
+        /**
+         * El motivo de que este caso de uso exista.
+         *
+         * <p>{@code ListingStatus} no admite {@code REJECTED -> PENDING_REVIEW}, y subir
+         * una toma nueva no cambia el estado. Sin retomar, a quien le rechazaran por las
+         * fotos no le quedaba forma de reenviar sin tocar ademas un texto que no tenia
+         * nada malo. Esta prueba recorre el camino entero.
+         */
+        @Test
+        void deberia_dejar_reenviar_despues_de_retomar_criterio_23() {
+            Listing rechazada = rechazada();
+
+            retomar().execute(new SellerListingCommand(vendedor, rechazada.id()));
+            Listing reenviada = enviar().execute(new SellerListingCommand(vendedor, rechazada.id()));
+
+            assertThat(reenviada.status()).isEqualTo(ListingStatus.PENDING_REVIEW);
+        }
+
+        @Test
+        void deberia_responder_como_si_no_existiera_la_publicacion_de_otro() {
+            Listing rechazada = rechazada();
+            SellerId otro = new SellerId(UUID.randomUUID());
+
+            assertThatThrownBy(() -> retomar().execute(new SellerListingCommand(otro, rechazada.id())))
+                    .isInstanceOf(ListingNotFoundException.class);
+        }
+    }
+
+    @Nested
+    class Envio {
+
+        @Test
+        void deberia_seguir_visible_al_cambiar_el_envio_criterio_28() {
+            Listing publicada = publicada();
+            ShippingDimensions otro =
+                    new ShippingDimensions(900, new BigDecimal("40.0"), new BigDecimal("25.0"), new BigDecimal("15.0"));
+
+            Listing conOtroEnvio =
+                    cambiarEnvio().execute(new ChangeListingShippingCommand(vendedor, publicada.id(), otro));
+
+            assertThat(conOtroEnvio.status()).isEqualTo(ListingStatus.PUBLISHED);
+            assertThat(conOtroEnvio.product().shipping()).isEqualTo(otro);
+        }
+
+        @Test
+        void deberia_responder_como_si_no_existiera_la_publicacion_de_otro() {
+            Listing publicada = publicada();
+            SellerId otro = new SellerId(UUID.randomUUID());
+
+            assertThatThrownBy(() ->
+                            cambiarEnvio().execute(new ChangeListingShippingCommand(otro, publicada.id(), envio())))
+                    .isInstanceOf(ListingNotFoundException.class);
+        }
+    }
+
     // ------------------------------------------------------------------ apoyo
 
     private CreateListingUseCase crear() {
@@ -389,6 +611,12 @@ class CasosDeUsoDelCatalogoTest {
 
     private SubmitListingForReviewUseCase enviar() {
         return new SubmitListingForReviewUseCase(publicaciones, arbol, elegibilidad, RELOJ);
+    }
+
+    /** Para escalonar la cola: el reloj del proyecto es fijo y todas caerian a la vez. */
+    private SubmitListingForReviewUseCase enviarEn(Instant momento) {
+        return new SubmitListingForReviewUseCase(
+                publicaciones, arbol, elegibilidad, Clock.fixed(momento, ZoneOffset.UTC));
     }
 
     private ApproveListingUseCase aprobar() {
@@ -427,6 +655,18 @@ class CasosDeUsoDelCatalogoTest {
         return new WithdrawListingUseCase(publicaciones, RELOJ);
     }
 
+    private ReadListingUseCase leer() {
+        return new ReadListingUseCase(publicaciones);
+    }
+
+    private ReopenListingUseCase retomar() {
+        return new ReopenListingUseCase(publicaciones, RELOJ);
+    }
+
+    private ChangeListingShippingUseCase cambiarEnvio() {
+        return new ChangeListingShippingUseCase(publicaciones, RELOJ);
+    }
+
     private Listing borradorConTomas() {
         Category camisas = arbol.camisas();
         Listing borrador = crear().execute(new CreateListingCommand(vendedor, datosDeCamisa(camisas)));
@@ -446,6 +686,17 @@ class CasosDeUsoDelCatalogoTest {
         Listing enRevision = enviar().execute(
                         new SellerListingCommand(vendedor, borradorConTomas().id()));
         return aprobar().execute(new ApproveListingCommand(new ModeratorId(UUID.randomUUID()), enRevision.id()));
+    }
+
+    private Listing rechazada() {
+        Listing enRevision = enviar().execute(
+                        new SellerListingCommand(vendedor, borradorConTomas().id()));
+        return rechazar()
+                .execute(new RejectListingCommand(
+                        new ModeratorId(UUID.randomUUID()),
+                        enRevision.id(),
+                        ListingRejectionReason.PHOTOS_UNUSABLE,
+                        "Las tomas salen movidas."));
     }
 
     private static ProductImage toma(int posicion) {

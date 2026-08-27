@@ -188,6 +188,12 @@ export default defineConfig({
         SECURITY_BOOTSTRAP_MODERATORS: MODERADORA,
         VERIFICATION_REVIEW_DAYS: '2',
 
+        // HU-007 y HU-008. Sin la bandera, ni el formulario de publicar ni la bandeja de
+        // moderacion de publicaciones existen: sus rutas responden 404 y el recorrido del
+        // ciclo completo no tendria contra que correr.
+        FEATURE_PUBLISHING: 'true',
+        LISTING_REVIEW_DAYS: '2',
+
         COMPANY_NAME: 'Sendik S.A.S.',
         COMPANY_TAX_ID: '000000000-0',
         COMPANY_ADDRESS: 'Medellin, Colombia',
@@ -211,6 +217,7 @@ export default defineConfig({
         // pantalla lo dice y el correo tambien, y una prueba que confirma el texto contra
         // el valor por omision no comprueba que la configuracion llegue.
         VERIFICATION_REVIEW_DAYS: '2',
+        LISTING_REVIEW_DAYS: '2',
         COMPANY_NAME: 'Sendik S.A.S.',
         COMPANY_TAX_ID: '000000000-0',
         COMPANY_ADDRESS: 'Medellin, Colombia',

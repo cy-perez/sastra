@@ -224,9 +224,11 @@ test.describe('portada', () => {
 });
 
 /**
- * Caso borde de la historia: el titular en ingles es bastante mas largo que el
- * espanol y 320px es el ancho mas estrecho que el sistema contempla. Es la
- * combinacion la que rompe, no cada una por separado.
+ * Caso borde de la historia: 320px es el ancho mas estrecho que el sistema
+ * contempla y el titular es lo primero que lo desborda. Nacio cuando el titular
+ * en ingles era bastante mas largo que el espanol; con el eslogan de marca los
+ * dos son cortos, pero el guardia se queda: el titular vuelve a cambiar antes
+ * que el ancho minimo.
  *
  * <p>Va en su propio bloque porque el idioma se negocia con la cabecera que
  * manda el navegador, y `test.use` solo se puede fijar por bloque.
@@ -234,11 +236,13 @@ test.describe('portada', () => {
 test.describe('portada en ingles', () => {
   test.use({ locale: 'en-US' });
 
-  test('no desborda a 320px con el titular largo en ingles', async ({ page }) => {
+  test('no desborda a 320px con el titular en ingles', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 640 });
     await page.goto('/');
 
-    await expect(page.getByRole('heading', { level: 1 })).toContainText('Buy and sell fashion');
+    await expect(page.getByRole('heading', { level: 1 })).toContainText(
+      'Buy and sell quickly and safely',
+    );
 
     expect(await desbordaHorizontalmente(page)).toBe(false);
   });

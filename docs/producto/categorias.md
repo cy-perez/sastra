@@ -174,9 +174,49 @@ formulario que se pueda saltar llamando al endpoint (RN-064).
   Es lo primero que mira quien compra un dispositivo y hoy no hay dónde guardarlo.
   Sin eso, el catálogo de tecnología se puede abrir pero no se puede filtrar por
   nada que le importe a un comprador.
-- **Los valores concretos de cada sistema de talla**, que HU-007 dejó anotados
-  como pendientes de confirmar con alguien que venda ropa en Colombia. No bloquea:
-  corregirlos no toca el esquema.
-- **Los nombres visibles de las treinta y una categorías en los dos idiomas**, que
-  van en la migración que las siembra. El español está en las tablas de arriba; el
-  inglés hay que escribirlo, y manda que se entienda, no que traduzca literal.
+- ~~**Los valores concretos de cada sistema de talla.**~~ **Decididos el 26 de
+  agosto de 2026**, contra las guías de talla que publican tiendas que venden en
+  Colombia. Ver «Los valores de cada sistema de talla» más abajo.
+- ~~**Los nombres visibles de las treinta y una categorías en los dos idiomas.**~~
+  **Ya estaban**: `V9__catalog.sql` siembra `name_es` y `name_en` de las treinta y
+  una y de las seis familias. Este documento los daba por pendientes y el código
+  decía otra cosa; manda el código. Lo que sí faltaba era la ortografía del
+  español, corregida en `V11__category_names_with_accents.sql`: siete categorías y
+  una familia se sembraron sin tildes —«Sueteres», «Trajes de bano», «Camaras»,
+  «Tecnologia»— y ese texto lo lee un comprador.
+
+## Los valores de cada sistema de talla
+
+Decididos el 26 de agosto de 2026. Salen de las guías de talla que publican
+tiendas que venden en Colombia, no de una tabla internacional traducida: lo que
+importa es qué talla dice la etiqueta de la prenda que alguien tiene en el
+armario.
+
+| Sistema | Valores | Por qué |
+|---|---|---|
+| `ALPHA` | XS, S, M, L, XL, XXL | Las seis de las guías de talla del mercado |
+| `NUMERIC_CO` | 4 a 22, de dos en dos | El rango corriente llega a 18; 20 y 22 son las tallas grandes, que se venden |
+| `WAIST_INCHES` | 26 a 44, **de uno en uno** | Las impares existen: 33 es talla corriente de jean de hombre |
+| `FOOTWEAR_CO` | 34 a 45 | Calzado de mujer 35–40 y de hombre 38–43; los extremos existen aunque se vendan poco |
+| `ONE_SIZE` | U | Un dispositivo no tiene talla, y un bolso tampoco |
+
+**Tres correcciones sobre lo que HU-007 había anotado como provisional:**
+
+- `WAIST_INCHES` **iba de dos en dos** y dejaba fuera las impares. El 33 se vende
+  en Colombia, y con una lista cerrada quien lo tuviera no podía publicar ni con
+  la talla de al lado.
+- `NUMERIC_CO` llegaba a 20 y ahora llega a 22.
+- `FOOTWEAR_CO` iba de 33 a 46 y ahora de 34 a 45. Por debajo de 34 ya es calzado
+  infantil, que no está en el árbol; el techo se baja al que de verdad se
+  encuentra en tienda.
+
+**Una sola lista por sistema, sin eje de género.** Es consecuencia directa de cómo
+se decidió el árbol: el calzado de mujer va de 35 a 40 y el de hombre de 38 a 43,
+así que la lista los cubre a los dos y quien publica elige el número que dice su
+zapato. Separarlos exigiría el eje de género que este proyecto no tiene.
+
+**No hay tabla de equivalencias entre sistemas, y es deliberado.** Convertir una
+talla 10 colombiana a un M es aproximado y depende de la marca; una equivalencia
+publicada por Sendik sería una promesa que no podemos sostener. Quien publica
+declara el sistema y el valor que trae la prenda, y quien compra ve ese mismo par
+más las medidas en centímetros, que son las que no mienten (RN-021).

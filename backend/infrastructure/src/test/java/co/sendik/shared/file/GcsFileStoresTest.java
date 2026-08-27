@@ -44,6 +44,8 @@ class GcsFileStoresTest {
             8_000_000,
             200,
             200,
+            900,
+            1200,
             "sendik-col",
             CUBO_PUBLICO,
             CUBO_RESERVADO);
@@ -136,6 +138,8 @@ class GcsFileStoresTest {
                 8_000_000,
                 200,
                 200,
+                900,
+                1200,
                 null,
                 CUBO_PUBLICO,
                 CUBO_RESERVADO);
@@ -200,6 +204,8 @@ class GcsFileStoresTest {
                 8_000_000,
                 200,
                 200,
+                900,
+                1200,
                 null,
                 null,
                 CUBO_RESERVADO);
@@ -218,6 +224,8 @@ class GcsFileStoresTest {
                 8_000_000,
                 200,
                 200,
+                900,
+                1200,
                 null,
                 CUBO_PUBLICO,
                 "   ");
@@ -240,6 +248,8 @@ class GcsFileStoresTest {
                         8_000_000,
                         200,
                         200,
+                        900,
+                        1200,
                         null,
                         CUBO_PUBLICO,
                         CUBO_PUBLICO))
@@ -261,6 +271,8 @@ class GcsFileStoresTest {
                         8_000_000,
                         200,
                         200,
+                        900,
+                        1200,
                         "",
                         "",
                         ""))

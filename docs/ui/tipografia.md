@@ -30,9 +30,9 @@ Eso descarga los `.woff2`, sus licencias y genera `fuentes.css`.
 
 | Token | px | Donde se usa | Familia | Interlineado | Peso |
 |---|---|---|---|---|---|
-| `--texto-3xl` | 46 | H1 — titular de portada | Archivo | 1.1 | 700 |
-| `--texto-2xl` | 34 | H2 — titulo de seccion | Archivo | 1.1 | 700 |
-| `--texto-xl` | 26 | H3 — subtitulo | Archivo | 1.1 | 700 |
+| `--texto-3xl` | 46 | H1 — titular de portada | Archivo | 1.1 | 600 |
+| `--texto-2xl` | 34 | H2 — titulo de seccion | Archivo | 1.1 | 600 |
+| `--texto-xl` | 26 | H3 — subtitulo | Archivo | 1.1 | 600 |
 | `--texto-lg` | 20 | Entradilla | Inter | 1.55 | 400 |
 | `--texto-base` | 16 | Cuerpo de texto | Inter | 1.55 | 400 |
 | `--texto-sm` | 14 | Texto secundario, etiquetas | Inter | 1.55 | 400 |

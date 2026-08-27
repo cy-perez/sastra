@@ -1,6 +1,14 @@
 # ADR-0019 — Un solo hospedaje, elegido al contratar el dominio
 
 **Fecha:** 2026-08-21 · **Estado:** aceptada · **Sustituye a:** ADR-0009
+**La decisión que dejó abierta se cerró en:** ADR-0024
+
+> **Actualización del 26 de agosto de 2026.** Esta ADR dejó una cosa sin decidir a
+> propósito —dónde se sirve el frontend— y puso la condición para decidirla: al
+> contratar el dominio. Ya se contrató `sendik.co`, y **ADR-0024 responde: Cloud
+> Run**, con GoDaddy como registrador y DNS. Todo lo demás de esta ADR sigue
+> vigente, incluida la lista de requisitos de más abajo, que es justamente lo que
+> permitió elegir sin volver a deducir nada.
 
 ## Contexto
 

@@ -118,6 +118,61 @@ export const routes: Routes = [
       ),
   },
   {
+    // HU-008. La bandeja de moderacion de publicaciones y su detalle.
+    //
+    // Sin enlace desde ninguna parte, como las de HU-002 y HU-006: quien modera conoce
+    // la direccion. Y ademas el backend responde 404 en la cola mientras
+    // FEATURE_PUBLISHING este apagada, asi que enlazarla llevaria a una pantalla vacia.
+    path: 'moderacion/publicaciones',
+    title: 'meta.listingReviewQueue.title',
+    data: { descriptionKey: 'meta.listingReviewQueue.description' },
+    canActivate: [exigirRol('MODERATOR')],
+    loadComponent: () =>
+      import('./features/listing-review/presentation/queue-page').then((m) => m.QueuePage),
+  },
+  {
+    path: 'moderacion/publicaciones/:id',
+    title: 'meta.listingReviewDetail.title',
+    data: { descriptionKey: 'meta.listingReviewDetail.description' },
+    canActivate: [exigirRol('MODERATOR')],
+    loadComponent: () =>
+      import('./features/listing-review/presentation/review-listing-page').then(
+        (m) => m.ReviewListingPage,
+      ),
+  },
+  {
+    // HU-007. El formulario de publicar y el listado propio.
+    //
+    // **Sin enlace desde ninguna parte**, igual que las de HU-002 y HU-006: el backend
+    // responde 404 en estas rutas mientras FEATURE_PUBLISHING este apagada, y HU-004 y
+    // HU-005 prohiben dejar enlaces a algo que no funciona. La entrada en el menu se pone
+    // cuando la bandera se encienda.
+    //
+    // `/publicar` sin identificador es el paso previo: pide la categoria y crea el
+    // borrador. No es un capricho de navegacion —una toma se sube contra una publicacion
+    // que ya existe— y ademas de la categoria dependen las condiciones admisibles, los
+    // sistemas de talla y que medidas se piden.
+    path: 'publicar',
+    title: 'meta.publish.title',
+    data: { descriptionKey: 'meta.publish.description' },
+    loadComponent: () =>
+      import('./features/listing/presentation/publish-page').then((m) => m.PublishPage),
+  },
+  {
+    path: 'publicar/:id',
+    title: 'meta.publish.title',
+    data: { descriptionKey: 'meta.publish.description' },
+    loadComponent: () =>
+      import('./features/listing/presentation/publish-page').then((m) => m.PublishPage),
+  },
+  {
+    path: 'mis-publicaciones',
+    title: 'meta.myListings.title',
+    data: { descriptionKey: 'meta.myListings.description' },
+    loadComponent: () =>
+      import('./features/listing/presentation/my-listings-page').then((m) => m.MyListingsPage),
+  },
+  {
     path: 'verificar-correo',
     title: 'meta.verify.title',
     data: { descriptionKey: 'meta.verify.description' },

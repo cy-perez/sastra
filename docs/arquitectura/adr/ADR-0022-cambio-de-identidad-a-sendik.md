@@ -136,9 +136,18 @@ plantilla por la versión que llegue sin perder nada propio.
   imágenes con el visor de ocho tomas, tarjetas de la misma altura— no cambió
   porque cambiara la marca. La divergencia queda anotada en
   `docs/ui/ubicacion-de-activos.md` para que no se lea como descuido.
-- El titular del hero y `meta.home.description` siguen con el descriptor viejo
-  como copy. Cambiarlos reabre HU-004 y es una decisión de redacción, no de
-  marca: queda anotado en `textos-web.md`.
+- El titular del hero y `meta.home.description` **adoptaron el eslogan tal cual**,
+  y con ellos `meta.register.description` y `meta.login.description`, que
+  arrastraban el mismo descriptor viejo. Se decidió el mismo 25 de agosto de 2026,
+  aparte de esta ADR, porque es redacción y no marca: queda registrado en
+  `textos-web.md` y reabrió y cerró HU-004. Se descartó la variante de la maqueta
+  del kit —«Compra y vende moda y tecnología de forma ágil y segura»—, que el
+  propio kit marca como texto de muestra y que vuelve a nombrar las categorías.
+  En inglés se reusa la fórmula del pie, `Buy and sell quickly and safely`, para
+  que marca y copy no diverjan entre idiomas.
+- **`meta.home.title` sigue siendo un marcador de posición.** Dice solo `Sendik`.
+  La propuesta de `textos-web.md` nombra una sola de las dos categorías, así que
+  no se cambia todavía. No lo bloquea la marca: lo bloquea la redacción.
 
 ## Cuándo revisar
 

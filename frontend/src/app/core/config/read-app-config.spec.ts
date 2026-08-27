@@ -148,6 +148,7 @@ describe('readAppConfig, cifras de negocio', () => {
       commissionRate: 0.05,
       claimWindowDays: 3,
       verificationReviewDays: 2,
+      listingReviewDays: 2,
     });
   });
 
@@ -168,6 +169,7 @@ describe('readAppConfig, cifras de negocio', () => {
       commissionRate: 0.08,
       claimWindowDays: 5,
       verificationReviewDays: 2,
+      listingReviewDays: 2,
     });
   });
 
@@ -220,6 +222,7 @@ describe('readAppConfig, cifras de negocio', () => {
       commissionRate: 0.05,
       claimWindowDays: 3,
       verificationReviewDays: 2,
+      listingReviewDays: 2,
     });
   });
 });

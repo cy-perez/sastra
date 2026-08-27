@@ -4,6 +4,7 @@ import co.sendik.identity.model.Email;
 import co.sendik.identity.model.RejectionReason;
 import co.sendik.identity.model.User;
 import co.sendik.identity.port.out.MailSender;
+import co.sendik.shared.port.out.MailTransport;
 import java.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,7 +28,7 @@ import org.springframework.stereotype.Component;
 // cual de ellos le toco.
 @Component("transporteDeCorreo")
 @ConditionalOnProperty(prefix = "sendik.mail", name = "provider", havingValue = "console")
-public class ConsoleMailSender implements MailSender {
+public class ConsoleMailSender implements MailSender, MailTransport {
 
     private static final Logger LOG = LoggerFactory.getLogger(ConsoleMailSender.class);
 
@@ -160,6 +161,23 @@ public class ConsoleMailSender implements MailSender {
     @Override
     public void enviarAvisoDeVerificacionRevocada(User titular, RejectionReason motivo, String nota) {
         registrar("VERIFICACION REVOCADA (RN-013)", titular, "Motivo: " + motivo);
+    }
+
+    /**
+     * El envio generico, que aqui es imprimirlo. Ver {@link MailTransport} y ADR-0023.
+     *
+     * <p>Imprime el asunto y no el cuerpo: el cuerpo es HTML y llena la consola. Quien
+     * prueba un correo en desarrollo necesita saber que salio y para quien.
+     */
+    @Override
+    public void enviar(String destinatario, String asunto, String html) {
+        LOG.info("""
+
+                ================ CORREO ({}) =================================================
+                Para:   {}
+                Asunto: {}
+                ===============================================================================
+                """, "adaptador de consola", destinatario, asunto);
     }
 
     /**

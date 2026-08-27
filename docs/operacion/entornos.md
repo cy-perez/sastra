@@ -3,32 +3,32 @@
 Dos entornos: `dev` y `prod`. Sin entorno intermedio: con un solo desarrollador,
 un tercer entorno es sobre todo mantenimiento sin beneficio.
 
-## Etapa actual: prototipo
+## Etapa actual: `dev` en pie, `prod` todavía no
 
-**Nada de esto está desplegado todavía, y es una decisión, no un pendiente.** El
-despliegue del sitio —dominio y hospedaje— se hace cuando el proyecto esté lo más
-completo posible. Hasta entonces se trabaja y se prueba en local, integrado contra
-los servicios de GCP que hagan falta **en su capa gratuita**: son cuentas reales
-contra las que se prueba de verdad, no simulaciones, y cuestan cero. Los servicios
-de pago —el dominio `sendik.co`, la instancia mínima siempre activa, Cloud SQL, el
-balanceador— se contratan justo antes del lanzamiento inicial.
+El 26 de agosto de 2026 se contrató **`sendik.co` en GoDaddy**, y con eso se cerró
+la única decisión que quedaba abierta: dónde se hospeda el sitio. La respuesta está
+en ADR-0024 y es **Cloud Run, junto al backend**; GoDaddy queda como registrador y
+servidor de DNS, que es lo que mejor hace.
 
-El motivo es el costo de tener algo en pie que nadie usa. Un despliegue vivo pide
-atención continua —secretos que rotar, respaldos que verificar, alertas que
-atender, dependencias que actualizar en un artefacto publicado— y con un solo
-desarrollador esa atención sale del tiempo de construir el producto. Además, el
-mes en que empieza a contar el dominio y la instancia mínima es el mes en que
-empieza el gasto, y conviene que sea el mes en que hay algo que mostrar.
+**Lo que cambia:** `dev` deja de ser una etapa aplazada y pasa a estar desplegado.
+Las dos piezas van a Cloud Run desde el mismo commit verificado, con el mismo flujo
+(`despliegue.yml`) y en la misma región.
 
-Lo que esto **no** significa: no significa aplazar la canalización ni el flujo de
-despliegue, que están escritos y probados (`despliegue.md`), ni probar contra
-imitaciones de los servicios de la nube. La tabla siguiente es dónde vivirá cada
-pieza y lo que costará cuando se ponga en pie.
+**Lo que no cambia:** producción sigue esperando, y por el mismo motivo de siempre.
+Un despliegue de producción pide atención continua —secretos que rotar, respaldos
+que verificar, alertas que atender— y arrastra las piezas que sí cuestan: la
+instancia mínima siempre activa y Cloud SQL, que cobra por hora encendida aunque
+nadie lo use. Nada de eso hace falta para tener `dev` en pie.
 
-| Pieza | Dónde | Costo |
+**Y `dev` sigue costando cero.** No es una concesión: es consecuencia de que todo
+lo que lo compone escala a cero o entra en capa gratuita.
+
+| Pieza | Dónde | Costo en `dev` |
 |---|---|---|
-| Frontend Angular SSR | Sin hospedaje: se ejecuta en local (ADR-0019) | 0 |
-| Backend Spring Boot | Cloud Run, escalado a cero | Prácticamente 0 |
+| Dominio `sendik.co` | GoDaddy, registrador y DNS | Ya pagado |
+| Frontend Angular SSR | Cloud Run, escalado a cero (ADR-0024) | 0 |
+| Backend Spring Boot | Cloud Run, escalado a cero | 0 |
+| Certificado de `dev.sendik.co` | Gestionado por Cloud Run | 0 |
 | PostgreSQL | Neon o Supabase, capa gratuita | 0 |
 | Imágenes | Cloud Storage, capa gratuita 5GB | 0 |
 | Secretos | Secret Manager | 0 en capa gratuita |
@@ -37,26 +37,27 @@ pieza y lo que costará cuando se ponga en pie.
 | Errores del frontend | Sentry, capa gratuita | 0 |
 | Repositorio y CI | GitHub Actions, minutos gratuitos | 0 |
 
-Cloud Run escala a cero: sin tráfico no cobra. Por eso el backend **podría** estar
-desplegado desde el primer día sin costo; que no lo esté es la decisión de arriba,
-tomada por el trabajo de operación que arrastra y no por el precio. Cloud SQL, en cambio, cobra por hora encendida
-aunque nadie lo use, y es lo primero que conviene aplazar.
+**El alojamiento compartido de GoDaddy no aparece en la tabla porque no ejecuta
+nada.** Está pagado y sin usar, y esa es una consecuencia asumida en ADR-0024: no
+puede servir un sitio con renderizado en servidor, y montarlo encima costaría más
+—en configuración frágil y en tiempo de operación— que el propio plan.
 
 **Primer arranque en frío.** Con escalado a cero, la primera petición tras un
-periodo inactivo tarda varios segundos. Para el prototipo es aceptable. Al
-lanzar se configura una instancia mínima siempre activa.
+periodo inactivo tarda varios segundos, y ahora son dos servicios los que arrancan.
+Para `dev` es aceptable y es justo lo que lo mantiene en cero. Al lanzar se
+configura una instancia mínima siempre activa en las dos piezas.
 
 ## Etapa de lanzamiento
 
 | Pieza | Servicio | Costo mensual estimado |
 |---|---|---|
-| Frontend y backend | Cloud Run, mínimo 1 instancia | 15 a 40 USD |
+| Frontend y backend | Cloud Run, mínimo 1 instancia cada uno (ADR-0024) | 15 a 40 USD |
 | Base de datos | Cloud SQL PostgreSQL 17, la más pequeña | 25 a 50 USD |
 | Almacenamiento e imágenes | Cloud Storage y CDN | 5 a 15 USD |
-| Balanceador y certificado | Load Balancer con certificado administrado | 18 a 25 USD |
+| Balanceador y certificado | Load Balancer con certificado administrado. **Solo si hace falta**: el mapeo de dominios de Cloud Run ya da certificado gestionado sin costo, y en `dev` es lo que se usa | 0 a 25 USD |
 | Búsqueda | Typesense administrado o en instancia propia | 0 a 25 USD |
 | Correo | Plan de pago según volumen | 0 a 20 USD |
-| Dominio | `sendik.co` | Anual |
+| Dominio | `sendik.co` en GoDaddy, ya contratado | Anual |
 
 Rango realista de arranque: 60 a 150 USD al mes. Cifras orientativas de agosto de
 2026; hay que confirmarlas con la calculadora de precios antes de comprometer
@@ -70,19 +71,21 @@ un requisito de residencia de datos, se revisa.
 
 Todo por integración continua. Nadie despliega desde su máquina.
 
-> **Estado a agosto de 2026.** El flujo está escrito completo:
-> `.github/workflows/verificacion.yml` compila, prueba y analiza en cada pull
-> request y en cada integración a `main`, y `despliegue.yml` publica el backend en
-> `dev` con cada integración a `main` y en `prod` con etiqueta de versión y
-> aprobación manual. Solo el backend: el frontend no tiene trabajo de despliegue
-> mientras no haya proveedor de hospedaje (ADR-0019). El despliegue **llama** a la verificación en lugar de repetir sus pasos,
-> así que nada se publica sin pasarla entera.
+> **Estado a agosto de 2026.** El flujo está escrito completo y cubre las dos
+> piezas: `.github/workflows/verificacion.yml` compila, prueba y analiza en cada
+> pull request y en cada integración a `main`, y `despliegue.yml` publica **el
+> backend y el frontend** en `dev` con cada integración a `main`, y en `prod` con
+> etiqueta de versión y aprobación manual. El despliegue **llama** a la
+> verificación en lugar de repetir sus pasos, así que nada se publica sin pasarla
+> entera.
 >
-> Lo que falta no es código. Para el backend son las cuentas: el proyecto de
-> Google Cloud, la base gestionada y los secretos en Secret Manager, con el
-> procedimiento en orden y una sola vez en `despliegue.md`. Para el frontend falta
-> además elegir dónde: el hospedaje del sitio se contrata con el dominio y su
-> proveedor está por definir (ADR-0019). Hasta entonces no hay nada desplegado.
+> Los dos trabajos se omiten mientras no exista `GCP_PROJECT_ID`, para que la
+> canalización diga la verdad —no hay dónde desplegar— en vez de quedarse roja y
+> dejar de leerse.
+>
+> Lo que falta no es código, son las cuentas: el proyecto de Google Cloud, la base
+> gestionada, los secretos en Secret Manager y los registros de DNS en GoDaddy, con
+> el procedimiento en orden y una sola vez en `despliegue.md`.
 
 ```
 rama de trabajo -> pull request -> verificación -> main -> dev automático
@@ -106,8 +109,7 @@ rama de trabajo -> pull request -> verificación -> main -> dev automático
 
 ## Respaldos
 
-- Copia diaria automática con retención de 7 días en la etapa de prototipo y de
-  30 días en producción.
+- Copia diaria automática con retención de 7 días en `dev` y de 30 días en `prod`.
 - Una restauración de prueba antes del lanzamiento, y luego cada trimestre. Un
   respaldo que nunca se ha restaurado no es un respaldo.
 

@@ -1,0 +1,286 @@
+<a class="enlace-de-volver tipo-secundario" routerLink="/moderacion/publicaciones">
+  {{ 'listingReview.detail.back' | transloco }}
+</a>
+
+<!-- El h1 vive fuera del @if: la pagina tenia encabezado solo en uno de sus tres
+     estados, y una pagina sin h1 mientras carga o cuando falla es una pagina sin
+     estructura justo cuando alguien necesita orientarse. Lleva el titulo de la
+     publicacion en cuanto llega, y hasta entonces el de la pantalla. -->
+<h1 class="tipo-h1">
+  {{ publicacion()?.product?.title ?? ('listingReview.detail.title' | transloco) }}
+</h1>
+
+@if (consulta.isPending()) {
+  <span class="esqueleto esqueleto-detalle" aria-hidden="true"></span>
+  <p class="solo-lectores" role="status">{{ 'listingReview.inbox.loading' | transloco }}</p>
+} @else if (consulta.isError()) {
+  <div class="aviso-de-error tipo-cuerpo">
+    <p>
+      <strong>{{ 'listingReview.inbox.error.title' | transloco }}</strong>
+    </p>
+    <!-- Con su reintentar, como la bandeja. Aqui hace mas falta todavia: quien llego por
+         la direccion directa ya no tiene la fila desde la que volver a entrar. -->
+    <button type="button" class="btn" (click)="reintentar()">
+      {{ 'listingReview.inbox.error.retry' | transloco }}
+    </button>
+  </div>
+} @else if (publicacion(); as actual) {
+  @if (espera(); as cuando) {
+    <p class="tipo-secundario">
+      {{ 'listingReview.inbox.waitingSince' | transloco: { tiempo: cuando } }}
+    </p>
+  }
+
+  <!-- Criterio 6: aquí sí se dice por qué, con texto y no solo con color. Al vendedor no
+       se le dice el motivo, para no invitarlo a cambiar el precio y esquivar la revisión;
+       quien revisa es justo quien lo necesita (RN-020). -->
+  @if (marcasDeAtencion().length > 0) {
+    <section class="atencion" aria-labelledby="titulo-atencion">
+      <h2 id="titulo-atencion" class="tipo-titulo-tarjeta">
+        {{ 'listingReview.attention.title' | transloco }}
+      </h2>
+      <ul class="tipo-cuerpo">
+        @for (motivo of marcasDeAtencion(); track motivo) {
+          <li>{{ 'listingReview.attention.' + motivo | transloco }}</li>
+        }
+      </ul>
+    </section>
+  }
+
+  <section class="seccion" aria-labelledby="titulo-producto">
+    <h2 id="titulo-producto" class="tipo-titulo-tarjeta">
+      {{ 'listingReview.detail.productSection' | transloco }}
+    </h2>
+
+    <dl class="datos-de-la-publicacion tipo-cuerpo">
+      <dt>{{ 'listingReview.detail.price' | transloco }}</dt>
+      <dd class="precio">{{ precio() }}</dd>
+
+      <!-- Criterio 7. El nombre se resuelve contra el arbol de categorias, que es publico:
+           el producto solo trae el identificador. Mientras el arbol no ha llegado se
+           muestra el identificador, que no es bonito pero es cierto. -->
+      <dt>{{ 'listingReview.detail.category' | transloco }}</dt>
+      <dd>{{ categoria() }}</dd>
+
+      @if (actual.product.brand; as marca) {
+        <dt>{{ 'listingReview.detail.brand' | transloco }}</dt>
+        <dd>{{ marca }}</dd>
+      }
+
+      @if (actual.product.condition; as condicion) {
+        <dt>{{ 'listingReview.detail.condition' | transloco }}</dt>
+        <dd>{{ 'listing.condition.' + condicion | transloco }}</dd>
+      }
+
+      @if (actual.product.size; as talla) {
+        <dt>{{ 'listingReview.detail.size' | transloco }}</dt>
+        <dd>{{ talla.value }}</dd>
+      }
+
+      @if (actual.product.color; as color) {
+        <dt>{{ 'listingReview.detail.color' | transloco }}</dt>
+        <dd>{{ 'listing.color.' + color | transloco }}</dd>
+      }
+
+      @if (actual.product.isSealed) {
+        <dt>{{ 'listingReview.detail.sealed' | transloco }}</dt>
+        <dd>{{ 'listingReview.detail.sealedYes' | transloco }}</dd>
+      }
+
+      @if (actual.product.warrantyMonths; as meses) {
+        <dt>{{ 'listingReview.detail.warranty' | transloco }}</dt>
+        <dd>{{ 'listingReview.detail.warrantyMonths' | transloco: { meses: meses } }}</dd>
+      }
+    </dl>
+
+    @if (actual.product.description; as descripcion) {
+      <h3 class="tipo-titulo-tarjeta">
+        {{ 'listingReview.detail.description' | transloco }}
+      </h3>
+      <p class="tipo-cuerpo descripcion">{{ descripcion }}</p>
+    }
+  </section>
+
+  @if (medidas().length > 0) {
+    <section class="seccion" aria-labelledby="titulo-medidas">
+      <h2 id="titulo-medidas" class="tipo-titulo-tarjeta">
+        {{ 'listingReview.detail.measurementsSection' | transloco }}
+      </h2>
+      <dl class="datos-de-la-publicacion tipo-cuerpo">
+        @for (medida of medidas(); track medida.clave) {
+          <dt>{{ medida.clave | transloco }}</dt>
+          <dd>{{ medida.valor }}</dd>
+        }
+      </dl>
+    </section>
+  }
+
+  <section class="seccion" aria-labelledby="titulo-tomas">
+    <h2 id="titulo-tomas" class="tipo-titulo-tarjeta">
+      {{ 'listingReview.detail.shotsSection' | transloco }}
+    </h2>
+
+    <ul class="tomas">
+      @for (posicion of posiciones(); track posicion) {
+        <li class="toma">
+          @if (tomaDe(posicion); as direccion) {
+            <!--
+              Medidas explícitas: las exige NgOptimizedImage y reservan el hueco, para que
+              la rejilla no salte al cargar. La primera va con `priority`: está sobre el
+              pliegue y es la candidata a ser la imagen más grande de la pantalla.
+
+              `alt` con el ángulo: aquí no es decorativa. Quien revisa con lector de
+              pantalla necesita saber qué toma es la que falta o la que se comenta.
+            -->
+            <img
+              [ngSrc]="direccion"
+              [alt]="'listing.shots.imageAlt' | transloco: { grados: posicion * 45 }"
+              width="180"
+              height="240"
+              [priority]="$first"
+            />
+          } @else {
+            <!-- Caso borde: el archivo puede faltar por un fallo de despliegue. Se dice,
+                 y la publicación sigue siendo decidible: rechazar por fotos inservibles
+                 es una respuesta válida. -->
+            <p class="toma--ausente tipo-secundario">
+              {{ 'listingReview.detail.shotMissing' | transloco }}
+            </p>
+          }
+        </li>
+      }
+    </ul>
+  </section>
+
+  <!-- Criterio 12 y RN-063: se dice antes de que se pulse nada. El servidor lo rechaza
+       igual; esconder los botones no es la regla, pero enterarse después de pulsar, con
+       un correo ya prometido, no hace falta. -->
+  @if (esPropia()) {
+    <p class="aviso-propia tipo-cuerpo" role="status">
+      {{ 'listingReview.decision.ownListing' | transloco }}
+    </p>
+  } @else {
+    <section class="seccion" aria-labelledby="titulo-decision">
+      <h2 id="titulo-decision" class="tipo-titulo-tarjeta">
+        {{ 'listingReview.decision.title' | transloco }}
+      </h2>
+
+      <form (submit)="alEnviar($event)" novalidate>
+        <div class="campo">
+          <label class="tipo-secundario" for="motivo">
+            {{ 'listingReview.decision.reasonLabel' | transloco }}
+          </label>
+          <select
+            #motivo
+            id="motivo"
+            class="control"
+            [attr.aria-invalid]="faltaMotivo() ? 'true' : null"
+            [attr.aria-describedby]="faltaMotivo() ? 'motivo-error' : null"
+            (change)="elegirMotivo($any($event.target).value)"
+          >
+            <option value="">{{ 'listingReview.decision.reasonPlaceholder' | transloco }}</option>
+            @for (opcion of motivos; track opcion) {
+              <option [value]="opcion">
+                {{ 'listingReview.reasons.' + opcion | transloco }}
+              </option>
+            }
+          </select>
+          @if (faltaMotivo()) {
+            <p id="motivo-error" class="mensaje-de-error tipo-secundario" role="alert">
+              {{ 'listingReview.decision.reasonRequired' | transloco }}
+            </p>
+          }
+        </div>
+
+        <div class="campo">
+          <label class="tipo-secundario" for="nota">
+            {{ 'listingReview.decision.noteLabel' | transloco }}
+          </label>
+          <!-- La ayuda va donde se escribe y no escondida: es la única barrera que tiene
+               esa regla, porque el campo es texto libre y ninguna validación la impone. -->
+          <p id="nota-ayuda" class="tipo-secundario">
+            {{ 'listingReview.decision.noteHint' | transloco }}
+          </p>
+          <textarea
+            id="nota"
+            class="control"
+            rows="3"
+            aria-describedby="nota-ayuda"
+            [attr.maxlength]="maximoDeNota"
+            [value]="nota()"
+            (input)="nota.set($any($event.target).value)"
+          ></textarea>
+        </div>
+
+        @if (porConfirmar() === null) {
+          <div class="acciones">
+            <button
+              #aprobar
+              type="button"
+              class="btn btn-primario"
+              [disabled]="enCurso()"
+              (click)="pedirConfirmacion('aprobar')"
+            >
+              {{ 'listingReview.decision.approve' | transloco }}
+            </button>
+            <button
+              #rechazar
+              type="button"
+              class="btn"
+              [disabled]="enCurso()"
+              (click)="pedirRechazo()"
+            >
+              {{ 'listingReview.decision.reject' | transloco }}
+            </button>
+          </div>
+        } @else {
+          <!-- Criterio 10: se confirma una vez. `tabindex="-1"` para poder enfocarlo sin
+               meterlo en el orden de tabulación, y `role="group"` con su nombre para que
+               un lector anuncie de qué va lo que acaba de aparecer. -->
+          <div
+            #confirmacion
+            class="confirmacion"
+            tabindex="-1"
+            role="group"
+            aria-labelledby="texto-de-confirmacion"
+          >
+            <!-- `aria-labelledby` y no `aria-label` con el mismo texto: al enfocar el
+                 bloque, un lector anunciaba la pregunta y acto seguido la leia otra vez. -->
+            <p id="texto-de-confirmacion" class="tipo-cuerpo">
+              {{
+                (porConfirmar() === 'aprobar'
+                  ? 'listingReview.decision.confirmApprove'
+                  : 'listingReview.decision.confirmReject'
+                ) | transloco
+              }}
+            </p>
+            <div class="acciones">
+              <button
+                type="button"
+                class="btn btn-primario"
+                [disabled]="enCurso()"
+                (click)="confirmar()"
+              >
+                {{ 'listingReview.decision.confirm' | transloco }}
+              </button>
+              <button type="button" class="btn" [disabled]="enCurso()" (click)="cancelar()">
+                {{ 'listingReview.decision.cancel' | transloco }}
+              </button>
+            </div>
+          </div>
+        }
+      </form>
+
+      <!-- Criterios 11 y 13: se dice qué pasó, no «error inesperado». Cubre las dos
+           formas de dejar de estar pendiente con el mismo texto, porque al moderador le
+           pasa lo mismo en las dos: ya no le toca. -->
+      @if (yaNoEstaPendiente()) {
+        <p class="mensaje-de-error tipo-cuerpo" role="alert">
+          {{ 'listingReview.decision.alreadyResolved' | transloco }}
+        </p>
+      } @else if (claveDeError(); as clave) {
+        <p class="mensaje-de-error tipo-cuerpo" role="alert">{{ clave | transloco }}</p>
+      }
+    </section>
+  }
+}

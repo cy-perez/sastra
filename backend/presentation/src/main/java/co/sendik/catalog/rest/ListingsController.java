@@ -11,6 +11,7 @@ import co.sendik.catalog.dto.UploadListingImageCommand;
 import co.sendik.catalog.model.ImageKind;
 import co.sendik.catalog.model.Listing;
 import co.sendik.catalog.model.ListingId;
+import co.sendik.catalog.model.ModeratorId;
 import co.sendik.catalog.model.ProductImageId;
 import co.sendik.catalog.model.SellerId;
 import co.sendik.catalog.rest.dto.ChangePriceRequest;
@@ -168,11 +169,16 @@ public class ListingsController {
         boolean moderador = esModerador(autenticacion);
         SellerId quienMira = token == null ? null : vendedorDe(token);
 
+        // Solo se construye si quien pregunta modera: fabricar un ModeratorId a partir de
+        // un vendedor cualquiera seria darle a un identificador tipado el significado
+        // contrario al suyo, aunque el UUID de dentro fuera el mismo.
+        ModeratorId quienModera = moderador && token != null ? ModeratorId.de(token.getSubject()) : null;
+
         return casoDeLeer
                 .execute(new ReadListingQuery(ListingId.de(id), quienMira, moderador))
                 .<ResponseEntity<Object>>map(publicacion -> ResponseEntity.ok(
                         puedeVerLaCocina(publicacion, quienMira, moderador)
-                                ? ListingResponses.de(publicacion, almacen)
+                                ? ListingResponses.de(publicacion, almacen, quienModera)
                                 : ListingResponses.publica(publicacion, almacen)))
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }

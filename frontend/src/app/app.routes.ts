@@ -118,6 +118,29 @@ export const routes: Routes = [
       ),
   },
   {
+    // HU-008. La bandeja de moderacion de publicaciones y su detalle.
+    //
+    // Sin enlace desde ninguna parte, como las de HU-002 y HU-006: quien modera conoce
+    // la direccion. Y ademas el backend responde 404 en la cola mientras
+    // FEATURE_PUBLISHING este apagada, asi que enlazarla llevaria a una pantalla vacia.
+    path: 'moderacion/publicaciones',
+    title: 'meta.listingReviewQueue.title',
+    data: { descriptionKey: 'meta.listingReviewQueue.description' },
+    canActivate: [exigirRol('MODERATOR')],
+    loadComponent: () =>
+      import('./features/listing-review/presentation/queue-page').then((m) => m.QueuePage),
+  },
+  {
+    path: 'moderacion/publicaciones/:id',
+    title: 'meta.listingReviewDetail.title',
+    data: { descriptionKey: 'meta.listingReviewDetail.description' },
+    canActivate: [exigirRol('MODERATOR')],
+    loadComponent: () =>
+      import('./features/listing-review/presentation/review-listing-page').then(
+        (m) => m.ReviewListingPage,
+      ),
+  },
+  {
     // HU-007. El formulario de publicar y el listado propio.
     //
     // **Sin enlace desde ninguna parte**, igual que las de HU-002 y HU-006: el backend

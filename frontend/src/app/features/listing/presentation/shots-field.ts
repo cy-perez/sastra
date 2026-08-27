@@ -3,16 +3,14 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { TranslocoPipe } from '@jsverse/transloco';
 
 import {
-  canonicasQueFaltan,
-  gradosDe,
   posicionesAPintar,
   POSICIONES_CANONICAS,
   tomaEn,
   tomasDelVendedor,
-  tomasQueFaltan,
   type Listing,
   type ListingImage,
-} from '../domain/listing';
+} from '../../../shared/domain/listing';
+import { canonicasQueFaltan, gradosDe, tomasQueFaltan } from '../domain/publish-rules';
 
 /** Una casilla de la rejilla: su posición, sus grados y la toma que tenga. */
 export interface Casilla {

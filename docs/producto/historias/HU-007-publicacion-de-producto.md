@@ -1,6 +1,6 @@
 # HU-007 — Publicación de producto
 
-**Fase:** 2 | **Estado:** backend implementado el 25 de agosto de 2026; frontend pendiente
+**Fase:** 2 | **Estado:** hecha. Backend el 25 de agosto de 2026, interfaz el 26
 **Reglas que aplica:** RN-011, RN-013, RN-015 a RN-025, RN-029, RN-030,
 RN-061, RN-062, RN-063
 

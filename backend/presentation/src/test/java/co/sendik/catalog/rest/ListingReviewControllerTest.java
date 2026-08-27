@@ -222,4 +222,34 @@ class ListingReviewControllerTest {
                 "Se ven borrosas.",
                 java.util.Set.of());
     }
+
+    /**
+     * RN-022: la nota no pasa de 500 caracteres.
+     *
+     * <p>Se prueba por arriba y por abajo del limite. Sin esto, quitar la anotacion
+     * {@code @Size} de {@code RejectListingRequest} no rompia nada, y esa nota viaja en un
+     * correo al vendedor.
+     */
+    @Test
+    void deberia_aceptar_una_nota_de_exactamente_500_caracteres_RN_022() throws Exception {
+        when(rechazar.execute(any())).thenReturn(rechazada());
+
+        mvc.perform(post("/api/v1/listings/" + UUID.randomUUID() + "/rejection")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(cuerpoConNotaDe(500)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void deberia_rechazar_una_nota_de_501_caracteres_RN_022() throws Exception {
+        mvc.perform(post("/api/v1/listings/" + UUID.randomUUID() + "/rejection")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(cuerpoConNotaDe(501)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COMMON_VALIDATION_FAILED"));
+    }
+
+    private static String cuerpoConNotaDe(int caracteres) {
+        return "{\"reason\":\"PHOTOS_UNUSABLE\",\"note\":\"" + "a".repeat(caracteres) + "\"}";
+    }
 }

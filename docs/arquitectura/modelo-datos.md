@@ -157,8 +157,8 @@ números positivos en centímetros (RN-021). `size_system` es el que el vendedor
 eligió de entre los que admite la categoría, y se guarda en el producto para que
 cambiar la categoría después no reinterprete una talla ya declarada. `brand` es texto libre y opcional; `color` es lista cerrada.
 
-**listings**: `id`, `product_id`, `status`, `published_at`, `sold_at`,
-`moderated_by`, `moderated_at`, `rejection_reason`, `rejection_note`,
+**listings**: `id`, `product_id`, `status`, `submitted_at`, `published_at`,
+`sold_at`, `moderated_by`, `moderated_at`, `rejection_reason`, `rejection_note`,
 `requires_attention`, `attention_reason`, `version`.
 La publicación se separa del producto para que el ciclo de moderación no
 contamine los datos de la prenda.
@@ -166,6 +166,14 @@ contamine los datos de la prenda.
 la pone un precio fuera del rango de RN-020 o una toma cargada desde galería en
 vez de capturada (HU-003 criterio 8). No cambia el estado ni bloquea nada; solo
 hace que el moderador la vea destacada.
+`submitted_at` es cuándo entró a revisión, y existe porque `updated_at` no sirve
+para ordenar la cola del moderador: una publicación que espera turno **puede
+cambiar de precio** —RN-062 y RN-030 lo permiten a propósito, el precio no pasa
+por moderación— y eso movería su turno y reiniciaría el «espera desde hace» de la
+pantalla. Lo sella el dominio en toda entrada a `PENDING_REVIEW`, no solo la
+primera: RN-062 también devuelve a la cola lo que se edita, y una publicación que
+vuelve con el sello viejo se quedaría a la cabeza para siempre. Es nulo mientras
+nunca haya entrado (V12, HU-008).
 `version` es el bloqueo optimista, y no es decorativo: el vendedor y el moderador
 escriben sobre la misma fila a la vez con normalidad.
 
@@ -241,6 +249,9 @@ El identificador único del proveedor es lo que garantiza idempotencia.
   verificadas. `REVOKED` no bloquea.
 - `seller_verifications(updated_at)` parcial sobre `status = 'PENDING_REVIEW'`,
   para la bandeja del moderador.
+- `listings(submitted_at)` parcial sobre `status = 'PENDING_REVIEW'`, para la
+  bandeja de moderación de publicaciones. Parcial porque la cola solo mira uno de
+  los siete estados, así que el índice no crece con el catálogo publicado.
 - `payment_events(provider_event_id)` único.
 - `orders(buyer_id, created_at desc)` y `orders(seller_id, created_at desc)`.
 

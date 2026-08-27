@@ -39,6 +39,7 @@ import co.sendik.shared.file.ImageContentType;
 import co.sendik.shared.file.ImageDimensions;
 import co.sendik.shared.money.Money;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.EnumMap;
 import java.util.List;
@@ -221,6 +222,77 @@ class CatalogPersistenceTest {
 
         assertThat(leida.attentionReasons())
                 .containsExactlyInAnyOrder(AttentionReason.PRICE_OUT_OF_RANGE, AttentionReason.GALLERY_UPLOAD);
+    }
+
+    // V12: la cola del moderador, contra el indice parcial y la base de verdad.
+    @Test
+    void deberia_devolver_en_la_cola_solo_lo_que_espera_revision_HU_008() {
+        Listing esperando = publicaciones.guardar(borradorConTomas().enviarARevision(AHORA));
+        publicaciones.guardar(borradorConTomas());
+        publicada();
+
+        var cola = publicaciones.pendientesDeRevision(0, 50);
+
+        assertThat(cola)
+                .as("la cola no puede traer nada que no este esperando")
+                .allSatisfy(publicacion -> assertThat(publicacion.status()).isEqualTo(ListingStatus.PENDING_REVIEW));
+        assertThat(cola).extracting(Listing::id).contains(esperando.id());
+    }
+
+    @Test
+    void deberia_ordenar_la_cola_por_lo_que_lleva_mas_tiempo_esperando_HU_008() {
+        Instant temprano = AHORA.minus(Duration.ofHours(6));
+        Instant mediodia = AHORA.minus(Duration.ofHours(2));
+
+        Listing tercera = publicaciones.guardar(borradorConTomas().enviarARevision(AHORA));
+        Listing primera = publicaciones.guardar(borradorConTomas().enviarARevision(temprano));
+        Listing segunda = publicaciones.guardar(borradorConTomas().enviarARevision(mediodia));
+
+        var cola = publicaciones.pendientesDeRevision(0, 50);
+
+        assertThat(cola).extracting(Listing::id).containsSubsequence(primera.id(), segunda.id(), tercera.id());
+    }
+
+    /** La razon de que exista la columna: con `updated_at`, esta prueba fallaria. */
+    @Test
+    void no_deberia_perder_el_turno_por_cambiar_el_precio_mientras_espera_HU_008() {
+        Instant temprano = AHORA.minus(Duration.ofHours(6));
+
+        Listing primera = publicaciones.guardar(borradorConTomas().enviarARevision(temprano));
+        Listing segunda = publicaciones.guardar(borradorConTomas().enviarARevision(AHORA));
+
+        publicaciones.guardar(publicaciones
+                .buscar(primera.id())
+                .orElseThrow()
+                .cambiarPrecio(Money.dePesos(190_000), AHORA.plus(Duration.ofHours(1))));
+
+        var cola = publicaciones.pendientesDeRevision(0, 50);
+
+        assertThat(cola).extracting(Listing::id).containsSubsequence(primera.id(), segunda.id());
+        assertThat(cola)
+                .filteredOn(publicacion -> publicacion.id().equals(primera.id()))
+                .singleElement()
+                .satisfies(publicacion -> assertThat(publicacion.submittedAt()).isEqualTo(temprano));
+    }
+
+    /**
+     * La cola trae la frontal y nada mas.
+     *
+     * <p>Antes traia las ocho de cada fila —una consulta por publicacion— para pintar una
+     * miniatura. Esta prueba fija las dos mitades: que la frontal esta, y que las otras
+     * siete no viajan.
+     */
+    @Test
+    void deberia_traer_solo_la_toma_frontal_en_la_cola_HU_008() {
+        Listing esperando = publicaciones.guardar(borradorConTomas().enviarARevision(AHORA));
+
+        Listing enLaCola = publicaciones.pendientesDeRevision(0, 50).stream()
+                .filter(p -> p.id().equals(esperando.id()))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(enLaCola.images()).hasSize(1);
+        assertThat(enLaCola.images().getFirst().position()).isZero();
     }
 
     @Test

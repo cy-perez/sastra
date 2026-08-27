@@ -1,7 +1,14 @@
+/* `grid-column` es obligatorio: <main> es una rejilla y sin asignar carril la pagina cae
+   en el de sangria. Y **sin `margin: 0 auto`**, que es lo que la encogia de verdad: un
+   margen automatico en un elemento de rejilla anula el estirado y lo deja del ancho de su
+   contenido —421px de los 1140 del carril—. Centrar ya lo hace el carril.
+
+   Se pintaba entera, asi que no se notaba mirandola; lo delato `rutas.spec.ts` al medir
+   el ancho del contenido. */
 :host {
   display: block;
+  grid-column: content;
   max-width: var(--ancho-max);
-  margin: 0 auto;
   padding: var(--esp-24) var(--esp-16);
 }
 

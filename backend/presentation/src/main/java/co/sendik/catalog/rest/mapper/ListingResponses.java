@@ -7,6 +7,7 @@ import co.sendik.catalog.model.Condition;
 import co.sendik.catalog.model.Description;
 import co.sendik.catalog.model.Listing;
 import co.sendik.catalog.model.ListingRejectionReason;
+import co.sendik.catalog.model.ModeratorId;
 import co.sendik.catalog.model.Product;
 import co.sendik.catalog.model.ShippingDimensions;
 import co.sendik.catalog.model.Size;
@@ -46,11 +47,29 @@ public final class ListingResponses {
 
     private ListingResponses() {}
 
-    /** Para el dueno y para el moderador. */
+    /**
+     * Para el dueno: no lleva {@code own}, que solo le sirve a quien modera.
+     */
     public static ListingResponse de(Listing publicacion, PublicFileStore almacen) {
+        return de(publicacion, almacen, null);
+    }
+
+    /**
+     * Para el moderador, con la respuesta a RN-063 dentro.
+     *
+     * <p>La pregunta la nombra el dominio —{@link Listing#laPublico}— y se hace aqui una
+     * sola vez. Comparar identificadores en el borde seria reimplementar la regla en el
+     * sitio equivocado, y ademas obligaria a fabricar un {@code SellerId} a partir del
+     * moderador, que es un identificador tipado usado para significar lo contrario.
+     */
+    public static ListingResponse de(Listing publicacion, PublicFileStore almacen, @Nullable ModeratorId quienModera) {
+        // Quien modera solo recibe el vendedor si la publicacion es suya. Ver el javadoc
+        // de ListingResponse: sin esto, la cola omitia el dato y el detalle lo devolvia.
+        boolean esSuya = quienModera == null || publicacion.laPublico(quienModera);
+
         return new ListingResponse(
                 publicacion.id().value().toString(),
-                publicacion.sellerId().value().toString(),
+                esSuya ? publicacion.sellerId().value().toString() : null,
                 publicacion.status().name(),
                 producto(publicacion.product()),
                 imagenes(publicacion, almacen),
@@ -62,7 +81,8 @@ public final class ListingResponses {
                 publicacion.publishedAt(),
                 publicacion.createdAt(),
                 publicacion.updatedAt(),
-                publicacion.version());
+                publicacion.version(),
+                quienModera == null ? null : esSuya);
     }
 
     /** Para quien no es ni el dueno ni un moderador. Solo se llama con algo visible. */

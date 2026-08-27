@@ -2,7 +2,15 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 
-import type { Category, Color, Condition, Listing, Money, Shipping, Size } from '../domain/listing';
+import type {
+  Category,
+  Color,
+  Condition,
+  Listing,
+  Money,
+  Shipping,
+  Size,
+} from '../../../shared/domain/listing';
 
 /**
  * Lo que se manda al crear o editar. Es de esta capa y no sale de ella: la plantilla ve

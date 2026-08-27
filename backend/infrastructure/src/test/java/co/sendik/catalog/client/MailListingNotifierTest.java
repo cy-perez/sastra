@@ -30,7 +30,6 @@ import co.sendik.identity.usecase.ReadProfileUseCase;
 import co.sendik.shared.port.out.MailTransport;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -198,19 +197,15 @@ class MailListingNotifierTest {
                 null,
                 null);
 
-        return Listing.existente(
-                ListingId.nuevo(),
-                producto,
-                estado,
-                List.of(),
-                null,
-                null,
-                AHORA,
-                motivo,
-                null,
-                Set.of(),
-                1L,
-                AHORA,
-                AHORA);
+        return Listing.reconstruir()
+                .id(ListingId.nuevo())
+                .producto(producto)
+                .estado(estado)
+                .decididaPor(null, AHORA)
+                .rechazadaPor(motivo, null)
+                .version(1L)
+                .creada(AHORA)
+                .tocada(AHORA)
+                .armar();
     }
 }

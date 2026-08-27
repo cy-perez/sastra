@@ -21,20 +21,22 @@ import { APP_CONFIG } from '../../../core/config/app-config';
 import { CategoriesStore } from '../application/categories.store';
 import { ListingStore } from '../application/listing.store';
 import {
-  admiteEdicion,
   categoriaPorId,
   categoriasHoja,
-  COLORES,
-  condicionesAdmitidas,
-  editarDevuelveARevision,
-  esTecnologia,
-  puedeIntentarEnviar,
   type Category,
   type Condition,
   type Listing,
   type Money,
   type Shipping,
-} from '../domain/listing';
+} from '../../../shared/domain/listing';
+import {
+  admiteEdicion,
+  COLORES,
+  condicionesAdmitidas,
+  editarDevuelveARevision,
+  esTecnologia,
+  puedeIntentarEnviar,
+} from '../domain/publish-rules';
 import type { DatosDelProducto } from '../infrastructure/listing.api';
 import { ShotsField } from './shots-field';
 

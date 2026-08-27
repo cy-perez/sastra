@@ -5,6 +5,7 @@ import co.sendik.catalog.model.Category;
 import co.sendik.catalog.model.CategoryId;
 import co.sendik.catalog.model.Listing;
 import co.sendik.catalog.model.ListingId;
+import co.sendik.catalog.model.ListingStatus;
 import co.sendik.catalog.model.MeasurementGroup;
 import co.sendik.catalog.model.ModerationAction;
 import co.sendik.catalog.model.ModeratorId;
@@ -71,6 +72,17 @@ final class CatalogoEnMemoria {
 
             int desde = Math.min(pagina * tamano, suyas.size());
             return suyas.subList(desde, Math.min(desde + tamano, suyas.size()));
+        }
+
+        @Override
+        public List<Listing> pendientesDeRevision(int pagina, int tamano) {
+            List<Listing> esperando = filas.values().stream()
+                    .filter(publicacion -> publicacion.status() == ListingStatus.PENDING_REVIEW)
+                    .sorted(Comparator.comparing(Listing::submittedAt, Comparator.nullsLast(Comparator.naturalOrder())))
+                    .toList();
+
+            int desde = Math.min(pagina * tamano, esperando.size());
+            return esperando.subList(desde, Math.min(desde + tamano, esperando.size()));
         }
 
         int cuantas() {

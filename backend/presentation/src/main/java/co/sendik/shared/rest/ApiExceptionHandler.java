@@ -21,10 +21,12 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -159,6 +161,46 @@ public class ApiExceptionHandler {
     }
 
     /**
+     * La seguridad de metodo denego. 403, no 500.
+     *
+     * <p>{@code @PreAuthorize} lanza dentro de la invocacion del controlador, asi que la
+     * recoge este consejo y no el filtro de Spring Security. Sin este manejador caia en el
+     * de {@code Exception}: 500 con la traza entera en nivel error, y un 500 confirma que
+     * la ruta existe igual que un 403.
+     *
+     * <p>Hoy no se llega aqui porque la regla de la cadena deniega antes, pero la
+     * redundancia entre regla de ruta y anotacion existe precisamente para el dia en que
+     * alguien mueva un endpoint y se quede sin regla. Ese dia tiene que responder 403.
+     *
+     * <p>Se registra en {@code info} y sin traza: no hay nada que investigar en que
+     * alguien pida lo que no le toca.
+     */
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ProblemDetail> sinPermiso(AccessDeniedException e) {
+        String traceId = nuevoTraceId();
+        LOG.info("Acceso denegado por seguridad de metodo traceId={}", traceId);
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(construir(HttpStatus.FORBIDDEN, ErrorCode.COMMON_FORBIDDEN, traceId));
+    }
+
+    /**
+     * Un parametro con el tipo equivocado. 400, no 500.
+     *
+     * <p>{@code ?page=abc} sobre un {@code int} lanza esto, y sin manejador caia en el de
+     * {@code Exception}: cada peticion mal escrita dejaba una traza completa en nivel
+     * error. Es una peticion invalida, y se responde como tal.
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ProblemDetail> parametroConTipoEquivocado(MethodArgumentTypeMismatchException e) {
+        String traceId = nuevoTraceId();
+        LOG.debug("Parametro con tipo equivocado traceId={} nombre={}", traceId, e.getName());
+
+        return ResponseEntity.badRequest()
+                .body(construir(HttpStatus.BAD_REQUEST, ErrorCode.COMMON_VALIDATION_FAILED, traceId));
+    }
+
+    /**
      * Cualquier otra cosa. Se registra completa con su traza para poder
      * investigarla, y se responde con lo minimo: un codigo y el mismo traceId.
      */
@@ -290,6 +332,7 @@ public class ApiExceptionHandler {
             // 400 y no 422: lo que se escribio no coincide con lo que se pedia
             // escribir, que es un problema de la peticion y no del negocio.
             case AUTH_CLOSE_CONFIRMATION_MISMATCH, COMMON_VALIDATION_FAILED -> HttpStatus.BAD_REQUEST;
+            case COMMON_FORBIDDEN -> HttpStatus.FORBIDDEN;
             case COMMON_NOT_FOUND -> HttpStatus.NOT_FOUND;
             case COMMON_TOO_MANY_REQUESTS -> HttpStatus.TOO_MANY_REQUESTS;
             case COMMON_UNEXPECTED -> HttpStatus.INTERNAL_SERVER_ERROR;

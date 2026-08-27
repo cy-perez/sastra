@@ -96,27 +96,34 @@ Es la fase en curso desde el 21 de agosto de 2026.
   línea. Trae también los endpoints de decisión del moderador sobre
   publicaciones, y con ella quedaron cerradas las reglas que faltaban: RN-061,
   RN-062 y RN-063.
-  **HU-007: el backend está hecho y probado desde el 25 de agosto de 2026; la
-  interfaz sigue pendiente.** Están el dominio con su máquina de estados, los
-  diecisiete casos de uso, la persistencia, el aviso por correo al vendedor y los
-  diecisiete endpoints, detrás de `FEATURE_PUBLISHING`, hoy apagada. La sección de
-  publicación de `docs/producto/textos-web.md`, de donde salen las claves
-  `listing.*`, se escribió el 26 de agosto de 2026, así que **la historia ya no
-  tiene nada que la bloquee**: lo que queda es implementar la interfaz. Encender
-  la bandera sí espera cuatro decisiones de producto que la historia enumera.
+  **HU-007 está hecha**: el backend el 25 de agosto de 2026 y la interfaz el 26.
+  Están el dominio con su máquina de estados, los diecisiete casos de uso, la
+  persistencia, el aviso por correo al vendedor, los diecisiete endpoints y las
+  tres pantallas del vendedor —`/publicar`, `/publicar/:id` y
+  `/mis-publicaciones`—, todo detrás de `FEATURE_PUBLISHING`, hoy apagada. Las
+  cuatro decisiones de producto que la historia enumeraba se tomaron el 26 de
+  agosto. **Lo que impide encender la bandera ya no es HU-007 sino HU-008:** sin
+  bandeja del moderador, nada puede salir de `PENDING_REVIEW`.
 - Panel de moderación y flujo de aprobación o rechazo con motivo. **Hecho a
   medias**: HU-006 entrega la bandeja de verificaciones de vendedor, y con ella
   `FEATURE_SELLER_VERIFICATION` ya se puede encender. La moderación de
-  publicaciones —RN-015, la otra mitad de este punto— tiene ya sus reglas y sus
-  endpoints en HU-007; lo que falta es la bandeja con la que se usan, que se
-  separó a propósito con el mismo corte que hubo entre HU-002 y HU-006 y todavía
-  no tiene historia. Revocar un sello ya otorgado queda fuera de HU-006 y también
-  sin historia: el endpoint existe, pero no hay forma de llegar a una
-  verificación ya aprobada desde la interfaz.
+  publicaciones —RN-015, la otra mitad de este punto— tiene sus reglas y sus
+  endpoints de decisión en HU-007, y **HU-008 la cerró el 27 de agosto de 2026**: la
+  cola, la bandeja y el detalle donde se decide. Con ella este punto queda completo.
+  **Con una salvedad anotada**: el recorrido de punta a punta del ciclo está escrito en
+  `e2e-completo/` y tres de sus seis pruebas siguen en rojo, con su diagnóstico en la
+  historia. Las que pasan son las de acceso; las que no, las que publican. Fuera de las dos historias
+  quedan, con el mismo argumento y cada una esperando la suya, revocar un sello ya
+  otorgado y bajar una publicación ya visible (RN-024): los endpoints existen,
+  pero no hay forma de llegar a esos identificadores desde la interfaz.
 - Catálogo, categorías, ficha de producto y favoritos. Sin historia escrita. Ya no
   está bloqueado —el árbol se aprobó—, pero espera a que HU-007 exista: sin
   publicaciones no hay catálogo que mostrar.
-- Panel del vendedor con sus publicaciones y su estado. Sin historia escrita.
+- Panel del vendedor con sus publicaciones y su estado. **Hecho a medias** y sin
+  historia propia: `/mis-publicaciones` llegó con HU-007 y da la lista con el
+  estado de cada una, que es lo que hacía falta para retomar un borrador. Lo que
+  no hay es panel: ni cifras, ni ventas, ni el rastro de lo que pasó con cada
+  publicación.
 
 ## Fase 3 — transacción
 

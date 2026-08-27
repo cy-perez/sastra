@@ -86,6 +86,14 @@
     "myListings": {
       "title": "Mis publicaciones · Sendik",
       "description": "Tus publicaciones y en qué estado está cada una."
+    },
+    "listingReviewQueue": {
+      "title": "Publicaciones pendientes",
+      "description": "Bandeja de moderación de publicaciones."
+    },
+    "listingReviewDetail": {
+      "title": "Revisar publicación",
+      "description": "Detalle de una publicación en revisión."
     }
   },
   "layout": {
@@ -186,6 +194,7 @@
       "AUTH_ACCOUNT_LOCKED": "Demasiados intentos fallidos. Por seguridad bloqueamos el acceso un momento; te escribimos al correo. Vuelve a intentarlo más tarde.",
       "AUTH_SESSION_INVALID": "Tu sesión terminó. Vuelve a entrar.",
       "COMMON_VALIDATION_FAILED": "Revisa los datos del formulario.",
+      "COMMON_FORBIDDEN": "No tienes permiso para hacer eso.",
       "COMMON_TOO_MANY_REQUESTS": "Demasiados intentos seguidos. Espera un momento y vuelve a intentarlo.",
       "COMMON_UNEXPECTED": "Algo salió mal de nuestro lado. Inténtalo de nuevo.",
       "AUTH_RESET_TOKEN_INVALID": "Este enlace ya no sirve. Puede que lo hayas usado antes.",
@@ -1034,6 +1043,73 @@
     },
     "edit": {
       "title": "Tu publicación"
+    }
+  },
+  "listingReview": {
+    "inbox": {
+      "title": "Publicaciones pendientes",
+      "loading": "Cargando la bandeja",
+      "waitingSince": "Espera desde hace {{tiempo}}",
+      "attention": "Necesita atención",
+      "empty": {
+        "title": "No hay nada por revisar",
+        "body": "Cuando alguien envíe una publicación, aparece aquí."
+      },
+      "error": {
+        "title": "No pudimos cargar la bandeja",
+        "retry": "Reintentar"
+      }
+    },
+    "detail": {
+      "title": "Revisar publicación",
+      "category": "Categoría",
+      "productSection": "El producto",
+      "measurementsSection": "Medidas",
+      "shotsSection": "Las ocho tomas",
+      "condition": "Condición",
+      "brand": "Marca",
+      "size": "Talla",
+      "color": "Color",
+      "price": "Precio",
+      "description": "Descripción",
+      "sealed": "Producto sellado",
+      "sealedYes": "Sí",
+      "warranty": "Garantía",
+      "warrantyMonths": "{{meses}} meses",
+      "shotMissing": "Esta toma no está disponible",
+      "back": "Volver a la bandeja"
+    },
+    "attention": {
+      "title": "Por qué necesita atención",
+      "PRICE_OUT_OF_RANGE": "El precio está fuera del rango habitual",
+      "GALLERY_UPLOAD": "Alguna toma se cargó desde la galería, no se capturó"
+    },
+    "decision": {
+      "title": "Decidir",
+      "approve": "Aprobar",
+      "reject": "Rechazar",
+      "reasonLabel": "Motivo del rechazo",
+      "reasonPlaceholder": "Elige un motivo",
+      "reasonRequired": "Elige un motivo para rechazar.",
+      "noteLabel": "Nota para el vendedor (opcional)",
+      "noteHint": "La lee quien publicó. Dile qué corregir. No escribas información de terceros ni datos de procesos judiciales.",
+      "confirmApprove": "¿Aprobar esta publicación? Queda visible para cualquiera y el vendedor recibe un correo.",
+      "confirmReject": "¿Rechazar esta publicación? El vendedor recibe un correo con el motivo y podrá corregirla y volver a enviarla.",
+      "confirm": "Confirmar",
+      "cancel": "Cancelar",
+      "approved": "Publicación aprobada",
+      "rejected": "Publicación rechazada",
+      "alreadyResolved": "Esta publicación ya no está en revisión.",
+      "ownListing": "Esta publicación es tuya. La revisa otra persona."
+    },
+    "reasons": {
+      "PHOTOS_UNUSABLE": "Fotos inservibles",
+      "PHOTOS_MISMATCH": "Las fotos no corresponden",
+      "MEASUREMENTS_UNRELIABLE": "Medidas poco creíbles",
+      "CONDITION_MISDECLARED": "Condición mal declarada",
+      "PROHIBITED_ITEM": "Producto prohibido",
+      "SUSPECTED_COUNTERFEIT": "Sospecha de réplica",
+      "PRICE_OUT_OF_RANGE": "Precio fuera de rango"
     }
   }
 }

@@ -147,7 +147,26 @@ GET /api/v1/listings?limit=24&cursor=eyJpZCI6...
 }
 ```
 
-Listados administrativos y de tamaño acotado pueden usar página y tamaño.
+Listados administrativos y de tamaño acotado pueden usar página y tamaño:
+
+```
+GET /api/v1/moderation/listings?page=0&size=20
+```
+
+```json
+{ "items": [], "page": 0, "size": 20 }
+```
+
+El tamaño va acotado a 50 y **por encima se rechaza con 400**, no se recorta en
+silencio: un cliente que pide 500 y recibe 50 sin que nadie se lo diga cree que ya
+tiene todo. Un `page` o un `size` que no sean números también dan 400.
+
+**Y por eso viven en `/moderation` y no en `/listings`.** La cola del moderador y
+el catálogo público son dos listas del mismo recurso con paginación distinta, y
+juntarlas en una ruta obligaría a que la autorización dependiera de un parámetro
+de consulta. El nombre tampoco puede colgar de `/listings/{algo}`: ahí un segmento
+literal —`/queue`, `/pending`— compite con la regla que hace pública la lectura de
+una publicación por identificador.
 
 ## Filtros y orden
 

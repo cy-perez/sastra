@@ -86,6 +86,14 @@
     "myListings": {
       "title": "My listings · Sendik",
       "description": "Your listings and the state each one is in."
+    },
+    "listingReviewQueue": {
+      "title": "Listings awaiting review",
+      "description": "Listing moderation queue."
+    },
+    "listingReviewDetail": {
+      "title": "Review listing",
+      "description": "Details of a listing under review."
     }
   },
   "layout": {
@@ -186,6 +194,7 @@
       "AUTH_ACCOUNT_LOCKED": "Too many failed attempts. We locked access for a moment as a precaution and sent you an email. Please try again later.",
       "AUTH_SESSION_INVALID": "Your session has ended. Please sign in again.",
       "COMMON_VALIDATION_FAILED": "Please check the form.",
+      "COMMON_FORBIDDEN": "You don't have permission to do that.",
       "COMMON_TOO_MANY_REQUESTS": "Too many attempts in a row. Wait a moment and try again.",
       "COMMON_UNEXPECTED": "Something went wrong on our side. Please try again.",
       "AUTH_RESET_TOKEN_INVALID": "This link no longer works. You may have used it already.",
@@ -1034,6 +1043,73 @@
     },
     "edit": {
       "title": "Your listing"
+    }
+  },
+  "listingReview": {
+    "inbox": {
+      "title": "Listings awaiting review",
+      "loading": "Loading the queue",
+      "waitingSince": "Waiting since {{tiempo}}",
+      "attention": "Needs a closer look",
+      "empty": {
+        "title": "Nothing to review",
+        "body": "When someone submits a listing, it shows up here."
+      },
+      "error": {
+        "title": "We couldn't load the queue",
+        "retry": "Try again"
+      }
+    },
+    "detail": {
+      "title": "Review listing",
+      "category": "Category",
+      "productSection": "The product",
+      "measurementsSection": "Measurements",
+      "shotsSection": "The eight shots",
+      "condition": "Condition",
+      "brand": "Brand",
+      "size": "Size",
+      "color": "Colour",
+      "price": "Price",
+      "description": "Description",
+      "sealed": "Sealed product",
+      "sealedYes": "Yes",
+      "warranty": "Warranty",
+      "warrantyMonths": "{{meses}} months",
+      "shotMissing": "This shot isn't available",
+      "back": "Back to the queue"
+    },
+    "attention": {
+      "title": "Why it needs a closer look",
+      "PRICE_OUT_OF_RANGE": "The price is outside the usual range",
+      "GALLERY_UPLOAD": "A shot was uploaded from the gallery, not captured"
+    },
+    "decision": {
+      "title": "Decide",
+      "approve": "Approve",
+      "reject": "Reject",
+      "reasonLabel": "Reason for rejection",
+      "reasonPlaceholder": "Pick a reason",
+      "reasonRequired": "Pick a reason to reject.",
+      "noteLabel": "Note for the seller (optional)",
+      "noteHint": "The seller reads this. Tell them what to fix. Don't include third-party information or details of legal proceedings.",
+      "confirmApprove": "Approve this listing? It becomes visible to everyone and the seller gets an email.",
+      "confirmReject": "Reject this listing? The seller gets an email with the reason and can fix it and submit again.",
+      "confirm": "Confirm",
+      "cancel": "Cancel",
+      "approved": "Listing approved",
+      "rejected": "Listing rejected",
+      "alreadyResolved": "This listing is no longer under review.",
+      "ownListing": "This listing is yours. Someone else reviews it."
+    },
+    "reasons": {
+      "PHOTOS_UNUSABLE": "Unusable photos",
+      "PHOTOS_MISMATCH": "Photos don't match",
+      "MEASUREMENTS_UNRELIABLE": "Measurements not credible",
+      "CONDITION_MISDECLARED": "Condition misdeclared",
+      "PROHIBITED_ITEM": "Prohibited product",
+      "SUSPECTED_COUNTERFEIT": "Suspected counterfeit",
+      "PRICE_OUT_OF_RANGE": "Price out of range"
     }
   }
 }

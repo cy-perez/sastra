@@ -36,6 +36,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -65,7 +66,7 @@ import org.springframework.stereotype.Repository;
 public class JdbcListingRepository implements ListingRepository {
 
     private static final String SELECT_BASE = """
-            SELECT l.id, l.status, l.published_at, l.sold_at,
+            SELECT l.id, l.status, l.submitted_at, l.published_at, l.sold_at,
                    l.moderated_by, l.moderated_at, l.rejection_reason, l.rejection_note,
                    l.attention_reasons, l.version,
                    l.created_at, l.updated_at,
@@ -123,6 +124,69 @@ public class JdbcListingRepository implements ListingRepository {
                 .list()
                 .stream()
                 .map(this::conImagenes)
+                .toList();
+    }
+
+    /**
+     * La cola del moderador. Va contra el indice parcial de V12, que es esta consulta
+     * escrita como indice: filtra por estado y ordena por espera.
+     *
+     * <p>{@code NULLS LAST} no deberia hacer falta —el dominio sella al entrar— pero
+     * cubre las filas que quedaron en revision antes de que existiera la columna sin
+     * mandarlas a la cabeza de la cola.
+     */
+    @Override
+    public List<Listing> pendientesDeRevision(int pagina, int tamano) {
+        List<Listing> cola = jdbc.sql(SELECT_BASE + """
+                         WHERE l.status = 'PENDING_REVIEW'
+                         ORDER BY l.submitted_at ASC NULLS LAST
+                         LIMIT :limite OFFSET :salto
+                        """)
+                .param("limite", tamano)
+                .param("salto", (long) pagina * tamano)
+                .query(JdbcListingRepository::filaAPublicacion)
+                .list();
+
+        return conPortadas(cola);
+    }
+
+    /**
+     * Las tomas frontales de toda la pagina, en una sola consulta.
+     *
+     * <p>Lo natural aqui era {@code .map(this::conImagenes)}, y es lo que hacia: una
+     * consulta de imagenes por fila, veintiuna para pintar veinte miniaturas, cargando ocho
+     * tomas de cada publicacion para quedarse con una. La bandeja es la primera pantalla del
+     * moderador y la que mas veces se abre.
+     *
+     * <p>Se traen **solo las de posicion 0**, que es la frontal de RN-016 y lo unico que la
+     * fila muestra. El detalle si carga el agregado entero, por {@code buscar}.
+     */
+    private List<Listing> conPortadas(List<Listing> cola) {
+        if (cola.isEmpty()) {
+            return cola;
+        }
+
+        List<UUID> productos = cola.stream().map(p -> p.product().id().value()).toList();
+
+        Map<UUID, ProductImage> frontales = jdbc
+                .sql("""
+                        SELECT product_id, id, kind, object_key, position, angle_degrees,
+                               width, height, bytes, content_type
+                        FROM product_images
+                        WHERE product_id IN (:productos) AND kind = 'SELLER_SHOT' AND position = 0
+                        """)
+                .param("productos", productos)
+                .query((fila, numero) -> Map.entry(fila.getObject("product_id", UUID.class), filaAImagen(fila, numero)))
+                .list()
+                .stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+        return cola.stream()
+                .map(publicacion -> {
+                    ProductImage frontal =
+                            frontales.get(publicacion.product().id().value());
+                    return frontal == null ? publicacion : conSoloEstasImagenes(publicacion, List.of(frontal));
+                })
                 .toList();
     }
 
@@ -199,17 +263,18 @@ public class JdbcListingRepository implements ListingRepository {
         if (esNueva(publicacion)) {
             jdbc.sql("""
                             INSERT INTO listings (
-                                id, product_id, status, published_at, sold_at,
+                                id, product_id, status, submitted_at, published_at, sold_at,
                                 moderated_by, moderated_at, rejection_reason, rejection_note,
                                 attention_reasons, version, created_at, updated_at)
                             VALUES (
-                                :id, :producto, :estado, :publicado, NULL,
+                                :id, :producto, :estado, :enviado, :publicado, NULL,
                                 :moderador, :moderado, :motivo, :nota,
                                 :marcas, 0, :creado, :actualizado)
                             """)
                     .param("id", publicacion.id().value())
                     .param("producto", producto.id().value())
                     .param("estado", publicacion.status().name())
+                    .param("enviado", marca(publicacion.submittedAt()))
                     .param("publicado", marca(publicacion.publishedAt()))
                     .param(
                             "moderador",
@@ -233,6 +298,7 @@ public class JdbcListingRepository implements ListingRepository {
         int filas = jdbc.sql("""
                         UPDATE listings SET
                             status             = :estado,
+                            submitted_at       = :enviado,
                             published_at       = :publicado,
                             moderated_by       = :moderador,
                             moderated_at       = :moderado,
@@ -246,6 +312,7 @@ public class JdbcListingRepository implements ListingRepository {
                 .param("id", publicacion.id().value())
                 .param("version", versionLeida)
                 .param("estado", publicacion.status().name())
+                .param("enviado", marca(publicacion.submittedAt()))
                 .param("publicado", marca(publicacion.publishedAt()))
                 .param(
                         "moderador",
@@ -326,20 +393,25 @@ public class JdbcListingRepository implements ListingRepository {
                 .query(JdbcListingRepository::filaAImagen)
                 .list();
 
-        return Listing.existente(
-                publicacion.id(),
-                publicacion.product(),
-                publicacion.status(),
-                imagenes,
-                publicacion.publishedAt(),
-                publicacion.moderatedBy(),
-                publicacion.moderatedAt(),
-                publicacion.rejectionReason(),
-                publicacion.rejectionNote(),
-                publicacion.attentionReasons(),
-                publicacion.version(),
-                publicacion.createdAt(),
-                publicacion.updatedAt());
+        return conSoloEstasImagenes(publicacion, imagenes);
+    }
+
+    /** Reconstruye la publicacion con las imagenes que se le den y nada mas. */
+    private static Listing conSoloEstasImagenes(Listing publicacion, List<ProductImage> imagenes) {
+        return Listing.reconstruir()
+                .id(publicacion.id())
+                .producto(publicacion.product())
+                .estado(publicacion.status())
+                .imagenes(imagenes)
+                .enviada(publicacion.submittedAt())
+                .publicada(publicacion.publishedAt())
+                .decididaPor(publicacion.moderatedBy(), publicacion.moderatedAt())
+                .rechazadaPor(publicacion.rejectionReason(), publicacion.rejectionNote())
+                .marcas(publicacion.attentionReasons())
+                .version(publicacion.version())
+                .creada(publicacion.createdAt())
+                .tocada(publicacion.updatedAt())
+                .armar();
     }
 
     private static Listing filaAPublicacion(ResultSet fila, int numero) throws SQLException {
@@ -348,20 +420,24 @@ public class JdbcListingRepository implements ListingRepository {
         String motivoRechazo = fila.getString("rejection_reason");
         UUID moderador = fila.getObject("moderated_by", UUID.class);
 
-        return Listing.existente(
-                new ListingId(fila.getObject("id", UUID.class)),
-                producto,
-                ListingStatus.valueOf(fila.getString("status")),
-                List.of(),
-                instante(fila.getTimestamp("published_at")),
-                moderador == null ? null : new ModeratorId(moderador),
-                instante(fila.getTimestamp("moderated_at")),
-                motivoRechazo == null ? null : ListingRejectionReason.valueOf(motivoRechazo),
-                fila.getString("rejection_note"),
-                marcas(fila.getArray("attention_reasons")),
-                fila.getLong("version"),
-                instante(fila.getTimestamp("created_at")),
-                instante(fila.getTimestamp("updated_at")));
+        return Listing.reconstruir()
+                .id(new ListingId(fila.getObject("id", UUID.class)))
+                .producto(producto)
+                .estado(ListingStatus.valueOf(fila.getString("status")))
+                .imagenes(List.of())
+                .enviada(instante(fila.getTimestamp("submitted_at")))
+                .publicada(instante(fila.getTimestamp("published_at")))
+                .decididaPor(
+                        moderador == null ? null : new ModeratorId(moderador),
+                        instante(fila.getTimestamp("moderated_at")))
+                .rechazadaPor(
+                        motivoRechazo == null ? null : ListingRejectionReason.valueOf(motivoRechazo),
+                        fila.getString("rejection_note"))
+                .marcas(marcas(fila.getArray("attention_reasons")))
+                .version(fila.getLong("version"))
+                .creada(instante(fila.getTimestamp("created_at")))
+                .tocada(instante(fila.getTimestamp("updated_at")))
+                .armar();
     }
 
     private static Product filaAProducto(ResultSet fila) throws SQLException {

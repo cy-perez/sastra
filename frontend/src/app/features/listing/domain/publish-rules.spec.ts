@@ -1,26 +1,28 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  categoriaPorId,
+  posicionesAPintar,
+  precioFormateado,
+  tomaEn,
+  tomasDelVendedor,
+  type Category,
+  type Listing,
+  type ListingImage,
+  type ListingStatus,
+} from '../../../shared/domain/listing';
+import {
   admiteEdicion,
   admiteEnvio,
   canonicasQueFaltan,
-  categoriaPorId,
   condicionesAdmitidas,
   editarDevuelveARevision,
   esTecnologia,
   gradosDe,
   imagenesDeReferencia,
-  posicionesAPintar,
-  precioFormateado,
   puedeIntentarEnviar,
-  tomaEn,
-  tomasDelVendedor,
   tomasQueFaltan,
-  type Category,
-  type Listing,
-  type ListingImage,
-  type ListingStatus,
-} from './listing';
+} from './publish-rules';
 
 /**
  * Las reglas que la pantalla necesita para decidir qué pinta y qué habilita.
@@ -28,7 +30,7 @@ import {
  * Lo que **no** se prueba aquí es si la publicación está completa: eso lo decide el
  * servidor con la categoría delante, y la pantalla no lo reimplementa.
  */
-describe('listing, lo que la pantalla decide', () => {
+describe('las reglas del formulario de publicacion', () => {
   describe('estados', () => {
     it('deja editar en borrador, publicada, pausada y rechazada', () => {
       const editables: ListingStatus[] = ['DRAFT', 'PUBLISHED', 'PAUSED', 'REJECTED'];

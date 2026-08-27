@@ -139,6 +139,40 @@ class ListingSecurityTest {
                 .andExpect(status().isNotFound());
     }
 
+    // --- HU-008: la bandeja del moderador ------------------------------------
+
+    @Test
+    void deberia_negar_la_bandeja_de_publicaciones_a_quien_no_tiene_sesion() throws Exception {
+        mvc.perform(get("/api/v1/moderation/listings")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void deberia_negar_la_bandeja_de_publicaciones_a_quien_no_es_moderador_HU_008() throws Exception {
+        mvc.perform(get("/api/v1/moderation/listings").with(jwt())).andExpect(status().isForbidden());
+    }
+
+    /** Un rol cualquiera tampoco sirve aqui: la cola es todo lo que espera decision. */
+    @Test
+    void deberia_negar_la_bandeja_de_publicaciones_a_un_vendedor_verificado_HU_008() throws Exception {
+        mvc.perform(get("/api/v1/moderation/listings")
+                        .header("Authorization", "Bearer " + tokenCon(Role.SELLER, Role.BUYER)))
+                .andExpect(status().isForbidden());
+    }
+
+    /**
+     * Con el rol, la bandeja responde.
+     *
+     * <p>Se comprueba con un 200 y no con la ausencia de 403: la cola puede estar vacia y
+     * eso es una respuesta legitima, asi que lo que se afirma es que la puerta se abrio y
+     * el controlador contesto.
+     */
+    @Test
+    void deberia_dejar_al_moderador_ver_la_bandeja_de_publicaciones_HU_008() throws Exception {
+        mvc.perform(get("/api/v1/moderation/listings").header("Authorization", "Bearer " + tokenCon(Role.MODERATOR)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items").exists());
+    }
+
     // --- Escribir exige token ------------------------------------------------
 
     @Test

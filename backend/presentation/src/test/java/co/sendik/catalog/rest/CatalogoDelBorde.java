@@ -43,6 +43,13 @@ final class CatalogoDelBorde {
 
     static final Instant AHORA = Instant.parse("2026-08-25T15:00:00Z");
 
+    /**
+     * Cuando entro a revision. **Distinto de AHORA a proposito**: con los dos iguales, una
+     * prueba que afirmara `waitingSince` pasaba igual leyendo `updatedAt`, que es
+     * exactamente la confusion que V12 existe para deshacer.
+     */
+    static final Instant ENTRO_A_REVISION = Instant.parse("2026-08-25T09:00:00Z");
+
     static final String TITULO = "Camisa de lino color hueso";
 
     private CatalogoDelBorde() {}
@@ -62,20 +69,20 @@ final class CatalogoDelBorde {
             @Nullable String nota,
             Set<co.sendik.catalog.model.AttentionReason> marcas) {
 
-        return Listing.existente(
-                ListingId.nuevo(),
-                producto(vendedor),
-                estado,
-                List.of(toma(0), toma(1)),
-                estado == ListingStatus.PUBLISHED ? AHORA : null,
-                null,
-                motivo == null ? null : AHORA,
-                motivo,
-                nota,
-                marcas,
-                7L,
-                AHORA,
-                AHORA);
+        return Listing.reconstruir()
+                .id(ListingId.nuevo())
+                .producto(producto(vendedor))
+                .estado(estado)
+                .imagenes(List.of(toma(0), toma(1)))
+                .enviada(estado == ListingStatus.PENDING_REVIEW ? ENTRO_A_REVISION : null)
+                .publicada(estado == ListingStatus.PUBLISHED ? AHORA : null)
+                .decididaPor(null, motivo == null ? null : AHORA)
+                .rechazadaPor(motivo, nota)
+                .marcas(marcas)
+                .version(7L)
+                .creada(AHORA)
+                .tocada(AHORA)
+                .armar();
     }
 
     /**
@@ -102,20 +109,15 @@ final class CatalogoDelBorde {
                 true,
                 new WarrantyMonths(12));
 
-        return Listing.existente(
-                ListingId.nuevo(),
-                telefono,
-                ListingStatus.DRAFT,
-                List.of(toma(0), toma(2), toma(4), toma(6), referencia(0)),
-                null,
-                null,
-                null,
-                null,
-                null,
-                Set.of(),
-                3L,
-                AHORA,
-                AHORA);
+        return Listing.reconstruir()
+                .id(ListingId.nuevo())
+                .producto(telefono)
+                .estado(ListingStatus.DRAFT)
+                .imagenes(List.of(toma(0), toma(2), toma(4), toma(6), referencia(0)))
+                .version(3L)
+                .creada(AHORA)
+                .tocada(AHORA)
+                .armar();
     }
 
     static Product producto(SellerId vendedor) {

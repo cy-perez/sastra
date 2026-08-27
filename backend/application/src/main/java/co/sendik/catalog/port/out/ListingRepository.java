@@ -42,4 +42,17 @@ public interface ListingRepository {
      * si va por cursor.
      */
     List<Listing> buscarDelVendedor(SellerId vendedor, int pagina, int tamano);
+
+    /**
+     * La cola del moderador: lo que espera revision, lo que lleva mas tiempo primero.
+     *
+     * <p>Ordena por {@code submittedAt} y no por {@code updatedAt}, y esa es toda la
+     * razon de que la columna exista: una publicacion en revision puede cambiar de
+     * precio, y con {@code updatedAt} tocarlo retrasaria su propio turno.
+     *
+     * <p>No recibe quien pregunta. Filtrar por moderador seria un error: la cola es una
+     * sola y RN-063 —que nadie decida sobre lo suyo— se comprueba al decidir, no al
+     * listar. Esconderle su propia publicacion le impediria ver que esta en la fila.
+     */
+    List<Listing> pendientesDeRevision(int pagina, int tamano);
 }

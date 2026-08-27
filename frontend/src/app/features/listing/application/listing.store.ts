@@ -3,7 +3,7 @@ import { injectMutation, injectQuery, QueryClient } from '@tanstack/angular-quer
 
 import { ApiError } from '../../../core/http/api-error';
 import { SessionStore } from '../../../core/session/session.store';
-import type { Listing, Money, Shipping } from '../domain/listing';
+import type { Listing, Money, Shipping } from '../../../shared/domain/listing';
 import type { DatosDelProducto } from '../infrastructure/listing.api';
 import { ListingApi } from '../infrastructure/listing.api';
 import { queryKeys } from './query-keys';

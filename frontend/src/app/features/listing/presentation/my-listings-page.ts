@@ -14,7 +14,7 @@ import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
 import { ListingStore } from '../application/listing.store';
-import { precioFormateado, tomasDelVendedor, type Listing } from '../domain/listing';
+import { precioFormateado, tomasDelVendedor, type Listing } from '../../../shared/domain/listing';
 
 /**
  * Las publicaciones propias del vendedor. HU-007.

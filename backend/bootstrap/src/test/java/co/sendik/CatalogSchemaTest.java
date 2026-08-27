@@ -128,13 +128,20 @@ class CatalogSchemaTest {
     }
 
     @Test
-    void deberia_crear_los_tres_indices_que_el_modelo_de_datos_exige() {
+    void deberia_crear_los_cuatro_indices_que_el_modelo_de_datos_exige() {
         List<String> indices = jdbc.sql("""
                         SELECT indexname FROM pg_indexes
                         WHERE tablename IN ('listings', 'products', 'product_images')
                         """).query(String.class).list();
 
-        assertThat(indices).contains("listings_status_published", "products_seller", "product_images_posicion_unica");
+        assertThat(indices)
+                .contains(
+                        "listings_status_published",
+                        "products_seller",
+                        "product_images_posicion_unica",
+                        // V12, la cola del moderador. Parcial sobre PENDING_REVIEW: es la
+                        // consulta de la bandeja escrita como indice.
+                        "idx_listings_review_queue");
     }
 
     private long contar(String sql) {

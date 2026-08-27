@@ -7,6 +7,7 @@ import co.sendik.catalog.dto.ApproveListingCommand;
 import co.sendik.catalog.dto.ChangeListingPriceCommand;
 import co.sendik.catalog.dto.ChangeListingShippingCommand;
 import co.sendik.catalog.dto.CreateListingCommand;
+import co.sendik.catalog.dto.ListPendingListingsQuery;
 import co.sendik.catalog.dto.ListSellerListingsQuery;
 import co.sendik.catalog.dto.ProductData;
 import co.sendik.catalog.dto.ReadListingQuery;
@@ -384,6 +385,102 @@ class CasosDeUsoDelCatalogoTest {
         }
     }
 
+    /** La cola del moderador. HU-008, criterios 1 y 4. */
+    @Nested
+    class BandejaDelModerador {
+
+        private static final Instant TEMPRANO = Instant.parse("2026-08-24T09:00:00Z");
+        private static final Instant MEDIODIA = Instant.parse("2026-08-24T12:00:00Z");
+        private static final Instant TARDE = Instant.parse("2026-08-24T17:00:00Z");
+
+        @Test
+        void deberia_estar_vacia_cuando_no_hay_nada_esperando_criterio_4() {
+            borradorConTomas();
+
+            assertThat(bandeja().execute(new ListPendingListingsQuery(0, 20))).isEmpty();
+        }
+
+        @Test
+        void deberia_devolver_solo_lo_que_espera_revision() {
+            Listing enRevision = borradorConTomas();
+            enviar().execute(new SellerListingCommand(vendedor, enRevision.id()));
+
+            Listing yaPublicada = borradorConTomas();
+            enviar().execute(new SellerListingCommand(vendedor, yaPublicada.id()));
+            aprobar().execute(new ApproveListingCommand(new ModeratorId(UUID.randomUUID()), yaPublicada.id()));
+
+            borradorConTomas();
+
+            var cola = bandeja().execute(new ListPendingListingsQuery(0, 20));
+
+            assertThat(cola).singleElement().satisfies(publicacion -> {
+                assertThat(publicacion.id()).isEqualTo(enRevision.id());
+                assertThat(publicacion.status()).isEqualTo(ListingStatus.PENDING_REVIEW);
+            });
+        }
+
+        @Test
+        void deberia_poner_primero_lo_que_lleva_mas_tiempo_esperando_criterio_1() {
+            Listing tarde = borradorConTomas();
+            Listing temprano = borradorConTomas();
+            Listing mediodia = borradorConTomas();
+
+            enviarEn(TARDE).execute(new SellerListingCommand(vendedor, tarde.id()));
+            enviarEn(TEMPRANO).execute(new SellerListingCommand(vendedor, temprano.id()));
+            enviarEn(MEDIODIA).execute(new SellerListingCommand(vendedor, mediodia.id()));
+
+            var cola = bandeja().execute(new ListPendingListingsQuery(0, 20));
+
+            assertThat(cola).extracting(Listing::id).containsExactly(temprano.id(), mediodia.id(), tarde.id());
+        }
+
+        /**
+         * La razon de que exista {@code submitted_at}: con {@code updated_at}, cambiar el
+         * precio mandaria la publicacion al final de su propia cola.
+         */
+        @Test
+        void no_deberia_perder_el_turno_por_cambiar_el_precio_mientras_espera() {
+            Listing primera = borradorConTomas();
+            Listing segunda = borradorConTomas();
+            enviarEn(TEMPRANO).execute(new SellerListingCommand(vendedor, primera.id()));
+            enviarEn(MEDIODIA).execute(new SellerListingCommand(vendedor, segunda.id()));
+
+            new ChangeListingPriceUseCase(publicaciones, Clock.fixed(TARDE, ZoneOffset.UTC))
+                    .execute(new ChangeListingPriceCommand(vendedor, primera.id(), Money.dePesos(190_000)));
+
+            var cola = bandeja().execute(new ListPendingListingsQuery(0, 20));
+
+            assertThat(cola).extracting(Listing::id).containsExactly(primera.id(), segunda.id());
+        }
+
+        @Test
+        void deberia_paginar_sin_repetir_ni_saltarse_ninguna() {
+            Listing temprano = borradorConTomas();
+            Listing mediodia = borradorConTomas();
+            Listing tarde = borradorConTomas();
+            enviarEn(TEMPRANO).execute(new SellerListingCommand(vendedor, temprano.id()));
+            enviarEn(MEDIODIA).execute(new SellerListingCommand(vendedor, mediodia.id()));
+            enviarEn(TARDE).execute(new SellerListingCommand(vendedor, tarde.id()));
+
+            var primera = bandeja().execute(new ListPendingListingsQuery(0, 2));
+            var segunda = bandeja().execute(new ListPendingListingsQuery(1, 2));
+
+            assertThat(primera).extracting(Listing::id).containsExactly(temprano.id(), mediodia.id());
+            assertThat(segunda).extracting(Listing::id).containsExactly(tarde.id());
+        }
+
+        @Test
+        void deberia_rechazar_una_pagina_o_un_tamano_absurdos() {
+            assertThatThrownBy(() -> new ListPendingListingsQuery(-1, 20)).isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new ListPendingListingsQuery(0, 51)).isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> new ListPendingListingsQuery(0, 0)).isInstanceOf(IllegalArgumentException.class);
+        }
+
+        private ListPendingListingsUseCase bandeja() {
+            return new ListPendingListingsUseCase(publicaciones);
+        }
+    }
+
     @Nested
     class Lectura {
 
@@ -514,6 +611,12 @@ class CasosDeUsoDelCatalogoTest {
 
     private SubmitListingForReviewUseCase enviar() {
         return new SubmitListingForReviewUseCase(publicaciones, arbol, elegibilidad, RELOJ);
+    }
+
+    /** Para escalonar la cola: el reloj del proyecto es fijo y todas caerian a la vez. */
+    private SubmitListingForReviewUseCase enviarEn(Instant momento) {
+        return new SubmitListingForReviewUseCase(
+                publicaciones, arbol, elegibilidad, Clock.fixed(momento, ZoneOffset.UTC));
     }
 
     private ApproveListingUseCase aprobar() {

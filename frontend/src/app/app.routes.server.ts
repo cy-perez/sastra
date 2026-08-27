@@ -56,6 +56,19 @@ export const serverRoutes: ServerRoute[] = [
   // el la aplicacion no arranca. ADR-0021.
   { path: 'moderacion/verificaciones', renderMode: RenderMode.Server },
   { path: 'moderacion/verificaciones/:id', renderMode: RenderMode.Server },
+  // HU-007, las tres del vendedor. **Faltaban desde que se escribieron**: las paginas se
+  // pintaban enteras y se servian con 404, que es exactamente el sintoma que este archivo
+  // describe arriba y que no se nota mirando, solo midiendo el estado. Lo delato
+  // `rutas.spec.ts` al agregar las de HU-008.
+  { path: 'publicar', renderMode: RenderMode.Server },
+  { path: 'publicar/:id', renderMode: RenderMode.Server },
+  { path: 'mis-publicaciones', renderMode: RenderMode.Server },
+  // HU-008, la bandeja de moderacion de publicaciones. Mismo razonamiento que la de
+  // HU-006: se renderizan en servidor porque APP_CONFIG llega por el estado transferido,
+  // y `exigirRol` deniega alli, asi que lo que se sirve a quien no modera es la pagina de
+  // "no existe" (criterio 2).
+  { path: 'moderacion/publicaciones', renderMode: RenderMode.Server },
+  { path: 'moderacion/publicaciones/:id', renderMode: RenderMode.Server },
   {
     path: '**',
     renderMode: RenderMode.Server,

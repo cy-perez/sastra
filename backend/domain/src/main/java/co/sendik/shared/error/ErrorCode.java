@@ -247,6 +247,19 @@ public enum ErrorCode {
      */
     COMMON_NOT_FOUND,
 
+    /**
+     * Se pidio algo que existe y para lo que no se tiene permiso.
+     *
+     * <p>Lo usa el borde cuando la seguridad de metodo deniega. Sin este codigo, esa
+     * denegacion caia en el manejador de {@code Exception} y salia como 500 con la traza
+     * entera: le decia al cliente que el servidor esta roto, y un 500 confirma que la ruta
+     * existe igual que un 403.
+     *
+     * <p>No confundir con las rutas apagadas por bandera, que responden 404: alli la
+     * funcionalidad no esta, y decir "no tienes permiso" contaria que si.
+     */
+    COMMON_FORBIDDEN,
+
     /** Cualquier fallo no previsto. Nunca lleva detalle hacia afuera. */
     COMMON_UNEXPECTED
 }

@@ -88,8 +88,16 @@ public class SecurityConfig {
                             // id— y la dejaria publica, con el motivo del rechazo y la
                             // nota de publicaciones ajenas dentro. Y el denyAll del
                             // final no salva nada: permitAll casa primero y gana.
-                            .requestMatchers(
-                                    RegexRequestMatcher.regexMatcher(HttpMethod.GET, "/api/v1/listings/" + UUID))
+                            //
+                            // **El patron admite cadena de consulta.** `RegexRequestMatcher`
+                            // compone la URL como ruta + "?" + consulta y exige coincidencia
+                            // total, asi que sin el sufijo `GET /api/v1/listings/{uuid}?x=1`
+                            // NO casaba: caia en la regla generica de /listings/** y
+                            // respondia 401 a quien no tiene sesion. Falla cerrado, asi que
+                            // no abria nada, pero dejaba de ser publica la ruta que el
+                            // catalogo va a usar en cuanto lleve un parametro de campana.
+                            .requestMatchers(RegexRequestMatcher.regexMatcher(
+                                    HttpMethod.GET, "/api/v1/listings/" + UUID + "(\\?.*)?"))
                             .permitAll();
 
                     // Revision de verificaciones: ver la cedula de otra persona y decidir
@@ -143,6 +151,26 @@ public class SecurityConfig {
                                         "/api/v1/listings/*/rejection",
                                         "/api/v1/listings/*/removal")
                                 .hasRole("MODERATOR");
+                    }
+
+                    // La bandeja del moderador de publicaciones (HU-008). Espacio propio,
+                    // y por prefijo, que es lo que /listings no permitia: alli la lectura
+                    // de una publicacion es publica y un segmento literal casa igual que
+                    // un identificador, asi que una bandeja colgada de ahi habria salido
+                    // abierta, con el motivo del rechazo y la nota de publicaciones
+                    // ajenas dentro.
+                    //
+                    // Rol y no solo token: quien tiene sesion es un vendedor cualquiera, y
+                    // esta cola es la lista de todo lo que espera decision.
+                    if (catalogoExpuesto) {
+                        rutas.requestMatchers("/api/v1/moderation/**").hasRole("MODERATOR");
+                    } else {
+                        // Criterio 3, y la misma trampa de siempre: omitir la regla no
+                        // basta, porque entonces cae en el denyAll del final y vuelve a
+                        // salir 403. Con "authenticated" atraviesa la cadena, no encuentra
+                        // manejador —el controlador no existe sin la bandera— y sale el
+                        // 404 que corresponde a una funcionalidad que no esta.
+                        rutas.requestMatchers("/api/v1/moderation/**").authenticated();
                     }
 
                     if (catalogoExpuesto) {

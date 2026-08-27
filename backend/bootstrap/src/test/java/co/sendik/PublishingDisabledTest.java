@@ -100,6 +100,10 @@ class PublishingDisabledTest {
         mvc.perform(post("/api/v1/listings/" + CUALQUIERA + "/archival").with(jwt()))
                 .andExpect(status().isNotFound());
         mvc.perform(get("/api/v1/users/me/listings").with(jwt())).andExpect(status().isNotFound());
+        // La bandeja del moderador (HU-008, criterio 3). Tenia el mismo hueco que todo lo
+        // demas: su regla de rol se evalua en el filtro, asi que sin declararla solo con
+        // la bandera encendida habria respondido 403 aunque el controlador no exista.
+        mvc.perform(get("/api/v1/moderation/listings").with(jwt())).andExpect(status().isNotFound());
         // El arbol de categorias es de esta historia y por tanto tampoco existe. Sin esta
         // linea, la unica ruta del catalogo que se quedaba fuera del criterio 3 era la
         // que el formulario necesita para pintar su primer desplegable.

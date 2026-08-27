@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { ShotsField } from './shots-field';
-import type { Listing, ListingImage } from '../domain/listing';
+import type { Listing, ListingImage } from '../../../shared/domain/listing';
 
 /**
  * La rejilla de tomas. HU-007, criterios 14 a 18.

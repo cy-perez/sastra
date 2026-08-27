@@ -126,6 +126,11 @@ PARES = [
     ("Anillo de foco sobre el fondo",         "--color-foco",           "--color-fondo",          AA_GRANDE),
     ("Anillo de foco sobre tarjeta",          "--color-foco",           "--color-superficie",     AA_GRANDE),
     ("Borde de campo de formulario",          "--color-borde-control",  "--color-superficie",     AA_GRANDE),
+    # HU-008. La confirmacion y las marcas de la cola son cajas con borde de control que se
+    # apoyan sobre el fondo de PAGINA, no dentro de una tarjeta.
+    ("Borde de control sobre el fondo",       "--color-borde-control",  "--color-fondo",          AA_GRANDE),
+    # Y el aviso de "esta publicacion es tuya", que lleva el borde del boton secundario.
+    ("Borde de aviso propio sobre tarjeta",   "--color-primario",       "--color-superficie",     AA_GRANDE),
     # Las cajas de aviso y de error llevan fondo de tarjeta pero se apoyan sobre
     # el fondo de pagina: su borde linda con los dos y es informacion no textual.
     ("Borde de aviso sobre el fondo",         "--color-aviso",          "--color-fondo",          AA_GRANDE),

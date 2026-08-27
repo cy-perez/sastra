@@ -956,6 +956,130 @@ lleve la copia, no de paso.
 - **Nada que enlace al catálogo público.** No existe todavía, y HU-004 y HU-005 ya
   fijaron que no se enlaza a rutas que no están.
 
+## Moderación de publicaciones — Fase 2
+
+El texto de HU-008. Las claves van bajo `listingReview.*`.
+
+**Segunda pantalla interna del sitio**, y hereda el tono de la primera: quien la usa
+trabaja aquí, revisa muchas al día y no necesita que se le explique el producto. Texto
+corto, que dice qué hace cada cosa. Nada de acompañamiento.
+
+**Es la contraparte de `listing.*` y no su reemplazo.** Los mismos siete motivos de
+rechazo tienen dos redacciones y las dos existen a propósito: `listing.rejectionReason.*`
+está escrita para el vendedor que la recibe y explica qué corregir; esta es una etiqueta
+corta para elegir de una lista. Cambiar el sentido de una obliga a cambiar la otra.
+
+**La bandeja** (`listingReview.inbox.*`):
+`.title`: Publicaciones pendientes
+`.waitingSince`: Espera desde hace `{{tiempo}}`
+`.price`: `{{precio}}`
+`.attention`: Necesita atención
+`.empty.title`: No hay nada por revisar
+`.empty.body`: Cuando alguien envíe una publicación, aparece aquí.
+`.error.title`: No pudimos cargar la bandeja
+`.error.retry`: Reintentar
+
+`.attention` es el criterio 6 en la lista, y es **texto y no un punto de color**: quien
+revisa tiene que poder ordenar su trabajo sin distinguir tonos. El motivo concreto no se
+dice aquí sino en el detalle, porque en una fila no cabe y porque saberlo no cambia si se
+abre o no.
+
+**El detalle** (`listingReview.detail.*`):
+
+| Clave | Texto |
+|---|---|
+| `.productSection` | El producto |
+| `.measurementsSection` | Medidas |
+| `.shotsSection` | Las ocho tomas |
+| `.category` | Categoría |
+| `.condition` | Condición |
+| `.brand` | Marca |
+| `.size` | Talla |
+| `.color` | Color |
+| `.price` | Precio |
+| `.description` | Descripción |
+| `.sealed` | Producto sellado |
+| `.warranty` | Garantía de `{{meses}}` meses |
+| `.shotMissing` | Esta toma no está disponible |
+| `.back` | Volver a la bandeja |
+
+`.shotMissing` es el caso borde del archivo que falta. Se dice y no se esconde: una toma
+ausente es motivo suficiente para rechazar por fotos inservibles, y el moderador tiene
+que poder distinguirla de una que sí está y se ve mal.
+
+**Las marcas de atención** (`listingReview.attention.*`). Son los dos valores de
+`AttentionReason`, traducidos por su código:
+
+| Clave | Texto |
+|---|---|
+| `.title` | Por qué necesita atención |
+| `.PRICE_OUT_OF_RANGE` | El precio está fuera del rango habitual |
+| `.GALLERY_UPLOAD` | Alguna toma se cargó desde la galería, no se capturó |
+
+**Aquí sí se dice el motivo, y al vendedor no.** `listing.mine.attention` le dice que su
+publicación necesita atención y calla por qué, para no invitarlo a cambiar el precio y
+esquivar la revisión. El moderador es justo quien necesita el dato: es lo que RN-020
+llama revisión manual.
+
+`.GALLERY_UPLOAD` está redactada sin acusar. Lo declara el cliente y no lo comprueba el
+servidor, así que **no es prueba de nada**: es una señal para mirar con más cuidado, y el
+texto no puede sonar a que ya se decidió.
+
+**Decidir** (`listingReview.decision.*`):
+`.approve`: Aprobar
+`.reject`: Rechazar
+`.reasonLabel`: Motivo del rechazo
+`.reasonPlaceholder`: Elige un motivo
+`.noteLabel`: Nota para el vendedor (opcional)
+`.noteHint`: La lee quien publicó. Dile qué corregir. No escribas información de terceros
+ni datos de procesos judiciales.
+`.confirmApprove`: ¿Aprobar esta publicación? Queda visible para cualquiera y el vendedor
+recibe un correo.
+`.confirmReject`: ¿Rechazar esta publicación? El vendedor recibe un correo con el motivo
+y podrá corregirla y volver a enviarla.
+`.confirm`: Confirmar
+`.cancel`: Cancelar
+`.approved`: Publicación aprobada
+`.rejected`: Publicación rechazada
+`.alreadyResolved`: Esta publicación ya no está en revisión.
+`.ownListing`: Esta publicación es tuya. La revisa otra persona.
+
+`.noteHint` dice «dile qué corregir» y no solo lo prohibido: en el rechazo de una
+publicación la nota tiene un uso concreto que en la verificación no tenía, porque aquí
+casi siempre se puede arreglar y reenviar. Es la diferencia con
+`verificationReview.decision.noteHint`, que solo advierte.
+
+`.ownListing` es el criterio 12 y RN-063, dicho **antes** de que se pulse nada. El
+servidor lo rechaza igual —esconder el botón no es la regla— pero enterarse después de
+pulsar, con un correo ya prometido, no hace falta.
+
+`.alreadyResolved` cubre dos cosas con el mismo texto y es deliberado: que otro moderador
+decidiera antes (criterio 11) y que el vendedor la retirara de revisión (criterio 13). Al
+moderador le pasa lo mismo en los dos casos —ya no le toca— y distinguirlos solo serviría
+para contar qué hizo otra persona.
+
+**Los motivos de rechazo** (`listingReview.reasons.*`), los siete de
+`ListingRejectionReason` como etiqueta corta para elegir:
+
+| Código | Texto |
+|---|---|
+| `PHOTOS_UNUSABLE` | Fotos inservibles |
+| `PHOTOS_MISMATCH` | Las fotos no corresponden |
+| `MEASUREMENTS_UNRELIABLE` | Medidas poco creíbles |
+| `CONDITION_MISDECLARED` | Condición mal declarada |
+| `PROHIBITED_ITEM` | Producto prohibido |
+| `SUSPECTED_COUNTERFEIT` | Sospecha de réplica |
+| `PRICE_OUT_OF_RANGE` | Precio fuera de rango |
+
+**Sin acceso** (`listingReview.forbidden.*`). Criterio 2, y se resuelve igual que en
+HU-006: **no hay texto propio**. Se reutiliza la página 404 (`notFound.*`), porque un «no
+tienes permiso» confirma que hay algo detrás.
+
+**Lo que no se escribe aquí, y por qué.** No hay texto para bajar una publicación ya
+visible: el endpoint `removal` existe pero la acción quedó fuera de HU-008, por el mismo
+motivo que la revocación quedó fuera de HU-006. Tampoco hay texto de historial ni de
+métricas de moderación.
+
 ## Etiquetas de ficha de producto — Fase 2
 
 - **Condición:** Nuevo · Como nuevo · Buen estado · Con detalles. Son las cuatro

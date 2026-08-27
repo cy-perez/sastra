@@ -11,6 +11,7 @@ import co.sendik.catalog.usecase.ChangeListingPriceUseCase;
 import co.sendik.catalog.usecase.ChangeListingShippingUseCase;
 import co.sendik.catalog.usecase.CreateListingUseCase;
 import co.sendik.catalog.usecase.ListCategoriesUseCase;
+import co.sendik.catalog.usecase.ListPendingListingsUseCase;
 import co.sendik.catalog.usecase.ListSellerListingsUseCase;
 import co.sendik.catalog.usecase.PauseListingUseCase;
 import co.sendik.catalog.usecase.ReadListingUseCase;
@@ -196,6 +197,12 @@ public class CatalogWiring {
     @Bean
     ListSellerListingsUseCase listSellerListingsUseCase(ListingRepository publicaciones) {
         return new ListSellerListingsUseCase(publicaciones);
+    }
+
+    /** La cola del moderador. HU-008. */
+    @Bean
+    ListPendingListingsUseCase listPendingListingsUseCase(ListingRepository publicaciones) {
+        return new ListPendingListingsUseCase(publicaciones);
     }
 
     @Bean

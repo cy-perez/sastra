@@ -21,22 +21,21 @@ import { pngDe } from './png';
  * <p>Va con `FEATURE_PUBLISHING` encendida, que la configuración de esta suite fija. Sin
  * ella el formulario y la bandeja no existen y sus rutas responden 404.
  *
- * <p><strong>Tres de las seis pruebas están en rojo, y es un pendiente conocido.</strong>
- * Las tres de acceso pasan; las tres del ciclo de publicación se caen en
- * `publicarYEnviarARevision`, justo después de «Empezar», con el aviso de
- * `COMMON_UNEXPECTED` y sin que el backend registre ningún error. Ya está descartado que
- * sea el árbol de categorías, y hay dos errores de la propia prueba corregidos que no lo
- * explicaban.
+ * <p><strong>Tres de estas pruebas nacieron en rojo y encontraron un defecto de
+ * HU-007.</strong> Las del ciclo de publicación se caían en `publicarYEnviarARevision`,
+ * justo después de «Empezar»: crear un borrador con solo la categoría —el cuerpo exacto
+ * que manda esa pantalla— respondía 500, porque la tabla `products` exigía `NOT NULL` en
+ * doce columnas que el criterio 5 permite dejar en blanco y el repositorio desreferenciaba
+ * lo anulable sin guarda. No lo veía nadie porque `/publicar` no se había ejercitado nunca
+ * contra un backend real: las pruebas de recorrido creaban siempre el producto completo.
  *
- * <p>No se apagan con `test.fixme`: una prueba apagada deja de avisar, y esto es un
- * hallazgo a medio investigar. La sospecha principal es `reuseExistingServer`, que fuera de
- * integración continua puede estar hablando con un backend arrancado antes de que la
- * bandera existiera. La pista más prometedora es otra: **`/publicar` no se ha ejercitado
- * nunca contra un backend real**, así que esto podría ser un defecto de HU-007.
+ * <p>Detrás de ese defecto había otro: la respuesta de subir una toma trae el producto
+ * entero, y la pantalla la volcaba encima de lo que se estaba escribiendo. Quien tecleaba
+ * y arrastraba una foto seguida perdía lo tecleado, en silencio.
  *
- * <p>El diagnóstico completo, con lo descartado y por dónde seguir, está en
- * `docs/producto/historias/HU-008-moderacion-de-publicaciones.md`, sección «Lo que queda
- * abierto».
+ * <p>Se dejaron fallando en vez de apagarlas con `test.fixme`, y por eso los dos defectos
+ * se arreglaron. El diagnóstico completo, con lo que la prueba misma tenía mal, está en
+ * `docs/producto/historias/HU-008-moderacion-de-publicaciones.md`.
  */
 test.use({ locale: 'es-CO' });
 
@@ -78,11 +77,29 @@ async function registrar(page: Page, correo: string, nombre = 'Ana María'): Pro
   await expect(page.getByRole('link', { name: nombre })).toBeVisible();
 }
 
+/**
+ * Entra, y no vuelve hasta que el servidor haya contestado.
+ *
+ * <p><strong>Esperar la respuesta no es prudencia de mas.</strong> `click()` espera al
+ * clic, no a la peticion. Quien llama y navega acto seguido —`dejarUnaVendedoraVerificada`
+ * lo hace, y va derecho a /publicar— aborta el `POST /auth/login` en vuelo: en la traza
+ * sale con estado -1. La sesion no llega a existir, la cookie de refresco tampoco, y lo
+ * que se ve despues es un 401 en la primera peticion con token de la pantalla siguiente,
+ * que no se parece en nada a la causa.
+ *
+ * <p>Se espera la respuesta y no el enlace de la cuenta en la cabecera, porque esto lo
+ * usa tambien quien todavia no tiene cuenta: ahi el 401 es la respuesta correcta y quien
+ * llama decide que hacer con ella.
+ */
 async function ingresar(page: Page, correo: string): Promise<void> {
   await page.goto('/ingresar');
   await page.getByLabel('Correo electrónico').fill(correo);
   await page.getByLabel('Contraseña').fill(CONTRASENA);
-  await page.getByRole('button', { name: 'Entrar' }).click();
+
+  await Promise.all([
+    page.waitForResponse((respuesta) => respuesta.url().includes('/auth/login')),
+    page.getByRole('button', { name: 'Entrar' }).click(),
+  ]);
 }
 
 async function salirSiHaySesion(page: Page): Promise<void> {
@@ -200,8 +217,50 @@ async function publicarYEnviarARevision(page: Page, titulo: string): Promise<voi
   await page.getByLabel('Descripción').fill('Usada dos veces, sin manchas ni descosidos.');
   await page.getByLabel('Marca').fill('Zara');
   await page.getByRole('radio', { name: 'Como nuevo' }).check();
+  await page.getByLabel('Sistema de talla').selectOption({ label: 'Letra (XS a XXL)' });
   await page.getByLabel('Valor de la talla').fill('M');
+
+  // Las medidas del grupo que declara la categoría. Sin ellas el envío se rechaza con
+  // CATALOG_MEASUREMENTS_INCOMPLETE (RN-021), y van acotadas a su grupo porque «Largo»
+  // es también una de las tres dimensiones de la caja.
+  const medidas = page.getByRole('group', { name: 'Medidas' });
+  for (const [medida, valor] of [
+    ['Pecho', '52'],
+    ['Hombros', '41'],
+    ['Manga', '60'],
+    ['Largo', '70'],
+  ]) {
+    await medidas.getByLabel(medida).fill(valor);
+  }
+
+  await page.getByLabel('Color').selectOption({ label: 'Beige' });
   await page.getByLabel('Precio').fill('185000');
+
+  // El envío entero: el peso y las tres dimensiones son un grupo y media caja no es una
+  // caja. Faltaba, y era una de las dos razones por las que esto no llegaba a enviarse.
+  const envio = page.getByRole('group', { name: 'Envío' });
+  await envio.getByLabel('Peso en gramos').fill('600');
+  await envio.getByLabel('Largo').fill('30');
+  await envio.getByLabel('Ancho').fill('20');
+  await envio.getByLabel('Alto').fill('10');
+
+  // El guardado es automático y sale 1,5 s después de dejar de escribir. Hay que verlo
+  // aterrizar antes de subir nada: una subida y un guardado en vuelo a la vez escriben
+  // sobre la misma publicación, y el bloqueo optimista del criterio 34 tumba a uno de
+  // los dos. Cuando el que cae es el guardado, el envío a revisión se rechaza después
+  // con `CATALOG_LISTING_INCOMPLETE` y el motivo real queda tres pantallas atrás.
+  //
+  // Se espera la respuesta que ya trae el envío —lo último que se escribe— y no el
+  // cartel de «Guardado», que puede seguir puesto de un guardado anterior.
+  await page.waitForResponse(async (respuesta) => {
+    if (respuesta.request().method() !== 'PATCH' || !respuesta.url().includes('/listings/')) {
+      return false;
+    }
+    const cuerpo = (await respuesta.json().catch(() => null)) as {
+      product?: { shipping?: unknown };
+    } | null;
+    return cuerpo?.product?.shipping != null;
+  });
 
   // Las ocho tomas. Por el campo de archivo y no por la cámara: la cámara es de HU-003 y
   // aquí lo que se prueba es el ciclo de moderación, no la captura.
@@ -211,7 +270,12 @@ async function publicarYEnviarARevision(page: Page, titulo: string): Promise<voi
   }
 
   await page.getByRole('button', { name: 'Enviar a revisión' }).click();
-  await expect(page.getByText('Enviada a revisión')).toBeVisible();
+
+  // Se comprueba el estado y no un cartel de confirmación: `listing.submit.sent`
+  // —«Enviada a revisión»— está en el archivo de textos pero ninguna plantilla lo usa,
+  // así que la prueba esperaba algo que la pantalla no pinta. Lo que sí se ve es que la
+  // publicación pasó a revisión: la acción de enviar deja su sitio a la de retirar.
+  await expect(page.getByRole('button', { name: 'Retirar de revisión' })).toBeVisible();
 }
 
 /** Abre en la cola la fila de un título concreto. La cola es compartida entre pruebas. */
@@ -323,7 +387,9 @@ test.describe('moderación de publicaciones', () => {
     await page.goto(RUTA_MIS_PUBLICACIONES);
     await page.getByRole('link').filter({ hasText: titulo }).first().click();
 
-    await expect(page.getByText('No pudimos publicarla')).toBeVisible();
+    // Por el encabezado de la tarjeta de rechazo: el texto suelto casa también con la
+    // ayuda del estado, que dice lo mismo y sigue con «Abajo te decimos por qué».
+    await expect(page.getByRole('heading', { name: 'No pudimos publicarla' })).toBeVisible();
     await expect(page.getByText('Las fotos no se pueden usar')).toBeVisible();
     await expect(page.getByText('La frontal está borrosa.')).toBeVisible();
 

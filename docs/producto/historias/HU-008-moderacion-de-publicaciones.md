@@ -1,8 +1,8 @@
 # HU-008 — Moderación de publicaciones
 
 **Fase:** 2 | **Estado:** implementada y revisada el 27 de agosto de 2026.
-**Queda un pendiente:** tres de las seis pruebas de extremo a extremo no pasan; el
-diagnóstico está al final, en «Lo que queda abierto».
+Las tres pruebas de extremo a extremo que quedaron en rojo al implementarla destaparon un
+defecto de HU-007 y ya están en verde; el diagnóstico está al final.
 **Reglas que aplica:** RN-015, RN-020, RN-022, RN-024, RN-045, RN-061, RN-063
 
 ## Objetivo
@@ -247,7 +247,8 @@ De integración en el backend:
 - RN-063 sobre la API, con dos cuentas: la propia se rechaza, la ajena se acepta.
 
 De extremo a extremo, en `e2e-completo/` porque cruza las dos mitades. **Escritas, y tres
-de las seis todavía en rojo**: ver «Lo que queda abierto».
+de las seis estuvieron en rojo** hasta el 27 de agosto de 2026: ver «El fallo que dejó
+tres pruebas en rojo, y su causa».
 
 - Un vendedor envía a revisión, un moderador aprueba y la publicación queda
   `PUBLISHED`.
@@ -282,60 +283,93 @@ protestar. Agregar `submittedAt` rompió cuatro ayudantes de prueba, y eso fue e
 **La cola trae solo la toma frontal.** Cargaba las ocho de cada fila —una consulta por
 publicación— para pintar una miniatura, en la pantalla que más veces se abre.
 
-## Lo que queda abierto
+## El fallo que dejó tres pruebas en rojo, y sus causas
 
-**Tres de las seis pruebas de `e2e-completo/moderacion-de-publicaciones.spec.ts` fallan.**
-Se dejan fallando a propósito y no marcadas como omitidas: una prueba apagada deja de
-avisar, y lo que hay aquí es un hallazgo a medio investigar, no un estorbo que quitar.
+**Resuelto el 27 de agosto de 2026.** Eran tres defectos encadenados, dos de ellos de
+HU-007 y uno de la propia prueba. Se deja escrito porque la sospecha buena era la tercera
+de la lista y el diagnóstico costó más de lo que debía.
 
-**Pasan** las tres de acceso: una cuenta sin el rol no llega a la cola, sin sesión tampoco,
-y el HTML servido no revela que la bandeja existe.
+Las tres pruebas del ciclo de publicación —aprobar, rechazar y reenviar, y decidir sobre
+algo que ya no está pendiente— se caían en el mismo punto: `publicarYEnviarARevision`,
+justo después de pulsar «Empezar», con el aviso de `COMMON_UNEXPECTED` y sin que
+apareciera nunca el formulario.
 
-**Fallan** las tres del ciclo de publicación —aprobar, rechazar y reenviar, y decidir sobre
-algo que ya no está pendiente—. Las tres se caen en el mismo punto:
-`publicarYEnviarARevision`, justo después de pulsar «Empezar». La pantalla muestra el aviso
-de `COMMON_UNEXPECTED` y nunca aparece el formulario.
+### El primer defecto: crear un borrador vacío respondía 500
 
-### Lo que ya está descartado, midiendo
+`POST /api/v1/listings` con el cuerpo que manda la pantalla —`{"categoryId": ...}` y nada
+más— respondía **500**. Dos capas rotas por lo mismo:
 
-No hace falta volver a comprobar nada de esto:
+- `JdbcListingRepository.guardarProducto` desreferenciaba sin guarda `title().value()`,
+  `condition().name()`, `size().system()`, `color().name()`, `price().enPesos()` y las
+  cuatro medidas del envío, que en `Product` son todos `@Nullable`. Excepción de puntero
+  nulo. `filaAProducto` tenía el problema simétrico en la lectura: `Condition.valueOf(null)`
+  y un `getLong` sobre una columna nula que devolvía un precio de cero pesos que el propio
+  `Product` rechaza.
+- Y aunque no lo hubiera tenido, `V9__catalog.sql` declaró `NOT NULL` las doce columnas que
+  describen el producto. El INSERT tampoco habría entrado.
 
-- **El árbol de categorías responde.** `GET /api/v1/categories` devuelve 200 con las seis
-  familias, y «Camisas y blusas» existe como hoja. El desplegable carga: si no cargara,
-  `selectOption` habría fallado antes con otro mensaje.
-- **El backend no registra ningún error.** Con el registro delante durante la corrida, no
-  aparece ni una línea de `ApiExceptionHandler`. Así que no es un 500 del servidor, aunque
-  la pantalla muestre el texto que corresponde a ese código.
-- **El recorrido previo funciona entero.** Registro, verificación de correo, los tres pasos
-  de la verificación de vendedor y la aprobación por parte de quien modera: todo eso pasa
-  antes de llegar al punto donde se cae.
-- **Dos errores de la propia prueba, ya corregidos.** No se elegía categoría antes de
-  «Empezar» —el botón está deshabilitado hasta entonces— y se aprobaba la verificación más
-  vieja de la cola en vez de la de esa ejecución. Con los dos arreglados, el fallo sigue.
+Las dos cosas contradicen al **criterio 5 de HU-007**, que dice que un borrador incompleto
+se guarda sin exigir que esté completo. `V13__draft_product_columns_nullable.sql` quita esos
+`NOT NULL`; lo obligatorio lo sigue exigiendo el dominio al enviar a revisión, que es donde
+puede distinguir un borrador a medias de una publicación que se quiere publicar sin
+terminar.
 
-### Por dónde seguir
+**Por qué no lo vio ninguna prueba:** `ListingJourneyTest` y `CatalogPersistenceTest` creaban
+siempre el producto **completo**, y las de componente simulan HTTP. Nadie había creado un
+borrador vacío contra PostgreSQL, que es la primera petición de la pantalla y por donde
+empieza toda publicación. Hoy lo cubren dos pruebas de persistencia y una de recorrido.
 
-Por orden de sospecha:
+### El segundo defecto: lo escrito se borraba al subir una foto
 
-1. **Los servidores reutilizados entre corridas.** `reuseExistingServer` está en `true`
-   fuera de integración continua, así que una ejecución puede estar hablando con un backend
-   arrancado **antes** de que `FEATURE_PUBLISHING` se encendiera en la configuración, o con
-   una construcción del frontend anterior. Es lo primero: matar lo que escuche en 8081 y
-   4300, y arrancar de cero.
-2. **De dónde sale el `COMMON_UNEXPECTED`.** Si el backend no lo registra, no lo está
-   produciendo él. Conviene mirar la petición en el navegador —estado, cuerpo, cabeceras—
-   en lugar de deducirlo del texto de la pantalla.
-3. **`/publicar` contra un backend real.** Es la pista más prometedora: **esa pantalla no se
-   ha ejercitado nunca contra la API de verdad**. `e2e/accesibilidad.spec.ts` lo dice con
-   todas las letras en su comentario —audita «su rama sin backend»— y las pruebas de
-   componente simulan HTTP. Así que esto puede ser un defecto de HU-007 que hasta ahora
-   nadie tenía forma de ver, y no un problema de esta prueba.
+Con el 500 resuelto, las tres seguían cayendo, ahora al enviar a revisión: el servidor
+respondía `CATALOG_LISTING_INCOMPLETE` y el formulario estaba **en blanco**.
 
-### Lo que la suite ya aporta aunque falle
+`PublishPage.volcarEnElFormulario` sincroniza el formulario con lo que llega del servidor,
+y corre cada vez que cambia la publicación. Subir una toma **cambia la publicación**: la
+respuesta trae el producto entero. Volcándolo de golpe, lo tecleado desde el último
+guardado automático se borraba, y el `markAsPristine` de después cancelaba el guardado que
+iba a salvarlo. Quien escribiera el título y arrastrara una foto antes de que saltara el
+guardado —1,5 s— perdía lo escrito, en silencio y sin poder recuperarlo. Es exactamente lo
+contrario de lo que la pantalla promete: «puedes salir a la mitad y volver cuando quieras:
+guardamos lo que llevas».
 
-Las tres que pasan cubren el criterio 2 de punta a punta, que es lo que ninguna prueba de
-componente puede demostrar. Y el archivo deja escrito el recorrido completo: cuando el
-punto de arriba se resuelva, las otras tres deberían quedar en verde sin reescribirlas.
+Ahora la sincronización va campo por campo y no pisa un control sucio cuyo valor difiera
+del que devuelve el servidor. Marcar limpio solo lo que de verdad se guardó importa además
+para el criterio 28: `camposTocados` es lo que decide si un cambio vuelve a moderación.
+
+### Lo que la propia prueba tenía mal
+
+Tres cosas, todas de no haberse ejecutado nunca entera:
+
+- **No llenaba color, las medidas del grupo ni el envío**, que el criterio 6 exige para
+  enviar. Con lo demás arreglado, el servidor seguía teniendo razón al rechazar.
+- **No esperaba a que el guardado aterrizara** antes de subir las tomas. Un guardado y una
+  subida en vuelo a la vez escriben sobre la misma publicación y el bloqueo optimista del
+  criterio 34 tumba a uno de los dos; cuando el que caía era el guardado, el envío fallaba
+  después por datos que sí se habían escrito.
+- **Esperaba un cartel que no existe.** `listing.submit.sent` —«Enviada a revisión»— está
+  en `es.json` y en `en.json` y **ninguna plantilla lo usa**. La confirmación real de que
+  la publicación entró a revisión es que la acción de enviar deja su sitio a la de retirar,
+  que es lo que se comprueba ahora. La clave sin usar sigue ahí: darle una región viva a la
+  pantalla del vendedor es una decisión de diseño, no parte de este arreglo.
+
+### Lo que enmascaraba la causa
+
+Dos cosas hicieron que el diagnóstico apuntara a otro lado:
+
+- **Una carrera en la propia prueba.** `ingresar()` hacía clic en «Entrar» y volvía sin
+  esperar; `dejarUnaVendedoraVerificada` navegaba acto seguido a `/publicar` y abortaba el
+  `POST /auth/login` en vuelo —en la traza sale con estado `-1`—. Sin sesión, el 500 de
+  arriba no llegaba a producirse y lo que se veía era un 401 con el mensaje genérico. Por
+  eso el síntoma cambiaba entre el primer intento y el reintento.
+- **El registro del backend nunca llegó al artefacto.** `upload-artifact@v4` ignora los
+  archivos ocultos salvo que se le diga lo contrario, y `.registro-backend.log` empieza por
+  punto. De ahí la afirmación —equivocada— de que «el backend no registra ningún error»: el
+  registro que se miró no era el de la corrida que falló. Corregido con
+  `include-hidden-files: true`.
+
+La primera sospecha de la lista, `reuseExistingServer`, no tenía nada que ver: en
+integración continua está en `false` y el fallo se daba igual.
 
 ## Documentación que trae esta historia
 

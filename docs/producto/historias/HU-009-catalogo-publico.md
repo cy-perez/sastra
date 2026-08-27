@@ -77,102 +77,118 @@ No entra:
    abre el listado, entonces **ninguna** de ellas aparece, ni siquiera la del
    propio vendedor con su sesión abierta.
 
-3. Dado el listado, cuando se pide una página, entonces la respuesta trae como
-   máximo el tamaño pedido y el cuerpo tiene la forma que fija
-   `contrato-api.md`: `items`, `page` y `size`. Un `size` por encima de 50 se
-   rechaza con 400, no se recorta en silencio.
+3. Dado el listado, cuando se pide un tramo, entonces la respuesta trae como
+   máximo el `limit` pedido y el cuerpo tiene la forma que `contrato-api.md`
+   reserva para el catálogo: `items`, `nextCursor` y `hasMore`. **Por cursor y no
+   por número de página**, porque el contrato lo dice con su motivo: sobre
+   contenido que se inserta constantemente, la paginación por desplazamiento
+   repite y salta elementos. Un `limit` por encima de 50 se rechaza con 400, no se
+   recorta en silencio.
 
-4. Dado un catálogo sin ninguna publicación visible, cuando alguien abre el
+4. Dado un cursor que no se puede descifrar o que no corresponde a este listado,
+   cuando se pide con él, entonces la respuesta es 400 y no un tramo arbitrario.
+
+5. Dado un catálogo sin ninguna publicación visible, cuando alguien abre el
    listado, entonces ve un estado vacío que lo dice, y no una página en blanco ni
    un error.
 
-5. Dada una publicación en el listado, cuando se pinta su tarjeta, entonces
+6. Dada una publicación en el listado, cuando se pinta su tarjeta, entonces
    muestra su toma frontal —la de posición 0 (RN-016)—, el título, el precio en
    pesos sin decimales (RN-020) y la condición declarada, con una de las cuatro
    etiquetas del glosario y ninguna quinta.
 
 ### Las categorías
 
-6. Dado el árbol de categorías, cuando alguien abre el catálogo, entonces puede
+7. Dado el árbol de categorías, cuando alguien abre el catálogo, entonces puede
    navegar por las seis familias y, dentro de una, por sus categorías.
 
-7. Dada una categoría elegida, cuando se muestra el listado, entonces solo
+8. Dada una categoría elegida, cuando se muestra el listado, entonces solo
    aparecen las publicaciones de esa categoría, y la dirección de la página la
    identifica: compartir el enlace lleva al mismo sitio.
 
-8. Dada una categoría retirada del árbol —`active` en falso—, cuando alguien
+9. Dada una categoría retirada del árbol —`active` en falso—, cuando alguien
    intenta abrirla por su dirección, entonces recibe la página de no encontrado,
    no un listado vacío que parezca un error del sitio.
 
-9. Dada una familia, cuando se abre, entonces se ven las publicaciones de **todas
-   sus categorías hijas**, porque no se publica en una familia sino en una
-   categoría suya (glosario).
+10. Dada una familia, cuando se abre, entonces se ven las publicaciones de **todas
+    sus categorías hijas**, porque no se publica en una familia sino en una
+    categoría suya (glosario).
 
 ### La ficha
 
-10. Dada una publicación publicada, cuando alguien abre su ficha, entonces ve
+11. Dada una publicación publicada, cuando alguien abre su ficha, entonces ve
     todas sus tomas en un carrusel, empezando por la frontal.
 
-11. Dada una ficha, cuando se pinta, entonces muestra lo que el vendedor declaró:
+12. Dada una ficha, cuando se pinta, entonces muestra lo que el vendedor declaró:
     título, descripción, marca si la hay, condición, talla con su sistema,
     medidas en centímetros (RN-021), color y precio.
 
-12. Dada una publicación que **no** está publicada, o un identificador que no
+13. Dada una publicación que **no** está publicada, o un identificador que no
     existe, cuando alguien abre su ficha, entonces recibe la página de no
     encontrado. Las dos situaciones responden igual y no se distinguen desde
     fuera.
 
-13. Dada una publicación de tecnología declarada sellada, cuando su ficha muestra
+14. Dada una publicación de tecnología declarada sellada, cuando su ficha muestra
     una imagen de referencia, entonces esa imagen va **rotulada como referencia**
     tanto en la ficha como en el carrusel, en el idioma activo (RN-066).
 
-14. Dada una ficha, cuando se pinta, entonces dice quién vende y, si el vendedor
+15. Dada una ficha, cuando se pinta, entonces dice quién vende y, si el vendedor
     está verificado, muestra la insignia de vendedor verificado. Es la única
     aparición del acento bronce de la pantalla.
 
-15. Dada una ficha, cuando llega el HTML del servidor, entonces el título, la
+16. Dada una ficha, cuando llega el HTML del servidor, entonces el título, la
     descripción para buscadores y la dirección canónica ya vienen resueltos y
     describen ese producto, no la plantilla.
 
-16. Dada la toma de un producto, cuando se pinta, entonces su texto alternativo
+17. Dada la toma de un producto, cuando se pinta, entonces su texto alternativo
     describe el producto real y no `imagen1` ni una cadena de palabras clave.
 
 ### El perfil del vendedor
 
-17. Dado un vendedor, cuando alguien abre su perfil, entonces ve su nombre, su
+18. Dado un vendedor, cuando alguien abre su perfil, entonces ve su nombre, su
     foto si la tiene, su insignia si está verificado, y sus publicaciones
     `PUBLISHED`, con la misma regla de visibilidad del criterio 2.
 
-18. Dado el perfil de un vendedor, cuando se pinta, entonces **no** aparece ningún
+19. Dado el perfil de un vendedor, cuando se pinta, entonces **no** aparece ningún
     dato personal más allá del nombre público y la foto: ni correo, ni documento,
     ni cuenta bancaria, ni fecha de nacimiento.
 
-19. Dado un vendedor sin ninguna publicación visible, cuando alguien abre su
+20. Dado un vendedor sin ninguna publicación visible, cuando alguien abre su
     perfil, entonces ve un estado vacío, no un error.
 
-20. Dada una ficha, cuando alguien pulsa el nombre del vendedor, entonces llega a
+21. Dada una ficha, cuando alguien pulsa el nombre del vendedor, entonces llega a
     su perfil.
 
 ### La bandera
 
-21. Dada `FEATURE_CATALOG` apagada, cuando alguien abre cualquiera de las rutas de
-    esta historia o llama a cualquiera de sus endpoints, entonces recibe 404: no
-    es que rechacen, es que no están. Es el mismo criterio 3 de HU-007 y por el
-    mismo motivo.
+22. Dada `FEATURE_CATALOG` apagada, cuando alguien llama a cualquiera de los
+    endpoints de esta historia, entonces recibe 404: no es que rechacen, es que no
+    están. El controlador no se crea, igual que hacen `FEATURE_PUBLISHING` y
+    `FEATURE_SELLER_VERIFICATION`.
+
+23. Dada `FEATURE_CATALOG` apagada, cuando alguien abre una de las rutas del sitio,
+    entonces la página responde 200 y muestra su estado de no encontrado. **Las
+    rutas del frontend no se esconden y esto no es una excepción**: es lo que ya
+    hace `/publicar` con `FEATURE_PUBLISHING` apagada, y lo que permite que
+    `e2e/rutas.spec.ts` recorra todas las rutas declaradas sin saber qué bandera
+    está encendida. Lo que no existe sin bandera son los datos, no el enrutador.
 
 ## Casos borde
 
 - **Una publicación se aprueba mientras alguien mira el listado.** No aparece
   hasta que se recargue. No hay tiempo real y no hace falta.
 - **Una publicación se vende o se archiva mientras alguien tiene su ficha
-  abierta.** Al recargar recibe el no encontrado del criterio 12. No se avisa: no
+  abierta.** Al recargar recibe el no encontrado del criterio 13. No se avisa: no
   hay a quién avisar en una página anónima.
 - **Un enlace compartido de algo ya vendido.** Es el caso anterior visto desde
   fuera y es el precio de haber elegido que lo vendido desaparece. Si algún día
   se decide conservarlo con un sello «Vendido», es un cambio de esta regla y de
   lo que el backend responde a quien no es el dueño.
-- **Página fuera de rango.** Pedir la página 900 de un catálogo de tres devuelve
-  `items` vacío con su `page` y su `size`, no un 404.
+- **Cursor de un elemento que ya no está publicado.** El tramo siguiente se
+  calcula igual y no se rompe: el cursor ordena, no exige que su elemento siga ahí.
+  Es la mitad del argumento por el que el contrato pide cursor en el catálogo.
+- **Fin del listado.** El último tramo responde `hasMore` en falso y `nextCursor`
+  nulo, no un 404 ni un tramo vacío de más.
 - **Una publicación con menos de ocho tomas.** No debería existir —RN-017 lo
   exige para enviar a revisión— pero la sellada legítimamente tiene cuatro
   (RN-065). El carrusel se dimensiona por las que hay, no por ocho fijas.
@@ -206,11 +222,19 @@ listado es de una columna y el carrusel se desplaza con el dedo.
 
 **Endpoints nuevos**, todos públicos y todos detrás de `FEATURE_CATALOG`:
 
-| Método y ruta                                         | Devuelve                                 |
-| ----------------------------------------------------- | ---------------------------------------- |
-| `GET /api/v1/catalog/listings?page&size&category`     | Página de publicadas, forma pública      |
-| `GET /api/v1/catalog/sellers/{id}`                    | Nombre, foto e insignia                  |
-| `GET /api/v1/catalog/sellers/{id}/listings?page&size` | Página de las publicadas de ese vendedor |
+| Método y ruta                                    | Devuelve                                |
+| ------------------------------------------------ | --------------------------------------- |
+| `GET /api/v1/listings?limit&cursor&category`     | Tramo de publicadas, forma pública      |
+| `GET /api/v1/sellers/{id}`                       | Nombre, foto e insignia                 |
+| `GET /api/v1/sellers/{id}/listings?limit&cursor` | Tramo de las publicadas de ese vendedor |
+
+**Las rutas no se inventan aquí: `contrato-api.md` ya las reservó.** El ejemplo de
+paginación por cursor de ese documento es literalmente
+`GET /api/v1/listings?limit=24&cursor=…`, y su nota explica por qué la cola del
+moderador tuvo que irse a `/moderation`: son dos listas del mismo recurso con
+paginación distinta, y juntarlas obligaría a que la autorización dependiera de un
+parámetro de consulta. Colgar el catálogo de `/catalog/listings` habría dejado esa
+decisión sin efecto y el contrato con dos rutas para lo mismo.
 
 `GET /api/v1/listings/{id}` **ya existe** y ya responde la forma pública a quien no
 es dueño ni moderador: la ficha lo usa tal cual y no hay endpoint nuevo para ella.
@@ -257,7 +281,7 @@ demuestre y no se afirme.
 la ficha con un producto sellado, comprobando el rótulo de RN-066; el perfil.
 
 **Extremo a extremo sin API (`e2e/`).** Que el HTML servido de la ficha ya trae el
-título, la descripción y el canónico resueltos (criterio 15), que es lo que
+título, la descripción y el canónico resueltos (criterio 16), que es lo que
 ninguna prueba de componente puede demostrar. Las rutas nuevas entran solas en la
 prueba del carril de contenido.
 
@@ -289,9 +313,12 @@ resolver la fila «Tienda, catálogo del vendedor → Perfil del vendedor», que
 está en la tabla de términos que no se usan y con esta historia pasa a ser una
 pantalla real.
 
-**Configuración.** `FEATURE_CATALOG` en `application.yaml`, en
-`docs/operacion/configuracion.md` y en las dos listas de variables del despliegue
-—`despliegue.yml` y el ensayo de `verificacion.yml`, que se miran entre sí.
+**Configuración.** `FEATURE_CATALOG` en `application.yaml` y en
+`docs/operacion/configuracion.md`. **No** en `despliegue.yml` ni en el ensayo de
+`verificacion.yml`: hoy ninguna de las seis banderas viaja en esas listas y todas
+llegan apagadas por omisión, que es justo lo que se quiere de una bandera hasta
+que alguien decida encenderla. Encender el catálogo en un entorno es agregar la
+variable ese día, no dejarla puesta desde ahora.
 
 **Textos.** La sección del catálogo en `textos-web.md`, que hoy no existe: las
 etiquetas del listado, el estado vacío, el rótulo de RN-066 y las cuatro

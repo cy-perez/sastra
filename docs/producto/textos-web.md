@@ -1080,6 +1080,135 @@ visible: el endpoint `removal` existe pero la acción quedó fuera de HU-008, po
 motivo que la revocación quedó fuera de HU-006. Tampoco hay texto de historial ni de
 métricas de moderación.
 
+## Catálogo público — Fase 2
+
+El texto de HU-009. Es lo primero que ve alguien que **no tiene cuenta**, así que
+es el único bloque de este documento que se escribe para un desconocido y no para
+alguien que ya decidió entrar. Las claves van bajo `catalog.*`; los mensajes de
+error salen del código, en `errors.byCode.*`.
+
+**Detrás de `FEATURE_CATALOG`, hoy apagada.** Es la única bandera que enciende
+páginas para quien no tiene cuenta: encenderla no expone una funcionalidad más,
+abre la tienda.
+
+Rutas, con el mismo criterio que las demás —en español, en minúscula y con guion—:
+`/catalogo` para el listado, `/catalogo/:familia` y `/catalogo/:familia/:categoria`
+para la navegación por el árbol, `/producto/:id` para la ficha y `/vendedor/:id`
+para el perfil.
+
+### El listado — `catalog.list.*`
+
+`.title`: Qué se está vendiendo
+`.intro`: Todo lo que ves pasó por revisión antes de publicarse.
+`.empty`: Todavía no hay nada publicado.
+`.emptyInCategory`: Todavía no hay nada publicado en esta categoría.
+`.loading`: Cargando el catálogo
+`.error`: No pudimos cargar el catálogo. Inténtalo de nuevo.
+`.retry`: Reintentar
+`.more`: Ver más
+
+`.intro` es la única línea del listado que vende algo, y vende lo que Sendik hace
+distinto de un grupo de Facebook: que alguien miró la publicación antes (RN-015).
+No dice «seguro» ni «protegido», que son las palabras que las decisiones de voz
+prohíben.
+
+**El estado vacío no se disculpa ni promete.** «Vuelve pronto» sería una promesa
+sobre cuándo habrá producto, y no hay ninguna regla detrás.
+
+### La navegación por categorías — `catalog.categories.*`
+
+`.title`: Categorías
+`.all`: Todo
+`.family`: Familias
+`.backToAll`: Ver todo el catálogo
+
+Los nombres de las seis familias y de las treinta y una categorías **no se
+escriben aquí**: viven en la base de datos, en los dos idiomas, desde la migración
+que siembra el árbol. Duplicarlos en el archivo de traducciones es garantizar que
+un día digan cosas distintas.
+
+### La tarjeta del producto — `catalog.card.*`
+
+La tarjeta muestra la toma frontal, el título, el precio y la condición. La
+condición reusa `listing.condition.*`, que ya existe: son las cuatro del glosario
+y no hay una quinta.
+
+`.a11yLink`: Ver {{titulo}}
+
+**La insignia de vendedor verificado no va en la tarjeta.** El acento bronce
+aparece una vez por pantalla, y veinte tarjetas con insignia son veinte acentos.
+Va en la ficha y en el perfil, que es donde la confianza se decide.
+
+### La ficha — `catalog.detail.*`
+
+`.declaredBy`: Lo que declara el vendedor
+`.measurements`: Medidas
+`.measurementsHint`: En centímetros, tomadas por el vendedor.
+`.brand`: Marca
+`.noBrand`: Sin marca
+`.notFound`: Esta publicación ya no está disponible.
+`.notFoundBody`: Puede que se haya vendido o que el vendedor la haya retirado.
+`.backToCatalog`: Volver al catálogo
+
+`.notFound` dice **«ya no está disponible»** y no «no existe», y las dos frases son
+verdad a la vez: RN-068 hace que un identificador inexistente y algo que dejó de
+estar publicado respondan igual, y el texto no puede distinguir lo que la API no
+distingue. `.notFoundBody` enumera las dos causas probables sin afirmar ninguna.
+
+Las etiquetas que ya estaban escritas —«Vendido por {{sellerName}} · Vendedor
+verificado» y la escala de condición— están en la sección siguiente y no se
+duplican aquí.
+
+### El rótulo de las imágenes de referencia — `catalog.referenceImage.*`
+
+Lo exige RN-066 **en la ficha y en el carrusel**, y era el pendiente que este
+documento anotaba como «llega con la ficha».
+
+`.label`: Imagen de referencia
+`.hint`: No la tomó el vendedor. Es del fabricante y muestra el modelo, no el
+producto que vas a recibir.
+
+**El rótulo dice de quién es la foto, no que sea bonita.** La regla existe porque
+una imagen de fabricante junto a fotos reales lleva a creer que el producto se ve
+así; el rótulo es lo que impide que la promesa sea publicidad engañosa. Por eso
+`.hint` nombra las dos cosas: quién la tomó y qué muestra.
+
+Va en los dos idiomas desde el primer día. En inglés se conserva la misma
+distinción: `Reference image` / `The seller did not take this photo. It is the
+manufacturer's and shows the model, not the item you will receive.`
+
+### El perfil del vendedor — `catalog.seller.*`
+
+`.title`: {{nombre}}
+`.verified`: Vendedor verificado
+`.verifiedHint`: Sendik confirmó su identidad y su cuenta bancaria.
+`.listings`: Lo que vende
+`.empty`: Ahora mismo no tiene nada publicado.
+`.notFound`: No encontramos a este vendedor.
+
+`.verifiedHint` dice exactamente qué se confirmó y nada más. No dice que Sendik
+responda por el producto ni que el vendedor sea de fiar: lo que se verificó es
+identidad y cuenta (HU-002), y decir más sería prometer algo que ninguna regla
+sostiene.
+
+El perfil **no muestra reseñas** —son Fase 3— ni ningún dato personal más allá
+del nombre público y la foto.
+
+### Descripciones para buscadores — `meta.*`
+
+Son la razón por la que este bloque se renderiza en el servidor: lo que un
+buscador indexa es lo único que trae compradores.
+
+| Clave | Título | Descripción |
+| --- | --- | --- |
+| `meta.catalog` | Catálogo | Moda nueva y de segunda y tecnología nueva, con vendedores verificados y publicaciones revisadas. |
+| `meta.catalogCategory` | {{categoria}} | {{categoria}} en Sendik. Publicaciones revisadas y vendedores verificados. |
+| `meta.product` | {{titulo}} | {{titulo}}. {{condicion}}, publicado por un vendedor de Sendik. |
+| `meta.sellerProfile` | {{nombre}} | Lo que vende {{nombre}} en Sendik. |
+
+Los cuatro llevan marcador y no texto fijo: una descripción igual para todas las
+fichas es una descripción que ningún buscador usa.
+
 ## Etiquetas de ficha de producto — Fase 2
 
 - **Condición:** Nuevo · Como nuevo · Buen estado · Con detalles. Son las cuatro
@@ -1148,10 +1277,10 @@ Lo que falta escribir:
       idiomas. **Ya estaban** en la migración que las siembra, junto con los de las
       otras veinticuatro. Lo que faltaba era la ortografía del español, corregida
       en `V11__category_names_with_accents.sql`.
-- [ ] El rótulo de las imágenes de referencia **en la ficha y en el carrusel**, que
-      RN-066 exige en los dos idiomas. El del formulario de publicación sí está
-      escrito, en «Publicación de producto — Fase 2»; el de la ficha llega con la
-      ficha, que es otra historia.
+- [x] ~~El rótulo de las imágenes de referencia **en la ficha y en el carrusel**, que
+      RN-066 exige en los dos idiomas.~~ **Escrito el 27 de agosto de 2026** en
+      «Catálogo público — Fase 2», junto con la historia que lo necesitaba:
+      `catalog.referenceImage.label` y `.hint`, en español y en inglés.
 - [ ] Cómo se enuncia la garantía del fabricante en la ficha sin usar la palabra
       Respaldo ni parecerse a ella (RN-067). **Se redacta al final del proyecto,
       en la misma tanda que los tres documentos legales** (decisión del 26 de

@@ -463,13 +463,20 @@ Se manejan como configuración, no como ramas de Git de larga vida:
 |---|---|
 | `FEATURE_SELLER_VERIFICATION` | Habilita el flujo de verificación |
 | `FEATURE_PUBLISHING` | Habilita publicar prendas |
+| `FEATURE_CATALOG` | Habilita el catálogo público: listado, categorías, ficha y perfil del vendedor |
 | `FEATURE_CHECKOUT` | Habilita el proceso de compra |
 | `FEATURE_SEARCH` | Habilita la búsqueda con Typesense |
 | `FEATURE_SPIN_VIEWER` | Habilita el visor 360 |
 
-Las cinco siguen apagadas: se enciende cada una cuando su funcionalidad exista y
+Las seis siguen apagadas: se enciende cada una cuando su funcionalidad exista y
 no cuando empiece la fase que la contiene. Es lo que permite desplegar código
 incompleto sin exponerlo.
+
+`FEATURE_CATALOG` es distinta de las demás en una cosa: es la única que enciende
+páginas para quien **no tiene cuenta**. Encenderla no es exponer una funcionalidad
+más, es abrir la tienda. Con ella apagada los endpoints del catálogo responden 404
+y sus rutas del sitio muestran el estado de no encontrado, que es lo mismo que hace
+`FEATURE_PUBLISHING` con las pantallas del vendedor.
 
 «Sin exponerlo» es literal en el caso de `FEATURE_SELLER_VERIFICATION`: con la bandera
 apagada, el controlador de la verificación no se crea y sus rutas responden 404. No

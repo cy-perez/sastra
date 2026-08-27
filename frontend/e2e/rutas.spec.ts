@@ -131,16 +131,31 @@ test.describe('carril de contenido', () => {
         await page.getByRole('heading', { level: 1 }).waitFor();
 
         // Se mide el elemento de la ruta, hermano de <router-outlet>: es ahi
-        // donde se asigna el carril. Medir algo de dentro esconderia el fallo.
-        const ancho = await page
+        // donde se asigna el carril. Medir algo de dentro esconderia el fallo. Con
+        // el ancho viene el ancho de lectura que la propia pagina se impone;
+        // `getComputedStyle(...).maxWidth` es `none` cuando no se impone ninguno.
+        const { ancho, lectura } = await page
           .locator('main > *:not(router-outlet)')
           .first()
-          .evaluate((pagina) => Math.round(pagina.getBoundingClientRect().width));
+          .evaluate((pagina) => {
+            const maximo = Number.parseFloat(getComputedStyle(pagina).maxWidth);
+            return {
+              ancho: Math.round(pagina.getBoundingClientRect().width),
+              lectura: Number.isFinite(maximo) ? Math.floor(maximo) : Number.POSITIVE_INFINITY,
+            };
+          });
 
-        // Mismo umbral que las otras dos suites: con la sangria del sistema
-        // (16px en movil, 24px en escritorio) y el ancho de lectura de 68ch,
-        // nunca baja del 80% de la ventana en movil ni de 700px en escritorio.
-        expect(ancho, `/${ruta} a ${ventana}px`).toBeGreaterThan(Math.min(ventana * 0.8, 700));
+        // El umbral sale de la sangria del sistema (16px en movil, 24px en
+        // escritorio) y del ancho de lectura, y NO de un numero quemado. Estuvo
+        // quemado en 700 y las cuatro informativas empezaron a fallar con la
+        // tipografia nueva de marca: se topan justo en `--medida`, que son 70ch, y
+        // con esa fuente 70ch resuelve exactamente a 700px. El umbral coincidia al
+        // pixel con el ancho legitimo de la pagina. Leido del elemento, la prueba
+        // sigue cazando lo que existe para cazar —el host en un carril de sangria,
+        // que da una columna de 40px— sin depender de las metricas de una fuente.
+        expect(ancho, `/${ruta} a ${ventana}px`).toBeGreaterThanOrEqual(
+          Math.min(ventana * 0.8, lectura),
+        );
       }
     });
   }

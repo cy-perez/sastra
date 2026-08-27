@@ -211,3 +211,152 @@ jobs:
             frontend/test-results/
             frontend/e2e-completo/.registro-backend.log
           retention-days: 7
+
+  # El despliegue ensayado, sin desplegar nada.
+  #
+  # `despliegue.yml` solo corre al integrar a `main`, asi que hasta ahora un
+  # Dockerfile roto o una variable olvidada se descubrian **despues** de integrar, y
+  # ademas en un flujo cuyos dos trabajos se omiten mientras no haya proyecto de
+  # Google Cloud: la senal no existia en ninguna parte. Aqui se hace lo unico de ese
+  # flujo que no necesita cuenta de nube, que resulta ser lo que mas se rompe:
+  # construir las dos imagenes y comprobar que arrancan y responden.
+  #
+  # **Con el perfil `dev` y no con `local`, y ahi esta la mitad del valor.** `local`
+  # trae valor por omision para todo, asi que una variable que falte en el despliegue
+  # arrancaria igual aqui y el ensayo mentiria. `dev` no tiene ninguno: si a
+  # `despliegue.yml` le falta una variable obligatoria, el contenedor no levanta y
+  # este trabajo se pone rojo. Es exactamente lo que pasaba con las dos claves de
+  # cifrado, documentadas como obligatorias en docs/operacion/configuracion.md y que
+  # no pasaba nadie: el despliegue a dev habria muerto al arrancar.
+  #
+  # Por eso los nombres de las variables de abajo son los mismos que los de
+  # `despliegue.yml`, uno a uno. Si alli se agrega una, aqui tambien.
+  #
+  # Los valores no son secretos ni lo parecen: la base de datos es el servicio de
+  # PostgreSQL de este trabajo, el almacen es el sistema de archivos y las claves se
+  # generan al vuelo y mueren con el runner. Nada sale a la red: una sonda de estado
+  # y la portada no mandan ningun correo.
+  ensayo-del-despliegue:
+    name: Ensayo del despliegue
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: sendik
+          POSTGRES_USER: sendik
+          POSTGRES_PASSWORD: sendik
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U sendik -d sendik"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Las mismas ordenes que ejecuta el despliegue, con el mismo contexto de
+      # construccion. Lo que aqui no construya, alli tampoco.
+      - name: Construir la imagen del backend
+        run: docker build -t sendik-backend:ensayo backend
+
+      - name: Construir la imagen del frontend
+        run: docker build -t sendik-frontend:ensayo frontend
+
+      # `--network host` para que el contenedor alcance el PostgreSQL del servicio en
+      # localhost, y para que su puerto quede accesible desde los pasos siguientes sin
+      # publicar nada.
+      - name: Arrancar el backend y esperar a que responda
+        run: |
+          docker run -d --name backend --network host \
+            -e SPRING_PROFILES_ACTIVE=dev \
+            -e PORT=8080 \
+            -e DB_URL=jdbc:postgresql://localhost:5432/sendik \
+            -e DB_USERNAME=sendik \
+            -e DB_PASSWORD=sendik \
+            -e APP_BASE_URL=http://localhost:4000 \
+            -e APP_API_BASE_URL=http://localhost:8080/api/v1 \
+            -e CORS_ALLOWED_ORIGINS=http://localhost:4000 \
+            -e SUPPORT_EMAIL=soporte@example.test \
+            -e COMPANY_NAME=Sendik \
+            -e COMPANY_TAX_ID=000000000-0 \
+            -e "COMPANY_ADDRESS=Medellin, Colombia" \
+            -e COMMISSION_RATE=0.05 \
+            -e MAIL_PROVIDER=resend \
+            -e MAIL_FROM=no-responder@example.test \
+            -e MAIL_PROVIDER_API_KEY=sin-clave-en-el-ensayo \
+            -e LEGAL_TERMS_VERSION=ensayo \
+            -e LEGAL_PRIVACY_VERSION=ensayo \
+            -e STORAGE_PROVIDER=local \
+            -e STORAGE_PUBLIC_BASE_URL=http://localhost:8080/archivos \
+            -e JWT_ISSUER=http://localhost:8080 \
+            -e JWT_SECRET="$(openssl rand -base64 48)" \
+            -e CRYPTO_DATA_KEY_V1="$(openssl rand -base64 32)" \
+            -e CRYPTO_LOOKUP_KEY="$(openssl rand -base64 32)" \
+            sendik-backend:ensayo
+
+          # La misma sonda que usa el despliegue. Flyway migra al arrancar, asi que
+          # esperar a que responda es tambien esperar a que el esquema entero se
+          # aplique sobre un PostgreSQL 17 limpio: una migracion nueva que no corra
+          # sale aqui.
+          for intento in $(seq 1 40); do
+            if curl --fail --silent --show-error http://localhost:8080/actuator/health > /dev/null; then
+              echo "El backend responde."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "No respondio tras 200 segundos."
+          exit 1
+
+      # Contra el backend recien arrancado, que es como se sirve de verdad: el
+      # renderizado en servidor pinta la portada en el servidor, asi que esto
+      # ejercita las dos imagenes juntas y no cada una por su lado.
+      - name: Arrancar el frontend y esperar a que responda
+        run: |
+          docker run -d --name frontend --network host \
+            -e PORT=4000 \
+            -e API_BASE_URL=http://localhost:8080/api/v1 \
+            -e NG_ALLOWED_HOSTS=localhost \
+            -e DEFAULT_LOCALE=es \
+            -e AVAILABLE_LOCALES=es,en \
+            -e COMPANY_NAME=Sendik \
+            -e COMPANY_TAX_ID=000000000-0 \
+            -e "COMPANY_ADDRESS=Medellin, Colombia" \
+            -e SUPPORT_EMAIL=soporte@example.test \
+            -e COMMISSION_RATE=0.05 \
+            -e CLAIM_WINDOW_DAYS=5 \
+            -e VERIFICATION_REVIEW_DAYS=2 \
+            -e LISTING_REVIEW_DAYS=2 \
+            -e LEGAL_TERMS_VERSION=ensayo \
+            -e LEGAL_PRIVACY_VERSION=ensayo \
+            -e LEGAL_COOKIES_VERSION=ensayo \
+            sendik-frontend:ensayo
+
+          # La portada y no una sonda, igual que en el despliegue: es la ruta que de
+          # verdad renderiza, asi que un fallo del servidor de SSR sale a la luz ahora
+          # y no cuando entre alguien.
+          for intento in $(seq 1 24); do
+            if curl --fail --silent --show-error http://localhost:4000/ > /dev/null; then
+              echo "El frontend responde."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "No respondio tras 120 segundos."
+          exit 1
+
+      # Cuando uno de los dos no levanta, la causa esta siempre en el registro del
+      # contenedor y nunca en la salida del paso, que solo dice que se agoto la espera.
+      - name: Publicar el registro de los contenedores si algo falla
+        if: failure()
+        run: |
+          for contenedor in backend frontend; do
+            echo "::group::$contenedor"
+            docker logs "$contenedor" 2>&1 || echo "El contenedor no llego a existir."
+            echo "::endgroup::"
+          done

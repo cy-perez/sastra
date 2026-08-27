@@ -276,7 +276,7 @@ de una cuenta de nube ni de que haya red.
 
 ## 4. Los secretos
 
-Seis secretos, con estos nombres exactos porque son los que nombra el flujo:
+Ocho secretos, con estos nombres exactos porque son los que nombra el flujo:
 
 ```bash
 crear_secreto() {
@@ -291,11 +291,23 @@ crear_secreto sendik-mail-api-key 're_LA-CLAVE-DE-RESEND'
 
 # La clave de firma de los tokens. Se genera, no se elige: 32 bytes de verdad.
 crear_secreto sendik-jwt-secret "$(openssl rand -base64 48)"
+
+# Las dos de cifrado en columna (RN-046, ADR-0020). También se generan, y tienen
+# que ser DISTINTAS entre sí: la aplicación no arranca si son iguales.
+crear_secreto sendik-crypto-data-key-v1 "$(openssl rand -base64 32)"
+crear_secreto sendik-crypto-lookup-key "$(openssl rand -base64 32)"
 ```
 
 `JWT_SECRET` pide mínimo 32 caracteres y lo valida al arrancar. Cambiarlo
 invalida todos los tokens de acceso emitidos: la gente tiene que volver a entrar.
 No es motivo para no rotarlo, sí para hacerlo a una hora tranquila.
+
+**Las dos de cifrado no se rotan igual, y perderlas no es lo mismo.** Cambiar
+`JWT_SECRET` obliga a volver a entrar; perder `CRYPTO_DATA_KEY_V1` deja ilegibles
+para siempre el número de documento y el de cuenta bancaria ya guardados, porque
+nada más los puede descifrar. Rotarla es agregar la versión siguiente al mapa y
+mover `CRYPTO_CURRENT_KEY_VERSION`, dejando la vieja mientras exista una fila que
+la use; el detalle está en `docs/operacion/configuracion.md`.
 
 ## 5. Las dos cuentas de servicio
 
@@ -312,7 +324,8 @@ gcloud iam service-accounts create sendik-backend \
   --display-name="Backend de Sendik en ejecución"
 
 for secreto in sendik-db-url sendik-db-username sendik-db-password \
-               sendik-jwt-secret sendik-jwt-issuer sendik-mail-api-key; do
+               sendik-jwt-secret sendik-jwt-issuer sendik-mail-api-key \
+               sendik-crypto-data-key-v1 sendik-crypto-lookup-key; do
   gcloud secrets add-iam-policy-binding $secreto \
     --member="serviceAccount:sendik-backend@$PROYECTO.iam.gserviceaccount.com" \
     --role="roles/secretmanager.secretAccessor"

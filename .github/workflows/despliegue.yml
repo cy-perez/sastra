@@ -126,6 +126,17 @@ jobs:
       # entornos.md —migrar antes de servir— se cumple sin un paso aparte, y por
       # eso toda migración tiene que seguir siendo compatible hacia atrás: durante
       # el cambio conviven la revisión vieja y la nueva.
+      #
+      # Las dos claves de cifrado son tan obligatorias como la de firma: sin ellas
+      # `AesGcmSensitiveDataCipher` no se construye y la aplicación no arranca. Estaban
+      # documentadas como obligatorias en docs/operacion/configuracion.md y no las
+      # pasaba nadie, así que este despliegue moría al iniciar. No se veía porque los
+      # dos trabajos se omiten mientras no haya proyecto de Google Cloud.
+      #
+      # Lo vigila el trabajo «Ensayo del despliegue» de verificacion.yml, que arranca
+      # esta misma imagen con el perfil `dev` y esta misma lista de variables: si aquí
+      # falta una obligatoria, allí el contenedor no levanta y el pull request se pone
+      # rojo antes de integrar.
       - name: Desplegar la revisión
         env:
           IMAGEN: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/sendik/backend
@@ -160,7 +171,9 @@ jobs:
             --set-secrets "DB_PASSWORD=sendik-db-password:latest" \
             --set-secrets "JWT_SECRET=sendik-jwt-secret:latest" \
             --set-secrets "JWT_ISSUER=sendik-jwt-issuer:latest" \
-            --set-secrets "MAIL_PROVIDER_API_KEY=sendik-mail-api-key:latest"
+            --set-secrets "MAIL_PROVIDER_API_KEY=sendik-mail-api-key:latest" \
+            --set-secrets "CRYPTO_DATA_KEY_V1=sendik-crypto-data-key-v1:latest" \
+            --set-secrets "CRYPTO_LOOKUP_KEY=sendik-crypto-lookup-key:latest"
 
       # Que el despliegue termine sin error no significa que la aplicación
       # responda: comprobarlo aquí es lo que convierte un despliegue roto en un

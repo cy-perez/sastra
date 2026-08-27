@@ -78,6 +78,68 @@ export class CatalogStore {
 
   readonly trayendoMas = computed(() => this.listado.isFetchingNextPage());
 
+  /**
+   * Cuál publicación está abierta en la ficha.
+   *
+   * <p>Nula mientras no haya ninguna, y con ella la consulta no sale: es el mismo criterio
+   * que el listado y evita una petición a `listings/null` al montar la pantalla.
+   */
+  private readonly ficha = signal<string | null>(null);
+
+  /** Cuál vendedor está abierto en su perfil. */
+  private readonly perfil = signal<string | null>(null);
+
+  /**
+   * La publicación de la ficha.
+   *
+   * <p>Sin reintentos: el 404 es una respuesta normal aquí. RN-068 hace que «no existe» y
+   * «ya no está publicada» respondan igual, así que reintentar tres veces un 404 solo
+   * retrasa el mensaje que la pantalla ya sabe dar.
+   */
+  readonly publicacion = injectQuery(() => ({
+    queryKey: queryKeys.one(this.ficha() ?? 'ninguna'),
+    queryFn: () => this.api.una(this.ficha() ?? ''),
+    enabled: this.ficha() !== null,
+    retry: false,
+  }));
+
+  readonly vendedor = injectQuery(() => ({
+    queryKey: queryKeys.seller(this.perfil() ?? 'ninguno'),
+    queryFn: () => this.api.vendedor(this.perfil() ?? ''),
+    enabled: this.perfil() !== null,
+    retry: false,
+  }));
+
+  readonly deVendedor = injectInfiniteQuery(() => ({
+    queryKey: queryKeys.sellerListings(this.perfil() ?? 'ninguno'),
+    queryFn: ({ pageParam }: { pageParam: string | null }) =>
+      this.api.publicacionesDelVendedor(this.perfil() ?? '', pageParam),
+    enabled: this.perfil() !== null,
+    initialPageParam: null as string | null,
+    getNextPageParam: (ultimo: CatalogPage) => ultimo.nextCursor,
+    retry: false,
+  }));
+
+  readonly publicacionesDelVendedor = computed<readonly PublicListing[]>(
+    () => this.deVendedor.data()?.pages.flatMap((tramo) => tramo.items) ?? [],
+  );
+
+  /** La ficha fija cuál publicación se está viendo al resolver la ruta. */
+  abrirFicha(id: string | null): void {
+    this.ficha.set(id);
+  }
+
+  /** El perfil fija cuál vendedor se está viendo al resolver la ruta. */
+  abrirPerfil(id: string | null): void {
+    this.perfil.set(id);
+  }
+
+  siguienteTramoDelVendedor(): void {
+    if (this.deVendedor.hasNextPage() && !this.deVendedor.isFetchingNextPage()) {
+      void this.deVendedor.fetchNextPage();
+    }
+  }
+
   /** La página fija cuál categoría se está viendo al resolver la ruta. */
   abrir(categoria: string | null): void {
     this.categoria.set(categoria);

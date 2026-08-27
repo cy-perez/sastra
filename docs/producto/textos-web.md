@@ -1150,6 +1150,17 @@ Va en la ficha y en el perfil, que es donde la confianza se decide.
 `.notFoundBody`: Puede que se haya vendido o que el vendedor la haya retirado.
 `.backToCatalog`: Volver al catálogo
 
+`.loading`: Cargando la publicación
+`.gallery`: Fotos del producto
+`.shot`: Toma {{grados}} grados
+
+Las tres últimas casi no se ven y son las que más falta hacen: `.gallery` nombra la
+región del carrusel y `.shot` es el texto alternativo de cada toma, así que son lo único
+que un lector de pantalla tiene para recorrer las ocho fotos. El alternativo describe el
+ángulo y no el producto —el producto ya lo dice el título, repetirlo ocho veces es ruido—,
+que es la excepción a la regla de «describir la prenda real» de más abajo: aquí lo que
+cambia entre una foto y la siguiente es desde dónde se tomó.
+
 `.notFound` dice **«ya no está disponible»** y no «no existe», y las dos frases son
 verdad a la vez: RN-068 hace que un identificador inexistente y algo que dejó de
 estar publicado respondan igual, y el texto no puede distinguir lo que la API no
@@ -1185,6 +1196,12 @@ manufacturer's and shows the model, not the item you will receive.`
 `.listings`: Lo que vende
 `.empty`: Ahora mismo no tiene nada publicado.
 `.notFound`: No encontramos a este vendedor.
+`.loading`: Cargando el perfil
+`.soldBy`: Vendido por
+
+`.soldBy` es la mitad de la línea que este documento ya tenía escrita en «Etiquetas de
+ficha de producto»: «Vendido por {{sellerName}} · Vendedor verificado». La otra mitad es
+`.verified`, y van en dos claves porque el sello solo aparece cuando lo hay.
 
 `.verifiedHint` dice exactamente qué se confirmó y nada más. No dice que Sendik
 responda por el producto ni que el vendedor sea de fiar: lo que se verificó es

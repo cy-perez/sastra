@@ -57,6 +57,23 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/catalog/presentation/catalog-page').then((m) => m.CatalogPage),
   },
+  // La ficha y el perfil. Sus titulos y descripciones son los genericos: los de verdad
+  // salen del producto y del vendedor, que no se conocen hasta que llega la respuesta, y
+  // los ponen las propias pantallas sobre estos.
+  {
+    path: 'producto/:id',
+    title: 'meta.catalog.title',
+    data: { descriptionKey: 'meta.catalog.description' },
+    loadComponent: () =>
+      import('./features/catalog/presentation/product-page').then((m) => m.ProductPage),
+  },
+  {
+    path: 'vendedor/:id',
+    title: 'meta.catalog.title',
+    data: { descriptionKey: 'meta.catalog.description' },
+    loadComponent: () =>
+      import('./features/catalog/presentation/seller-page').then((m) => m.SellerPage),
+  },
   {
     path: 'registro',
     title: 'meta.register.title',

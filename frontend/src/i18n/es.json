@@ -102,6 +102,14 @@
     "catalogCategory": {
       "title": "{{categoria}}",
       "description": "{{categoria}} en Sendik. Publicaciones revisadas y vendedores verificados."
+    },
+    "product": {
+      "title": "{{titulo}}",
+      "description": "{{titulo}}. {{condicion}}, publicado por un vendedor de Sendik."
+    },
+    "sellerProfile": {
+      "title": "{{nombre}}",
+      "description": "Lo que vende {{nombre}} en Sendik."
     }
   },
   "layout": {
@@ -1141,6 +1149,32 @@
     },
     "card": {
       "a11yLink": "Ver {{titulo}}"
+    },
+    "detail": {
+      "declaredBy": "Lo que declara el vendedor",
+      "measurements": "Medidas",
+      "measurementsHint": "En centímetros, tomadas por el vendedor.",
+      "brand": "Marca",
+      "noBrand": "Sin marca",
+      "notFound": "Esta publicación ya no está disponible.",
+      "notFoundBody": "Puede que se haya vendido o que el vendedor la haya retirado.",
+      "backToCatalog": "Volver al catálogo",
+      "loading": "Cargando la publicación",
+      "gallery": "Fotos del producto",
+      "shot": "Toma {{grados}} grados"
+    },
+    "referenceImage": {
+      "label": "Imagen de referencia",
+      "hint": "No la tomó el vendedor. Es del fabricante y muestra el modelo, no el producto que vas a recibir."
+    },
+    "seller": {
+      "verified": "Vendedor verificado",
+      "verifiedHint": "Sendik confirmó su identidad y su cuenta bancaria.",
+      "listings": "Lo que vende",
+      "empty": "Ahora mismo no tiene nada publicado.",
+      "notFound": "No encontramos a este vendedor.",
+      "loading": "Cargando el perfil",
+      "soldBy": "Vendido por"
     }
   }
 }

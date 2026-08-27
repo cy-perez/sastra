@@ -1,0 +1,53 @@
+@if (cargando()) {
+  <p class="solo-lectores" role="status">{{ 'catalog.seller.loading' | transloco }}</p>
+  <p class="esqueleto vendedor__esqueleto"></p>
+} @else if (noEncontrado()) {
+  <h1 class="tipo-h1">{{ 'catalog.seller.notFound' | transloco }}</h1>
+  <p>
+    <a routerLink="/catalogo">{{ 'catalog.detail.backToCatalog' | transloco }}</a>
+  </p>
+} @else if (vendedor(); as quien) {
+  <header class="vendedor__cabecera">
+    @if (quien.avatarUrl; as foto) {
+      <!-- Decorativa: el nombre está al lado y repetirlo en el alternativo es ruido. -->
+      <img class="vendedor__foto" [src]="foto" width="96" height="96" alt="" />
+    }
+
+    <div>
+      <h1 class="tipo-h1">{{ quien.name }}</h1>
+
+      @if (quien.verified) {
+        <p class="vendedor__sello">
+          <span class="insignia-verificado">{{ 'catalog.seller.verified' | transloco }}</span>
+        </p>
+        <!--
+          Dice exactamente qué se confirmó y nada más. No que Sendik responda por el
+          producto ni que el vendedor sea de fiar: lo verificado es identidad y cuenta.
+        -->
+        <p class="tipo-secundario">{{ 'catalog.seller.verifiedHint' | transloco }}</p>
+      }
+    </div>
+  </header>
+
+  <h2 class="tipo-titulo-tarjeta">{{ 'catalog.seller.listings' | transloco }}</h2>
+
+  @if (cargandoPublicaciones()) {
+    <p class="solo-lectores" role="status">{{ 'catalog.list.loading' | transloco }}</p>
+  } @else if (vacio()) {
+    <p class="tipo-cuerpo">{{ 'catalog.seller.empty' | transloco }}</p>
+  } @else {
+    <ul class="vendedor__rejilla">
+      @for (publicacion of publicaciones(); track publicacion.id; let primera = $first) {
+        <li><sendik-product-card [publicacion]="publicacion" [primera]="primera" /></li>
+      }
+    </ul>
+
+    @if (hayMas()) {
+      <div class="vendedor__mas">
+        <button type="button" class="btn btn-secundario" (click)="verMas()">
+          {{ 'catalog.list.more' | transloco }}
+        </button>
+      </div>
+    }
+  }
+}

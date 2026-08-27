@@ -9,9 +9,13 @@ la contemple y aunque sea fácil. Lo que no está en la fase actual, se anota.
 Quedan dos cosas fuera de esa afirmación, las dos por decisión y las dos anotadas
 donde corresponde:
 
-- **El primer despliegue está aplazado** hasta tener el proyecto lo más completo
-  posible (`docs/operacion/entornos.md`). El flujo está escrito y probado; lo que
-  no se ha hecho es ejecutarlo.
+- ~~**El primer despliegue está aplazado**~~ **Resuelto el 26 de agosto de 2026.**
+  Se contrató `sendik.co` en GoDaddy y con eso se cerró la decisión que faltaba:
+  el sitio se hospeda en Cloud Run junto al backend, y GoDaddy queda como
+  registrador y DNS (ADR-0024). `dev` se despliega desde la integración continua,
+  con las dos piezas, y sigue costando cero. **Producción sigue aplazada**, ahora
+  por lo que de verdad la bloquea: los textos legales del punto siguiente y las
+  piezas que cobran por hora encendida (`docs/operacion/entornos.md`).
 - **Los tres textos legales siguen siendo `borrador-local`**, que es relleno sin
   valor legal (`docs/operacion/textos-legales.md`). El mecanismo completo está: las
   tres rutas, el resolutor que sirve el texto dentro del HTML renderizado, la
@@ -36,15 +40,14 @@ donde corresponde:
 - Internacionalización ES/EN funcionando con SSR.
 - Canalización de integración continua: compilar, probar, analizar y desplegar.
   Los cuatro pasos existen: `.github/workflows/verificacion.yml` compila, prueba
-  y analiza, y `despliegue.yml` publica el backend en `dev` con cada integración a
-  `main` y en `prod` con etiqueta y aprobación. **El despliegue del frontend no
-  existe todavía** y es deliberado: no hay proveedor de hospedaje elegido
-  (ADR-0019), y escribirlo exige saber contra qué. **Ejecutarlo por primera vez está aplazado
-  por decisión**, no por falta de trabajo: el sitio se despliega —dominio y
-  hospedaje— cuando el proyecto esté lo más completo posible. Hasta entonces se
-  prueba en local integrado contra los servicios de GCP en capa gratuita, y los
-  servicios de pago se contratan antes del lanzamiento inicial. El motivo está en
-  `docs/operacion/entornos.md` y el procedimiento, listo para ese día, en
+  y analiza, y `despliegue.yml` publica **las dos piezas** —backend y frontend con
+  renderizado en servidor— en `dev` con cada integración a `main`, y en `prod` con
+  etiqueta y aprobación. El despliegue del frontend se escribió el 26 de agosto de
+  2026, cuando contratar `sendik.co` cerró la decisión de hospedaje: va a Cloud Run
+  junto al backend y GoDaddy queda como registrador y DNS (ADR-0024). **`prod`
+  sigue aplazado por decisión**, no por falta de trabajo, y ahora por lo que de
+  verdad lo bloquea: los textos legales y las piezas que cobran por hora encendida.
+  El motivo está en `docs/operacion/entornos.md` y el procedimiento en
   `docs/operacion/despliegue.md`.
 - Base de datos con migraciones y esquema inicial de usuarios.
 

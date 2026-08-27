@@ -40,7 +40,7 @@ correo, ningún NIT, ningún porcentaje de comisión.
 | `RATE_LIMIT_SESSION_WINDOW` | `PT1M` | no, `PT1M` por omisión |
 | `RATE_LIMIT_MAX_KEYS` | `50000` | no, `50000` por omisión |
 | `APP_BASE_URL` | `https://sendik.co` | sí |
-| `APP_API_BASE_URL` | `https://api.sendik.co` | sí |
+| `APP_API_BASE_URL` | `https://api.sendik.co/api/v1` | sí |
 | `APP_TIME_ZONE` | `America/Bogota` | no, `America/Bogota` por omisión |
 | `CORS_ALLOWED_ORIGINS` | lista separada por comas | sí |
 | `COMMISSION_RATE` | `0.05` | sí |
@@ -371,7 +371,7 @@ para `dev` y para `prod`.
 
 | Variable | Ejemplo | Obligatoria |
 |---|---|---|
-| `API_BASE_URL` | `https://api.sendik.co/api/v1` | sí |
+| `API_BASE_URL` | `https://api.sendik.co/api/v1` | sí, es `APP_API_BASE_URL` con otro nombre |
 | `NG_ALLOWED_HOSTS` | `sendik.co,www.sendik.co` | sí |
 | `DEFAULT_LOCALE` | `es` | no, `es` por omisión |
 | `AVAILABLE_LOCALES` | `es,en` | no, `es,en` por omisión |
@@ -421,6 +421,14 @@ renderizado entero por una dirección que falta cambiaría un pie incompleto por
 sitio caído. `SUPPORT_EMAIL` merece atención especial: es el canal por el que se
 ejercen los derechos del titular de los datos, así que un pie sin él incumple
 `docs/operacion/datos-personales.md`.
+
+**`API_BASE_URL` y `APP_API_BASE_URL` son el mismo valor con dos nombres**, y por
+eso se declara uno solo por entorno: el flujo de despliegue le pasa
+`APP_API_BASE_URL` a las dos piezas y el frontend lo recibe como `API_BASE_URL`,
+que es el nombre con el que lo lee `read-app-config.ts`. **Incluye el prefijo
+`/api/v1`**: el frontend cuelga las rutas de ahí sin agregar nada, así que sin el
+prefijo todas las peticiones caen en 404. Es lo que ya hacen las dos pruebas de
+extremo a extremo en `playwright.completo.config.ts`.
 
 `NG_ALLOWED_HOSTS` es la lista de dominios a los que el servidor acepta
 responder y protege contra falsificación de peticiones del lado del servidor. La

@@ -1,0 +1,17 @@
+# Lo que no debe entrar en el contexto de construccion de la imagen.
+#
+# No es solo por tamano: `node_modules` de la maquina puede traer binarios de otro
+# sistema operativo, `dist/` una construccion vieja que taparia la nueva, y un
+# `.env` copiado dentro de una imagen es un secreto publicado.
+node_modules/
+dist/
+.angular/
+.env
+
+# Pruebas y sus informes: la imagen no las ejecuta, y ya corrieron en la
+# canalizacion antes de construirla.
+e2e/
+e2e-completo/
+playwright-report/
+test-results/
+coverage/

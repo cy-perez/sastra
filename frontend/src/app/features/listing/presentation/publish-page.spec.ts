@@ -499,6 +499,52 @@ describe('PublishPage', () => {
     expect(fixture.nativeElement.textContent).toContain('Guardado');
   });
 
+  /**
+   * La respuesta de subir una toma llega con el producto entero, y el producto entero
+   * del servidor todavía no tiene lo que se acaba de escribir.
+   *
+   * <p>Volcándolo tal cual, el título tecleado se borraba solo y el `markAsPristine` de
+   * después cancelaba el guardado que iba a salvarlo: quien escribía y arrastraba una
+   * foto seguida perdía lo escrito, en silencio y sin poder recuperarlo. Es exactamente
+   * lo contrario de lo que la pantalla promete.
+   *
+   * <p>Lo destapó `e2e-completo/moderacion-de-publicaciones.spec.ts`, que rellena el
+   * formulario y sube las ocho tomas sin pausas: llegaba al final con el formulario en
+   * blanco y el servidor respondiendo que faltaba todo.
+   */
+  it('no pierde lo escrito cuando llega la respuesta de una toma, criterio 5', async () => {
+    const sinTitulo = { product: { ...borrador().product, title: null } };
+    const { fixture, backend } = await montar(borrador(sinTitulo));
+
+    await escribir(fixture, '#titulo', 'Camisa de lino color hueso');
+
+    // El guardado sale, pero todavía no ha vuelto: es la ventana en la que se perdía.
+    const guardado = backend.expectOne(
+      (llamada) => llamada.method === 'PATCH' && llamada.url === `${API}/listings/${ID}`,
+    );
+
+    const campo = fixture.nativeElement.querySelector('#toma-0') as HTMLInputElement;
+    Object.defineProperty(campo, 'files', {
+      value: [new File(['x'], 'toma.jpg', { type: 'image/jpeg' })],
+    });
+    campo.dispatchEvent(new Event('change'));
+    await bombear(fixture);
+
+    // La respuesta de la subida trae el producto del servidor, sin título todavía.
+    backend
+      .expectOne(
+        (llamada) => llamada.method === 'POST' && llamada.url === `${API}/listings/${ID}/images`,
+      )
+      .flush(borrador({ ...sinTitulo, images: [conOchoTomas()[0]] }));
+    await bombear(fixture);
+
+    const titulo = fixture.nativeElement.querySelector('#titulo') as HTMLInputElement;
+    expect(titulo.value).toBe('Camisa de lino color hueso');
+
+    // Y el guardado que iba en camino sigue llevándolo.
+    expect(guardado.request.body.title).toBe('Camisa de lino color hueso');
+  });
+
   /** El guardado prometía que no se pierde nada y fallaba sin decirlo. */
   it('avisa cuando el guardado automático falla', async () => {
     const { fixture, backend } = await montar(borrador());

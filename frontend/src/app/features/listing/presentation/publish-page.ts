@@ -9,6 +9,7 @@ import {
   Injector,
   InjectionToken,
   signal,
+  untracked,
   viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
@@ -271,7 +272,10 @@ export class PublishPage {
     effect(() => {
       const actual = this.publicacion();
       if (actual !== null) {
-        this.volcarEnElFormulario(actual);
+        // Sin seguimiento: el volcado lee las señales de las medidas para no pisar lo
+        // que se está escribiendo, y leerlas aquí dentro las convertiría en
+        // dependencias de este mismo efecto, que además las escribe. Bucle.
+        untracked(() => this.volcarEnElFormulario(actual));
       }
     });
 
@@ -528,40 +532,78 @@ export class PublishPage {
     return convertidas;
   }
 
+  /**
+   * Sincroniza el formulario con lo que llega del servidor.
+   *
+   * <p><strong>Campo por campo, y sin pisar lo que se está escribiendo.</strong> Esto
+   * corre cada vez que cambia la publicación, y subir una toma cambia la publicación: la
+   * respuesta trae el producto entero. Volcándolo de golpe, quien escribía el título y
+   * arrastraba una foto antes de que saltara el guardado automático veía cómo el título
+   * se borraba solo, y el `markAsPristine` de después cancelaba el guardado que iba a
+   * salvarlo. La pantalla promete justo lo contrario: «guardamos lo que llevas».
+   *
+   * <p>El criterio para distinguir lo guardado de lo que está a medio escribir es el
+   * propio valor: si el servidor devuelve lo mismo que hay en el control, ese control
+   * está guardado y vuelve a limpio; si el control está sucio y el servidor dice otra
+   * cosa, es una edición que todavía no ha salido y se respeta. Marcar limpio solo lo
+   * que de verdad se guardó importa además para el criterio 28: `camposTocados` decide
+   * si un cambio vuelve a moderación o no.
+   */
   private volcarEnElFormulario(publicacion: Listing): void {
     const producto = publicacion.product;
 
-    this.formulario.patchValue(
-      {
-        categoryId: producto.categoryId,
-        title: producto.title ?? '',
-        description: producto.description ?? '',
-        brand: producto.brand ?? '',
-        condition: producto.condition ?? '',
-        sizeSystem: producto.size?.system ?? '',
-        sizeValue: producto.size?.value ?? '',
-        color: producto.color ?? '',
-        price: producto.price === null ? '' : String(producto.price.amount),
-        weightGrams: producto.shipping === null ? '' : String(producto.shipping.weightGrams),
-        lengthCm: producto.shipping === null ? '' : String(producto.shipping.lengthCm),
-        widthCm: producto.shipping === null ? '' : String(producto.shipping.widthCm),
-        heightCm: producto.shipping === null ? '' : String(producto.shipping.heightCm),
-        isSealed: producto.isSealed ?? false,
-        warrantyMonths: producto.warrantyMonths === null ? '' : String(producto.warrantyMonths),
-      },
+    const delServidor: Record<string, string | boolean> = {
+      categoryId: producto.categoryId,
+      title: producto.title ?? '',
+      description: producto.description ?? '',
+      brand: producto.brand ?? '',
+      condition: producto.condition ?? '',
+      sizeSystem: producto.size?.system ?? '',
+      sizeValue: producto.size?.value ?? '',
+      color: producto.color ?? '',
+      price: producto.price === null ? '' : String(producto.price.amount),
+      weightGrams: producto.shipping === null ? '' : String(producto.shipping.weightGrams),
+      lengthCm: producto.shipping === null ? '' : String(producto.shipping.lengthCm),
+      widthCm: producto.shipping === null ? '' : String(producto.shipping.widthCm),
+      heightCm: producto.shipping === null ? '' : String(producto.shipping.heightCm),
+      isSealed: producto.isSealed ?? false,
+      warrantyMonths: producto.warrantyMonths === null ? '' : String(producto.warrantyMonths),
+    };
+
+    for (const [nombre, valor] of Object.entries(delServidor)) {
+      const control = this.formulario.get(nombre);
+      if (control === null || (control.dirty && control.value !== valor)) {
+        continue;
+      }
       // Sin emitir: volcar lo que acaba de llegar del servidor no es un cambio de la
       // persona, y emitirlo dispararía un guardado de lo mismo, en bucle.
-      { emitEvent: false },
-    );
+      control.setValue(valor, { emitEvent: false });
+      control.markAsPristine();
+    }
 
     const medidas: Record<string, string> = {};
     for (const [clase, valor] of Object.entries(producto.measurements)) {
       medidas[clase] = String(valor);
     }
-    this.medidas.set(medidas);
-    this.medidasTocadas.set(false);
-    this.formulario.markAsPristine();
+
+    // Las medidas viven en una señal aparte, pero se rigen por lo mismo.
+    if (!this.medidasTocadas() || sonIguales(this.medidas(), medidas)) {
+      this.medidas.set(medidas);
+      this.medidasTocadas.set(false);
+    }
   }
+}
+
+/** Dos mapas de medidas con las mismas claves y los mismos valores. */
+function sonIguales(
+  unas: Readonly<Record<string, string>>,
+  otras: Readonly<Record<string, string>>,
+): boolean {
+  const claves = Object.keys(unas);
+  return (
+    claves.length === Object.keys(otras).length &&
+    claves.every((clave) => unas[clave] === otras[clave])
+  );
 }
 
 function vacioANulo(valor: string): string | null {

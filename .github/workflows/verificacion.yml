@@ -200,6 +200,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: informes-extremo-a-extremo
+          # Sin esto el registro del backend no viaja: upload-artifact v4 ignora los
+          # archivos ocultos, y `.registro-backend.log` empieza por punto. El artefacto
+          # se subia sin el, que es justo lo que hace falta cuando una de estas pruebas
+          # falla por un 500 del servidor y la captura del navegador solo muestra el
+          # aviso generico.
+          include-hidden-files: true
           path: |
             frontend/playwright-report/
             frontend/test-results/

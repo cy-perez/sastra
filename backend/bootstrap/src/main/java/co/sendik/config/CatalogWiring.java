@@ -5,16 +5,20 @@ import co.sendik.catalog.port.out.ListingNotifier;
 import co.sendik.catalog.port.out.ListingRepository;
 import co.sendik.catalog.port.out.ModerationLog;
 import co.sendik.catalog.port.out.SellerEligibility;
+import co.sendik.catalog.port.out.SellerProfiles;
 import co.sendik.catalog.usecase.ApproveListingUseCase;
 import co.sendik.catalog.usecase.ArchiveListingUseCase;
 import co.sendik.catalog.usecase.ChangeListingPriceUseCase;
 import co.sendik.catalog.usecase.ChangeListingShippingUseCase;
 import co.sendik.catalog.usecase.CreateListingUseCase;
+import co.sendik.catalog.usecase.ListCatalogUseCase;
 import co.sendik.catalog.usecase.ListCategoriesUseCase;
 import co.sendik.catalog.usecase.ListPendingListingsUseCase;
+import co.sendik.catalog.usecase.ListSellerCatalogUseCase;
 import co.sendik.catalog.usecase.ListSellerListingsUseCase;
 import co.sendik.catalog.usecase.PauseListingUseCase;
 import co.sendik.catalog.usecase.ReadListingUseCase;
+import co.sendik.catalog.usecase.ReadSellerProfileUseCase;
 import co.sendik.catalog.usecase.RejectListingUseCase;
 import co.sendik.catalog.usecase.RemoveListingImageUseCase;
 import co.sendik.catalog.usecase.ReopenListingUseCase;
@@ -74,7 +78,7 @@ public class CatalogWiring {
      */
     @Bean
     ExposedFeatures expuestas(FeatureFlags banderas) {
-        return new ExposedFeatures(banderas.sellerVerification(), banderas.publishing());
+        return new ExposedFeatures(banderas.sellerVerification(), banderas.publishing(), banderas.catalog());
     }
 
     @Bean
@@ -208,5 +212,22 @@ public class CatalogWiring {
     @Bean
     ListCategoriesUseCase listCategoriesUseCase(Categories categorias) {
         return new ListCategoriesUseCase(categorias);
+    }
+
+    // --- El catalogo publico. HU-009 -----------------------------------------
+
+    @Bean
+    ListCatalogUseCase listCatalogUseCase(ListingRepository publicaciones, Categories categorias) {
+        return new ListCatalogUseCase(publicaciones, categorias);
+    }
+
+    @Bean
+    ListSellerCatalogUseCase listSellerCatalogUseCase(ListingRepository publicaciones) {
+        return new ListSellerCatalogUseCase(publicaciones);
+    }
+
+    @Bean
+    ReadSellerProfileUseCase readSellerProfileUseCase(SellerProfiles perfiles) {
+        return new ReadSellerProfileUseCase(perfiles);
     }
 }

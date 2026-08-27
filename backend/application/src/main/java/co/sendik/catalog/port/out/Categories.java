@@ -24,4 +24,14 @@ public interface Categories {
      * tiene por que llevar.
      */
     List<CategoryView> arbolActivo();
+
+    /**
+     * Donde se publica, colgando de esta categoria. HU-009, criterios 9 y 10.
+     *
+     * <p>Si es una hoja activa, ella misma. Si es una familia, sus hojas activas, porque
+     * no se publica en una familia sino en una categoria suya. Si no existe o esta
+     * retirada del arbol, vacio: quien pregunta lo convierte en 404, que es distinto de un
+     * listado vacio y no se confunde con «esta categoria no tiene nada».
+     */
+    List<CategoryId> publicablesBajo(CategoryId id);
 }

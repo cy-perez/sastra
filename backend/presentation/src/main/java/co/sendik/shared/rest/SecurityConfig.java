@@ -52,6 +52,7 @@ public class SecurityConfig {
         // que la funcionalidad esta ahi: el criterio 3 pide 404. Ver ExposedFeatures.
         boolean catalogoExpuesto = expuestas.publishing();
         boolean verificacionExpuesta = expuestas.sellerVerification();
+        boolean catalogoPublicoExpuesto = expuestas.catalog();
 
         http
                 // El origen permitido lo aporta un bean CorsConfigurationSource que
@@ -186,6 +187,44 @@ public class SecurityConfig {
                         // que es lo que el criterio 3 no quiere. Con "authenticated"
                         // atraviesa la cadena, no encuentra manejador y sale el 404.
                         rutas.requestMatchers("/api/v1/categories").authenticated();
+                    }
+
+                    // El catalogo publico. HU-009.
+                    //
+                    // **Va antes que la regla generica de /listings/** y no es opcional
+                    // que sea asi**: en esta DSL gana la primera que casa, y
+                    // `/api/v1/listings/**` casa tambien con `/api/v1/listings` a secas
+                    // -el `**` admite cero segmentos-, asi que declarada primero dejaria
+                    // el catalogo pidiendo token.
+                    //
+                    // **Solo GET, y solo la coleccion.** El patron no lleva `/**`: sin ese
+                    // cuidado abriria cualquier cosa que cuelgue de /listings, y de ahi
+                    // cuelgan las escrituras del vendedor y las tres decisiones del
+                    // moderador. La lectura de una publicacion por identificador ya tiene
+                    // su propia regla mas arriba, con su expresion regular.
+                    //
+                    // **Con cadena de consulta**, por lo mismo que aquella: el catalogo se
+                    // pide siempre con `limit` y casi siempre con `cursor`, y
+                    // `RegexRequestMatcher` exige coincidencia total sobre ruta + "?" +
+                    // consulta. Sin el sufijo, la ruta publica dejaria de serlo en cuanto
+                    // llevara un parametro.
+                    if (catalogoPublicoExpuesto) {
+                        rutas.requestMatchers(
+                                        RegexRequestMatcher.regexMatcher(HttpMethod.GET, "/api/v1/listings(\\?.*)?"))
+                                .permitAll()
+                                // El perfil del vendedor y su escaparate. Prefijo entero
+                                // porque de /sellers no cuelga nada que no sea publico: es
+                                // justo la razon de que estas dos rutas no vivan bajo
+                                // /users, que exige token unas lineas mas abajo.
+                                .requestMatchers(HttpMethod.GET, "/api/v1/sellers/**")
+                                .permitAll();
+                    } else {
+                        // Con la bandera apagada hace falta una regla igualmente, por lo
+                        // mismo que en el arbol de categorias: sin ninguna, /sellers cae en
+                        // el denyAll del final y sale 403, que confirma que el catalogo
+                        // esta ahi. Con "authenticated" atraviesa la cadena, no encuentra
+                        // manejador y sale el 404 que pide el criterio 22.
+                        rutas.requestMatchers("/api/v1/sellers/**").authenticated();
                     }
 
                     rutas

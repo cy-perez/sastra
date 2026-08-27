@@ -1,6 +1,8 @@
 package co.sendik.catalog.usecase;
 
+import co.sendik.catalog.dto.CatalogCursor;
 import co.sendik.catalog.dto.CategoryView;
+import co.sendik.catalog.dto.SellerProfileView;
 import co.sendik.catalog.model.Category;
 import co.sendik.catalog.model.CategoryId;
 import co.sendik.catalog.model.Listing;
@@ -16,6 +18,7 @@ import co.sendik.catalog.port.out.ListingNotifier;
 import co.sendik.catalog.port.out.ListingRepository;
 import co.sendik.catalog.port.out.ModerationLog;
 import co.sendik.catalog.port.out.SellerEligibility;
+import co.sendik.catalog.port.out.SellerProfiles;
 import co.sendik.shared.file.FileKey;
 import co.sendik.shared.file.NormalizedImage;
 import co.sendik.shared.port.out.PublicFileStore;
@@ -85,14 +88,102 @@ final class CatalogoEnMemoria {
             return esperando.subList(desde, Math.min(desde + tamano, esperando.size()));
         }
 
+        /**
+         * El catalogo publico. Ordena y corta igual que el SQL: por fecha de publicacion
+         * descendente, desempatando por identificador, y aplicando el cursor sobre la
+         * pareja entera. Si esto ordenara solo por fecha, la prueba del cursor pasaria
+         * aqui y fallaria contra PostgreSQL.
+         */
+        @Override
+        public List<Listing> publicadas(List<CategoryId> categorias, @Nullable CatalogCursor desde, int limite) {
+            return tramo(
+                    filas.values().stream()
+                            .filter(publicacion -> categorias.isEmpty()
+                                    || categorias.contains(publicacion.product().categoryId())),
+                    desde,
+                    limite);
+        }
+
+        @Override
+        public List<Listing> publicadasDelVendedor(SellerId vendedor, @Nullable CatalogCursor desde, int limite) {
+            return tramo(
+                    filas.values().stream()
+                            .filter(publicacion -> publicacion.sellerId().equals(vendedor)),
+                    desde,
+                    limite);
+        }
+
+        private static List<Listing> tramo(
+                java.util.stream.Stream<Listing> candidatas, @Nullable CatalogCursor desde, int limite) {
+
+            return candidatas
+                    .filter(publicacion -> publicacion.status() == ListingStatus.PUBLISHED)
+                    .filter(publicacion -> publicacion.publishedAt() != null)
+                    .sorted(Comparator.comparing((Listing p) -> Objects.requireNonNull(p.publishedAt()))
+                            .thenComparing(p -> p.id().value())
+                            .reversed())
+                    .filter(publicacion -> desde == null || despuesDe(publicacion, desde))
+                    .limit(limite)
+                    .toList();
+        }
+
+        /** La misma comparacion de pareja que hace `(published_at, id) < (:fecha, :id)`. */
+        private static boolean despuesDe(Listing publicacion, CatalogCursor cursor) {
+            java.time.Instant cuando = Objects.requireNonNull(publicacion.publishedAt());
+            int porFecha = cuando.compareTo(cursor.publicadaEn());
+
+            return porFecha < 0
+                    || (porFecha == 0
+                            && publicacion.id().value().compareTo(cursor.id().value()) < 0);
+        }
+
         int cuantas() {
             return filas.size();
+        }
+    }
+
+    /**
+     * Los perfiles publicos, en memoria.
+     *
+     * <p>Devuelve vacio para quien no se haya dado de alta aqui, que es lo que hace el
+     * adaptador de verdad con una cuenta inexistente o cerrada.
+     */
+    static final class Perfiles implements SellerProfiles {
+
+        private final Map<SellerId, SellerProfileView> filas = new LinkedHashMap<>();
+
+        void alta(SellerId vendedor, String nombre, boolean verificado) {
+            filas.put(vendedor, new SellerProfileView(vendedor, nombre, null, verificado));
+        }
+
+        @Override
+        public Optional<SellerProfileView> buscar(SellerId vendedor) {
+            return Optional.ofNullable(filas.get(vendedor));
         }
     }
 
     static final class Arbol implements Categories {
 
         private final Map<CategoryId, Category> filas = new HashMap<>();
+
+        /** Una hoja activa es ella misma; una familia activa son sus hojas activas. */
+        @Override
+        public List<CategoryId> publicablesBajo(CategoryId id) {
+            Category elegida = filas.get(id);
+            if (elegida == null || !elegida.active()) {
+                return List.of();
+            }
+
+            if (!elegida.esFamilia()) {
+                return List.of(elegida.id());
+            }
+
+            return filas.values().stream()
+                    .filter(Category::active)
+                    .filter(categoria -> id.equals(categoria.parentId()))
+                    .map(Category::id)
+                    .toList();
+        }
 
         /**
          * El arbol como lo pide una pantalla.

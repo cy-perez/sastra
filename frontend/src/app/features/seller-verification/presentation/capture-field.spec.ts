@@ -2,8 +2,8 @@ import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { ImagenEnGrises } from '../domain/blur';
-import { CameraService, type Fotograma } from '../infrastructure/camera.service';
+import { CameraService } from '../../../shared/infrastructure/camera.service';
+import { SharpnessService } from '../infrastructure/sharpness.service';
 import { CaptureField } from './capture-field';
 
 /**
@@ -15,31 +15,12 @@ import { CaptureField } from './capture-field';
  * decisión nuestra.
  */
 describe('CaptureField', () => {
-  /** Franjas de un píxel: el borde más marcado que existe. Pasa el umbral. */
-  const nitida = (): ImagenEnGrises => {
-    const ancho = 20;
-    const alto = 20;
-    const pixeles = new Uint8Array(ancho * alto);
-    for (let i = 0; i < pixeles.length; i++) {
-      pixeles[i] = i % 2 === 0 ? 0 : 255;
-    }
-    return { ancho, alto, pixeles };
-  };
-
-  /** Un tono plano: sin bordes, no pasa el umbral. */
-  const borrosa = (): ImagenEnGrises => ({
-    ancho: 20,
-    alto: 20,
-    pixeles: new Uint8Array(400).fill(128),
-  });
-
   class CamaraFalsa {
     readonly pistas = [{ stop: vi.fn() }];
     readonly flujo = { getTracks: () => this.pistas } as unknown as MediaStream;
 
     disponible = true;
     concede = true;
-    grises: ImagenEnGrises = nitida();
     aperturas = 0;
 
     soportada(): boolean {
@@ -58,8 +39,20 @@ describe('CaptureField', () => {
       flujo?.getTracks().forEach((pista) => pista.stop());
     }
 
-    async capturar(): Promise<Fotograma> {
-      return { imagen: new Blob(['unos bytes'], { type: 'image/jpeg' }), grises: this.grises };
+    async capturar(): Promise<Blob> {
+      return new Blob(['unos bytes'], { type: 'image/jpeg' });
+    }
+  }
+
+  /**
+   * El umbral en si lo prueba blur.spec.ts sobre la funcion pura. Lo que se comprueba
+   * desde aqui es que este componente **no emite** lo que la medida rechaza.
+   */
+  class NitidezFalsa {
+    pasa = true;
+
+    async estaNitida(): Promise<boolean> {
+      return this.pasa;
     }
   }
 
@@ -78,6 +71,7 @@ describe('CaptureField', () => {
   }
 
   let camara: CamaraFalsa;
+  let nitidez: NitidezFalsa;
 
   const boton = (fixture: { nativeElement: HTMLElement }, texto: string) =>
     [...fixture.nativeElement.querySelectorAll('button')].find((candidato) =>
@@ -97,6 +91,7 @@ describe('CaptureField', () => {
 
   beforeEach(() => {
     camara = new CamaraFalsa();
+    nitidez = new NitidezFalsa();
 
     // jsdom no trae URL de objeto: se suple porque el componente la usa para la vista
     // previa, y lo que se prueba no es eso.
@@ -104,7 +99,10 @@ describe('CaptureField', () => {
     URL.revokeObjectURL = vi.fn();
 
     TestBed.configureTestingModule({
-      providers: [{ provide: CameraService, useValue: camara }],
+      providers: [
+        { provide: CameraService, useValue: camara },
+        { provide: SharpnessService, useValue: nitidez },
+      ],
     });
   });
 
@@ -180,7 +178,7 @@ describe('CaptureField', () => {
    * el formulario la mandaría y la persona esperaría una subida para nada.
    */
   it('no emite una foto borrosa y pide otra sin cerrar la cámara', async () => {
-    camara.grises = borrosa();
+    nitidez.pasa = false;
     const fixture = await montar();
 
     boton(fixture, 'Abrir la cámara')?.click();

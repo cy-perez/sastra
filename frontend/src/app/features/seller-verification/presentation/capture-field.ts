@@ -13,8 +13,8 @@ import {
 } from '@angular/core';
 import { TranslocoPipe } from '@jsverse/transloco';
 
-import { estaNitida } from '../domain/blur';
-import { CameraService } from '../infrastructure/camera.service';
+import { CameraService } from '../../../shared/infrastructure/camera.service';
+import { SharpnessService } from '../infrastructure/sharpness.service';
 
 /** Qué se está encuadrando. Decide la forma de la guía y qué cámara se pide. */
 export type Encuadre = 'documento' | 'rostro';
@@ -45,6 +45,7 @@ export type Encuadre = 'documento' | 'rostro';
 })
 export class CaptureField {
   private readonly camara = inject(CameraService);
+  private readonly nitidez = inject(SharpnessService);
 
   readonly encuadre = input.required<Encuadre>();
   readonly labelKey = input.required<string>();
@@ -144,7 +145,7 @@ export class CaptureField {
     try {
       const fotograma = await this.camara.capturar(elemento);
 
-      if (!estaNitida(fotograma.grises)) {
+      if (!(await this.nitidez.estaNitida(fotograma))) {
         // No se emite y no se sube: se pide otra. La cámara se queda abierta para que
         // repetir sea un botón y no volver a empezar.
         this.borrosa.set(true);
@@ -152,8 +153,8 @@ export class CaptureField {
       }
 
       this.borrosa.set(false);
-      this.tomada.set(URL.createObjectURL(fotograma.imagen));
-      this.capturada.emit(fotograma.imagen);
+      this.tomada.set(URL.createObjectURL(fotograma));
+      this.capturada.emit(fotograma);
       this.apagar();
     } catch {
       this.error.set('sellerVerification.capture.unsupported');

@@ -56,12 +56,14 @@ describe('el recorte de una foto de producto', () => {
 
     /** Un borde transparente en el lienzo es lo que produce salirse por un píxel. */
     it('nunca se sale de la imagen de origen, ni con medidas impares', () => {
-      for (const [ancho, alto] of [
+      const medidas: readonly (readonly [number, number])[] = [
         [1001, 1333],
         [999, 777],
         [1367, 1367],
         [3, 5],
-      ]) {
+      ];
+
+      for (const [ancho, alto] of medidas) {
         const recorte = rectanguloDeRecorte(ancho, alto);
 
         expect(recorte.x).toBeGreaterThanOrEqual(0);

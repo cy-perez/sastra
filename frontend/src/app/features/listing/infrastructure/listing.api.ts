@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { HttpClient, HttpEventType, HttpParams } from '@angular/common/http';
+import { filter, firstValueFrom, map, type Observable } from 'rxjs';
 
 import type {
   Category,
@@ -32,6 +32,21 @@ export interface DatosDelProducto {
   readonly shipping?: Shipping | null;
   readonly isSealed?: boolean | null;
   readonly warrantyMonths?: number | null;
+}
+
+/**
+ * El avance de una subida. HU-003 criterio 10.
+ *
+ * <p>Los dos campos son excluyentes en la práctica: mientras sube hay fracción y no hay
+ * publicación; al terminar llega la publicación con la fracción en uno. Se modelan así, y
+ * no como dos tipos, porque quien lo consume pinta una barra y luego refresca, y partirlo
+ * le obligaría a distinguir antes de poder hacer ninguna de las dos cosas.
+ */
+export interface AvanceDeSubida {
+  /** Entre 0 y 1, o nulo cuando el navegador no dice cuánto pesa el todo. */
+  readonly fraccion: number | null;
+  /** La publicación ya actualizada. Solo en el último evento. */
+  readonly publicacion: Listing | null;
 }
 
 /** Una página de publicaciones propias. */
@@ -89,35 +104,72 @@ export class ListingApi {
   }
 
   /**
-   * Sube una toma en su posición.
+   * Sube una toma en su posición, informando de su avance.
    *
-   * <p>{@code fromGallery} va en verdadero **siempre, y por ahora**: el asistente de
-   * captura es HU-003 y no existe, así que la galería es la única vía. Declararlo así es
-   * lo honesto —el criterio 18 dice que lo declara el cliente— y solo suma una marca de
-   * atención; nunca quita una validación. El día que exista la captura, este valor pasa a
-   * depender de por dónde entró la imagen.
+   * <p>{@code desdeGaleria} dice por dónde entró la imagen. **Hasta HU-003 iba en verdadero
+   * siempre**, porque la galería era la única vía y declararlo era lo honesto; ahora que el
+   * asistente existe, distingue. Solo suma una marca de atención para el moderador
+   * (criterio 18 de HU-007); nunca quita una validación, que las hace el servidor sobre los
+   * bytes que recibe (ADR-0018).
+   *
+   * <p>Devuelve un observable y no una promesa porque el criterio 10 de HU-003 pide
+   * **progreso real** por toma: una promesa solo sabe decir «ya está». Los eventos de
+   * avance se traducen aquí a un número entre 0 y 1, y el último emitido es la publicación
+   * actualizada.
    */
-  async subirToma(id: string, posicion: number, imagen: Blob): Promise<Listing> {
+  subirToma(
+    id: string,
+    posicion: number,
+    imagen: Blob,
+    desdeGaleria: boolean,
+  ): Observable<AvanceDeSubida> {
     const cuerpo = new FormData();
     // Se nombra para que el servidor lo reciba como archivo y no como texto. El nombre no
     // decide nada: el tipo se detecta por los bytes de cabecera (ADR-0018).
     cuerpo.append('archivo', imagen, 'toma');
 
-    return firstValueFrom(
-      this.http.post<Listing>(`listings/${id}/images`, cuerpo, {
-        params: parametrosDeImagen(posicion, 'SELLER_SHOT'),
-      }),
-    );
+    return this.http
+      .post<Listing>(`listings/${id}/images`, cuerpo, {
+        params: parametrosDeImagen(posicion, 'SELLER_SHOT', desdeGaleria),
+        reportProgress: true,
+        observe: 'events',
+      })
+      .pipe(
+        filter(
+          (evento) =>
+            evento.type === HttpEventType.UploadProgress || evento.type === HttpEventType.Response,
+        ),
+        map((evento): AvanceDeSubida => {
+          if (evento.type === HttpEventType.Response) {
+            return { fraccion: 1, publicacion: evento.body };
+          }
+
+          // `total` falta cuando el cuerpo no declara longitud. Sin el todo no hay
+          // fracción que calcular, y fingir una barra que avanza sola es peor que no
+          // moverla: la pantalla se queda en el ultimo avance conocido.
+          const total = evento.total;
+          return {
+            fraccion: total === undefined || total === 0 ? null : evento.loaded / total,
+            publicacion: null,
+          };
+        }),
+      );
   }
 
-  /** RN-066: solo se admite en tecnología declarada sellada. */
+  /**
+   * RN-066: solo se admite en tecnología declarada sellada.
+   *
+   * <p>Va siempre como venida de galería, y aquí eso **no es un valor por omisión sino la
+   * verdad**: una imagen de referencia es del fabricante por definición, no la toma nadie
+   * con esta cámara. Es justo el caso que la historia deja fuera del asistente.
+   */
   async subirReferencia(id: string, posicion: number, imagen: Blob): Promise<Listing> {
     const cuerpo = new FormData();
     cuerpo.append('archivo', imagen, 'referencia');
 
     return firstValueFrom(
       this.http.post<Listing>(`listings/${id}/images`, cuerpo, {
-        params: parametrosDeImagen(posicion, 'REFERENCE'),
+        params: parametrosDeImagen(posicion, 'REFERENCE', true),
       }),
     );
   }
@@ -174,10 +226,14 @@ export class ListingApi {
  *
  * <p>Van como {@code HttpParams} y no pegados a la cadena de la ruta: así el
  * interceptor y las pruebas ven una URL limpia, y el escapado lo hace Angular.
- *
- * <p>{@code fromGallery} va en verdadero **siempre, y por ahora**, por lo que explica
- * {@code subirToma}.
  */
-function parametrosDeImagen(posicion: number, clase: 'SELLER_SHOT' | 'REFERENCE'): HttpParams {
-  return new HttpParams().set('position', posicion).set('kind', clase).set('fromGallery', true);
+function parametrosDeImagen(
+  posicion: number,
+  clase: 'SELLER_SHOT' | 'REFERENCE',
+  desdeGaleria: boolean,
+): HttpParams {
+  return new HttpParams()
+    .set('position', posicion)
+    .set('kind', clase)
+    .set('fromGallery', desdeGaleria);
 }

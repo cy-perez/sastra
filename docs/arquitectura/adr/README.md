@@ -49,3 +49,4 @@ la referencia.
 | 0024 | El sitio se hospeda en Cloud Run; GoDaddy es el registrador y el DNS | Aceptada |
 | 0025 | Datos remotos en el renderizado en servidor | Aceptada |
 | 0026 | La cámara sube a `shared` y la nitidez se queda | Aceptada |
+| 0027 | El borrador de captura vive en IndexedDB | Aceptada |

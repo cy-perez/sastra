@@ -1,8 +1,9 @@
-import { inject, Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import { injectMutation, injectQuery, QueryClient } from '@tanstack/angular-query-experimental';
 
 import { ApiError } from '../../../core/http/api-error';
 import { SessionStore } from '../../../core/session/session.store';
+import { PhotoNormalizer } from '../../../shared/infrastructure/photo-normalizer';
 import type { Listing, Money, Shipping } from '../../../shared/domain/listing';
 import type { DatosDelProducto } from '../infrastructure/listing.api';
 import { ListingApi } from '../infrastructure/listing.api';
@@ -27,6 +28,7 @@ import { queryKeys } from './query-keys';
 @Injectable({ providedIn: 'root' })
 export class ListingStore {
   private readonly api = inject(ListingApi);
+  private readonly normalizador = inject(PhotoNormalizer);
   private readonly consultas = inject(QueryClient);
   private readonly sesion = inject(SessionStore);
 
@@ -103,9 +105,48 @@ export class ListingStore {
     onSuccess: (publicacion: Listing) => this.refrescar(publicacion),
   }));
 
+  /**
+   * El avance de la toma que se esté subiendo, entre 0 y 1. HU-003 criterio 10.
+   *
+   * <p>Una señal aparte de la mutación porque TanStack sabe si algo está en vuelo, no
+   * cuánto lleva. Solo hay una: el asistente sube de una en una y la rejilla deshabilita
+   * el resto mientras tanto, así que dos barras a la vez no existen.
+   */
+  private readonly avance = signal<{ posicion: number; fraccion: number | null } | null>(null);
+
+  readonly uploadProgress = computed(() => this.avance());
+
+  /**
+   * Sube una toma, normalizándola antes.
+   *
+   * <p>**Las dos entradas pasan por aquí**: el fotograma del asistente y el archivo elegido
+   * desde la galería. El recorte a 3:4 y el apretón a 500 KB los hace el mismo worker para
+   * las dos, que es lo que pide el criterio 8 de HU-003 —«el mismo recorte forzado»— y lo
+   * que evita mandar al servidor archivos que iba a rechazar por proporción.
+   *
+   * <p>Lo que distingue a una de otra es {@code desdeGaleria}, que solo suma una marca de
+   * atención para el moderador; nunca quita una validación.
+   *
+   * <p>Si el recorte no llega a 900 x 1200, esto rechaza con `ImagenNoNormalizable` **antes
+   * de gastar la subida**, que es lo que RN-019 pide del formulario.
+   */
   readonly uploadShot = injectMutation(() => ({
-    mutationFn: (toma: { id: string; posicion: number; imagen: Blob }) =>
-      this.api.subirToma(toma.id, toma.posicion, toma.imagen),
+    mutationFn: async (toma: {
+      id: string;
+      posicion: number;
+      imagen: Blob;
+      desdeGaleria: boolean;
+    }): Promise<Listing> => {
+      const normalizada = await this.normalizador.normalizar(toma.imagen);
+
+      this.avance.set({ posicion: toma.posicion, fraccion: 0 });
+
+      try {
+        return await this.subirConAvance(toma.id, toma.posicion, normalizada, toma.desdeGaleria);
+      } finally {
+        this.avance.set(null);
+      }
+    },
     retry: false,
     onSuccess: (publicacion: Listing) => this.refrescar(publicacion),
   }));
@@ -184,5 +225,36 @@ export class ListingStore {
   private refrescar(publicacion: Listing): void {
     this.consultas.setQueryData(queryKeys.one(publicacion.id), publicacion);
     void this.consultas.invalidateQueries({ queryKey: queryKeys.mine });
+  }
+
+  /**
+   * Consume el flujo de avance y devuelve la publicación del último evento.
+   *
+   * <p>Aquí muere el observable: el adaptador lo expone porque es lo que sabe emitir
+   * progreso, y de esta capa hacia arriba todo son promesas y señales, que es lo que los
+   * componentes consumen. La librería no cruza (frontend/CLAUDE.md).
+   */
+  private subirConAvance(
+    id: string,
+    posicion: number,
+    imagen: Blob,
+    desdeGaleria: boolean,
+  ): Promise<Listing> {
+    return new Promise<Listing>((listo, fallo) => {
+      this.api.subirToma(id, posicion, imagen, desdeGaleria).subscribe({
+        next: (paso) => {
+          if (paso.publicacion !== null) {
+            listo(paso.publicacion);
+            return;
+          }
+          this.avance.set({ posicion, fraccion: paso.fraccion });
+        },
+        error: (causa: unknown) => fallo(causa),
+        // Una respuesta 201 sin cuerpo dejaría la promesa colgada para siempre, y con ella
+        // la barra de progreso. No debería ocurrir —el servidor devuelve la publicación—,
+        // pero una promesa que nadie resuelve no se distingue de una pantalla congelada.
+        complete: () => fallo(new Error('La subida terminó sin devolver la publicación')),
+      });
+    });
   }
 }

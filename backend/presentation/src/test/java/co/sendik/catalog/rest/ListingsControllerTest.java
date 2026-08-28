@@ -434,6 +434,47 @@ class ListingsControllerTest {
         verify(subirImagen).execute(comando.capture());
         assertThat(comando.getValue().posicion()).isEqualTo(3);
         assertThat(comando.getValue().clase()).isEqualTo(ImageKind.SELLER_SHOT);
+    }
+
+    /**
+     * Omitir la marca vale por "desde la galeria", que es la lectura conservadora.
+     *
+     * <p>Hasta HU-003 el unico cliente la mandaba siempre en verdadero y este valor por
+     * omision no se ejercia nunca. Desde que existe el asistente de captura hay quien manda
+     * falso, y entonces **omitir el parametro pasa a equivaler a declarar "esto lo tome con
+     * la camara"** sin que nadie pueda desmentirlo. Un cliente viejo en cache, un script o
+     * alguien curioso no consiguen asi quitarse la marca de atencion.
+     *
+     * <p>Estaba fijado de refilon dentro de la prueba de la posicion, que es donde un
+     * cambio de criterio pasa inadvertido. Aqui es lo unico que se afirma.
+     */
+    @Test
+    void deberia_suponer_galeria_cuando_no_se_declara_el_origen() throws Exception {
+        when(subirImagen.execute(any())).thenReturn(CatalogoDelBorde.borrador(VENDEDOR));
+
+        mvc.perform(multipart("/api/v1/listings/" + java.util.UUID.randomUUID() + "/images")
+                        .file(new MockMultipartFile("archivo", "toma.jpg", "image/jpeg", JPEG))
+                        .param("position", "0"))
+                .andExpect(status().isCreated());
+
+        ArgumentCaptor<UploadListingImageCommand> comando = ArgumentCaptor.forClass(UploadListingImageCommand.class);
+        verify(subirImagen).execute(comando.capture());
+        assertThat(comando.getValue().desdeGaleria()).isTrue();
+    }
+
+    /** Y el asistente de captura si puede declarar que la tomo con la camara (HU-003). */
+    @Test
+    void deberia_aceptar_que_la_toma_vino_de_la_camara() throws Exception {
+        when(subirImagen.execute(any())).thenReturn(CatalogoDelBorde.borrador(VENDEDOR));
+
+        mvc.perform(multipart("/api/v1/listings/" + java.util.UUID.randomUUID() + "/images")
+                        .file(new MockMultipartFile("archivo", "toma.jpg", "image/jpeg", JPEG))
+                        .param("position", "0")
+                        .param("fromGallery", "false"))
+                .andExpect(status().isCreated());
+
+        ArgumentCaptor<UploadListingImageCommand> comando = ArgumentCaptor.forClass(UploadListingImageCommand.class);
+        verify(subirImagen).execute(comando.capture());
         assertThat(comando.getValue().desdeGaleria()).isFalse();
     }
 

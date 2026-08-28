@@ -57,6 +57,7 @@ panel que los usa llega en Fase 4 (`docs/producto/alcance.md`).
 | Motivo de rechazo de publicación | `ListingRejectionReason` | Lista cerrada con la que el moderador rechaza una publicación (RN-022). **No es** el `RejectionReason` de la verificación de vendedor: son dos listas distintas para dos decisiones distintas. |
 | Toma | `Shot` | Una fotografía individual del conjunto de captura. |
 | Tomas canónicas | `CanonicalShots` | Frontal, lateral derecha, lateral izquierda y posterior. |
+| Asistente de captura | `CaptureWizard` | Pantalla que guía al vendedor por las ocho tomas de la secuencia, con silueta, cuadrícula y nivel, y recorta cada una a 3:4 antes de subirla. No aplica a tecnología sellada, que son cuatro tomas del empaque (RN-065). |
 | Secuencia 360 | `SpinSequence` | Conjunto ordenado de tomas que alimenta el visor giratorio. |
 | Visor 360 | `SpinViewer` | Componente que simula el giro de la prenda. |
 

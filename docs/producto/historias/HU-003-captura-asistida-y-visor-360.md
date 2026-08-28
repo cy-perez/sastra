@@ -1,6 +1,6 @@
 # HU-003 — Captura asistida y visor 360º
 
-**Fase:** 2 | **Estado:** hecha el 28 de agosto de 2026, con una salvedad anotada al final.
+**Fase:** 2 | **Estado:** hecha el 28 de agosto de 2026.
 **Reglas:** RN-016 a RN-019
 
 > **Es enteramente frontend.** El backend ya tenía todo lo que hacía falta desde HU-007:
@@ -131,27 +131,45 @@ los mismos para cualquier foto del catálogo.
 - Extremo a extremo con cámara simulada por Playwright.
 - Verificación de accesibilidad del visor con lector de pantalla.
 
-## Lo que quedó fuera, y por qué
+## El recorrido de extremo a extremo, y por qué llegó al final
 
-**El recorrido de extremo a extremo con cámara simulada.** Es la única prueba requerida que
-no está. No se escribió a ciegas a propósito: `e2e-completo/` necesita PostgreSQL por Docker
-y el jar del backend con Java 25, y en la máquina donde se implementó esto el demonio de
-Docker no estaba levantado y el JDK instalado era el 24. Escribir un recorrido de Playwright
-sin poder ejecutarlo una sola vez es entregar código de prueba que nadie ha visto pasar, y
-este proyecto ya sabe lo que cuesta eso: HU-008 dedicó media historia a explicar por qué
-tres de sus seis pruebas nacieron en rojo.
+`e2e-completo/captura-y-visor.spec.ts`, escrito y **ejecutado** el 28 de agosto de 2026, el
+mismo día que el resto de la historia y unas horas después. Cuando se implementó el asistente
+no se pudo escribir: `e2e-completo/` necesita PostgreSQL por Docker y el jar del backend con
+Java 25, y en aquel momento el demonio de Docker no estaba levantado y el JDK del `PATH` era
+el 24. No se escribió a ciegas a propósito. Un recorrido de Playwright que nadie ha visto
+pasar es código de prueba sin valor, y este proyecto ya sabe lo que cuesta eso: HU-008 dedicó
+media historia a explicar por qué tres de sus seis pruebas nacieron en rojo.
 
-Lo que ese recorrido tiene que cubrir cuando se escriba, y que hoy **no verifica nada**:
+Lo que desbloqueó nada tuvo que ver con el código: Docker levantado, y el Java 25 que Gradle
+ya se había descargado solo a `~/.gradle/jdks`, que es justo donde `arrancar-backend.mjs` lo
+busca. El `java` del `PATH` sigue siendo el 24 y da igual.
 
-- El criterio 18 de punta a punta: que la ficha salga del servidor con el fotograma frontal
-  y su `alt`. La prueba de componente corre en un TestBed de cliente y pasaría igual si el
-  visor nunca llegara a renderizarse en servidor.
-- El recorte sobre píxeles de verdad. `photo-crop.spec.ts` prueba la aritmética y el worker
-  está doblado en todo lo demás, así que nadie ha visto una imagen real entrar y salir
-  recortada a 3:4.
-- Que la cámara falsa de Chromium dé una resolución que pase RN-019. Es la razón por la que
-  `abrir()` pide ahora 1200 x 1600 en vertical, y esa hipótesis no está comprobada.
+Las tres cosas que hasta entonces no verificaba nada, y que solo se pueden verificar ahí:
 
-**El glosario.** «Asistente de captura» viene del título de esta historia y se usa como
-concepto en la interfaz y en los textos. Si es vocabulario del producto, entra en
-`docs/producto/glosario.md`; no se agregó por cuenta propia.
+- **El criterio 18 de punta a punta.** Se pide la ficha por fuera del navegador y se busca el
+  `<img>` del visor en el HTML crudo, con el `alt` de ese producto dentro de la misma
+  etiqueta. La aserción va sobre la etiqueta y no sobre el documento entero: `visor__foto`
+  aparece también en el CSS crítico que Angular incrusta en la cabecera, así que buscar la
+  clase suelta habría pasado igual con el visor sin renderizar. La prueba de componente corre
+  en un TestBed de cliente y pasaría aunque el visor nunca llegara al servidor.
+- **El recorte sobre píxeles de verdad.** `naturalWidth` y `naturalHeight` del fotograma que
+  sirvió el backend: 900 × 1200 exactos, que es lo que deja el normalizador. Se mide sobre el
+  archivo y no sobre el `width` de la plantilla, que son esos mismos números fijos y estarían
+  ahí aunque la imagen midiera cualquier otra cosa. Es el viaje entero —cámara, worker,
+  subida, validación del servidor, disco y vuelta—, y `photo-crop.spec.ts` no podía verlo
+  porque prueba la aritmética con el worker doblado.
+- **Que la cámara falsa de Chromium pasa RN-019.** Era la hipótesis detrás de que `abrir()`
+  pida 1200 × 1600 en vertical, escrita sin poder comprobarla. Se afirma dentro de
+  `capturarLasOchoTomas`, que es quien tiene el `<video>` delante, y sobre el recorte a 3:4 de
+  lo que el dispositivo entrega, que es lo que RN-019 gobierna.
+
+El ayudante vive en `e2e-completo/camara.ts`, junto al de HU-002, y no comparte nada con él:
+aquel sube al primer campo pendiente de una pantalla con varios, este encadena ocho pasos de
+una máquina que decide ella cuál toca. Lo único que tienen en común es el dispositivo falso.
+Las tres suites que ya existían siguen subiendo sus ocho tomas por el campo de archivo, que
+para lo que prueban —moderación y catálogo— es el mismo estado en una fracción del tiempo:
+`publicarYEnviarARevision` recibe de dónde salen las tomas y por omisión es la galería.
+
+**El glosario.** «Asistente de captura» entró el 28 de agosto de 2026 en
+`docs/producto/glosario.md`, con `CaptureWizard` de nombre de código.

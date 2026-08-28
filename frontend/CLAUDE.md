@@ -170,9 +170,9 @@ Es requisito de aceptación, no un extra. Cada componente entra con:
 - Extremo a extremo con Playwright, en **dos suites** que no se mezclan:
   `e2e/` comprueba el HTML que sale del servidor sin llamar a la API (ADR-0006), y
   `e2e-completo/` levanta el backend y PostgreSQL de verdad y recorre los caminos
-  de cuentas, la verificación de vendedor y **el ciclo de publicación y moderación**
-  por la interfaz. La segunda existe porque la primera no puede ver un contrato roto
-  entre las dos mitades: el acuerdo sobre el código `CATALOG_LISTING_INVALID_STATE`
+  de cuentas, la verificación de vendedor, **el ciclo de publicación y moderación** y
+  la captura asistida de las ocho tomas por la interfaz. La segunda existe porque
+  la primera no puede ver un contrato roto entre las dos mitades: el acuerdo sobre el código `CATALOG_LISTING_INVALID_STATE`
   entre el backend y `ListingReviewStore` solo se comprueba ahí, porque una prueba de
   componente inventa ese código ella misma al simular la respuesta. La compra llega
   con su fase.

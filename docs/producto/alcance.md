@@ -92,9 +92,12 @@ Es la fase en curso desde el 21 de agosto de 2026.
   desde HU-007.
 - Visor 360º en la ficha de producto (HU-003). **Hecho el mismo día**, en `shared/ui`
   y sin ninguna librería. Se ofrece solo con la secuencia completa de ocho.
-  **Con una salvedad**: el recorrido de extremo a extremo con cámara simulada que la
-  historia pide sigue sin escribirse, y es lo único que puede verificar el criterio 18
-  y el recorte sobre píxeles de verdad. El motivo está en la historia.
+  La salvedad que quedaba —el recorrido de extremo a extremo con cámara simulada— **se cerró
+  ese mismo 28 de agosto de 2026**, unas horas después: `e2e-completo/captura-y-visor.spec.ts`
+  recorre las ocho tomas con la cámara falsa, aprueba, y comprueba sobre la ficha pública lo
+  que hasta entonces no verificaba nada —el criterio 18 en el HTML que sale del servidor y el
+  recorte a 3:4 sobre los píxeles que de verdad se guardaron—. Con eso la historia queda sin
+  deuda.
 - Publicación de producto con las cuatro tomas obligatorias y las intermedias, en
   las dos familias: moda —nueva y de segunda— y **tecnología, solo nueva**
   (RN-064). La tecnología se agregó al alcance el 24 de agosto de 2026 y entra en

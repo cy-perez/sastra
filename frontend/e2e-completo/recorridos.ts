@@ -1,7 +1,7 @@
 import { expect, type Page } from '@playwright/test';
 
 import { MODERADORA } from '../playwright.completo.config';
-import { tomarUnaFoto } from './camara';
+import { capturarLasOchoTomas, tomarUnaFoto } from './camara';
 import { esperarEnlace, enlacesVistos, rutaRelativa } from './correo-de-consola';
 import { pngDe } from './png';
 
@@ -27,6 +27,16 @@ export const RUTA_VERIFICACION = '/verificacion-de-vendedor';
 
 /** El mínimo de RN-019. Una más pequeña se rechaza y la prueba no llegaría a nada. */
 export const TOMA = () => ({ name: 'toma.png', mimeType: 'image/png', buffer: pngDe(900, 1200) });
+
+/**
+ * De donde salen las ocho tomas de una publicacion.
+ *
+ * <p>Por omision la galeria, que es lo que hacian las tres suites que ya existian y lo que
+ * les sirve: ninguna prueba la captura, y el campo de archivo llega al mismo sitio en una
+ * fraccion del tiempo. `camara` recorre el asistente de HU-003 paso por paso, y solo lo
+ * pide la suite que existe para probarlo.
+ */
+export type OrigenDeLasTomas = 'galeria' | 'camara';
 
 export const NOMBRE_MODERADORA = 'Quien Modera';
 
@@ -186,7 +196,11 @@ export async function dejarUnaVendedoraVerificada(page: Page, quien: string): Pr
 }
 
 /** Un borrador completo, con sus ocho tomas, enviado a revisión. */
-export async function publicarYEnviarARevision(page: Page, titulo: string): Promise<void> {
+export async function publicarYEnviarARevision(
+  page: Page,
+  titulo: string,
+  tomas: OrigenDeLasTomas = 'galeria',
+): Promise<void> {
   await page.goto(RUTA_PUBLICAR);
 
   // La categoria se elige antes de crear el borrador, y no es un capricho de navegacion:
@@ -255,11 +269,16 @@ export async function publicarYEnviarARevision(page: Page, titulo: string): Prom
     return cuerpo?.product?.shipping != null;
   });
 
-  // Las ocho tomas. Por el campo de archivo y no por la cámara: la cámara es de HU-003 y
-  // aquí lo que se prueba es el ciclo de moderación, no la captura.
-  for (let posicion = 0; posicion < 8; posicion++) {
-    await page.locator(`#toma-${posicion}`).setInputFiles(TOMA());
-    await expect(page.locator(`#toma-${posicion}`)).toHaveCount(0);
+  // Las ocho tomas. Por el campo de archivo salvo que se pida lo contrario: la cámara es
+  // de HU-003, y para las suites que prueban el ciclo de moderación o el catálogo es un
+  // rodeo de ocho capturas para llegar al mismo estado.
+  if (tomas === 'camara') {
+    await capturarLasOchoTomas(page);
+  } else {
+    for (let posicion = 0; posicion < 8; posicion++) {
+      await page.locator(`#toma-${posicion}`).setInputFiles(TOMA());
+      await expect(page.locator(`#toma-${posicion}`)).toHaveCount(0);
+    }
   }
 
   await page.getByRole('button', { name: 'Enviar a revisión' }).click();
@@ -285,9 +304,14 @@ export async function publicarYEnviarARevision(page: Page, titulo: string): Prom
  *
  * @returns el correo de la vendedora, para quien necesite volver a entrar como ella
  */
-export async function publicarYAprobar(page: Page, titulo: string, quien: string): Promise<string> {
+export async function publicarYAprobar(
+  page: Page,
+  titulo: string,
+  quien: string,
+  tomas: OrigenDeLasTomas = 'galeria',
+): Promise<string> {
   const correo = await dejarUnaVendedoraVerificada(page, quien);
-  await publicarYEnviarARevision(page, titulo);
+  await publicarYEnviarARevision(page, titulo, tomas);
 
   await entrarComoModeradora(page);
   await page.goto('/moderacion/publicaciones');

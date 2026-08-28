@@ -1,5 +1,6 @@
 import { NgOptimizedImage } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
 
 import {
@@ -10,6 +11,7 @@ import {
   type Listing,
   type ListingImage,
 } from '../../../shared/domain/listing';
+import { admiteAsistente } from '../domain/capture-steps';
 import { canonicasQueFaltan, gradosDe, tomasQueFaltan } from '../domain/publish-rules';
 
 /** Una casilla de la rejilla: su posición, sus grados y la toma que tenga. */
@@ -38,7 +40,7 @@ export interface Casilla {
  */
 @Component({
   selector: 'sendik-shots-field',
-  imports: [NgOptimizedImage, TranslocoPipe],
+  imports: [NgOptimizedImage, RouterLink, TranslocoPipe],
   templateUrl: './shots-field.html',
   styleUrl: './shots-field.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -59,6 +61,9 @@ export class ShotsField {
       toma: tomaEn(this.publicacion(), posicion),
     })),
   );
+
+  /** HU-003: el asistente solo se ofrece a la secuencia de ocho (RN-065). */
+  protected readonly conAsistente = computed(() => admiteAsistente(this.publicacion()));
 
   protected readonly puestas = computed(() => tomasDelVendedor(this.publicacion()).length);
   protected readonly exigidas = computed(() => this.publicacion().requiredShots);

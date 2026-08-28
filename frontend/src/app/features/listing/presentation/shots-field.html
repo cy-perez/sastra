@@ -21,6 +21,23 @@
     }
   </p>
 
+  <!--
+    La entrada al asistente de HU-003. Solo para la secuencia de ocho: la tecnologia
+    declarada sellada son cuatro tomas del empaque y no hay giro que guiar (RN-065), asi
+    que ahi esta rejilla sigue siendo la unica via.
+
+    Un enlace y no un boton: lleva a otra ruta, y quien quiera abrirlo en otra pestana debe
+    poder. La rejilla se queda para repetir una toma suelta, que es el criterio 6.
+  -->
+  @if (conAsistente()) {
+    <p class="tomas__asistente">
+      <a class="accion tipo-secundario" [routerLink]="['/publicar', publicacion().id, 'capturar']">
+        {{ 'listing.capture.entry.action' | transloco }}
+      </a>
+      <span class="tipo-secundario">{{ 'listing.capture.entry.hint' | transloco }}</span>
+    </p>
+  }
+
   <ul class="tomas__rejilla">
     @for (casilla of casillas(); track casilla.posicion) {
       <li class="tomas__casilla" [class.tomas__casilla--canonica]="casilla.canonica">

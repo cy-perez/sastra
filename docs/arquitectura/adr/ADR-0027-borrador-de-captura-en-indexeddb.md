@@ -9,10 +9,13 @@ El criterio 7 de HU-003 dice: «El avance se guarda localmente: cerrar el navega
 accidente no obliga a empezar de nuevo». La historia pide el comportamiento y no dice
 dónde.
 
-Lo que hay que guardar son las tomas ya congeladas y todavía no subidas. Cada una es un
-JPEG normalizado de hasta 500 KB (criterio 9), y son ocho (RN-017). El peor caso son
-**cuatro megabytes de datos binarios**, en un teléfono, mientras la persona está a mitad de
-una tarea que le lleva varios minutos.
+Lo que hay que guardar son las tomas ya congeladas y todavía no subidas: el fotograma tal
+como sale de la cámara, antes de que el normalizador lo recorte. Se guarda el original y no
+el recortado porque el recorte ocurre dentro de la subida —es el mismo camino para la
+cámara y para la galería— y adelantarlo aquí obligaría a recortar dos veces. A cambio cada
+toma pesa más: un fotograma de 1920 × 1080 a calidad alta ronda el medio megabyte, y son
+ocho (RN-017). El peor caso son **varios megabytes de datos binarios**, en un teléfono,
+mientras la persona está a mitad de una tarea que le lleva varios minutos.
 
 El proyecto no guardaba nada parecido hasta ahora. Lo único que se guarda en el dispositivo
 es la preferencia de tema y la de idioma: dos cadenas cortas.
@@ -20,11 +23,11 @@ es la preferencia de tema y la de idioma: dos cadenas cortas.
 ## Opciones
 
 **`localStorage`.** Es lo que el proyecto ya usa para el tema, así que no estrena nada.
-Tiene dos problemas y el segundo es fatal: es **síncrono**, así que escribir cuatro
+Tiene dos problemas y el segundo es fatal: es **síncrono**, así que escribir varios
 megabytes bloquea el hilo principal justo en el asistente que se montó en un worker para no
 bloquearlo; y **almacena solo texto**, así que un `Blob` hay que codificarlo en base64, que
-crece un tercio. Cinco megas y medio de cuota contra cinco y pico de datos codificados: no
-cabe, y cuando no cabe lanza.
+crece un tercio. Cinco megas de cuota contra unos cuantos de datos ya inflados: no cabe, y
+cuando no cabe lanza.
 
 **No guardar nada y rehacer la secuencia.** Cuesta cero y cumple todo menos el criterio que
 lo pide. Se descartó por eso.
@@ -54,9 +57,9 @@ publicar.
 ## Motivo
 
 **Es la única opción que aguanta el tamaño real del dato.** Las otras dos que guardan o no
-caben o bloquean. Cuatro megabytes en binario es poco para IndexedDB y demasiado para el
+caben o bloquean. Unos megabytes en binario son poco para IndexedDB y demasiado para el
 almacén de clave y valor, y esa diferencia no es de matiz: `localStorage` **lanza** al
-pasarse de cuota, y lo haría en la toma siete de ocho.
+pasarse de cuota, y lo haría a mitad de la secuencia.
 
 **Guardar no puede ser un modo de fallo nuevo.** Una ventana privada, un navegador con el
 almacenamiento de sitio bloqueado o un disco lleno hacen que esto no funcione, y las tres
@@ -80,8 +83,8 @@ dos a medias no puede ver las tomas de una aparecer en la otra.
   que se usa de ella, y las promesas ya envuelven lo que hacía falta.
 - Quedan datos del vendedor en su propio dispositivo. **No son datos personales de terceros
   ni sensibles**: son fotos de un producto que esa misma persona está a punto de publicar en
-  abierto. Aun así el borrador se limpia al terminar la secuencia, para no dejar cuatro
-  megabytes olvidados por publicación.
+  abierto. Aun así cada toma se borra en cuanto sube, para no dejar megabytes olvidados por
+  publicación.
 - El borrador es por dispositivo y por navegador. Empezar en el teléfono y seguir en el
   computador no funciona, y no se pretende: la captura es un acto con la cámara en la mano.
 - Un borrador de una publicación que acabe borrada se queda huérfano hasta que el navegador

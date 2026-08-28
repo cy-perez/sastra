@@ -3,8 +3,9 @@ import { Injectable } from '@angular/core';
 /**
  * Una toma congelada que todavía no llegó al servidor.
  *
- * <p>Se guarda ya normalizada —recortada a 3:4 y por debajo de 500 KB—: es lo que se va a
- * subir, y volver a normalizarla al retomar sería repetir el trabajo caro.
+ * <p>Se guarda **tal como sale de la cámara**, antes del recorte. El recorte ocurre dentro
+ * de la subida, que es el mismo camino para la cámara y para la galería; adelantarlo aquí
+ * obligaría a recortar dos veces (ADR-0027).
  */
 export interface TomaGuardada {
   readonly posicion: number;
@@ -19,9 +20,9 @@ export interface TomaGuardada {
  * a ser la fuente y aquí se borra.
  *
  * <p>**En IndexedDB y no en el almacén de clave y valor del navegador** (ADR-0027): ocho
- * JPEG de hasta 500 KB son cuatro megabytes, aquel da unos cinco en total y **almacena
+ * fotogramas de cámara son varios megabytes, aquel da unos cinco en total y **almacena
  * texto**, así que codificarlos crecería un tercio más y no cabrían. IndexedDB guarda
- * `Blob` tal cual.
+ * `Blob` tal cual, y sin bloquear el hilo principal.
  *
  * <p>Todo método aguanta que el almacén no exista o falle. Una ventana privada, un
  * navegador con el almacenamiento bloqueado o el disco lleno hacen que esto no funcione, y
@@ -82,15 +83,6 @@ export class CaptureDraftStore {
     });
 
     return guardadas.sort((una, otra) => una.posicion - otra.posicion);
-  }
-
-  /** Tira el borrador entero. Se llama al terminar la secuencia. */
-  async limpiar(publicacionId: string): Promise<void> {
-    const guardadas = await this.recuperar(publicacionId);
-
-    for (const toma of guardadas) {
-      await this.olvidar(publicacionId, toma.posicion);
-    }
   }
 
   /**

@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { ShotsField } from './shots-field';
@@ -64,7 +65,9 @@ describe('ShotsField', () => {
     [...fixture.nativeElement.querySelectorAll('.tomas__casilla')] as HTMLElement[];
 
   beforeEach(() => {
-    TestBed.configureTestingModule({});
+    // El router hace falta desde HU-003: la rejilla enlaza al asistente de captura con
+    // `routerLink`, y sin rutas registradas la directiva no se puede crear.
+    TestBed.configureTestingModule({ providers: [provideRouter([])] });
   });
 
   /** RN-017: ocho, una cada 45 grados. */

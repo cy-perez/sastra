@@ -1059,6 +1059,62 @@
     },
     "edit": {
       "title": "Tu publicación"
+    },
+    "capture": {
+      "entry": {
+        "action": "Tomar las fotos con la cámara",
+        "hint": "Te guiamos las ocho tomas, una por cada giro.",
+        "resume": "Sigue donde ibas: te faltan {{cuantas}}.",
+        "unsupported": "Este dispositivo no tiene cámara disponible. Puedes subir las fotos desde tu galería."
+      },
+      "shot": {
+        "front": "Frente",
+        "frontRight": "Frente y lado derecho",
+        "right": "Lado derecho",
+        "backRight": "Espalda y lado derecho",
+        "back": "Espalda",
+        "backLeft": "Espalda y lado izquierdo",
+        "left": "Lado izquierdo",
+        "frontLeft": "Frente y lado izquierdo"
+      },
+      "progress": {
+        "label": "Toma {{numero}} de {{total}}",
+        "aria": "{{hechas}} de {{total}} tomas listas",
+        "canonical": "Esta no puede faltar",
+        "done": "Ya tienes las ocho. Revísalas y súbelas."
+      },
+      "level": {
+        "ok": "Nivelado",
+        "tilted": "Endereza el teléfono para tomar la foto.",
+        "tiltedHint": "Está inclinado más de 5 grados y las tomas quedarían desalineadas."
+      },
+      "sensors": {
+        "request": "Activar el nivel",
+        "requestHint": "Usamos el sensor de movimiento para avisarte si el teléfono está inclinado. No sale del dispositivo.",
+        "denied": "Seguimos sin el nivel. Las tomas pueden quedar desalineadas entre sí."
+      },
+      "gallery": {
+        "action": "Subir desde la galería",
+        "hint": "La recortamos igual que si la hubieras tomado aquí.",
+        "attention": "Las fotos que subes desde la galería pasan una revisión más atenta."
+      },
+      "rejected": {
+        "RESOLUCION_INSUFICIENTE": "Esta foto es muy pequeña. Necesitamos al menos 900 × 1200 píxeles después de recortarla a vertical.",
+        "NO_SE_PUDO_COMPRIMIR": "No pudimos preparar esta foto. Intenta con otra.",
+        "IMAGEN_ILEGIBLE": "No pudimos leer este archivo. Asegúrate de que sea una imagen."
+      },
+      "upload": {
+        "progress": "Subiendo {{porcentaje}}%",
+        "retry": "Reintentar esta toma",
+        "failed": "No se pudo subir esta toma.",
+        "done": "Listo"
+      },
+      "close": "Salir del asistente",
+      "take": "Tomar la foto",
+      "retake": "Repetir esta toma",
+      "next": "Siguiente",
+      "previous": "Anterior",
+      "finish": "Terminar"
     }
   },
   "listingReview": {
@@ -1175,6 +1231,13 @@
       "notFound": "No encontramos a este vendedor.",
       "loading": "Cargando el perfil",
       "soldBy": "Vendido por"
+    },
+    "viewer": {
+      "label": "Vista giratoria del producto",
+      "instructions": "Arrastra para girar, o usa las flechas del teclado.",
+      "loading": "Cargando la vista giratoria",
+      "frame": "Vista a {{grados}} grados",
+      "fallbackAlt": "{{titulo}}, vista frontal"
     }
   }
 }

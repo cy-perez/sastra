@@ -213,6 +213,21 @@ export const routes: Routes = [
       import('./features/listing/presentation/publish-page').then((m) => m.PublishPage),
   },
   {
+    // HU-003. El asistente de las ocho tomas, colgado del formulario que ya existe.
+    //
+    // Ruta propia y no un dialogo sobre `/publicar/:id`: la camara ocupa el alto entero en
+    // un telefono, el boton de atras tiene que cerrarla, y el paso en curso sobrevive a que
+    // la pantalla rote, que es uno de los casos borde de la historia.
+    //
+    // Comparte los metadatos de `/publicar` a proposito: es la misma tarea partida en dos
+    // pantallas, y no hay nada que un buscador deba encontrar aqui.
+    path: 'publicar/:id/capturar',
+    title: 'meta.publish.title',
+    data: { descriptionKey: 'meta.publish.description' },
+    loadComponent: () =>
+      import('./features/listing/presentation/capture-wizard').then((m) => m.CaptureWizard),
+  },
+  {
     path: 'mis-publicaciones',
     title: 'meta.myListings.title',
     data: { descriptionKey: 'meta.myListings.description' },

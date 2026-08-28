@@ -75,6 +75,45 @@ Cada regla tiene identificador. Úsalo en el código y en las pruebas:
   Un moderador sí puede verificarse como vendedor —RN-010 no lo prohíbe—; lo
   que no puede es ser quien decida sobre su propia solicitud. La resuelve otro.
 
+- **RN-069** El sello se revoca por uno de estos cinco motivos, y por ninguno más.
+  Lista cerrada, por lo mismo que la del rechazo: el motivo se traduce, se le muestra
+  a la persona y se puede medir cuál se usa más.
+
+  | Motivo | Código | Cuándo se usa |
+  |---|---|---|
+  | El documento no corresponde a quien lo presentó | `DOCUMENT_NOT_ITS_HOLDER` | Se comprueba, después de otorgado el sello, que la persona del documento no es la de la cuenta |
+  | La cuenta bancaria no es del titular | `BANK_ACCOUNT_NOT_HOLDER` | RN-012, detectado después de aprobar |
+  | Publicó lo prohibido de forma reiterada | `REPEATED_PROHIBITED_LISTINGS` | RN-024, y más de una vez: una sola publicación se baja, no cuesta el sello |
+  | Lo pidió la propia persona | `HOLDER_REQUEST` | Deja de vender por voluntad propia. No es cerrar la cuenta, que es RN-009 y se hace sin pedirle permiso a nadie |
+  | Ya no cumple los requisitos | `REQUIREMENTS_NO_LONGER_MET` | Último recurso, cuando lo ocurrido no es ninguno de los cuatro anteriores |
+
+  **No es la lista del rechazo y no se mezclan**, igual que no se mezclan la de
+  publicación y la de verificación (glosario). Rechazar juzga una solicitud que aún
+  no se aprobó; revocar se lo quita a alguien que ya vende. Reutilizar `RejectionReason`
+  aquí significa decirle «fotos ilegibles» a quien pierde el sello por otra cosa.
+
+  **Los motivos describen hechos, no delitos.** Ninguno dice «fraude» ni
+  «suplantación», y no es un eufemismo. Es la misma decisión que ya tomó el motivo
+  genérico de rechazo en HU-002: Sendik no consulta ninguna fuente judicial,
+  `docs/operacion/datos-personales.md` no tiene categoría para una calificación así, y
+  el motivo se guarda y viaja en un correo a la persona. Decir lo que se comprobó es
+  exacto y se puede sostener; nombrar el delito es una acusación que este sistema no
+  está en condiciones de hacer.
+
+  `REQUIREMENTS_NO_LONGER_MET` es el último recurso y no el primero. Si se convierte en
+  el motivo de la mayoría de las revocaciones, lo que falta es un motivo, no una nota:
+  se agrega a esta lista.
+
+  El motivo es obligatorio y la nota es opcional. La nota se rige por lo mismo que en
+  el rechazo: viaja a la persona y nunca lleva información judicial ni datos de un
+  tercero.
+
+  Revocar **no baja las publicaciones** de esa persona. Lo dice RN-013 y se le advierte
+  a quien revoca antes de confirmar: lo que estaba visible sigue visible, y retirarlo es
+  otra decisión, una por una, con los motivos de RN-024.
+
+  Como en RN-059, la revocación queda registrada con fecha, actor, motivo y nota.
+
 ## Publicación
 
 - **RN-015** Toda publicación pasa por moderación antes de ser visible. Sin

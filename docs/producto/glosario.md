@@ -44,6 +44,7 @@ panel que los usa llega en Fase 4 (`docs/producto/alcance.md`).
 | Garantía del fabricante | `ManufacturerWarranty` | Meses de garantía que el dispositivo trae de fábrica. La declara el vendedor y responde el vendedor. **No es el Respaldo** y las dos palabras no se mezclan (RN-067). |
 | Publicación | `Listing` | El producto junto a su estado de moderación y visibilidad. |
 | Moderación | `Moderation` | Revisión de una publicación antes de que sea visible. Sin excepciones (RN-015). |
+| Retiro de publicación | `ListingRemoval` | El moderador baja algo que ya era visible, por RN-024. Termina en `ARCHIVED`, igual que archivar, pero no es lo mismo: el vendedor archiva lo suyo y no da explicaciones; aquí el motivo es obligatorio porque va en el correo que avisa. |
 | Condición | `Condition` | Nuevo, como nuevo, buen estado, con detalles. El vendedor declara una de las cuatro; no hay una quinta. **Cuáles admite depende de la familia:** moda las cuatro, tecnología solo nueva (RN-064). |
 | De segunda | `SecondHand` | Todo lo que no es nuevo, es decir las otras tres condiciones. Es el par comercial de "nuevo" en menús, filtros y textos. Solo aplica a moda. |
 | Borrador | `Draft` | Publicación que el vendedor todavía está armando. No es visible para nadie más y se guarda incompleta. |
@@ -127,6 +128,8 @@ historia, en «Datos de referencia».
 | Tipo de documento | `IdentityDocumentType` | Cédula de ciudadanía, cédula de extranjería o Permiso por Protección Temporal. Sin pasaporte. |
 | Tipo de cuenta | `BankAccountType` | Ahorros, corriente o depósito electrónico. El tercero es el de las billeteras, que no son cuentas de ahorros aunque se usen igual, y la Fase 3 necesita distinguirlo para desembolsar. |
 | Motivo de rechazo | `RejectionReason` | Lista cerrada. El moderador elige uno y puede añadir una nota, que viaja a la persona y nunca lleva información judicial ni de terceros. |
+| Revocación | `Revocation` | Acto por el que un moderador le quita el sello a quien ya lo tenía. No es un rechazo tardío: el rechazo decide sobre una solicitud y la revocación sobre alguien que ya vende (RN-013, RN-069). |
+| Motivo de revocación | `RevocationReason` | Lista cerrada de cinco valores (RN-069). **No es** el `RejectionReason` del rechazo, y no se mezclan. Sus valores describen lo que se comprobó y nunca lo califican como delito. |
 | Entidad financiera | `Bank` | Banco o billetera donde el vendedor recibe. Vive en tabla con código estable, no en una enumeración del código. |
 
 **«Depósito electrónico» y no «billetera»** en el tipo de cuenta, porque es lo que

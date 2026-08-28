@@ -7,6 +7,7 @@ import co.sendik.identity.model.BirthDate;
 import co.sendik.identity.model.DisplayName;
 import co.sendik.identity.model.Email;
 import co.sendik.identity.model.RejectionReason;
+import co.sendik.identity.model.RevocationReason;
 import co.sendik.identity.model.User;
 import co.sendik.identity.model.UserId;
 import co.sendik.identity.model.UserLocale;
@@ -122,7 +123,7 @@ class AsyncMailSenderTest {
         }
 
         @Override
-        public void enviarAvisoDeVerificacionRevocada(User titular, RejectionReason motivo, String nota) {
+        public void enviarAvisoDeVerificacionRevocada(User titular, RevocationReason motivo, String nota) {
             anotar("verificacion-revocada");
         }
 

@@ -9,6 +9,7 @@ import co.sendik.identity.model.IdentityDocumentNumber;
 import co.sendik.identity.model.IdentityDocumentType;
 import co.sendik.identity.model.LegalName;
 import co.sendik.identity.model.RejectionReason;
+import co.sendik.identity.model.RevocationReason;
 import co.sendik.identity.model.SellerVerification;
 import co.sendik.identity.model.SellerVerificationId;
 import co.sendik.identity.model.UserId;
@@ -49,7 +50,7 @@ public class JdbcSellerVerificationRepository implements SellerVerificationRepos
                    selfie_key,
                    bank_code, bank_account_type, bank_account_cipher,
                    bank_account_key_version, bank_account_holder_name,
-                   attempts, rejection_reason, rejection_note,
+                   attempts, rejection_reason, revocation_reason, rejection_note,
                    created_at, updated_at
             FROM seller_verifications
             """;
@@ -82,7 +83,7 @@ public class JdbcSellerVerificationRepository implements SellerVerificationRepos
                             selfie_key,
                             bank_code, bank_account_type, bank_account_cipher,
                             bank_account_key_version, bank_account_last_four, bank_account_holder_name,
-                            attempts, rejection_reason, rejection_note,
+                            attempts, rejection_reason, revocation_reason, rejection_note,
                             created_at, updated_at)
                         VALUES (
                             :id, :usuario, :estado,
@@ -92,7 +93,7 @@ public class JdbcSellerVerificationRepository implements SellerVerificationRepos
                             :selfie,
                             :banco, :tipoCuenta, :cuentaCifrada,
                             :versionCuenta, :ultimosCuenta, :titularCuenta,
-                            :intentos, :motivo, :nota,
+                            :intentos, :motivo, :motivoRevocacion, :nota,
                             :creado, :actualizado)
                         ON CONFLICT (user_id) DO UPDATE SET
                             status                      = EXCLUDED.status,
@@ -113,6 +114,7 @@ public class JdbcSellerVerificationRepository implements SellerVerificationRepos
                             bank_account_holder_name    = EXCLUDED.bank_account_holder_name,
                             attempts                    = EXCLUDED.attempts,
                             rejection_reason            = EXCLUDED.rejection_reason,
+                            revocation_reason           = EXCLUDED.revocation_reason,
                             rejection_note              = EXCLUDED.rejection_note,
                             updated_at                  = EXCLUDED.updated_at
                         """)
@@ -160,6 +162,11 @@ public class JdbcSellerVerificationRepository implements SellerVerificationRepos
                         verificacion.rejectionReason() == null
                                 ? null
                                 : verificacion.rejectionReason().name())
+                .param(
+                        "motivoRevocacion",
+                        verificacion.revocationReason() == null
+                                ? null
+                                : verificacion.revocationReason().name())
                 .param("nota", verificacion.rejectionNote())
                 .param("creado", Timestamp.from(verificacion.createdAt()))
                 .param("actualizado", Timestamp.from(verificacion.updatedAt()))
@@ -228,6 +235,7 @@ public class JdbcSellerVerificationRepository implements SellerVerificationRepos
                 leerCuenta(fila),
                 fila.getInt("attempts"),
                 motivo(fila.getString("rejection_reason")),
+                motivoDeRevocacion(fila.getString("revocation_reason")),
                 fila.getString("rejection_note"),
                 fila.getTimestamp("created_at").toInstant(),
                 fila.getTimestamp("updated_at").toInstant());
@@ -274,5 +282,10 @@ public class JdbcSellerVerificationRepository implements SellerVerificationRepos
 
     private static @Nullable RejectionReason motivo(@Nullable String valor) {
         return valor == null ? null : RejectionReason.valueOf(valor);
+    }
+
+    /** Lo mismo sobre la otra lista cerrada. RN-069: son columnas distintas a proposito. */
+    private static @Nullable RevocationReason motivoDeRevocacion(@Nullable String valor) {
+        return valor == null ? null : RevocationReason.valueOf(valor);
     }
 }

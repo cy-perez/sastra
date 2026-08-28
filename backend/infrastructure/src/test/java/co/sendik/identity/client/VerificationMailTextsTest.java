@@ -3,6 +3,7 @@ package co.sendik.identity.client;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import co.sendik.identity.model.RejectionReason;
+import co.sendik.identity.model.RevocationReason;
 import co.sendik.identity.model.UserLocale;
 import java.util.EnumSet;
 import org.junit.jupiter.api.Test;
@@ -104,10 +105,12 @@ class VerificationMailTextsTest {
      */
     @Test
     void deberia_cumplir_RN_013_diciendo_que_lo_publicado_sigue_visible() {
-        assertThat(VerificationMailTexts.cuerpoDeRevocada(UserLocale.ES, RejectionReason.REQUIREMENTS_NOT_MET, null))
+        assertThat(VerificationMailTexts.cuerpoDeRevocada(
+                        UserLocale.ES, RevocationReason.REQUIREMENTS_NO_LONGER_MET, null))
                 .contains("sigue visible")
                 .contains("no puedes crear publicaciones");
-        assertThat(VerificationMailTexts.cuerpoDeRevocada(UserLocale.EN, RejectionReason.REQUIREMENTS_NOT_MET, null))
+        assertThat(VerificationMailTexts.cuerpoDeRevocada(
+                        UserLocale.EN, RevocationReason.REQUIREMENTS_NO_LONGER_MET, null))
                 .contains("stays visible");
     }
 
@@ -146,7 +149,7 @@ class VerificationMailTextsTest {
     @Test
     void deberia_escapar_tambien_en_la_revocacion() {
         String cuerpo = VerificationMailTexts.cuerpoDeRevocada(
-                UserLocale.EN, RejectionReason.REQUIREMENTS_NOT_MET, "check \"this\"");
+                UserLocale.EN, RevocationReason.REQUIREMENTS_NO_LONGER_MET, "check \"this\"");
 
         assertThat(cuerpo).contains("&quot;this&quot;");
     }

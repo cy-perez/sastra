@@ -26,12 +26,14 @@ import co.sendik.identity.model.IdentityDocumentNumber;
 import co.sendik.identity.model.IdentityDocumentType;
 import co.sendik.identity.model.LegalName;
 import co.sendik.identity.model.RejectionReason;
+import co.sendik.identity.model.RevocationReason;
 import co.sendik.identity.model.SellerVerification;
 import co.sendik.identity.model.SellerVerificationId;
 import co.sendik.identity.model.UserId;
 import co.sendik.identity.model.VerificationImage;
 import co.sendik.identity.usecase.ApproveVerificationUseCase;
 import co.sendik.identity.usecase.ListPendingVerificationsUseCase;
+import co.sendik.identity.usecase.ReadSellerVerificationUseCase;
 import co.sendik.identity.usecase.RejectVerificationUseCase;
 import co.sendik.identity.usecase.RevokeVerificationUseCase;
 import co.sendik.identity.usecase.ViewVerificationImageUseCase;
@@ -39,6 +41,8 @@ import co.sendik.shared.file.FileKey;
 import co.sendik.shared.rest.ApiExceptionHandler;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -87,6 +91,7 @@ class VerificationReviewControllerTest {
     private final ApproveVerificationUseCase aprobar = mock(ApproveVerificationUseCase.class);
     private final RejectVerificationUseCase rechazar = mock(RejectVerificationUseCase.class);
     private final RevokeVerificationUseCase revocar = mock(RevokeVerificationUseCase.class);
+    private final ReadSellerVerificationUseCase leer = mock(ReadSellerVerificationUseCase.class);
 
     private MockMvc mvc;
 
@@ -138,7 +143,7 @@ class VerificationReviewControllerTest {
     @BeforeEach
     void montarElBorde() {
         mvc = MockMvcBuilders.standaloneSetup(
-                        new VerificationReviewController(listado, imagenes, aprobar, rechazar, revocar))
+                        new VerificationReviewController(listado, imagenes, aprobar, rechazar, revocar, leer))
                 .setControllerAdvice(new ApiExceptionHandler())
                 .setCustomArgumentResolvers(new TokenDePrueba())
                 .build();
@@ -334,12 +339,74 @@ class VerificationReviewControllerTest {
     @Test
     void deberia_revocar_el_sello() throws Exception {
         when(revocar.execute(any()))
-                .thenReturn(enRevision().aprobar(AHORA).revocar(RejectionReason.REQUIREMENTS_NOT_MET, null, AHORA));
+                .thenReturn(enRevision().aprobar(AHORA).revocar(RevocationReason.DOCUMENT_NOT_ITS_HOLDER, null, AHORA));
 
         mvc.perform(post("/api/v1/verifications/" + SOLICITUD + "/revocation")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"reason\":\"REQUIREMENTS_NOT_MET\"}"))
+                        .content("{\"reason\":\"DOCUMENT_NOT_ITS_HOLDER\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("REVOKED"));
+    }
+
+    // --- RN-069 --------------------------------------------------------------
+
+    /**
+     * Las dos listas cerradas no son intercambiables, y el borde es donde se nota.
+     *
+     * <p>{@code REQUIREMENTS_NOT_MET} es un motivo de rechazo perfectamente valido y no
+     * existe en la lista de revocacion. Antes de HU-010 este cuerpo se aceptaba, porque el
+     * endpoint reutilizaba la enumeracion del rechazo.
+     */
+    @Test
+    void deberia_cumplir_RN_069_rechazando_un_motivo_de_la_lista_del_rechazo() throws Exception {
+        mvc.perform(post("/api/v1/verifications/" + SOLICITUD + "/revocation")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\":\"REQUIREMENTS_NOT_MET\"}"))
+                .andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    void deberia_exigir_un_motivo_al_revocar() throws Exception {
+        mvc.perform(post("/api/v1/verifications/" + SOLICITUD + "/revocation")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"note\":\"sin motivo\"}"))
+                .andExpect(status().is4xxClientError());
+    }
+
+    // --- HU-010: de un vendedor a su verificacion ----------------------------
+
+    @Test
+    void deberia_dar_la_verificacion_de_un_vendedor_por_su_cuenta() throws Exception {
+        when(leer.execute(any())).thenReturn(Optional.of(enRevision().aprobar(AHORA)));
+
+        mvc.perform(get("/api/v1/verifications/by-seller/" + UUID.randomUUID()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("VERIFIED"))
+                .andExpect(jsonPath("$.id").isNotEmpty());
+    }
+
+    /**
+     * Dos campos y ni uno mas.
+     *
+     * <p>Lo que esta ruta existe para contestar es "hay sello que revocar, y sobre que
+     * identificador". Si algun dia devuelve el documento o la cuenta, esta prueba lo dice:
+     * sin ella, un campo de mas se cuela y nadie lo nota hasta la auditoria.
+     */
+    @Test
+    void deberia_responder_solo_el_identificador_y_el_estado() throws Exception {
+        when(leer.execute(any())).thenReturn(Optional.of(enRevision().aprobar(AHORA)));
+
+        mvc.perform(get("/api/v1/verifications/by-seller/" + UUID.randomUUID()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$.documentNumberLastFour").doesNotExist())
+                .andExpect(jsonPath("$.bankAccount").doesNotExist());
+    }
+
+    @Test
+    void deberia_responder_404_cuando_esa_persona_nunca_empezo() throws Exception {
+        when(leer.execute(any())).thenReturn(Optional.empty());
+
+        mvc.perform(get("/api/v1/verifications/by-seller/" + UUID.randomUUID())).andExpect(status().isNotFound());
     }
 }

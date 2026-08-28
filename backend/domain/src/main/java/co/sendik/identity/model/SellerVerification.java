@@ -44,6 +44,18 @@ public final class SellerVerification {
     private final int attempts;
 
     private final @Nullable RejectionReason rejectionReason;
+
+    /**
+     * Por que se le quito el sello. RN-069.
+     *
+     * <p>Campo aparte y no el mismo que el del rechazo, aunque nunca esten los dos
+     * puestos a la vez: son dos listas cerradas distintas, y una sola columna de texto
+     * obligaria a quien lee a mirar el estado para saber que enumeracion parsear. El dia
+     * que ese estado no baste, lo que hay guardado deja de poder interpretarse.
+     */
+    private final @Nullable RevocationReason revocationReason;
+
+    /** La nota que acompana a la negativa, sea rechazo o revocacion. */
     private final @Nullable String rejectionNote;
 
     private final Instant createdAt;
@@ -58,6 +70,7 @@ public final class SellerVerification {
             @Nullable BankAccount bankAccount,
             int attempts,
             @Nullable RejectionReason rejectionReason,
+            @Nullable RevocationReason revocationReason,
             @Nullable String rejectionNote,
             Instant createdAt,
             Instant updatedAt) {
@@ -69,6 +82,7 @@ public final class SellerVerification {
         this.bankAccount = bankAccount;
         this.attempts = attempts;
         this.rejectionReason = rejectionReason;
+        this.revocationReason = revocationReason;
         this.rejectionNote = rejectionNote;
         this.createdAt = Objects.requireNonNull(createdAt, "La fecha de creacion es obligatoria");
         this.updatedAt = Objects.requireNonNull(updatedAt, "La fecha de actualizacion es obligatoria");
@@ -80,7 +94,7 @@ public final class SellerVerification {
      */
     public static SellerVerification iniciar(SellerVerificationId id, UserId userId, Instant ahora) {
         return new SellerVerification(
-                id, userId, VerificationStatus.IN_PROGRESS, null, null, null, 0, null, null, ahora, ahora);
+                id, userId, VerificationStatus.IN_PROGRESS, null, null, null, 0, null, null, null, ahora, ahora);
     }
 
     /** Reconstruye lo que hay guardado. Solo lo usa la capa de persistencia. */
@@ -93,6 +107,7 @@ public final class SellerVerification {
             @Nullable BankAccount bankAccount,
             int attempts,
             @Nullable RejectionReason rejectionReason,
+            @Nullable RevocationReason revocationReason,
             @Nullable String rejectionNote,
             Instant createdAt,
             Instant updatedAt) {
@@ -105,6 +120,7 @@ public final class SellerVerification {
                 bankAccount,
                 attempts,
                 rejectionReason,
+                revocationReason,
                 rejectionNote,
                 createdAt,
                 updatedAt);
@@ -203,12 +219,24 @@ public final class SellerVerification {
      * <p>Sus publicaciones activas siguen visibles y no puede crear nuevas, pero eso
      * no se decide aqui: es del contexto de catalogo, en Fase 2.
      */
-    public SellerVerification revocar(RejectionReason motivo, @Nullable String nota, Instant ahora) {
+    public SellerVerification revocar(RevocationReason motivo, @Nullable String nota, Instant ahora) {
         Objects.requireNonNull(motivo, "El motivo de la revocacion es obligatorio");
         exigirTransicion(VerificationStatus.REVOKED);
 
-        return copiaCon(
-                VerificationStatus.REVOKED, document, selfie, bankAccount, attempts, motivo, normalizar(nota), ahora);
+        Objects.requireNonNull(ahora, "La fecha es obligatoria");
+        return new SellerVerification(
+                id,
+                userId,
+                VerificationStatus.REVOKED,
+                document,
+                selfie,
+                bankAccount,
+                attempts,
+                null,
+                motivo,
+                normalizar(nota),
+                createdAt,
+                ahora);
     }
 
     /**
@@ -218,8 +246,9 @@ public final class SellerVerification {
      * corrija todo el formulario para negarle el envio al final es la misma negativa
      * con el trabajo perdido en medio.
      *
-     * <p>Se conservan los datos que habia. Lo que se limpia es el motivo del rechazo,
-     * que ya no describe el estado.
+     * <p>Se conservan los datos que habia. Lo que se limpia es el motivo de la negativa
+     * anterior —el del rechazo o el de la revocacion, segun de cual se venga—, que ya no
+     * describe el estado.
      */
     public SellerVerification reintentar(Instant ahora) {
         exigirTransicion(VerificationStatus.IN_PROGRESS);
@@ -276,6 +305,10 @@ public final class SellerVerification {
         return rejectionReason;
     }
 
+    public @Nullable RevocationReason revocationReason() {
+        return revocationReason;
+    }
+
     public @Nullable String rejectionNote() {
         return rejectionNote;
     }
@@ -330,6 +363,15 @@ public final class SellerVerification {
         return limpia.isEmpty() ? null : limpia;
     }
 
+    /**
+     * Cualquier paso que no sea revocar.
+     *
+     * <p>Conserva la firma que tenia antes de RN-069 y <strong>deja el motivo de
+     * revocacion en nulo</strong>, que es lo correcto para todos sus usos: aprobar,
+     * rechazar, editar y reintentar. Revocar no pasa por aqui, porque es el unico que
+     * necesita lo contrario. Asi, agregar el motivo nuevo no obligo a poner un {@code
+     * null} mas en las ocho llamadas que ya existian.
+     */
     private SellerVerification copiaCon(
             VerificationStatus estado,
             @Nullable IdentityDocument documento,
@@ -341,6 +383,6 @@ public final class SellerVerification {
             Instant ahora) {
         Objects.requireNonNull(ahora, "La fecha es obligatoria");
         return new SellerVerification(
-                id, userId, estado, documento, selfieNueva, cuenta, intentos, motivo, nota, createdAt, ahora);
+                id, userId, estado, documento, selfieNueva, cuenta, intentos, motivo, null, nota, createdAt, ahora);
     }
 }

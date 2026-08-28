@@ -2,6 +2,7 @@ package co.sendik.identity.port.out;
 
 import co.sendik.identity.model.Email;
 import co.sendik.identity.model.RejectionReason;
+import co.sendik.identity.model.RevocationReason;
 import co.sendik.identity.model.User;
 import java.time.Instant;
 import org.jspecify.annotations.Nullable;
@@ -137,7 +138,7 @@ public interface MailSender {
      * sello hay que decirle que sus publicaciones siguen visibles y que no puede crear
      * nuevas, que es otra conversacion.
      */
-    void enviarAvisoDeVerificacionRevocada(User titular, RejectionReason motivo, @Nullable String nota);
+    void enviarAvisoDeVerificacionRevocada(User titular, RevocationReason motivo, @Nullable String nota);
 
     /**
      * Criterio 21: el correo de la cuenta acaba de cambiar.

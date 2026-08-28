@@ -1,6 +1,7 @@
 package co.sendik.identity.client;
 
 import co.sendik.identity.model.RejectionReason;
+import co.sendik.identity.model.RevocationReason;
 import co.sendik.identity.model.UserLocale;
 
 /**
@@ -79,14 +80,14 @@ final class VerificationMailTexts {
      * Dice lo que RN-013 decide y la persona necesita saber: lo publicado sigue visible y
      * no puede publicar mas. Sin esa frase, quien lo reciba no sabe si perdio lo que tenia.
      */
-    static String cuerpoDeRevocada(UserLocale idioma, RejectionReason motivo, String nota) {
+    static String cuerpoDeRevocada(UserLocale idioma, RevocationReason motivo, String nota) {
         return (espanol(idioma)
                         ? "<p>Revocamos tu verificacion de vendedor.</p>"
-                                + "<p>Motivo: " + textoDelMotivo(idioma, motivo) + "</p>"
+                                + "<p>Motivo: " + textoDeLaRevocacion(idioma, motivo) + "</p>"
                                 + "<p>Lo que ya tenias publicado sigue visible, pero no puedes crear publicaciones"
                                 + " nuevas hasta volver a verificarte.</p>"
                         : "<p>We revoked your seller verification.</p>"
-                                + "<p>Reason: " + textoDelMotivo(idioma, motivo) + "</p>"
+                                + "<p>Reason: " + textoDeLaRevocacion(idioma, motivo) + "</p>"
                                 + "<p>What you already published stays visible, but you cannot create new listings"
                                 + " until you get verified again.</p>")
                 + notaComoParrafo(idioma, nota);
@@ -109,6 +110,36 @@ final class VerificationMailTexts {
                         : "that document is already verified on another account";
             case REQUIREMENTS_NOT_MET ->
                 es ? "no cumples los requisitos para vender" : "you do not meet the requirements to sell";
+        };
+    }
+
+    /**
+     * Los cinco motivos de RN-069, en los dos idiomas.
+     *
+     * <p>Aparte de {@link #textoDelMotivo}, porque son dos listas cerradas distintas y no
+     * se mezclan. Y redactados como hechos y no como delitos: ninguno dice fraude ni
+     * suplantacion. Este texto es lo que la persona lee en su buzon, asi que es el sitio
+     * donde esa decision de RN-069 se nota o se pierde.
+     */
+    static String textoDeLaRevocacion(UserLocale idioma, RevocationReason motivo) {
+        boolean es = espanol(idioma);
+
+        return switch (motivo) {
+            case DOCUMENT_NOT_ITS_HOLDER ->
+                es
+                        ? "el documento verificado no corresponde a quien lo presento"
+                        : "the verified document does not belong to the person who submitted it";
+            case BANK_ACCOUNT_NOT_HOLDER ->
+                es
+                        ? "la cuenta bancaria no es del titular del documento"
+                        : "the bank account does not belong to the document holder";
+            case REPEATED_PROHIBITED_LISTINGS ->
+                es
+                        ? "se publicaron productos que no se pueden vender en Sendik, de forma reiterada"
+                        : "prohibited items were published repeatedly";
+            case HOLDER_REQUEST -> es ? "lo pediste tu" : "you asked for it";
+            case REQUIREMENTS_NO_LONGER_MET ->
+                es ? "ya no se cumplen los requisitos para vender" : "the requirements to sell are no longer met";
         };
     }
 

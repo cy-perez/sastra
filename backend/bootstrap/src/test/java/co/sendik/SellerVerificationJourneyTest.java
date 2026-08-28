@@ -23,6 +23,7 @@ import co.sendik.identity.model.Email;
 import co.sendik.identity.model.IdentityDocumentType;
 import co.sendik.identity.model.RawPassword;
 import co.sendik.identity.model.RejectionReason;
+import co.sendik.identity.model.RevocationReason;
 import co.sendik.identity.model.SellerVerification;
 import co.sendik.identity.model.SellerVerificationId;
 import co.sendik.identity.model.User;
@@ -48,6 +49,7 @@ import java.io.UncheckedIOException;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 import javax.imageio.ImageIO;
@@ -371,12 +373,29 @@ class SellerVerificationJourneyTest {
         assertThat(rolesDe(vendedor)).contains("SELLER");
 
         SellerVerification revocada = revocar.execute(
-                new RevokeVerificationCommand(quienRevisa, solicitud, RejectionReason.REQUIREMENTS_NOT_MET, null));
+                new RevokeVerificationCommand(quienRevisa, solicitud, RevocationReason.DOCUMENT_NOT_ITS_HOLDER, null));
 
         assertThat(revocada.status()).isEqualTo(VerificationStatus.REVOKED);
         // Deja de poder publicar y sigue siendo compradora: el rol se quita, la cuenta no.
         assertThat(rolesDe(vendedor)).doesNotContain("SELLER").contains("BUYER");
         assertThat(bitacoraDe(solicitud)).containsExactly("APPROVE", "REVOKE");
+
+        /*
+         * RN-069 contra la base real, que es el unico sitio donde se puede comprobar.
+         *
+         * El motivo tiene columna propia desde V15, y lo que importa es que vuelva a
+         * leerse desde ella: una prueba de dominio veria el objeto en memoria y pasaria
+         * igual aunque el SQL no guardara la columna, que es exactamente el fallo que una
+         * migracion nueva puede introducir.
+         */
+        Map<String, Object> guardada = jdbc.sql(
+                        "SELECT revocation_reason, rejection_reason FROM seller_verifications WHERE id = :verificacion")
+                .param("verificacion", solicitud.value())
+                .query()
+                .singleRow();
+
+        assertThat(guardada.get("revocation_reason")).isEqualTo("DOCUMENT_NOT_ITS_HOLDER");
+        assertThat(guardada.get("rejection_reason")).isNull();
     }
 
     /**

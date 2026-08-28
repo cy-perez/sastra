@@ -210,8 +210,14 @@ describe('SpinViewer', () => {
      * gesto desplaza o gira es el navegador, y jsdom no hace diseño ni gestos. Lo que sí
      * se puede comprobar es que el visor le deja el eje vertical, que es la decisión.
      */
-    it('le deja al navegador el desplazamiento vertical', () => {
-      expect(marco().style.touchAction || getComputedStyle(marco()).touchAction).not.toBe('none');
+    it('le deja al navegador el desplazamiento vertical y el pellizco', () => {
+      const declarado = marco().style.touchAction || getComputedStyle(marco()).touchAction;
+
+      // `not.toBe('none')` pasaba con `pan-x`, que atrapa la pagina igual. Se afirma lo
+      // que se quiere, no lo que no se quiere.
+      expect(declarado).toContain('pan-y');
+      // Y el pellizco, porque esta es la foto principal del producto.
+      expect(declarado).toContain('pinch-zoom');
     });
   });
 

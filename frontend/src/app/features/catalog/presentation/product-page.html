@@ -28,7 +28,14 @@
         ocho, se queda con el carrusel, que es el caso borde de la historia.
       -->
       @if (conVisor()) {
-        <sendik-spin-viewer [fotogramas]="secuencia()" [titulo]="producto.product.title ?? ''" />
+        <!--
+          El titulo cae a la etiqueta generica y no a cadena vacia: con `?? ''` el alt
+          quedaba en «, vista frontal», que no describe nada y ademas empieza por coma.
+        -->
+        <sendik-spin-viewer
+          [fotogramas]="secuencia()"
+          [titulo]="producto.product.title ?? ('catalog.detail.gallery' | transloco)"
+        />
       }
 
       <ul class="ficha__tomas">

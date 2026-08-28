@@ -1,0 +1,61 @@
+@if (actual(); as fotograma) {
+  <!--
+    El marco es lo enfocable, y lleva su rol descrito y sus instrucciones (criterio 15).
+    `aria-roledescription` nombra qué es esto sin inventar un rol que no existe: por dentro
+    sigue siendo un grupo con una imagen, que es lo que de verdad hay.
+
+    Las instrucciones se enlazan con `aria-describedby` en vez de dejarlas solo a la vista:
+    quien navega con teclado no tiene cómo adivinar que las flechas giran.
+  -->
+  <div
+    #marco
+    class="visor"
+    tabindex="0"
+    role="group"
+    [attr.aria-roledescription]="'catalog.viewer.label' | transloco"
+    [attr.aria-label]="'catalog.viewer.label' | transloco"
+    aria-describedby="visor-instrucciones"
+    (pointerdown)="alEmpezar($event)"
+    (pointermove)="alMover($event)"
+    (pointerup)="alSoltar($event)"
+    (pointercancel)="alSoltar($event)"
+    (keydown)="alTeclear($event)"
+  >
+    <!--
+      Criterio 18: esto es una imagen normal y sale del servidor ya pintada. El `alt` lleva
+      el título del producto porque es lo que un buscador indexa; "vista frontal" a secas no
+      describiría nada.
+
+      `draggable="false"` porque el arrastre nativo de una imagen secuestra el gesto: el
+      navegador empieza a arrastrar la foto y el visor deja de recibir `pointermove`.
+    -->
+    <img
+      class="visor__foto"
+      [src]="fotograma.url"
+      width="900"
+      height="1200"
+      draggable="false"
+      [alt]="'catalog.viewer.fallbackAlt' | transloco: { titulo: titulo() }"
+    />
+
+    <!--
+      El fotograma en curso, solo para lectores de pantalla. `polite` y no `assertive`:
+      girar es una consulta, no una alerta, y no debe cortar lo que se esté leyendo.
+    -->
+    <p class="solo-lectores" aria-live="polite">
+      {{ 'catalog.viewer.frame' | transloco: { grados: fotograma.grados } }}
+    </p>
+  </div>
+
+  <p id="visor-instrucciones" class="tipo-secundario">
+    {{ 'catalog.viewer.instructions' | transloco }}
+  </p>
+
+  <!--
+    Criterio 14: mientras faltan fotogramas se avisa, y se avisa discreto. El visor ya
+    funciona con los que hay.
+  -->
+  @if (cargando()) {
+    <p class="tipo-secundario" role="status">{{ 'catalog.viewer.loading' | transloco }}</p>
+  }
+}

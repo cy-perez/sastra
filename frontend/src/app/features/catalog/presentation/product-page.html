@@ -19,6 +19,18 @@
       Sin botones de anterior y siguiente que haya que replicar para el lector de pantalla.
     -->
     <section class="ficha__fotos" [attr.aria-label]="'catalog.detail.gallery' | transloco">
+      <!--
+        El visor giratorio (HU-003). Va encima del carrusel y no en su lugar: usa los mismos
+        archivos —un solo canal de imagenes, una sola proporcion— y el carrusel sigue siendo
+        la forma de ver una toma concreta sin tener que girar hasta ella.
+
+        Solo con la secuencia completa. Una publicacion anterior al asistente, con menos de
+        ocho, se queda con el carrusel, que es el caso borde de la historia.
+      -->
+      @if (conVisor()) {
+        <sendik-spin-viewer [fotogramas]="secuencia()" [titulo]="producto.product.title ?? ''" />
+      }
+
       <ul class="ficha__tomas">
         @for (imagen of tomas(); track imagen.id) {
           <li class="ficha__toma">

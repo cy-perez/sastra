@@ -11,7 +11,8 @@ import { Meta, Title } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
-import { precioFormateado } from '../../../shared/domain/listing';
+import { precioFormateado, TOMAS_DE_LA_SECUENCIA } from '../../../shared/domain/listing';
+import { SpinViewer, type FotogramaDelVisor } from '../../../shared/ui/viewer/spin-viewer';
 import { CatalogStore } from '../application/catalog.store';
 import type { PublicListing } from '../domain/public-listing';
 import { portada, tieneImagenDeReferencia } from '../domain/public-listing';
@@ -33,7 +34,7 @@ import { portada, tieneImagenDeReferencia } from '../domain/public-listing';
 @Component({
   selector: 'sendik-product-page',
   standalone: true,
-  imports: [RouterLink, TranslocoPipe],
+  imports: [RouterLink, SpinViewer, TranslocoPipe],
   templateUrl: './product-page.html',
   styleUrl: './product-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -63,6 +64,37 @@ export class ProductPage {
   protected readonly noEncontrada = computed(() => this.store.publicacion.isError());
 
   protected readonly tomas = computed(() => this.ordenadas());
+
+  /**
+   * La secuencia del visor 360: solo las tomas del vendedor, en orden de giro.
+   *
+   * <p>**Las imágenes de referencia quedan fuera** (RN-066). Son del fabricante y no del
+   * producto que se recibe, así que meterlas en el giro haría que la prenda cambiara de
+   * aspecto a mitad de vuelta.
+   */
+  protected readonly secuencia = computed<readonly FotogramaDelVisor[]>(() => {
+    const publicacion = this.publicacion();
+    if (publicacion === null) {
+      return [];
+    }
+
+    return publicacion.images
+      .filter((imagen) => imagen.kind === 'SELLER_SHOT')
+      .slice()
+      .sort((una, otra) => una.position - otra.position)
+      .map((imagen) => ({ url: imagen.url, grados: this.gradosDe(imagen.position) }));
+  });
+
+  /**
+   * Si se ofrece el visor giratorio.
+   *
+   * <p>Es el caso borde de la historia: «Publicación antigua con menos de ocho tomas: el
+   * visor no se ofrece y se muestra solo el carrusel». Se exige la secuencia completa y no
+   * el mínimo de cuatro del propio visor: con cuatro se puede girar sin que salte, pero
+   * ocho es lo que RN-017 llama secuencia, y media vuelta enseñada como si fuera entera
+   * engañaría sobre lo que se está viendo.
+   */
+  protected readonly conVisor = computed(() => this.secuencia().length === TOMAS_DE_LA_SECUENCIA);
 
   /**
    * Si hay alguna imagen que no tomó el vendedor (RN-066).

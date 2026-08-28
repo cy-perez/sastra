@@ -1,4 +1,11 @@
-import { ALTO_MINIMO, ANCHO_MINIMO, cumpleMinimo, rectanguloDeRecorte } from '../domain/photo-crop';
+import {
+  ALTO_MINIMO,
+  ANCHO_MINIMO,
+  comprimirBajoTope,
+  cumpleMinimo,
+  rectanguloDeRecorte,
+  type MotivoDeRechazo,
+} from '../domain/photo-crop';
 
 /**
  * El recorte y la compresión de una foto de producto, fuera del hilo principal.
@@ -27,20 +34,6 @@ export type RespuestaDeNormalizacion =
   | { readonly id: number; readonly error: MotivoDeRechazo };
 
 /**
- * Por qué no se pudo normalizar.
- *
- * <p>Un código y no un texto: el texto visible es de Transloco y se decide en la pantalla,
- * nunca aquí (CLAUDE.md).
- */
-export type MotivoDeRechazo =
-  /** El recorte 3:4 no llega a 900 x 1200 (RN-019). Es el que de verdad se ve. */
-  | 'RESOLUCION_INSUFICIENTE'
-  /** Ni a la calidad más baja cabe en 500 KB. Ver {@link comprimir}. */
-  | 'NO_SE_PUDO_COMPRIMIR'
-  /** El archivo no se pudo decodificar: no era una imagen, o venía corrupto. */
-  | 'IMAGEN_ILEGIBLE';
-
-/**
  * Lo que este worker usa de su ámbito global.
  *
  * <p>Declarado a mano en lugar de traer la biblioteca `webworker` con una referencia de
@@ -65,18 +58,6 @@ class ErrorDeNormalizacion extends Error {
     super(motivo);
   }
 }
-
-/**
- * Calidades que se prueban, de mejor a peor, hasta bajar del tope.
- *
- * <p>A 900 x 1200 la primera basta casi siempre —un JPEG así ronda los 200 KB—, así que
- * el bucle rara vez da más de una vuelta. Las otras existen para la foto con mucho detalle
- * fino, que es donde el tope se alcanza.
- */
-const CALIDADES = [0.85, 0.75, 0.65, 0.55] as const;
-
-/** Criterio 9: ninguna toma sale del dispositivo por encima de 500 KB. */
-const TOPE_DE_BYTES = 500 * 1024;
 
 ambito.addEventListener('message', (evento) => {
   const { id, imagen } = evento.data;
@@ -144,22 +125,19 @@ async function normalizar(imagen: Blob): Promise<Blob> {
 }
 
 /**
- * Baja la calidad hasta caber en el tope.
+ * Aprieta la imagen hasta el tope del criterio 9.
  *
- * <p>Si ni la más baja cabe, **rechaza**. Devolver la imagen igualmente sería incumplir el
- * criterio 9, que no admite matices: ninguna toma sale del dispositivo por encima de 500
- * KB. A 900 x 1200 y calidad 0,55 no se ha visto ocurrir —el tamaño de salida es fijo y
- * pequeño—, pero un camino que incumple un criterio no se deja escrito porque se crea que
- * no se va a recorrer.
+ * <p>La escalera de calidades y el tope viven en `shared/domain/photo-crop.ts`, que es
+ * donde se prueban: son reglas de producto, no detalles del lienzo. Aquí solo se le pasa
+ * cómo codificar.
  */
 async function comprimir(lienzo: OffscreenCanvas): Promise<Blob> {
-  for (const calidad of CALIDADES) {
-    const candidata = await lienzo.convertToBlob({ type: 'image/jpeg', quality: calidad });
+  const apretada = await comprimirBajoTope((calidad) =>
+    lienzo.convertToBlob({ type: 'image/jpeg', quality: calidad }),
+  );
 
-    if (candidata.size <= TOPE_DE_BYTES) {
-      return candidata;
-    }
+  if (apretada === null) {
+    throw new ErrorDeNormalizacion('NO_SE_PUDO_COMPRIMIR');
   }
-
-  throw new ErrorDeNormalizacion('NO_SE_PUDO_COMPRIMIR');
+  return apretada;
 }

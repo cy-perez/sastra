@@ -980,6 +980,17 @@ desde tu galería.
 `.action` nombra la cámara y no «el asistente», que no significa nada para quien
 llega. `.hint` dice **por qué son ocho** en una línea: porque el producto gira.
 
+### Los estados de la pantalla — `listing.capture.*`
+
+`.loading`: Cargando la publicación
+`.notFound`: No pudimos abrir esta publicación. Puede que ya no exista o que no sea tuya.
+`.backToListings`: Volver a mis publicaciones
+`.notForSealed`: Este producto no usa el asistente de captura.
+
+`.notForSealed` va seguido de `listing.shots.sealedBody`, que ya explica cuáles son las
+cuatro tomas. Se dice **qué pasa** antes de **qué hacer**: quien llega aquí desde un enlace
+necesita primero entender por qué la pantalla no es la que esperaba.
+
 ### Los ocho pasos — `listing.capture.shot.*`
 
 En el orden del giro, empezando por el frente. Las cuatro en negrita son las
@@ -1054,10 +1065,15 @@ sentir engañado a alguien. No dice «sospechosa»; dice lo que pasa.
 1200 píxeles después de recortarla a vertical.
 `.NO_SE_PUDO_COMPRIMIR`: No pudimos preparar esta foto. Intenta con otra.
 `.IMAGEN_ILEGIBLE`: No pudimos leer este archivo. Asegúrate de que sea una imagen.
+`.SIN_SOPORTE`: Este navegador no puede preparar la foto. Prueba con otro o actualízalo.
 
 El primero es el único que se ve a menudo, y **dice «después de recortarla»** a
 propósito: una foto cuadrada de 1000 píxeles pasa los dos mínimos por separado y
 su recorte vertical no, y sin esa frase el número parece mentir.
+
+`.SIN_SOPORTE` existe para no mentir en el otro sentido. Cuando el navegador no tiene el
+worker que recorta, el problema no es la foto, y decir «no pudimos leer este archivo» manda
+a la persona a buscarle un defecto a una imagen que está perfecta.
 
 ⚠️ Esto **no sustituye** a `FILE_DIMENSIONS_TOO_SMALL`, que sigue saliendo del
 servidor y sigue mal redactado (ver el aviso de la sección anterior). Lo que hace
@@ -1070,6 +1086,11 @@ lo que no cumple no se sube.
 `.retry`: Reintentar esta toma
 `.failed`: No se pudo subir esta toma.
 `.done`: Listo
+`.saved`: Toma {{nombre}} lista
+
+`.saved` no se ve: es lo que se le anuncia a un lector de pantalla cuando una toma acaba de
+subir. Sin él, quien no ve la pantalla no tiene forma de saber si la foto entró —cambian el
+encabezado y la barra, y ninguno de los dos se anuncia solo—.
 
 `.retry` dice «esta toma» porque el criterio 10 pide reintentar **solo la que
 falló**, y un botón que dijera «reintentar» a secas haría temer que se repitan las
@@ -1078,14 +1099,19 @@ ocho.
 ### El visor giratorio — `catalog.viewer.*`
 
 `.label`: Vista giratoria del producto
+`.roleDescription`: visor giratorio
 `.instructions`: Arrastra para girar, o usa las flechas del teclado.
 `.loading`: Cargando la vista giratoria
 `.frame`: Vista a {{grados}} grados
 `.fallbackAlt`: {{titulo}}, vista frontal
 
-`.label` nombra el control para quien no lo ve, y `.instructions` da las dos formas
-de usarlo —dedo y teclado— porque el criterio 15 exige que las dos existan y quien
-navega con teclado no tiene cómo adivinarlo.
+`.roleDescription` es lo que un lector de pantalla dice en lugar de «control deslizante»:
+el visor se marca con ese rol porque es el único que hace que el lector **ceda las flechas**
+al componente, pero «control deslizante» no describe lo que hay. `.label` queda para el
+título del producto. `.instructions` da las dos formas de usarlo —dedo y teclado— porque el
+criterio 15 exige que las dos existan y quien navega con teclado no tiene cómo adivinarlo;
+mientras el visor no puede girar todavía, en su lugar se dice `.loading`, porque prometer
+unas flechas que aún no responden es peor que no decir nada.
 
 `.fallbackAlt` es el `alt` de la imagen que el servidor entrega antes de que el
 visor se active (criterio 18). Lleva el título del producto porque esa imagen es lo

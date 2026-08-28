@@ -38,6 +38,12 @@ describe('SpinViewer', () => {
    * fotogramas llegan.
    */
   class ImagenFalsa {
+    /** Lo que está esperando respuesta, en el orden en que se pidió. */
+    static readonly enCola: { url: string; responder: (comoError?: boolean) => void }[] = [];
+
+    /** Si cada imagen carga sola en cuanto se pide, o hay que soltarla a mano. */
+    static automatica = true;
+
     decoding = '';
     private readonly escuchas = new Map<string, () => void>();
 
@@ -45,10 +51,24 @@ describe('SpinViewer', () => {
       this.escuchas.set(tipo, escucha);
     }
 
-    set src(_valor: string) {
-      setTimeout(() => this.escuchas.get('load')?.(), 0);
+    set src(valor: string) {
+      const responder = (comoError = false) => this.escuchas.get(comoError ? 'error' : 'load')?.();
+
+      if (ImagenFalsa.automatica) {
+        setTimeout(() => responder(), 0);
+        return;
+      }
+      ImagenFalsa.enCola.push({ url: valor, responder });
     }
   }
+
+  /** Suelta las `cuantas` siguientes de la cola, como carga o como fallo. */
+  const dejarLlegar = async (cuantas: number, comoError = false) => {
+    for (let i = 0; i < cuantas; i++) {
+      ImagenFalsa.enCola.shift()?.responder(comoError);
+      await asentar();
+    }
+  };
 
   const ImagenReal = globalThis.Image;
 
@@ -87,6 +107,8 @@ describe('SpinViewer', () => {
   };
 
   beforeEach(async () => {
+    ImagenFalsa.enCola.length = 0;
+    ImagenFalsa.automatica = true;
     globalThis.Image = ImagenFalsa as unknown as typeof Image;
 
     TestBed.configureTestingModule({});
@@ -220,6 +242,66 @@ describe('SpinViewer', () => {
       await asentar();
 
       expect(fixture.nativeElement.querySelector('.visor')).toBeNull();
+    });
+  });
+
+  /**
+   * Criterios 13 y 14, y el caso borde de conexión lenta.
+   *
+   * <p>Con la imagen falsa en modo manual: el visor no se activa hasta que llega el cuarto
+   * fotograma, y hasta entonces avisa. Con la versión automática esto no se podía
+   * comprobar, y borrar la condición de fotogramas cargados no rompía ninguna prueba.
+   */
+  describe('mientras los fotogramas van llegando', () => {
+    beforeEach(async () => {
+      // El `beforeEach` de arriba ya montó uno en modo automático. Hay que tirarlo antes
+      // de montar el manual: si no, los dos precargan contra la misma cola y las cuentas
+      // de abajo miden la suma de ambos.
+      fixture.destroy();
+      ImagenFalsa.enCola.length = 0;
+      ImagenFalsa.automatica = false;
+
+      fixture = TestBed.createComponent(Anfitrion);
+      await asentar();
+    });
+
+    it('no gira con solo tres fotogramas cargados, y lo dice', async () => {
+      // El frontal viene en el HTML; se sueltan dos más, que son tres en total.
+      await dejarLlegar(2);
+
+      await teclear('ArrowRight');
+
+      expect(foto().getAttribute('src')).toContain('/0.jpg');
+      expect(marco().getAttribute('aria-busy')).toBe('true');
+      expect(fixture.nativeElement.textContent).toContain('Cargando la vista giratoria');
+    });
+
+    it('gira en cuanto llega el cuarto', async () => {
+      await dejarLlegar(3);
+
+      expect(marco().getAttribute('aria-busy')).toBe('false');
+
+      await teclear('ArrowRight');
+
+      expect(foto().getAttribute('src')).toContain('/1.jpg');
+    });
+
+    /** Criterio 13: se precargan los siete restantes, en orden. */
+    it('precarga el resto en orden de giro', async () => {
+      await dejarLlegar(7);
+
+      expect(ImagenFalsa.enCola).toHaveLength(0);
+    });
+
+    /**
+     * Criterio 14: «el visor funciona con los disponibles». Una toma que no está no puede
+     * detener a las que vienen detrás.
+     */
+    it('sigue con las siguientes aunque una falle', async () => {
+      await dejarLlegar(1, true);
+      await dejarLlegar(2);
+
+      expect(marco().getAttribute('aria-busy')).toBe('false');
     });
   });
 });

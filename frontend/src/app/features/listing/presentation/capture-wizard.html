@@ -1,169 +1,210 @@
-@if (publicacion() !== null) {
-  @if (!admite()) {
-    <!--
-      La tecnología declarada sellada no pasa por aquí: son cuatro tomas del empaque y no
-      hay giro que guiar (RN-065). Se devuelve a la rejilla en vez de dejar una pantalla
-      vacía sin explicación.
-    -->
-    <h1 class="tipo-h1">{{ 'listing.shots.sealedBody' | transloco }}</h1>
-    <button type="button" class="accion tipo-secundario" (click)="salir()">
+<!--
+  El encabezado vive fuera del `@if` a propósito, por lo mismo que en `publish-page.html`:
+  dentro, las ramas de carga y de error se pintaban sin `h1` —y la de carga es justo la que
+  renderiza el servidor—, así que la página se servía sin un solo encabezado.
+
+  La región de anuncios también vive fuera y nace vacía. Un `role="status"` que se inserta
+  en el DOM ya con su texto dentro no se anuncia de forma fiable: la región tiene que
+  existir antes de que el contenido cambie.
+-->
+<section class="asistente" aria-labelledby="asistente-titulo">
+  <header class="asistente__cabecera">
+    <h1 id="asistente-titulo" class="tipo-h1" tabindex="-1" #titulo>
+      {{ 'listing.capture.entry.action' | transloco }}
+    </h1>
+
+    <button type="button" class="btn btn-secundario tipo-etiqueta-boton" (click)="salir()">
       {{ 'listing.capture.close' | transloco }}
     </button>
+  </header>
+
+  <p class="solo-lectores" role="status">{{ anuncio() }}</p>
+
+  @if (cargando()) {
+    <p class="solo-lectores">{{ 'listing.capture.loading' | transloco }}</p>
+    <p class="esqueleto asistente__esqueleto"></p>
+  } @else if (noDisponible()) {
+    <p class="error tipo-cuerpo" role="alert">{{ 'listing.capture.notFound' | transloco }}</p>
+    <p>
+      <a routerLink="/mis-publicaciones">{{ 'listing.capture.backToListings' | transloco }}</a>
+    </p>
+  } @else if (!admite()) {
+    <!--
+      La tecnología declarada sellada no pasa por aquí: son cuatro tomas del empaque y no
+      hay giro que guiar (RN-065). Se explica y se devuelve a la rejilla.
+    -->
+    <p class="tipo-cuerpo">{{ 'listing.capture.notForSealed' | transloco }}</p>
+    <p class="tipo-cuerpo">{{ 'listing.shots.sealedBody' | transloco }}</p>
   } @else {
-    <section class="asistente">
-      <header class="asistente__cabecera">
-        <h1 class="tipo-h1">{{ 'listing.capture.entry.action' | transloco }}</h1>
+    <!--
+      La barra de progreso del criterio 1. `progress` nativo: trae el rol, el valor y el
+      anuncio hechos. El párrafo visible lleva `aria-hidden` para que el lector no lea dos
+      veces la misma cuenta, que es el patrón que ya usa `shots-field.html`.
+    -->
+    <p class="tipo-secundario" aria-hidden="true">
+      {{ 'listing.capture.progress.aria' | transloco: { hechas: hechas(), total: total } }}
+    </p>
+    <progress
+      class="asistente__progreso"
+      [value]="hechas()"
+      [max]="total"
+      [attr.aria-label]="
+        'listing.capture.progress.aria' | transloco: { hechas: hechas(), total: total }
+      "
+    ></progress>
 
-        <button type="button" class="accion tipo-secundario" (click)="salir()">
-          {{ 'listing.capture.close' | transloco }}
-        </button>
-      </header>
-
-      <!--
-        La barra de progreso del criterio 1. `progress` nativo y no un div con ARIA: trae
-        el rol, el valor y el anuncio hechos, y el lector de pantalla ya sabe leerlo.
-      -->
+    @if (recuperadas() > 0) {
       <p class="tipo-secundario">
-        {{ 'listing.capture.progress.aria' | transloco: { hechas: hechas(), total: total } }}
+        {{ 'listing.capture.entry.resume' | transloco: { cuantas: recuperadas() } }}
       </p>
-      <progress
-        class="asistente__progreso"
-        [value]="hechas()"
-        [max]="total"
-        [attr.aria-label]="
-          'listing.capture.progress.aria' | transloco: { hechas: hechas(), total: total }
-        "
-      ></progress>
+    }
 
-      @if (pasoActual(); as paso) {
-        <h2 class="tipo-titulo-tarjeta">{{ paso.nombre | transloco }}</h2>
+    @if (pasoActual(); as paso) {
+      <h2 class="tipo-titulo-tarjeta">{{ paso.nombre | transloco }}</h2>
 
-        <p class="tipo-secundario">
-          {{
-            'listing.capture.progress.label'
-              | transloco: { numero: paso.posicion + 1, total: total }
-          }}
-          @if (paso.canonica) {
-            · {{ 'listing.capture.progress.canonical' | transloco }}
-          }
-        </p>
-      }
+      <p class="tipo-secundario">
+        {{
+          'listing.capture.progress.label' | transloco: { numero: paso.posicion + 1, total: total }
+        }}
+        @if (paso.canonica) {
+          · {{ 'listing.capture.progress.canonical' | transloco }}
+        }
+      </p>
+    }
 
-      @if (error(); as clave) {
-        <p class="error tipo-cuerpo" role="alert">{{ clave | transloco }}</p>
-      }
+    @if (error(); as clave) {
+      <p class="error tipo-cuerpo" role="alert">{{ clave | transloco }}</p>
+    }
 
-      @if (abierta()) {
-        <div class="visor">
-          <!-- `muted` y `playsinline` para que el móvil no lo abra a pantalla completa. -->
-          <video #video class="visor__video" autoplay playsinline muted></video>
-
-          <!--
-            La silueta y la cuadrícula del criterio 2. Decorativas: lo que dicen ya está en
-            el nombre de la toma, arriba, y repetirlo en un lector de pantalla sería ruido.
-          -->
-          <div class="visor__silueta" aria-hidden="true"></div>
-          <div class="visor__rejilla" aria-hidden="true"></div>
-        </div>
+    @if (abierta()) {
+      <div class="visor">
+        <!-- `muted` y `playsinline` para que el móvil no lo abra a pantalla completa. -->
+        <video #video class="visor__video" autoplay playsinline muted></video>
 
         <!--
-          El nivel. Solo aparece cuando hay lectura: sin sensores no se pinta un indicador
-          muerto, se explica abajo por qué no está.
+          La silueta y la cuadrícula del criterio 2. Decorativas: lo que dicen ya está en
+          el nombre de la toma, arriba, y repetirlo en un lector de pantalla sería ruido.
         -->
-        @if (hayNivel()) {
-          <p class="nivel tipo-secundario" [class.nivel--torcido]="!nivelado()" role="status">
-            @if (nivelado()) {
-              {{ 'listing.capture.level.ok' | transloco }}
-            } @else {
-              {{ 'listing.capture.level.tilted' | transloco }}
-            }
-          </p>
-
-          @if (!nivelado()) {
-            <p class="tipo-secundario">{{ 'listing.capture.level.tiltedHint' | transloco }}</p>
-          }
-        }
-
-        @if (permiso() === 'negado') {
-          <p class="tipo-secundario">{{ 'listing.capture.sensors.denied' | transloco }}</p>
-        }
-
-        <!--
-          Criterio 3: con el aparato inclinado el obturador queda deshabilitado, y el
-          porqué está en el texto de arriba, no escondido en un title.
-        -->
-        <button
-          type="button"
-          class="btn-primario asistente__obturador"
-          [disabled]="ocupada() || !nivelado()"
-          (click)="tomar()"
-        >
-          {{ 'listing.capture.take' | transloco }}
-        </button>
-
-        @if (porcentaje(); as avance) {
-          <p class="tipo-secundario" role="status">
-            {{ 'listing.capture.upload.progress' | transloco: { porcentaje: avance } }}
-          </p>
-        }
-      } @else {
-        <p class="tipo-cuerpo">{{ 'listing.capture.entry.hint' | transloco }}</p>
-
-        @if (permiso() === 'pendiente') {
-          <p class="tipo-secundario">{{ 'listing.capture.sensors.requestHint' | transloco }}</p>
-        }
-
-        <button type="button" class="btn-primario" [disabled]="ocupada()" (click)="empezar()">
-          {{ 'listing.capture.entry.action' | transloco }}
-        </button>
-      }
-
-      <!--
-        La galería, siempre ofrecida. Criterio 8: si no hay cámara o se deniega el permiso
-        esta es la única vía, y ofrecerla desde el principio evita que quien ya sabe que su
-        cámara no funciona tenga que chocarse con el error para encontrarla.
-      -->
-      <div class="galeria">
-        <label class="accion tipo-secundario" for="galeria">
-          {{ 'listing.capture.gallery.action' | transloco }}
-        </label>
-        <input
-          id="galeria"
-          class="galeria__campo"
-          type="file"
-          accept="image/*"
-          [disabled]="ocupada()"
-          (change)="alElegirArchivo($event)"
-        />
-
-        <p class="tipo-secundario">{{ 'listing.capture.gallery.hint' | transloco }}</p>
-        <p class="tipo-secundario">{{ 'listing.capture.gallery.attention' | transloco }}</p>
+        <div class="visor__silueta" aria-hidden="true"></div>
+        <div class="visor__rejilla" aria-hidden="true"></div>
       </div>
 
       <!--
-        Los ocho pasos como lista navegable. Es lo que hace el criterio 6 alcanzable con
-        teclado: repetir una toma concreta es ir a su paso, y sin esto solo se podría
-        avanzar en orden.
+        El nivel. Solo aparece cuando hay lectura: sin sensores no se pinta un indicador
+        muerto, se explica debajo por qué no está. El cambio se anuncia por la región
+        permanente de arriba, no por un `status` que nace ya con su texto.
       -->
-      <ul class="pasos">
-        @for (paso of pasos(); track paso.posicion) {
-          <li>
-            <button
-              type="button"
-              class="pasos__paso"
-              [class.pasos__paso--hecha]="paso.hecha"
-              [attr.aria-current]="paso.posicion === pasoActual()?.posicion ? 'step' : null"
-              [disabled]="ocupada()"
-              (click)="irA(paso.posicion)"
-            >
-              {{ paso.nombre | transloco }}
-              @if (paso.hecha) {
-                · {{ 'listing.capture.upload.done' | transloco }}
-              }
-            </button>
-          </li>
+      @if (hayNivel()) {
+        <p class="nivel tipo-secundario" [class.nivel--torcido]="!nivelado()">
+          @if (nivelado()) {
+            {{ 'listing.capture.level.ok' | transloco }}
+          } @else {
+            {{ 'listing.capture.level.tilted' | transloco }}
+          }
+        </p>
+
+        @if (!nivelado()) {
+          <p id="nivel-aviso" class="tipo-secundario">
+            {{ 'listing.capture.level.tiltedHint' | transloco }}
+          </p>
         }
-      </ul>
-    </section>
+      }
+
+      @if (permiso() === 'negado') {
+        <p class="tipo-secundario">{{ 'listing.capture.sensors.denied' | transloco }}</p>
+      }
+
+      <!--
+        Criterio 3: con el aparato inclinado no se puede disparar. Con `aria-disabled` y no
+        con `disabled`: este último saca el botón del orden de tabulación y de la línea de
+        lectura, así que quien navega con teclado pierde el obturador justo cuando aparece
+        la explicación de por qué no puede usarlo, y si tenía el foco puesto lo pierde al
+        `body`. Se queda alcanzable, se anuncia como no disponible, y `tomar()` sale
+        temprano. El porqué va asociado con `aria-describedby`, no suelto al lado.
+      -->
+      <button
+        type="button"
+        class="btn btn-primario tipo-etiqueta-boton asistente__obturador"
+        [attr.aria-disabled]="ocupada() || !nivelado()"
+        [attr.aria-describedby]="!nivelado() ? 'nivel-aviso' : null"
+        (click)="tomar()"
+      >
+        {{ 'listing.capture.take' | transloco }}
+      </button>
+
+      <!--
+        `!== null` y no `@if (porcentaje(); as x)`: el cero es falsy, así que con la forma
+        corta el primer instante de la subida —justo cuando más falta hace ver que empezó—
+        no pintaba nada.
+      -->
+      @if (porcentaje() !== null) {
+        <p class="tipo-secundario" aria-hidden="true">
+          {{ 'listing.capture.upload.progress' | transloco: { porcentaje: porcentaje() } }}
+        </p>
+      }
+    } @else {
+      <p class="tipo-cuerpo">{{ 'listing.capture.entry.hint' | transloco }}</p>
+
+      @if (permiso() === 'pendiente') {
+        <p class="tipo-secundario">{{ 'listing.capture.sensors.requestHint' | transloco }}</p>
+      }
+
+      <button
+        type="button"
+        class="btn btn-primario tipo-etiqueta-boton"
+        [attr.aria-disabled]="ocupada()"
+        (click)="empezar()"
+      >
+        {{ 'listing.capture.entry.action' | transloco }}
+      </button>
+    }
+
+    <!--
+      La galería, siempre ofrecida. Criterio 8: si no hay cámara o se deniega el permiso
+      esta es la única vía, y ofrecerla desde el principio evita que quien ya sabe que su
+      cámara no funciona tenga que chocarse con el error para encontrarla.
+    -->
+    <div class="galeria">
+      <label class="btn btn-secundario tipo-etiqueta-boton" for="galeria">
+        {{ 'listing.capture.gallery.action' | transloco }}
+      </label>
+      <input
+        id="galeria"
+        class="galeria__campo"
+        type="file"
+        accept="image/*"
+        [disabled]="ocupada()"
+        (change)="alElegirArchivo($event)"
+      />
+
+      <p class="tipo-secundario">{{ 'listing.capture.gallery.hint' | transloco }}</p>
+      <p class="tipo-secundario">{{ 'listing.capture.gallery.attention' | transloco }}</p>
+    </div>
+
+    <!--
+      Los ocho pasos como lista navegable. Es lo que hace el criterio 6 alcanzable con
+      teclado: repetir una toma concreta es ir a su paso, y sin esto solo se podría avanzar
+      en orden. Con `aria-disabled` por lo mismo que el obturador: `ocupada()` cambia en
+      cada subida y `disabled` movería el foco al `body` bajo los pies de quien navega.
+    -->
+    <ul class="pasos">
+      @for (paso of pasos(); track paso.posicion) {
+        <li>
+          <button
+            type="button"
+            class="pasos__paso tipo-etiqueta-boton"
+            [class.pasos__paso--hecha]="paso.hecha"
+            [attr.aria-current]="paso.posicion === pasoActual()?.posicion ? 'step' : null"
+            [attr.aria-disabled]="ocupada()"
+            (click)="irA(paso.posicion)"
+          >
+            {{ paso.nombre | transloco }}
+            @if (paso.hecha) {
+              · {{ 'listing.capture.upload.done' | transloco }}
+            }
+          </button>
+        </li>
+      }
+    </ul>
   }
-}
+</section>

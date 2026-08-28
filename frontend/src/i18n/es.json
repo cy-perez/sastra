@@ -1101,20 +1101,26 @@
       "rejected": {
         "RESOLUCION_INSUFICIENTE": "Esta foto es muy pequeña. Necesitamos al menos 900 × 1200 píxeles después de recortarla a vertical.",
         "NO_SE_PUDO_COMPRIMIR": "No pudimos preparar esta foto. Intenta con otra.",
-        "IMAGEN_ILEGIBLE": "No pudimos leer este archivo. Asegúrate de que sea una imagen."
+        "IMAGEN_ILEGIBLE": "No pudimos leer este archivo. Asegúrate de que sea una imagen.",
+        "SIN_SOPORTE": "Este navegador no puede preparar la foto. Prueba con otro o actualízalo."
       },
       "upload": {
         "progress": "Subiendo {{porcentaje}}%",
         "retry": "Reintentar esta toma",
         "failed": "No se pudo subir esta toma.",
-        "done": "Listo"
+        "done": "Listo",
+        "saved": "Toma {{nombre}} lista"
       },
       "close": "Salir del asistente",
       "take": "Tomar la foto",
       "retake": "Repetir esta toma",
       "next": "Siguiente",
       "previous": "Anterior",
-      "finish": "Terminar"
+      "finish": "Terminar",
+      "loading": "Cargando la publicación",
+      "notFound": "No pudimos abrir esta publicación. Puede que ya no exista o que no sea tuya.",
+      "backToListings": "Volver a mis publicaciones",
+      "notForSealed": "Este producto no usa el asistente de captura."
     }
   },
   "listingReview": {
@@ -1237,7 +1243,8 @@
       "instructions": "Arrastra para girar, o usa las flechas del teclado.",
       "loading": "Cargando la vista giratoria",
       "frame": "Vista a {{grados}} grados",
-      "fallbackAlt": "{{titulo}}, vista frontal"
+      "fallbackAlt": "{{titulo}}, vista frontal",
+      "roleDescription": "visor giratorio"
     }
   }
 }

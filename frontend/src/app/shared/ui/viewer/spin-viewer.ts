@@ -14,6 +14,9 @@ import { TranslocoPipe } from '@jsverse/transloco';
 
 import { indiceDesde, normalizar } from '../../domain/frame-index';
 
+/** Cuenta las instancias, para dar a cada una un identificador propio. */
+let siguienteVisor = 0;
+
 /** Un fotograma de la secuencia: dónde está la imagen y a qué giro corresponde. */
 export interface FotogramaDelVisor {
   readonly url: string;
@@ -63,6 +66,15 @@ export class SpinViewer {
 
   /** Se guarda en el constructor para poder cortar la precarga desde fuera de la inyección. */
   private readonly destruccion = inject(DestroyRef);
+
+  /**
+   * El identificador del párrafo de instrucciones.
+   *
+   * <p>Generado y no fijo: esto es un componente de `shared/ui`, así que dos en la misma
+   * página con un `id` literal producirían duplicados y `aria-describedby` apuntaría al
+   * primero.
+   */
+  protected readonly idInstrucciones = `visor-instrucciones-${siguienteVisor++}`;
 
   protected readonly indice = signal(0);
 

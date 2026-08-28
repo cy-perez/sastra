@@ -54,18 +54,24 @@ export class CameraService {
    *
    * @param frontal la de la cara para la selfie; la de atrás para el documento y para las
    *     tomas de producto, que es la que enfoca de cerca en casi cualquier teléfono
+   * @param vertical si lo que se va a fotografiar acaba en una foto 3:4 de catálogo
    */
-  async abrir(frontal: boolean): Promise<MediaStream> {
+  async abrir(frontal: boolean, vertical = false): Promise<MediaStream> {
+    // Se pide, no se exige: con `exact` un teléfono modesto falla en lugar de dar lo que
+    // puede, y una cédula ilegible por resolución la rechaza el moderador igual que una
+    // borrosa. Quien decide de verdad si una toma da la talla es el mínimo de RN-019,
+    // medido sobre el recorte y no sobre lo que la cámara prometa.
+    // La toma de producto se pide **vertical y en 3:4**, que es la proporción a la que va
+    // a acabar (RN-018). No es una preferencia estética: pedir 1920 x 1080 y recortar a
+    // 3:4 da 810 x 1200, que **no llega al mínimo de RN-019** y hace que el formulario
+    // rechace cada foto de una cámara apaisada. Pidiéndola ya vertical, el recorte apenas
+    // tiene nada que quitar y lo que llega cumple.
+    const medida = vertical
+      ? { width: { ideal: 1200 }, height: { ideal: 1600 } }
+      : { width: { ideal: 1920 }, height: { ideal: 1080 } };
+
     return navigator.mediaDevices.getUserMedia({
-      video: {
-        facingMode: frontal ? 'user' : 'environment',
-        // Se pide alto, no se exige: con `exact` un teléfono modesto falla en lugar de
-        // dar lo que puede, y una cédula ilegible por resolución la rechaza el moderador
-        // igual que una borrosa. En HU-003 el que decide si da la talla es el mínimo de
-        // RN-019, medido sobre el recorte y no sobre lo que la cámara prometa.
-        width: { ideal: 1920 },
-        height: { ideal: 1080 },
-      },
+      video: { facingMode: frontal ? 'user' : 'environment', ...medida },
       audio: false,
     });
   }

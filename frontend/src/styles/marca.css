@@ -72,6 +72,21 @@
      de LECTURA y es mas largo. */
   --medida-formulario: 480px;
 
+  /* La silueta y la cuadricula del asistente de captura (HU-003, criterio 2).
+
+     Dos tonos y NO los del tema, porque no se dibujan sobre el tema: se dibujan
+     sobre el video de la camara, que es contenido arbitrario. Una sola tinta no
+     puede cumplir 3:1 contra lo que sea que haya delante del objetivo -- blanca
+     desaparece sobre una pared blanca, oscura sobre un producto negro --, asi que
+     la guia se traza en claro con un contorno oscuro y se ve sobre las dos.
+
+     Y no salen de --color-foco, que significa "anillo de foco": usarlo aqui ataba
+     la guia de encuadre a que diseno no cambiara nunca el color del foco.
+
+     No se invierten por modo a proposito. El fondo es la camara, no la pagina. */
+  --color-guia-camara: #ffffff;
+  --color-guia-camara-contorno: #14162b;
+
   /* Ancho minimo de una tarjeta de producto en la rejilla del catalogo (HU-009).
      La rejilla es fluida -- `auto-fill` con este minimo -- asi que este numero es
      lo unico que decide cuantas columnas caben: dos en movil y cuatro o cinco en

@@ -4,6 +4,7 @@ import { injectMutation, injectQuery, QueryClient } from '@tanstack/angular-quer
 import { ApiError } from '../../../core/http/api-error';
 import { SessionStore } from '../../../core/session/session.store';
 import { PhotoNormalizer } from '../../../shared/infrastructure/photo-normalizer';
+import { CaptureDraftStore, type TomaGuardada } from '../infrastructure/capture-draft.store';
 import type { Listing, Money, Shipping } from '../../../shared/domain/listing';
 import type { DatosDelProducto } from '../infrastructure/listing.api';
 import { ListingApi } from '../infrastructure/listing.api';
@@ -29,6 +30,7 @@ import { queryKeys } from './query-keys';
 export class ListingStore {
   private readonly api = inject(ListingApi);
   private readonly normalizador = inject(PhotoNormalizer);
+  private readonly borrador = inject(CaptureDraftStore);
   private readonly consultas = inject(QueryClient);
   private readonly sesion = inject(SessionStore);
 
@@ -137,12 +139,29 @@ export class ListingStore {
       imagen: Blob;
       desdeGaleria: boolean;
     }): Promise<Listing> => {
+      // Se guarda **antes de normalizar y de subir**, y solo lo capturado con la cámara:
+      // eso es lo que se perdería al cerrar el navegador (criterio 7). Un archivo de la
+      // galería no hace falta guardarlo, porque sigue estando en la galería.
+      if (!toma.desdeGaleria) {
+        await this.borrador.guardar(toma.id, { posicion: toma.posicion, imagen: toma.imagen });
+      }
+
       const normalizada = await this.normalizador.normalizar(toma.imagen);
 
       this.avance.set({ posicion: toma.posicion, fraccion: 0 });
 
       try {
-        return await this.subirConAvance(toma.id, toma.posicion, normalizada, toma.desdeGaleria);
+        const publicacion = await this.subirConAvance(
+          toma.id,
+          toma.posicion,
+          normalizada,
+          toma.desdeGaleria,
+        );
+
+        // Subió: desde aquí la fuente es el servidor y la copia local sobra.
+        await this.borrador.olvidar(toma.id, toma.posicion);
+
+        return publicacion;
       } finally {
         this.avance.set(null);
       }
@@ -150,6 +169,30 @@ export class ListingStore {
     retry: false,
     onSuccess: (publicacion: Listing) => this.refrescar(publicacion),
   }));
+
+  /**
+   * Las tomas que se congelaron y no llegaron a subir. HU-003 criterio 7.
+   *
+   * <p>Es la mitad que le faltaba al borrador: sin esta lectura, el almacén escribía y
+   * borraba sin que nadie recuperara nunca nada, y «cerrar el navegador por accidente no
+   * obliga a empezar de nuevo» no se cumplía.
+   *
+   * <p>Devuelve solo lo que **no está ya en el servidor**: una toma guardada cuya subida
+   * sí llegó, aunque la respuesta no, no hay que volver a mandarla.
+   */
+  async tomasSinSubir(publicacion: Listing): Promise<readonly TomaGuardada[]> {
+    const guardadas = await this.borrador.recuperar(publicacion.id);
+    const puestas = new Set(
+      publicacion.images.filter((imagen) => imagen.kind === 'SELLER_SHOT').map((i) => i.position),
+    );
+
+    return guardadas.filter((toma) => !puestas.has(toma.posicion));
+  }
+
+  /** Tira el borrador de una publicación. Se llama al salir del asistente. */
+  async olvidarBorrador(id: string): Promise<void> {
+    await this.borrador.limpiar(id);
+  }
 
   readonly removeImage = injectMutation(() => ({
     mutationFn: (imagen: { id: string; imagenId: string }) =>

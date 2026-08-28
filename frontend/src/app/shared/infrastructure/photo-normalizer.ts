@@ -1,12 +1,7 @@
 import { Injectable, type OnDestroy } from '@angular/core';
 
-import type {
-  MotivoDeRechazo,
-  PeticionDeNormalizacion,
-  RespuestaDeNormalizacion,
-} from './photo-normalizer.worker';
-
-export type { MotivoDeRechazo };
+import type { MotivoDeRechazo } from '../domain/photo-crop';
+import type { PeticionDeNormalizacion, RespuestaDeNormalizacion } from './photo-normalizer.worker';
 
 /** El rechazo del normalizador, con el motivo que la pantalla traduce. */
 export class ImagenNoNormalizable extends Error {
@@ -64,8 +59,10 @@ export class PhotoNormalizer implements OnDestroy {
    * de RN-019, que es el caso que la pantalla tiene que explicar.
    */
   async normalizar(imagen: Blob): Promise<Blob> {
+    // No es que la imagen no se pueda leer: es que este navegador no puede prepararla. El
+    // texto que ve la persona no puede culpar a su foto de algo que no es suyo.
     if (!this.soportado()) {
-      throw new ImagenNoNormalizable('IMAGEN_ILEGIBLE');
+      throw new ImagenNoNormalizable('SIN_SOPORTE');
     }
 
     const id = this.siguienteId++;

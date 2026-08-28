@@ -1101,20 +1101,26 @@
       "rejected": {
         "RESOLUCION_INSUFICIENTE": "This photo is too small. We need at least 900 × 1200 pixels after cropping it to portrait.",
         "NO_SE_PUDO_COMPRIMIR": "We could not prepare this photo. Try another one.",
-        "IMAGEN_ILEGIBLE": "We could not read this file. Make sure it is an image."
+        "IMAGEN_ILEGIBLE": "We could not read this file. Make sure it is an image.",
+        "SIN_SOPORTE": "This browser cannot prepare the photo. Try another one, or update it."
       },
       "upload": {
         "progress": "Uploading {{porcentaje}}%",
         "retry": "Retry this shot",
         "failed": "This shot could not be uploaded.",
-        "done": "Done"
+        "done": "Done",
+        "saved": "Shot {{nombre}} ready"
       },
       "close": "Leave the assistant",
       "take": "Take the photo",
       "retake": "Retake this shot",
       "next": "Next",
       "previous": "Previous",
-      "finish": "Finish"
+      "finish": "Finish",
+      "loading": "Loading the listing",
+      "notFound": "We could not open this listing. It may no longer exist, or it may not be yours.",
+      "backToListings": "Back to my listings",
+      "notForSealed": "This product does not use the capture assistant."
     }
   },
   "listingReview": {
@@ -1237,7 +1243,8 @@
       "instructions": "Drag to rotate, or use the arrow keys.",
       "loading": "Loading the rotating view",
       "frame": "View at {{grados}} degrees",
-      "fallbackAlt": "{{titulo}}, front view"
+      "fallbackAlt": "{{titulo}}, front view",
+      "roleDescription": "rotating viewer"
     }
   }
 }

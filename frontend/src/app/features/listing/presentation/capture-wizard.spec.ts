@@ -1,4 +1,5 @@
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
+import { HttpEventType } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
@@ -21,7 +22,7 @@ import {
   ImagenNoNormalizable,
   PhotoNormalizer,
 } from '../../../shared/infrastructure/photo-normalizer';
-import { CaptureDraftStore } from '../infrastructure/capture-draft.store';
+import { CaptureDraftStore, type TomaGuardada } from '../infrastructure/capture-draft.store';
 import { CaptureWizard } from './capture-wizard';
 
 /**
@@ -144,31 +145,50 @@ describe('CaptureWizard', () => {
     }
   }
 
+  /** La superficie publica del almacen. `implements` no sirve: la clase tiene privados. */
+  type Borrador = Pick<
+    CaptureDraftStore,
+    'soportado' | 'guardar' | 'olvidar' | 'recuperar' | 'limpiar' | 'borrarTodo'
+  >;
+
+  /**
+   * El borrador del dispositivo.
+   *
+   * <p>Se comprueba contra la clase real mas abajo y no solo por su forma: la version
+   * anterior de este doble declaraba un `limpiar()` que la clase **no tenia**, y como
+   * TypeScript compara estructuras nadie se entero. Un metodo que no exista alla ya no
+   * compila aqui.
+   */
   class BorradorFalso {
     readonly guardadas: { posicion: number; imagen: Blob }[] = [];
     readonly olvidadas: number[] = [];
+    pendientes: TomaGuardada[] = [];
+    limpiados: string[] = [];
 
     soportado(): boolean {
       return true;
     }
-    async guardar(_id: string, toma: { posicion: number; imagen: Blob }): Promise<void> {
+    async guardar(_id: string, toma: TomaGuardada): Promise<void> {
       this.guardadas.push(toma);
     }
     async olvidar(_id: string, posicion: number): Promise<void> {
       this.olvidadas.push(posicion);
     }
-    async recuperar(): Promise<readonly { posicion: number; imagen: Blob }[]> {
-      return [];
+    async recuperar(): Promise<readonly TomaGuardada[]> {
+      return this.pendientes;
     }
-    async limpiar(): Promise<void> {
-      // Nada que limpiar en un doble.
+    async limpiar(id: string): Promise<void> {
+      this.limpiados.push(id);
+    }
+    async borrarTodo(): Promise<void> {
+      this.pendientes = [];
     }
   }
 
   let camara: CamaraFalsa;
   let sensores: SensoresFalsos;
   let normalizador: NormalizadorFalso;
-  let borrador: BorradorFalso;
+  let borrador: BorradorFalso & Borrador;
   let parametros: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
 
   /**
@@ -278,8 +298,8 @@ describe('CaptureWizard', () => {
 
   describe('el nivel', () => {
     /** Criterio 3: pasados los 5 grados el obturador se deshabilita y se explica. */
-    it('deshabilita el obturador con el teléfono inclinado y dice por qué', async () => {
-      const { fixture } = await montar(publicacion([]));
+    it('no deja disparar con el teléfono inclinado y dice por qué', async () => {
+      const { fixture, backend } = await montar(publicacion([]));
 
       boton(fixture, 'Tomar las fotos con la cámara')?.click();
       await asentar(fixture);
@@ -287,9 +307,20 @@ describe('CaptureWizard', () => {
       sensores.inclinar(90, 20);
       await asentar(fixture);
 
-      expect(boton(fixture, 'Tomar la foto')?.disabled).toBe(true);
+      // `aria-disabled` y no `disabled`: el boton se queda alcanzable por teclado para que
+      // quien navega asi no lo pierda justo cuando aparece la explicacion.
+      expect(boton(fixture, 'Tomar la foto')?.getAttribute('aria-disabled')).toBe('true');
       expect(fixture.nativeElement.textContent).toContain('Endereza el teléfono');
       expect(fixture.nativeElement.textContent).toContain('más de 5 grados');
+
+      // Lo que de verdad importa no es el atributo, es que no se dispare. Sin esto, quitar
+      // la guarda de `tomar()` dejaría la prueba en verde y el criterio 3 roto.
+      boton(fixture, 'Tomar la foto')?.click();
+      await asentar(fixture);
+
+      backend.expectNone(
+        (llamada) => llamada.method === 'POST' && llamada.url === `${API}/listings/${ID}/images`,
+      );
     });
 
     it('habilita el obturador con el teléfono nivelado', async () => {
@@ -301,7 +332,7 @@ describe('CaptureWizard', () => {
       sensores.inclinar(90, 0);
       await asentar(fixture);
 
-      expect(boton(fixture, 'Tomar la foto')?.disabled).toBe(false);
+      expect(boton(fixture, 'Tomar la foto')?.getAttribute('aria-disabled')).toBe('false');
       expect(fixture.nativeElement.textContent).toContain('Nivelado');
     });
 
@@ -318,7 +349,7 @@ describe('CaptureWizard', () => {
       boton(fixture, 'Tomar las fotos con la cámara')?.click();
       await asentar(fixture);
 
-      expect(boton(fixture, 'Tomar la foto')?.disabled).toBe(false);
+      expect(boton(fixture, 'Tomar la foto')?.getAttribute('aria-disabled')).toBe('false');
       expect(fixture.nativeElement.textContent).toContain('Seguimos sin el nivel');
     });
   });
@@ -335,9 +366,7 @@ describe('CaptureWizard', () => {
 
       // Guardada antes de que la subida conteste: es lo que salva la foto si la pestaña
       // se cierra a mitad (criterio 7).
-      expect(borrador.guardadas).toEqual([
-        expect.objectContaining({ posicion: 0 }) as unknown as { posicion: number; imagen: Blob },
-      ]);
+      expect(borrador.guardadas.map((toma) => toma.posicion)).toEqual([0]);
 
       const subida = backend.expectOne(
         (llamada) => llamada.method === 'POST' && llamada.url === `${API}/listings/${ID}/images`,
@@ -382,6 +411,88 @@ describe('CaptureWizard', () => {
       await asentar(fixture);
 
       expect(fixture.nativeElement.textContent).toContain('Toma 2 de 8');
+    });
+  });
+
+  /**
+   * Criterio 7: «cerrar el navegador por accidente no obliga a empezar de nuevo».
+   *
+   * <p>Es el criterio que el almacen existe para cumplir, y el que estaba escrito a medias:
+   * se guardaba y se borraba, y nadie recuperaba nunca nada.
+   */
+  describe('al retomar un borrador interrumpido', () => {
+    it('sube sola la toma que quedo congelada y sin subir', async () => {
+      borrador.pendientes = [
+        { posicion: 0, imagen: new Blob(['congelada'], { type: 'image/jpeg' }) },
+      ];
+
+      const { fixture, backend } = await montar(publicacion([]));
+
+      const subida = backend.expectOne(
+        (llamada) => llamada.method === 'POST' && llamada.url === `${API}/listings/${ID}/images`,
+      );
+      expect(subida.request.params.get('position')).toBe('0');
+
+      subida.flush(publicacion([toma(0)]));
+      await asentar(fixture);
+
+      expect(fixture.nativeElement.textContent).toContain('Sigue donde ibas');
+    });
+
+    it('no reenvia una toma guardada que el servidor ya tiene', async () => {
+      borrador.pendientes = [
+        { posicion: 0, imagen: new Blob(['congelada'], { type: 'image/jpeg' }) },
+      ];
+
+      const { backend } = await montar(publicacion([toma(0)]));
+
+      backend.expectNone(
+        (llamada) => llamada.method === 'POST' && llamada.url === `${API}/listings/${ID}/images`,
+      );
+    });
+
+    it('no dice nada de retomar cuando no hay nada guardado', async () => {
+      const { fixture } = await montar(publicacion([]));
+
+      expect(fixture.nativeElement.textContent).not.toContain('Sigue donde ibas');
+    });
+
+    /** Lo que no llego a subirse en esta sesion ya no se va a subir: son megabytes. */
+    it('tira el borrador al salir del asistente', async () => {
+      const { fixture } = await montar(publicacion([]));
+
+      boton(fixture, 'Salir del asistente')?.click();
+      await asentar(fixture);
+
+      expect(borrador.limpiados).toEqual([ID]);
+    });
+  });
+
+  describe('los tres estados de la pantalla', () => {
+    it('no deja la pantalla sin encabezado mientras carga', async () => {
+      const fixture = TestBed.createComponent(CaptureWizard);
+      await asentar(fixture);
+
+      // El h1 vive fuera del @if: la rama de carga es justo la que renderiza el servidor.
+      expect(fixture.nativeElement.querySelector('h1')).not.toBeNull();
+
+      TestBed.inject(HttpTestingController)
+        .expectOne(`${API}/listings/${ID}`)
+        .flush(publicacion([]));
+    });
+
+    it('explica y ofrece salida cuando la publicacion no se puede abrir', async () => {
+      const fixture = TestBed.createComponent(CaptureWizard);
+      const backend = TestBed.inject(HttpTestingController);
+
+      await asentar(fixture);
+      backend
+        .expectOne(`${API}/listings/${ID}`)
+        .flush(null, { status: 404, statusText: 'Not Found' });
+      await asentar(fixture);
+
+      expect(fixture.nativeElement.textContent).toContain('No pudimos abrir esta publicación');
+      expect(fixture.nativeElement.querySelector('a[href="/mis-publicaciones"]')).not.toBeNull();
     });
   });
 
@@ -478,6 +589,111 @@ describe('CaptureWizard', () => {
       fixture.destroy();
 
       expect(sensores.bajas).toBe(1);
+    });
+  });
+
+  /** Criterio 10: progreso real por toma, no un indicador que gira. */
+  describe('el progreso de la subida', () => {
+    it('muestra el porcentaje que informa el navegador, incluido el cero', async () => {
+      const { fixture, backend } = await montar(publicacion([]));
+
+      boton(fixture, 'Tomar las fotos con la cámara')?.click();
+      await asentar(fixture);
+      boton(fixture, 'Tomar la foto')?.click();
+      await asentar(fixture);
+
+      const subida = backend.expectOne(
+        (llamada) => llamada.method === 'POST' && llamada.url === `${API}/listings/${ID}/images`,
+      );
+
+      // El cero es el instante en que más falta hace ver que la subida empezó, y es justo
+      // el que una comprobación por «truthy» se come.
+      subida.event({ type: HttpEventType.UploadProgress, loaded: 0, total: 1000 });
+      await asentar(fixture);
+      expect(fixture.nativeElement.textContent).toContain('Subiendo 0%');
+
+      subida.event({ type: HttpEventType.UploadProgress, loaded: 400, total: 1000 });
+      await asentar(fixture);
+      expect(fixture.nativeElement.textContent).toContain('Subiendo 40%');
+
+      subida.flush(publicacion([toma(0)]));
+      await asentar(fixture);
+      expect(fixture.nativeElement.textContent).not.toContain('Subiendo');
+    });
+  });
+
+  /** Criterio 8: la galería pasa por el mismo recorte y va marcada como tal. */
+  describe('subir desde la galería', () => {
+    const elegirArchivo = async (fixture: { nativeElement: HTMLElement }) => {
+      const campo = fixture.nativeElement.querySelector('#galeria') as HTMLInputElement;
+      Object.defineProperty(campo, 'files', {
+        value: [new File(['unos bytes'], 'foto.jpg', { type: 'image/jpeg' })],
+        configurable: true,
+      });
+      campo.dispatchEvent(new Event('change'));
+    };
+
+    it('declara que la imagen viene de la galería', async () => {
+      const { fixture, backend } = await montar(publicacion([]));
+
+      await elegirArchivo(fixture);
+      await asentar(fixture);
+
+      const subida = backend.expectOne(
+        (llamada) => llamada.method === 'POST' && llamada.url === `${API}/listings/${ID}/images`,
+      );
+
+      expect(subida.request.params.get('fromGallery')).toBe('true');
+      subida.flush(publicacion([toma(0)]));
+    });
+
+    /** El mismo recorte forzado: la galería no se salta el normalizador. */
+    it('pasa por el normalizador igual que una toma de cámara', async () => {
+      normalizador.rechazaCon = new ImagenNoNormalizable('RESOLUCION_INSUFICIENTE');
+
+      const { fixture, backend } = await montar(publicacion([]));
+
+      await elegirArchivo(fixture);
+      await asentar(fixture);
+
+      expect(fixture.nativeElement.textContent).toContain('900 × 1200');
+      backend.expectNone(
+        (llamada) => llamada.method === 'POST' && llamada.url === `${API}/listings/${ID}/images`,
+      );
+    });
+
+    /** Un archivo de la galería sigue estando en la galería: no se copia al borrador. */
+    it('no guarda en el borrador lo que vino de la galería', async () => {
+      const { fixture, backend } = await montar(publicacion([]));
+
+      await elegirArchivo(fixture);
+      await asentar(fixture);
+
+      backend
+        .expectOne(
+          (llamada) => llamada.method === 'POST' && llamada.url === `${API}/listings/${ID}/images`,
+        )
+        .flush(publicacion([toma(0)]));
+      await asentar(fixture);
+
+      expect(borrador.guardadas).toEqual([]);
+    });
+  });
+
+  /** Caso borde de la historia: rotar la pantalla no devuelve el asistente al principio. */
+  describe('cuando la pantalla rota a mitad de la captura', () => {
+    it('mantiene el paso en curso aunque la publicación se refresque', async () => {
+      const { fixture, backend } = await montar(publicacion([]));
+
+      boton(fixture, 'Lado derecho')?.click();
+      await asentar(fixture);
+      expect(fixture.nativeElement.textContent).toContain('Toma 3 de 8');
+
+      // Un refresco de la consulta es lo que ocurre al rotar y al volver de segundo plano.
+      backend.match(`${API}/listings/${ID}`).forEach((llamada) => llamada.flush(publicacion([])));
+      await asentar(fixture);
+
+      expect(fixture.nativeElement.textContent).toContain('Toma 3 de 8');
     });
   });
 });

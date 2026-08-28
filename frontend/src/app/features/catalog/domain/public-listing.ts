@@ -1,9 +1,10 @@
-import type {
-  Category,
-  Condition,
-  ListingImage,
-  Money,
-  Product,
+import {
+  TOMAS_DE_LA_SECUENCIA,
+  type Category,
+  type Condition,
+  type ListingImage,
+  type Money,
+  type Product,
 } from '../../../shared/domain/listing';
 
 /**
@@ -112,4 +113,31 @@ export function resumen(publicacion: PublicListing): ResumenDeTarjeta {
     precio: publicacion.product.price,
     condicion: publicacion.product.condition,
   };
+}
+
+/**
+ * La secuencia del visor 360: las tomas del vendedor, en orden de giro.
+ *
+ * <p>**Las imágenes de referencia quedan fuera** (RN-066). Son del fabricante y no del
+ * producto que se recibe, así que meterlas en el giro haría que el producto cambiara de
+ * aspecto a mitad de vuelta.
+ */
+export function secuenciaDeGiro(publicacion: PublicListing): readonly ListingImage[] {
+  return publicacion.images
+    .filter((imagen) => imagen.kind === 'SELLER_SHOT')
+    .slice()
+    .sort((una, otra) => una.position - otra.position);
+}
+
+/**
+ * Si a esta publicación se le ofrece el visor giratorio.
+ *
+ * <p>Solo con la secuencia completa de ocho (RN-017). Es el caso borde de HU-003: «una
+ * publicación antigua con menos de ocho tomas no ofrece visor y se muestra solo el
+ * carrusel». Se exige la secuencia entera y no el mínimo de cuatro que el propio visor
+ * necesita para girar sin saltos: con cuatro se puede girar, pero media vuelta enseñada
+ * como si fuera entera engaña sobre lo que se está viendo.
+ */
+export function ofreceVisor(publicacion: PublicListing): boolean {
+  return secuenciaDeGiro(publicacion).length === TOMAS_DE_LA_SECUENCIA;
 }

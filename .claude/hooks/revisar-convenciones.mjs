@@ -58,9 +58,15 @@ if (enFrontend && es('.ts', '.html')) {
   // esa prosa deja dos salidas, las dos malas: empeorar la explicacion, o acostumbrarse a
   // ignorar el hook. Es justo el falso positivo que la cabecera de este archivo dice que no
   // se admite. Lo que se busca son llamadas, y una llamada no vive en un comentario.
+  // El comentario de linea solo se quita cuando ocupa la linea entera. Quitar tambien el
+  // que va al final de una linea de codigo obligaria a distinguir un `//` de comentario de
+  // uno dentro de una cadena, y no distinguirlo abre un agujero de verdad: cualquier linea
+  // con `https://` perderia todo lo que va detras, incluido un `document.cookie`. Se
+  // acepta a cambio que un comentario al final de una linea de codigo pueda dar un falso
+  // positivo; los dos que motivaron esto eran de bloque.
   const codigo = texto
     .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/\/\/[^\n]*/g, '')
+    .replace(/^[ \t]*\/\/[^\n]*$/gm, '')
     .replace(/<!--[\s\S]*?-->/g, '');
 
   const reglas = [

@@ -4,6 +4,8 @@ import {
   ALTO_MINIMO,
   ANCHO_MINIMO,
   RELACION_FOTO,
+  TOPE_DE_BYTES,
+  comprimirBajoTope,
   cumpleMinimo,
   rectanguloDeRecorte,
 } from './photo-crop';
@@ -102,6 +104,64 @@ describe('el recorte de una foto de producto', () => {
     it('rechaza lo que se queda corto por un píxel', () => {
       expect(cumpleMinimo({ x: 0, y: 0, ancho: ANCHO_MINIMO - 1, alto: ALTO_MINIMO })).toBe(false);
       expect(cumpleMinimo({ x: 0, y: 0, ancho: ANCHO_MINIMO, alto: ALTO_MINIMO - 1 })).toBe(false);
+    });
+  });
+
+  /**
+   * Criterio 9: «ninguna toma sale del dispositivo por encima de 500 KB».
+   *
+   * <p>El tope y la escalera de calidades son regla de producto, no detalle del lienzo, y
+   * por eso se prueban aquí y no dentro del worker.
+   */
+  describe('el apretón hasta los 500 KB', () => {
+    /** Un codificador falso: el tamaño baja conforme baja la calidad. */
+    const codificadorQueDa = (porCalidad: Readonly<Record<string, number>>) => {
+      const pedidas: number[] = [];
+      const codificar = async (calidad: number): Promise<Blob> => {
+        pedidas.push(calidad);
+        return { size: porCalidad[String(calidad)] ?? 0 } as Blob;
+      };
+      return { codificar, pedidas };
+    };
+
+    it('se queda con la mejor calidad que cabe, y no prueba más', async () => {
+      const { codificar, pedidas } = codificadorQueDa({ '0.85': 200_000 });
+
+      const salida = await comprimirBajoTope(codificar);
+
+      expect(salida?.size).toBe(200_000);
+      expect(pedidas).toEqual([0.85]);
+    });
+
+    it('baja de calidad hasta que cabe', async () => {
+      const { codificar, pedidas } = codificadorQueDa({
+        '0.85': 900_000,
+        '0.75': 700_000,
+        '0.65': 400_000,
+      });
+
+      const salida = await comprimirBajoTope(codificar);
+
+      expect(salida?.size).toBe(400_000);
+      expect(pedidas).toEqual([0.85, 0.75, 0.65]);
+    });
+
+    it('acepta lo que cae justo en el tope', async () => {
+      const { codificar } = codificadorQueDa({ '0.85': TOPE_DE_BYTES });
+
+      expect((await comprimirBajoTope(codificar))?.size).toBe(TOPE_DE_BYTES);
+    });
+
+    it('rechaza un píxel por encima del tope en la calidad más baja', async () => {
+      const { codificar } = codificadorQueDa({
+        '0.85': 900_000,
+        '0.75': 800_000,
+        '0.65': 700_000,
+        '0.55': TOPE_DE_BYTES + 1,
+      });
+
+      // Devolverla igualmente incumpliría el criterio 9, que no admite matices.
+      expect(await comprimirBajoTope(codificar)).toBeNull();
     });
   });
 });

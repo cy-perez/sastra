@@ -12,6 +12,24 @@ export interface TomaGuardada {
   readonly imagen: Blob;
 }
 
+/** Lo que de verdad se escribe: la toma, su clave y cuándo se guardó. */
+interface FilaGuardada {
+  readonly clave: string;
+  readonly imagen: Blob;
+  /** Milisegundos desde la época. Es lo único que permite barrer por antigüedad. */
+  readonly guardadaEn: number;
+}
+
+/**
+ * Cuánto vive un borrador sin tocarse.
+ *
+ * <p>Siete días. Una captura es una sesión de minutos, así que una semana es holgado para
+ * lo que el criterio 7 promete —retomar lo que se estaba haciendo— y corto para que nada
+ * se quede indefinidamente. Sin este barrido, una publicación abandonada dejaría sus
+ * megabytes en el dispositivo hasta que el navegador reclamara la cuota.
+ */
+const VIDA_DEL_BORRADOR_MS = 7 * 24 * 60 * 60 * 1000;
+
 /**
  * El avance del asistente, guardado en el dispositivo. HU-003 criterio 7.
  *
@@ -44,7 +62,11 @@ export class CaptureDraftStore {
   /** Guarda una toma del borrador, o no hace nada si el almacén falla. */
   async guardar(publicacionId: string, toma: TomaGuardada): Promise<void> {
     await this.conElAlmacen('readwrite', (almacen) => {
-      almacen.put({ clave: clave(publicacionId, toma.posicion), imagen: toma.imagen });
+      almacen.put({
+        clave: clave(publicacionId, toma.posicion),
+        imagen: toma.imagen,
+        guardadaEn: Date.now(),
+      } satisfies FilaGuardada);
     });
   }
 
@@ -65,7 +87,10 @@ export class CaptureDraftStore {
     const guardadas: TomaGuardada[] = [];
     const prefijo = `${publicacionId}:`;
 
-    await this.conElAlmacen('readonly', (almacen) => {
+    // Se barre de paso, en la misma transacción: es el único momento en que este almacén
+    // se abre, así que es el único momento en que se puede limpiar lo de otras
+    // publicaciones sin abrirlo aparte.
+    await this.conElAlmacen('readwrite', (almacen) => {
       const cursor = almacen.openCursor();
 
       cursor.onsuccess = () => {
@@ -74,8 +99,11 @@ export class CaptureDraftStore {
           return;
         }
 
-        const fila = puntero.value as { clave: string; imagen: Blob };
-        if (fila.clave.startsWith(prefijo)) {
+        const fila = puntero.value as FilaGuardada;
+
+        if (Date.now() - (fila.guardadaEn ?? 0) > VIDA_DEL_BORRADOR_MS) {
+          puntero.delete();
+        } else if (fila.clave.startsWith(prefijo)) {
           guardadas.push({ posicion: posicionDe(fila.clave), imagen: fila.imagen });
         }
         puntero.continue();
@@ -83,6 +111,44 @@ export class CaptureDraftStore {
     });
 
     return guardadas.sort((una, otra) => una.posicion - otra.posicion);
+  }
+
+  /**
+   * Tira el borrador entero de una publicación.
+   *
+   * <p>Se llama al salir del asistente: lo que no llegó a subirse en esa sesión ya no se
+   * va a subir, y dejarlo ahí son megabytes por publicación abandonada.
+   */
+  async limpiar(publicacionId: string): Promise<void> {
+    const prefijo = `${publicacionId}:`;
+
+    await this.conElAlmacen('readwrite', (almacen) => {
+      const cursor = almacen.openCursor();
+
+      cursor.onsuccess = () => {
+        const puntero = cursor.result;
+        if (puntero === null) {
+          return;
+        }
+        if ((puntero.value as FilaGuardada).clave.startsWith(prefijo)) {
+          puntero.delete();
+        }
+        puntero.continue();
+      };
+    });
+  }
+
+  /**
+   * Borra todo lo guardado, de cualquier publicación.
+   *
+   * <p>Es lo que se llama al cerrar sesión. El borrador vive en el origen y no en la
+   * sesión, así que sin esto las fotos de quien acaba de salir siguen ahí, legibles desde
+   * las herramientas del navegador, para quien entre después en el mismo equipo.
+   */
+  async borrarTodo(): Promise<void> {
+    await this.conElAlmacen('readwrite', (almacen) => {
+      almacen.clear();
+    });
   }
 
   /**

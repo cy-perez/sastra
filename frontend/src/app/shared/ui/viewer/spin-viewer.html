@@ -1,20 +1,30 @@
 @if (actual(); as fotograma) {
   <!--
-    El marco es lo enfocable, y lleva su rol descrito y sus instrucciones (criterio 15).
-    `aria-roledescription` nombra qué es esto sin inventar un rol que no existe: por dentro
-    sigue siendo un grupo con una imagen, que es lo que de verdad hay.
+    `role="slider"` y no `group`. `group` es un rol estructural: con un lector de pantalla
+    el cursor virtual se queda con las flechas para recorrer el documento y el `keydown` de
+    aquí **no llega a ejecutarse nunca**, así que el criterio 15 fallaba justo para quien lo
+    necesita. `slider` es un rol de widget: el lector cede las flechas y anuncia el valor.
 
-    Las instrucciones se enlazan con `aria-describedby` en vez de dejarlas solo a la vista:
-    quien navega con teclado no tiene cómo adivinar que las flechas giran.
+    Con `aria-valuetext` en lugar de una región viva: se lee solo cuando el foco está en el
+    control, y no se dispara con el ratón. La región viva anterior cambiaba en cada
+    `pointermove` —decenas de veces por segundo— y llenaba la cola del lector.
+
+    `aria-busy` mientras no se puede girar: el marco ya es enfocable antes de que lleguen
+    los cuatro fotogramas, y sin esto prometía unas flechas que todavía no hacían nada.
   -->
   <div
     #marco
     class="visor"
     tabindex="0"
-    role="group"
-    [attr.aria-roledescription]="'catalog.viewer.label' | transloco"
-    [attr.aria-label]="'catalog.viewer.label' | transloco"
-    aria-describedby="visor-instrucciones"
+    role="slider"
+    aria-valuemin="0"
+    [attr.aria-valuemax]="total() - 1"
+    [attr.aria-valuenow]="indice()"
+    [attr.aria-valuetext]="'catalog.viewer.frame' | transloco: { grados: fotograma.grados }"
+    [attr.aria-roledescription]="'catalog.viewer.roleDescription' | transloco"
+    [attr.aria-label]="titulo()"
+    [attr.aria-busy]="!activo()"
+    [attr.aria-describedby]="idInstrucciones"
     (pointerdown)="alEmpezar($event)"
     (pointermove)="alMover($event)"
     (pointerup)="alSoltar($event)"
@@ -37,25 +47,26 @@
       draggable="false"
       [alt]="'catalog.viewer.fallbackAlt' | transloco: { titulo: titulo() }"
     />
-
-    <!--
-      El fotograma en curso, solo para lectores de pantalla. `polite` y no `assertive`:
-      girar es una consulta, no una alerta, y no debe cortar lo que se esté leyendo.
-    -->
-    <p class="solo-lectores" aria-live="polite">
-      {{ 'catalog.viewer.frame' | transloco: { grados: fotograma.grados } }}
-    </p>
   </div>
 
-  <p id="visor-instrucciones" class="tipo-secundario">
-    {{ 'catalog.viewer.instructions' | transloco }}
+  <!--
+    Mientras no se puede girar se dice eso, y no cómo girar: prometer unas flechas que aún
+    no responden es peor que no decir nada (criterio 14 visto desde el teclado).
+  -->
+  <p [id]="idInstrucciones" class="tipo-secundario">
+    @if (activo()) {
+      {{ 'catalog.viewer.instructions' | transloco }}
+    } @else {
+      {{ 'catalog.viewer.loading' | transloco }}
+    }
   </p>
 
   <!--
-    Criterio 14: mientras faltan fotogramas se avisa, y se avisa discreto. El visor ya
-    funciona con los que hay.
+    Criterio 14: el visor ya gira con los fotogramas que hay y avisa, discreto, de que
+    faltan. Solo cuando ya está activo: antes de eso el aviso lo da el párrafo de arriba, y
+    los dos a la vez decían lo mismo dos veces.
   -->
-  @if (cargando()) {
-    <p class="tipo-secundario" role="status">{{ 'catalog.viewer.loading' | transloco }}</p>
+  @if (activo() && cargando()) {
+    <p class="tipo-secundario" aria-hidden="true">{{ 'catalog.viewer.loading' | transloco }}</p>
   }
 }

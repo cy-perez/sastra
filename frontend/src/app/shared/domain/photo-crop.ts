@@ -76,3 +76,66 @@ export function rectanguloDeRecorte(ancho: number, alto: number): Rectangulo {
 export function cumpleMinimo(recorte: Rectangulo): boolean {
   return recorte.ancho >= ANCHO_MINIMO && recorte.alto >= ALTO_MINIMO;
 }
+
+/** Criterio 9: ninguna toma sale del dispositivo por encima de 500 KB. */
+export const TOPE_DE_BYTES = 500 * 1024;
+
+/**
+ * Calidades de JPEG que se prueban, de mejor a peor, hasta bajar del tope.
+ *
+ * <p>A 900 x 1200 la primera basta casi siempre —un JPEG así ronda los 200 KB—, así que la
+ * escalera rara vez pasa del primer peldaño. Las otras existen para la foto con mucho
+ * detalle fino, que es donde el tope se alcanza.
+ */
+export const CALIDADES: readonly number[] = [0.85, 0.75, 0.65, 0.55];
+
+/**
+ * Baja la calidad hasta que la imagen cabe en el tope.
+ *
+ * <p>Está aquí y no dentro del worker porque **el tope es una regla de producto**, no un
+ * detalle del lienzo: el criterio 9 dice el número y dice que no admite matices. Quien
+ * dibuja los píxeles se inyecta, así que esto se prueba sin navegador, igual que
+ * {@link cumpleMinimo}.
+ *
+ * <p>Si ni la calidad más baja cabe, **rechaza**. Devolver la imagen igualmente sería
+ * incumplir el criterio. A 900 x 1200 y calidad 0,55 no se ha visto ocurrir —el tamaño de
+ * salida es fijo y pequeño—, pero un camino que incumple un criterio no se deja escrito
+ * porque se crea que no se va a recorrer.
+ *
+ * @param codificar entrega la imagen a una calidad dada
+ */
+export async function comprimirBajoTope(
+  codificar: (calidad: number) => Promise<Blob>,
+  calidades: readonly number[] = CALIDADES,
+  tope: number = TOPE_DE_BYTES,
+): Promise<Blob | null> {
+  for (const calidad of calidades) {
+    const candidata = await codificar(calidad);
+
+    if (candidata.size <= tope) {
+      return candidata;
+    }
+  }
+  return null;
+}
+
+/**
+ * Por qué una foto no se pudo preparar para subir.
+ *
+ * <p>Vive aquí y no en el worker que la produce: `RESOLUCION_INSUFICIENTE` **es RN-019**,
+ * la misma regla que {@link cumpleMinimo} decide justo arriba. Que la pantalla tuviera que
+ * preguntarle a una clase de infraestructura por qué se rechazó una foto era una
+ * dependencia hacia afuera para leer una regla que ya estaba aquí.
+ *
+ * <p>Un código y no un texto: el texto visible es de Transloco y se decide en la pantalla,
+ * nunca en el dominio (CLAUDE.md).
+ */
+export type MotivoDeRechazo =
+  /** El recorte 3:4 no llega a 900 x 1200 (RN-019). Es el que de verdad se ve. */
+  | 'RESOLUCION_INSUFICIENTE'
+  /** Ni a la calidad más baja cabe en 500 KB (criterio 9). */
+  | 'NO_SE_PUDO_COMPRIMIR'
+  /** El archivo no se pudo decodificar: no era una imagen, o venía corrupto. */
+  | 'IMAGEN_ILEGIBLE'
+  /** Este navegador no puede preparar la foto. No es culpa de la imagen. */
+  | 'SIN_SOPORTE';

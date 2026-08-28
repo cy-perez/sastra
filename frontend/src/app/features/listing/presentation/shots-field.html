@@ -31,7 +31,10 @@
   -->
   @if (conAsistente()) {
     <p class="tomas__asistente">
-      <a class="accion tipo-secundario" [routerLink]="['/publicar', publicacion().id, 'capturar']">
+      <a
+        class="btn btn-secundario tipo-etiqueta-boton"
+        [routerLink]="['/publicar', publicacion().id, 'capturar']"
+      >
         {{ 'listing.capture.entry.action' | transloco }}
       </a>
       <span class="tipo-secundario">{{ 'listing.capture.entry.hint' | transloco }}</span>

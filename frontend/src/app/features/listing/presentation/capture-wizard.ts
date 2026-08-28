@@ -9,10 +9,10 @@ import {
   viewChild,
   type ElementRef,
 } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { map } from 'rxjs';
-import { TranslocoPipe } from '@jsverse/transloco';
+import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
 import { TOMAS_DE_LA_SECUENCIA, type Listing } from '../../../shared/domain/listing';
 import { estaNivelado } from '../../../shared/domain/tilt';
@@ -21,7 +21,6 @@ import { OrientationService } from '../../../shared/infrastructure/orientation.s
 import { ImagenNoNormalizable } from '../../../shared/infrastructure/photo-normalizer';
 import { ListingStore } from '../application/listing.store';
 import { admiteAsistente, pasosDeCaptura, primerPasoPendiente } from '../domain/capture-steps';
-import { CaptureDraftStore } from '../infrastructure/capture-draft.store';
 
 /** En qué punto está el permiso de sensores. Solo iOS llega a `pendiente`. */
 type EstadoDelPermiso = 'pendiente' | 'concedido' | 'negado';
@@ -40,7 +39,7 @@ type EstadoDelPermiso = 'pendiente' | 'concedido' | 'negado';
  */
 @Component({
   selector: 'sendik-capture-wizard',
-  imports: [TranslocoPipe],
+  imports: [RouterLink, TranslocoPipe],
   templateUrl: './capture-wizard.html',
   styleUrl: './capture-wizard.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -48,9 +47,9 @@ type EstadoDelPermiso = 'pendiente' | 'concedido' | 'negado';
 export class CaptureWizard {
   private readonly camara = inject(CameraService);
   private readonly sensores = inject(OrientationService);
-  private readonly borrador = inject(CaptureDraftStore);
   private readonly publicaciones = inject(ListingStore);
   private readonly router = inject(Router);
+  private readonly idioma = inject(TranslocoService);
 
   private readonly id = toSignal(
     inject(ActivatedRoute).paramMap.pipe(map((parametros) => parametros.get('id'))),
@@ -58,6 +57,18 @@ export class CaptureWizard {
   );
 
   protected readonly publicacion = computed(() => this.publicaciones.current.data() ?? null);
+
+  /** Los tres estados que toda pantalla que carga datos define (frontend/CLAUDE.md). */
+  protected readonly cargando = computed(() => this.publicaciones.current.isPending());
+
+  /**
+   * No hay publicación que capturar.
+   *
+   * <p>La consulta no reintenta, así que un 404 —no existe, o no es de quien pregunta— es
+   * definitivo. Sin esta rama la pantalla se quedaba en blanco para siempre, sin mensaje
+   * y sin salida.
+   */
+  protected readonly noDisponible = computed(() => this.publicaciones.current.isError());
 
   /** El paso en curso. Lo fija el primer hueco al abrir y avanza al subir. */
   private readonly paso = signal<number | null>(null);
@@ -67,6 +78,9 @@ export class CaptureWizard {
 
   /** La baja del sensor, guardada para poder soltarlo al salir. */
   private bajaDelSensor: (() => void) | null = null;
+
+  /** El foco se lleva al título una sola vez, no en cada revisión de la vista. */
+  private enfocado = false;
 
   protected readonly abierta = signal(false);
   protected readonly ocupada = signal(false);
@@ -78,11 +92,30 @@ export class CaptureWizard {
    * resto nace concedido: pintar «vamos a pedirte permiso» en un navegador que no lo pide
    * anunciaría un diálogo que nunca aparece.
    */
+  /**
+   * Cuántas tomas se recuperaron del borrador al abrir. HU-003 criterio 7.
+   *
+   * <p>Se pintan como aviso —«sigue donde ibas»— y se suben solas: ya estaban congeladas,
+   * y volver a pedirlas sería justo lo que el criterio dice que no hay que hacer.
+   */
+  protected readonly recuperadas = signal(0);
+
+  /**
+   * Lo que se le dice a un lector de pantalla cuando algo cambia.
+   *
+   * <p>Una sola región, que vive fuera de todos los `@if` y nace vacía: una región que se
+   * inserta ya con su texto dentro no se anuncia de forma fiable. Por aquí pasan el
+   * cambio de nivel y el fin de cada subida, que son los dos momentos en los que alguien
+   * que no ve la pantalla necesita saber qué pasó.
+   */
+  protected readonly anuncio = signal('');
+
   protected readonly permiso = signal<EstadoDelPermiso>(
     this.sensores.necesitaPermiso() ? 'pendiente' : 'concedido',
   );
 
   private readonly video = viewChild<ElementRef<HTMLVideoElement>>('video');
+  private readonly titulo = viewChild<ElementRef<HTMLElement>>('titulo');
 
   protected readonly total = TOMAS_DE_LA_SECUENCIA;
   protected readonly soportada = computed(() => this.camara.soportada());
@@ -137,6 +170,7 @@ export class CaptureWizard {
       const actual = this.publicacion();
       if (actual !== null && this.paso() === null) {
         this.paso.set(primerPasoPendiente(actual));
+        void this.retomarBorrador(actual);
       }
     });
 
@@ -154,6 +188,19 @@ export class CaptureWizard {
         return;
       }
       elemento.srcObject = flujo;
+    });
+
+    /*
+     * Lleva el foco al titulo al entrar. El asistente se abre desde un enlace de la
+     * rejilla y ocupa la pantalla entera: sin esto el foco se queda en el `body` y hay que
+     * retabular desde la cabecera del sitio hasta el primer control.
+     */
+    effect(() => {
+      const encabezado = this.titulo()?.nativeElement;
+      if (encabezado !== undefined && !this.enfocado) {
+        this.enfocado = true;
+        encabezado.focus();
+      }
     });
 
     inject(DestroyRef).onDestroy(() => this.apagar());
@@ -179,7 +226,7 @@ export class CaptureWizard {
     try {
       await this.activarNivel();
 
-      this.flujo.set(await this.camara.abrir(false));
+      this.flujo.set(await this.camara.abrir(false, true));
       this.abierta.set(true);
     } catch {
       // Denegar la cámara es una decisión de la persona, no un fallo del sistema. Se
@@ -192,18 +239,21 @@ export class CaptureWizard {
   }
 
   /**
-   * Congela la toma, la guarda en el borrador y la sube.
+   * Congela la toma y la sube.
    *
-   * <p>Se guarda **antes** de subir: si la subida falla o la pestaña se cierra, la foto ya
-   * está a salvo y no hay que volver a tomarla (criterio 7). Se olvida en cuanto sube,
-   * porque desde ese momento la fuente es el servidor.
+   * <p>Que se guarde en el borrador antes de subir, y se olvide al subir, lo hace el caso
+   * de uso (`ListingStore.uploadShot`): es una sola secuencia y parte de ella aquí y parte
+   * allá era tener el mismo caso de uso escrito en dos capas.
    */
   protected async tomar(): Promise<void> {
     const elemento = this.video()?.nativeElement;
     const actual = this.publicacion();
     const posicion = this.paso();
 
-    if (!elemento || actual === null || posicion === null) {
+    // La puerta está aquí y no en un `disabled` del botón: el botón se queda alcanzable
+    // para que quien navega con teclado no lo pierda justo cuando aparece la explicación
+    // de por qué no puede usarlo (criterio 3), así que quien impide disparar es esto.
+    if (!elemento || actual === null || posicion === null || this.ocupada() || !this.nivelado()) {
       return;
     }
 
@@ -212,7 +262,6 @@ export class CaptureWizard {
 
     try {
       const fotograma = await this.camara.capturar(elemento);
-      await this.borrador.guardar(actual.id, { posicion, imagen: fotograma });
 
       await this.subir(actual.id, posicion, fotograma, false);
     } catch (fallo: unknown) {
@@ -254,14 +303,6 @@ export class CaptureWizard {
     }
   }
 
-  /** Repite la toma en curso: se queda en el mismo paso y vuelve a abrir la cámara. */
-  protected async repetir(): Promise<void> {
-    this.error.set(null);
-    if (!this.abierta()) {
-      await this.empezar();
-    }
-  }
-
   protected irA(posicion: number): void {
     this.paso.set(posicion);
     this.error.set(null);
@@ -271,6 +312,13 @@ export class CaptureWizard {
   protected async salir(): Promise<void> {
     const actual = this.publicacion();
     this.apagar();
+
+    // Lo que no llegó a subirse en esta sesión ya no se va a subir por su cuenta, y
+    // dejarlo son megabytes por publicación abandonada. Retomar sigue funcionando: lo que
+    // se recupera es lo de una salida **no** voluntaria, que es lo que el criterio 7 dice.
+    if (actual !== null) {
+      await this.publicaciones.olvidarBorrador(actual.id);
+    }
 
     await this.router.navigate(actual === null ? ['/mis-publicaciones'] : ['/publicar', actual.id]);
   }
@@ -286,15 +334,47 @@ export class CaptureWizard {
     imagen: Blob,
     desdeGaleria: boolean,
   ): Promise<void> {
+    // Guardar en el borrador y olvidarlo al subir es del caso de uso, no de la pantalla:
+    // lo hace `uploadShot`. Aquí solo se encadena lo siguiente.
     const actualizada = await this.publicaciones.uploadShot.mutateAsync({
       id,
       posicion,
       imagen,
       desdeGaleria,
     });
-    await this.borrador.olvidar(id, posicion);
 
+    this.anuncio.set(
+      this.idioma.translate('listing.capture.upload.saved', { nombre: nombreDePaso(posicion) }),
+    );
     this.avanzar(actualizada);
+  }
+
+  /**
+   * Sube lo que quedó congelado y sin subir de una sesión anterior. Criterio 7.
+   *
+   * <p>«Cerrar el navegador por accidente no obliga a empezar de nuevo»: las tomas están
+   * en el dispositivo, así que se terminan de mandar en vez de pedirlas otra vez. Se
+   * suben en orden y de una en una, que es como se subirían recién tomadas.
+   *
+   * <p>Un fallo aquí **no interrumpe nada**: quien abrió el asistente puede seguir
+   * capturando, y lo que no subió se queda en el borrador para el siguiente intento.
+   */
+  private async retomarBorrador(publicacion: Listing): Promise<void> {
+    const pendientes = await this.publicaciones.tomasSinSubir(publicacion);
+
+    if (pendientes.length === 0) {
+      return;
+    }
+    this.recuperadas.set(pendientes.length);
+
+    for (const toma of pendientes) {
+      try {
+        await this.subir(publicacion.id, toma.posicion, toma.imagen, false);
+      } catch {
+        this.error.set('listing.capture.upload.failed');
+        return;
+      }
+    }
   }
 
   /**
@@ -338,7 +418,20 @@ export class CaptureWizard {
       return;
     }
 
-    this.bajaDelSensor = this.sensores.escuchar((lectura) => this.inclinacion.set(lectura));
+    this.bajaDelSensor = this.sensores.escuchar((lectura) => {
+      const antes = this.nivelado();
+      this.inclinacion.set(lectura);
+
+      // Solo al cambiar de estado. El sensor emite decenas de veces por segundo y anunciar
+      // cada lectura llenaría la cola del lector con lo mismo repetido.
+      if (this.nivelado() !== antes) {
+        this.anuncio.set(
+          this.idioma.translate(
+            this.nivelado() ? 'listing.capture.level.ok' : 'listing.capture.level.tilted',
+          ),
+        );
+      }
+    });
   }
 
   private apagar(): void {
@@ -359,6 +452,11 @@ export class CaptureWizard {
  * `listing.capture.rejected.*` enumera. Cualquier otra cosa —la red, un 4xx del servidor—
  * ya tiene su mensaje en el interceptor de errores y no se pisa aquí.
  */
+/** El nombre de una toma, ya traducido, para meterlo en un anuncio. */
+function nombreDePaso(posicion: number): string {
+  return String(posicion + 1);
+}
+
 function claveDelFallo(fallo: unknown): string {
   return fallo instanceof ImagenNoNormalizable
     ? `listing.capture.rejected.${fallo.motivo}`

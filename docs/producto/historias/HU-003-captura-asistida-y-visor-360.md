@@ -1,7 +1,17 @@
 # HU-003 — Captura asistida y visor 360º
 
-**Fase:** 2 | **Estado:** pendiente
+**Fase:** 2 | **Estado:** hecha el 28 de agosto de 2026, con una salvedad anotada al final.
 **Reglas:** RN-016 a RN-019
+
+> **Es enteramente frontend.** El backend ya tenía todo lo que hacía falta desde HU-007:
+> `POST /listings/{id}/images` recibe `position`, `kind` y `fromGallery`, y valida
+> proporción, mínimo y EXIF sobre los bytes que recibe (ADR-0018). Lo único que cambió allá
+> es el valor por omisión de `fromGallery`, que pasó a `true` porque desde hoy hay un
+> cliente que manda `false` y omitirlo dejaría de ser inocuo.
+>
+> Trajo dos decisiones nuevas: **ADR-0026**, que sube la cámara a `shared` partida en dos y
+> abre `shared/infrastructure/`, y **ADR-0027**, que pone el borrador de captura en
+> IndexedDB. Las ocho tomas y la proporción 3:4 no se reabrieron: las decidió ADR-0010.
 
 ## Objetivo
 
@@ -120,3 +130,28 @@ los mismos para cualquier foto del catálogo.
 - Componente: teclado, movimiento reducido, carga parcial.
 - Extremo a extremo con cámara simulada por Playwright.
 - Verificación de accesibilidad del visor con lector de pantalla.
+
+## Lo que quedó fuera, y por qué
+
+**El recorrido de extremo a extremo con cámara simulada.** Es la única prueba requerida que
+no está. No se escribió a ciegas a propósito: `e2e-completo/` necesita PostgreSQL por Docker
+y el jar del backend con Java 25, y en la máquina donde se implementó esto el demonio de
+Docker no estaba levantado y el JDK instalado era el 24. Escribir un recorrido de Playwright
+sin poder ejecutarlo una sola vez es entregar código de prueba que nadie ha visto pasar, y
+este proyecto ya sabe lo que cuesta eso: HU-008 dedicó media historia a explicar por qué
+tres de sus seis pruebas nacieron en rojo.
+
+Lo que ese recorrido tiene que cubrir cuando se escriba, y que hoy **no verifica nada**:
+
+- El criterio 18 de punta a punta: que la ficha salga del servidor con el fotograma frontal
+  y su `alt`. La prueba de componente corre en un TestBed de cliente y pasaría igual si el
+  visor nunca llegara a renderizarse en servidor.
+- El recorte sobre píxeles de verdad. `photo-crop.spec.ts` prueba la aritmética y el worker
+  está doblado en todo lo demás, así que nadie ha visto una imagen real entrar y salir
+  recortada a 3:4.
+- Que la cámara falsa de Chromium dé una resolución que pase RN-019. Es la razón por la que
+  `abrir()` pide ahora 1200 x 1600 en vertical, y esa hipótesis no está comprobada.
+
+**El glosario.** «Asistente de captura» viene del título de esta historia y se usa como
+concepto en la interfaz y en los textos. Si es vocabulario del producto, entra en
+`docs/producto/glosario.md`; no se agregó por cuenta propia.

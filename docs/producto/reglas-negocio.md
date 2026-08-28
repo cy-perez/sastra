@@ -224,6 +224,27 @@ Cada regla tiene identificador. Úsalo en el código y en las pruebas:
   publicación que su propio dueño aprueba no responde por nada. Un moderador sí
   puede vender —nada lo prohíbe—; lo que no puede es decidir sobre lo suyo.
 
+- **RN-068** En el catálogo público se ve **solo lo que está `PUBLISHED`**. Los
+  otros seis estados de RN-061 no existen para quien mira: ni el borrador, ni lo
+  que espera revisión, ni lo rechazado, ni lo pausado, ni lo vendido, ni lo
+  archivado. Tampoco para su propio dueño con la sesión abierta: el catálogo
+  enseña lo mismo a todo el mundo, y el vendedor ve lo suyo en su panel.
+
+  Es la regla que contesta «¿por qué desapareció mi publicación?», y hasta ahora
+  no estaba escrita en ninguna parte: RN-061 enumera los siete estados y sus
+  transiciones, pero nunca dijo cuáles son públicos.
+
+  **Lo vendido desaparece, y es una decisión, no un descuido.** Conservarlo con un
+  sello «Vendido» daría señal de que la plataforma mueve producto y mantendría vivo
+  el enlace que alguien compartió, pero obliga a decidir cuánto tiempo se queda y a
+  responder algo distinto a quien no es el dueño. Se prefirió lo simple de explicar:
+  si no se puede comprar, no está. Cambiar esto es cambiar esta regla.
+
+  La consecuencia para quien implementa es que un enlace a algo que dejó de estar
+  publicado responde **lo mismo que un identificador que no existe**. No se
+  distingue desde fuera, por lo mismo que el 404 de una publicación ajena: decir
+  «esto existía» ya es decir algo.
+
 ## Precio y comisión
 
 - **RN-026** La comisión es del **5% sobre el valor del producto**, a cargo del

@@ -116,9 +116,16 @@ Es la fase en curso desde el 21 de agosto de 2026.
   quedan, con el mismo argumento y cada una esperando la suya, revocar un sello ya
   otorgado y bajar una publicación ya visible (RN-024): los endpoints existen,
   pero no hay forma de llegar a esos identificadores desde la interfaz.
-- Catálogo, categorías, ficha de producto y favoritos. Sin historia escrita. Ya no
-  está bloqueado —el árbol se aprobó—, pero espera a que HU-007 exista: sin
-  publicaciones no hay catálogo que mostrar.
+- Catálogo, categorías, ficha de producto y favoritos. **HU-009 lo cerró el 27 de
+  agosto de 2026**, salvo los favoritos: listado paginado por cursor, navegación
+  por el árbol en sus dos niveles, ficha de producto y perfil público del
+  vendedor, todo detrás de `FEATURE_CATALOG` y todo aplicando RN-068 —en el
+  catálogo se ve solo lo `PUBLISHED`—. Con ella el ciclo de la fase deja de ser un
+  callejón sin salida: lo que un moderador aprueba ya lo ve alguien sin cuenta.
+  **Los favoritos salen a su propia historia**: el catálogo es anónimo y de
+  lectura, y ellos son de cuenta y de escritura, con reglas que todavía no
+  existen. Queda fuera también la frase de la garantía del fabricante en la ficha
+  (RN-067), aplazada a la tanda legal por decisión del 26 de agosto.
 - Panel del vendedor con sus publicaciones y su estado. **Hecho a medias** y sin
   historia propia: `/mis-publicaciones` llegó con HU-007 y da la lista con el
   estado de cada una, que es lo que hacía falta para retomar un borrador. Lo que

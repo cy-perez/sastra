@@ -1,0 +1,35 @@
+<!--
+  El enlace envuelve la tarjeta entera y no solo el título: el destino táctil es la
+  tarjeta, que es lo que se ve pulsable, y de paso cumple los 44px de sobra.
+
+  Su nombre accesible no es «Ver» repetido veinte veces —un lector de pantalla que
+  lista los enlaces vería veinte iguales— sino el título del producto.
+-->
+<a
+  class="tarjeta"
+  [routerLink]="['/producto', publicacion().id]"
+  [attr.aria-label]="'catalog.card.a11yLink' | transloco: { titulo: titulo() }"
+>
+  <!--
+    El hueco de la foto ocupa lo mismo haya foto o no: sin eso la rejilla salta de alto
+    entre una publicación con tomas y una sin ellas, que es el desplazamiento que más se
+    nota al desplazarse.
+  -->
+  <div class="tarjeta__foto">
+    @if (toma(); as imagen) {
+      <img [ngSrc]="imagen.url" [priority]="primera()" width="600" height="800" [alt]="titulo()" />
+    }
+  </div>
+
+  <div class="tarjeta__datos">
+    <p class="tarjeta__titulo tipo-titulo-tarjeta">{{ titulo() }}</p>
+
+    @if (precio(); as valor) {
+      <p class="precio">{{ valor }}</p>
+    }
+
+    @if (condicion(); as estado) {
+      <p class="tipo-secundario">{{ 'listing.condition.' + estado | transloco }}</p>
+    }
+  </div>
+</a>

@@ -30,6 +30,7 @@ import co.sendik.identity.usecase.ListSessionsUseCase;
 import co.sendik.identity.usecase.LoginUseCase;
 import co.sendik.identity.usecase.LogoutUseCase;
 import co.sendik.identity.usecase.ReadProfileUseCase;
+import co.sendik.identity.usecase.ReadPublicProfileUseCase;
 import co.sendik.identity.usecase.ReadSellerVerificationUseCase;
 import co.sendik.identity.usecase.RefreshSessionUseCase;
 import co.sendik.identity.usecase.RegisterUserUseCase;
@@ -283,6 +284,17 @@ public class IdentityWiring {
     @Bean
     ReadProfileUseCase readProfileUseCase(UserRepository usuarios) {
         return new ReadProfileUseCase(usuarios);
+    }
+
+    /**
+     * El perfil publico de cualquiera. HU-009.
+     *
+     * <p>Aparte del anterior a proposito: aquel solo lee el de quien pregunta y devuelve el
+     * usuario entero; este lee el de cualquiera y devuelve solo lo que es publico.
+     */
+    @Bean
+    ReadPublicProfileUseCase readPublicProfileUseCase(UserRepository usuarios) {
+        return new ReadPublicProfileUseCase(usuarios);
     }
 
     // --- Verificacion de vendedor. HU-002 rebanada C -------------------------

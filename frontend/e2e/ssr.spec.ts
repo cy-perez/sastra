@@ -8,6 +8,37 @@ import { expect, test } from '@playwright/test';
  * navegador despues.
  */
 test.describe('renderizado en servidor', () => {
+  /**
+   * HU-009, criterio 16. El catalogo es la primera pagina que existe para que un buscador
+   * la lea, asi que su titulo y su descripcion tienen que venir en el HTML servido y no
+   * ponerse al hidratar.
+   */
+  test('el catalogo llega con su titulo y su descripcion resueltos', async ({ request }) => {
+    const respuesta = await request.get('/catalogo');
+    const html = await respuesta.text();
+
+    expect(respuesta.status()).toBe(200);
+    expect(html).toContain('<title>Catálogo</title>');
+    expect(html).toContain('Moda nueva y de segunda y tecnología nueva');
+  });
+
+  /**
+   * La direccion canonica, en toda pagina.
+   *
+   * <p>Se comprueba con una cadena de consulta puesta a proposito: sin recortarla, la
+   * misma pagina alcanzada desde una campana se indexa como varias y el buscador reparte
+   * entre ellas la relevancia que deberia ir a una sola. Es justo lo que el canonico
+   * existe para evitar, asi que la prueba que no lleve parametros no probaria nada.
+   */
+  test('sirve una sola direccion canonica, sin la cadena de consulta', async ({ request }) => {
+    const html = await (await request.get('/catalogo?utm_source=una-campana')).text();
+
+    const canonico = /<link[^>]+rel="canonical"[^>]*>/.exec(html)?.[0] ?? '';
+
+    expect(canonico).toContain('/catalogo');
+    expect(canonico).not.toContain('utm_source');
+  });
+
   test('entrega el HTML en espanol por omision', async ({ request }) => {
     const response = await request.get('/');
     const html = await response.text();

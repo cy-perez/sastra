@@ -94,6 +94,22 @@
     "listingReviewDetail": {
       "title": "Review listing",
       "description": "Details of a listing under review."
+    },
+    "catalog": {
+      "title": "Catalogue",
+      "description": "New and second-hand fashion and new technology, with verified sellers and reviewed listings."
+    },
+    "catalogCategory": {
+      "title": "{{categoria}}",
+      "description": "{{categoria}} on Sendik. Reviewed listings and verified sellers."
+    },
+    "product": {
+      "title": "{{titulo}}",
+      "description": "{{titulo}}. {{condicion}}, listed by a Sendik seller."
+    },
+    "sellerProfile": {
+      "title": "{{nombre}}",
+      "description": "What {{nombre}} sells on Sendik."
     }
   },
   "layout": {
@@ -1110,6 +1126,55 @@
       "PROHIBITED_ITEM": "Prohibited product",
       "SUSPECTED_COUNTERFEIT": "Suspected counterfeit",
       "PRICE_OUT_OF_RANGE": "Price out of range"
+    }
+  },
+  "catalog": {
+    "list": {
+      "title": "What's on sale",
+      "intro": "Everything you see was reviewed before it was published.",
+      "empty": "Nothing has been published yet.",
+      "emptyInCategory": "Nothing has been published in this category yet.",
+      "loading": "Loading the catalogue",
+      "error": "We couldn't load the catalogue. Try again.",
+      "retry": "Try again",
+      "more": "See more"
+    },
+    "categories": {
+      "title": "Categories",
+      "all": "All",
+      "family": "Families",
+      "backToAll": "See the whole catalogue",
+      "error": "We couldn't load the categories.",
+      "notFound": "This category does not exist."
+    },
+    "card": {
+      "a11yLink": "View {{titulo}}"
+    },
+    "detail": {
+      "declaredBy": "What the seller declares",
+      "measurements": "Measurements",
+      "measurementsHint": "In centimetres, taken by the seller.",
+      "brand": "Brand",
+      "noBrand": "No brand",
+      "notFound": "This listing is no longer available.",
+      "notFoundBody": "It may have been sold or withdrawn by the seller.",
+      "backToCatalog": "Back to the catalogue",
+      "loading": "Loading the listing",
+      "gallery": "Product photos",
+      "shot": "{{grados}} degree shot"
+    },
+    "referenceImage": {
+      "label": "Reference image",
+      "hint": "The seller did not take this photo. It is the manufacturer's and shows the model, not the item you will receive."
+    },
+    "seller": {
+      "verified": "Verified seller",
+      "verifiedHint": "Sendik confirmed their identity and bank account.",
+      "listings": "What they sell",
+      "empty": "They have nothing published right now.",
+      "notFound": "We couldn't find this seller.",
+      "loading": "Loading the profile",
+      "soldBy": "Sold by"
     }
   }
 }

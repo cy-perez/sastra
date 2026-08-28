@@ -53,6 +53,38 @@ public class JdbcCategories implements Categories {
     }
 
     /**
+     * Donde se publica, colgando de esta. HU-009, criterios 9 y 10.
+     *
+     * <p>Una sola consulta y no dos: la categoria puede ser hoja o familia, y preguntar
+     * primero cual es para decidir que consultar despues seria un viaje de mas para
+     * responder lo mismo. El {@code OR} cubre los dos casos y el arbol tiene dos niveles,
+     * asi que no hay recursion que hacer.
+     *
+     * <p><strong>Las dos condiciones de {@code active} son necesarias.</strong> La de la
+     * fila descarta la categoria retirada; la del padre descarta la hoja cuya familia
+     * entera se retiro, que es el mismo cuidado que ya tiene {@code arbolActivo} y por el
+     * mismo motivo: una hoja colgada de una familia inactiva no se ofrece en ningun sitio,
+     * asi que tampoco puede aparecer en el catalogo.
+     *
+     * <p>Devuelve solo hojas. Una familia no es un sitio donde publicar (glosario), asi
+     * que incluirla en el filtro no traeria nada y solo alargaria el {@code IN}.
+     */
+    @Override
+    public List<CategoryId> publicablesBajo(CategoryId id) {
+        return jdbc.sql("""
+                        SELECT hija.id
+                        FROM categories hija
+                        JOIN categories padre ON padre.id = hija.parent_id
+                        WHERE padre.active
+                          AND hija.active
+                          AND (hija.id = :id OR hija.parent_id = :id)
+                        ORDER BY hija.position
+                        """).param("id", id.value()).query(UUID.class).list().stream()
+                .map(CategoryId::new)
+                .toList();
+    }
+
+    /**
      * El arbol activo, en dos pasos y una sola consulta.
      *
      * <p>Una consulta que trae todo y se arma en memoria, en vez de una por familia: son

@@ -72,6 +72,15 @@
      de LECTURA y es mas largo. */
   --medida-formulario: 480px;
 
+  /* Ancho minimo de una tarjeta de producto en la rejilla del catalogo (HU-009).
+     La rejilla es fluida -- `auto-fill` con este minimo -- asi que este numero es
+     lo unico que decide cuantas columnas caben: dos en movil y cuatro o cinco en
+     los 1140px del carril de contenido, sin una sola media query.
+
+     Sale de la foto y no al reves: con la proporcion 3:4 de RN-018, por debajo de
+     este ancho la toma se ve como una miniatura y el titulo no cabe en dos lineas. */
+  --ancho-tarjeta-min: 220px;
+
   /* La imagen de una verificacion, en la bandeja del moderador (HU-006).
 
      Dos medidas y no una de la escala de espaciado, porque no son espaciado: son el

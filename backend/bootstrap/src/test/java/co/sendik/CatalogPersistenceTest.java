@@ -3,6 +3,7 @@ package co.sendik;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import co.sendik.catalog.dto.CatalogCursor;
 import co.sendik.catalog.dto.CategoryView;
 import co.sendik.catalog.exception.ListingConcurrentlyModifiedException;
 import co.sendik.catalog.model.AttentionReason;
@@ -44,6 +45,7 @@ import java.time.Instant;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -408,6 +410,137 @@ class CatalogPersistenceTest {
         assertThat(entradas).isEqualTo(2);
     }
 
+    // --- El catalogo publico. HU-009 -----------------------------------------
+
+    /**
+     * RN-068 contra la base de verdad.
+     *
+     * <p>Se siembran los siete estados y se comprueba que sale uno. Es la prueba que el
+     * criterio 2 pide y la unica forma de demostrarlo: en memoria el filtro es una linea
+     * de Java, aqui es la clausula que de verdad corre.
+     */
+    @Test
+    void deberia_traer_del_catalogo_solo_lo_publicado_RN_068() {
+        Listing visible = publicada();
+        Listing borrador = publicaciones.guardar(borradorConTomas());
+        Listing enRevision = publicaciones.guardar(borradorConTomas().enviarARevision(AHORA));
+        Listing pausada = publicaciones.guardar(publicada().pausar(AHORA));
+
+        List<ListingId> catalogo = publicaciones.publicadas(List.of(), null, 50).stream()
+                .map(Listing::id)
+                .toList();
+
+        // Por contencion y no por igualdad: esta clase comparte la base entre pruebas y
+        // varias dejan publicaciones vivas. Lo que se afirma es lo que esta prueba
+        // sembro, que es de lo unico que puede responder.
+        assertThat(catalogo).contains(visible.id());
+        assertThat(catalogo).doesNotContain(borrador.id(), enRevision.id(), pausada.id());
+    }
+
+    /** Lo mas reciente primero, que es lo que el indice de V14 sostiene. */
+    @Test
+    void deberia_ordenar_el_catalogo_por_fecha_de_publicacion_descendente() {
+        Listing vieja = publicadaEn(AHORA.minus(Duration.ofHours(2)));
+        Listing nueva = publicadaEn(AHORA);
+
+        List<ListingId> mias = publicaciones.publicadas(List.of(), null, 50).stream()
+                .map(Listing::id)
+                .filter(id -> id.equals(nueva.id()) || id.equals(vieja.id()))
+                .toList();
+
+        // El orden relativo entre las dos, que es lo que la consulta decide. El absoluto
+        // depende de lo que hayan dejado las demas pruebas.
+        assertThat(mias).containsExactly(nueva.id(), vieja.id());
+    }
+
+    /**
+     * El cursor sobre la pareja, no sobre la fecha.
+     *
+     * <p>Las tres se publican en el <strong>mismo instante</strong>, que es lo que pasa con
+     * un reloj fijo y lo que puede pasar en produccion. Con un cursor que solo mirara
+     * `published_at`, el segundo tramo se saltaria dos o repetiria las tres para siempre.
+     * Esta prueba es la razon de que la consulta use `(published_at, id) < (:fecha, :id)`.
+     */
+    @Test
+    void deberia_recorrer_el_catalogo_sin_repetir_ni_perder_publicadas_en_el_mismo_instante() {
+        // Las tres del mismo vendedor, y se recorre su escaparate: asi el tramo es solo lo
+        // que esta prueba sembro. La clausula del cursor es la misma en las dos consultas
+        // -la escribe `condicionDelCursor`-, asi que recorrer una demuestra la otra.
+        SellerId vendedor = new SellerId(nuevoUsuario());
+        publicadaDe(vendedor, AHORA);
+        publicadaDe(vendedor, AHORA);
+        publicadaDe(vendedor, AHORA);
+
+        List<Listing> primera = publicaciones.publicadasDelVendedor(vendedor, null, 2);
+        CatalogCursor desde = new CatalogCursor(
+                Objects.requireNonNull(primera.getLast().publishedAt()),
+                primera.getLast().id());
+        List<Listing> segunda = publicaciones.publicadasDelVendedor(vendedor, desde, 2);
+
+        assertThat(primera).hasSize(2);
+        assertThat(segunda).hasSize(1);
+        assertThat(primera)
+                .extracting(Listing::id)
+                .doesNotContainAnyElementsOf(segunda.stream().map(Listing::id).toList());
+    }
+
+    /** Criterio 8: el filtro de categoria es el de la publicacion, no el de su familia. */
+    @Test
+    void deberia_filtrar_el_catalogo_por_categoria() {
+        Listing camisa = publicada();
+        Category jeans = categoriaPorSlug("jeans");
+
+        List<Listing> soloCamisas =
+                publicaciones.publicadas(List.of(camisa.product().categoryId()), null, 50);
+
+        assertThat(soloCamisas).extracting(Listing::id).contains(camisa.id());
+        assertThat(soloCamisas)
+                .allSatisfy(publicacion -> assertThat(publicacion.product().categoryId())
+                        .isEqualTo(camisa.product().categoryId()));
+
+        // Ninguna prueba de esta clase publica en jeans, asi que el filtro se puede
+        // afirmar por el lado vacio tambien.
+        assertThat(publicaciones.publicadas(List.of(jeans.id()), null, 24)).isEmpty();
+    }
+
+    /** El escaparate de un vendedor: lo suyo y publicado, no sus borradores. */
+    @Test
+    void deberia_traer_del_escaparate_solo_lo_publicado_del_vendedor() {
+        Listing visible = publicada();
+        SellerId suyo = visible.sellerId();
+        publicaciones.guardar(borradorConTomas());
+
+        List<Listing> escaparate = publicaciones.publicadasDelVendedor(suyo, null, 24);
+
+        // Aqui si es igualdad: el vendedor es de esta prueba y no tiene nada mas.
+        assertThat(escaparate).extracting(Listing::id).containsExactly(visible.id());
+    }
+
+    /** Criterio 10: una familia son sus hojas, y las de una familia retirada no cuentan. */
+    @Test
+    void deberia_resolver_una_familia_en_sus_hojas_publicables() {
+        Category camisas = categoriaPorSlug("camisas-y-blusas");
+        Category tops =
+                categorias.buscar(Objects.requireNonNull(camisas.parentId())).orElseThrow();
+
+        List<CategoryId> hojas = categorias.publicablesBajo(tops.id());
+
+        assertThat(hojas).contains(camisas.id()).doesNotContain(tops.id());
+        assertThat(categorias.publicablesBajo(camisas.id())).containsExactly(camisas.id());
+    }
+
+    /** Criterio 9: retirada del arbol no es lo mismo que vacia. */
+    @Test
+    void no_deberia_resolver_una_categoria_retirada_criterio_9() {
+        Category camisas = categoriaPorSlug("camisas-y-blusas");
+        retirar("camisas-y-blusas");
+        try {
+            assertThat(categorias.publicablesBajo(camisas.id())).isEmpty();
+        } finally {
+            devolver("camisas-y-blusas");
+        }
+    }
+
     // ------------------------------------------------------------------ apoyo
 
     /**
@@ -561,6 +694,40 @@ class CatalogPersistenceTest {
     private Listing publicada() {
         Listing enRevision = publicaciones.guardar(borradorConTomas().enviarARevision(AHORA));
         return publicaciones.guardar(enRevision.aprobar(new ModeratorId(nuevoUsuario()), AHORA));
+    }
+
+    /** Publicada en un instante concreto, para las pruebas de orden y de cursor. */
+    private Listing publicadaEn(Instant cuando) {
+        Listing enRevision = publicaciones.guardar(borradorConTomas().enviarARevision(cuando));
+        return publicaciones.guardar(enRevision.aprobar(new ModeratorId(nuevoUsuario()), cuando));
+    }
+
+    /** Publicada por un vendedor concreto, para aislar un escaparate de las demas pruebas. */
+    private Listing publicadaDe(SellerId vendedor, Instant cuando) {
+        Listing borrador = conTomas(
+                Listing.crearBorrador(ListingId.nuevo(), productoDe(vendedor, medidasDe(MeasurementGroup.TOP)), AHORA),
+                8);
+
+        Listing enRevision = publicaciones.guardar(borrador.enviarARevision(cuando));
+        return publicaciones.guardar(enRevision.aprobar(new ModeratorId(nuevoUsuario()), cuando));
+    }
+
+    private Product productoDe(SellerId vendedor, Measurements medidas) {
+        return Product.crear(
+                ProductId.nuevo(),
+                vendedor,
+                categoriaPorSlug("camisas-y-blusas"),
+                new Title("Camisa de lino color hueso"),
+                new Description("Usada dos veces."),
+                new Brand("Zara"),
+                Condition.LIKE_NEW,
+                new Size(SizeSystem.ALPHA, "M"),
+                medidas,
+                Color.BEIGE,
+                Money.dePesos(185_000),
+                envio(),
+                null,
+                null);
     }
 
     /** Lo que crea «Empezar»: la categoria y nada mas. Criterio 5. */

@@ -223,11 +223,14 @@ sendik:
     # moderadores en silencio y quedarse sin quien apruebe es peor que un rol de mas.
     moderators: ${SECURITY_BOOTSTRAP_MODERATORS:}
   features:
-    # Las cinco siguen apagadas. Se enciende cada una cuando su funcionalidad
+    # Las seis siguen apagadas. Se enciende cada una cuando su funcionalidad
     # exista, no cuando empiece la fase que la contiene, y se enciende por variable
     # y no por despliegue.
     seller-verification: ${FEATURE_SELLER_VERIFICATION:false}
     publishing: ${FEATURE_PUBLISHING:false}
+    # El catalogo publico (HU-009). Es la unica que enciende paginas para quien no
+    # tiene cuenta, asi que encenderla es abrir el sitio, no solo una funcionalidad.
+    catalog: ${FEATURE_CATALOG:false}
     checkout: ${FEATURE_CHECKOUT:false}
     search: ${FEATURE_SEARCH:false}
     spin-viewer: ${FEATURE_SPIN_VIEWER:false}

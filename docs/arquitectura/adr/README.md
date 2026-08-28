@@ -47,3 +47,4 @@ la referencia.
 | 0022 | Cambio de identidad a Sendik y sustitución del sistema visual | Aceptada |
 | 0023 | Transporte de correo compartido entre contextos | Aceptada |
 | 0024 | El sitio se hospeda en Cloud Run; GoDaddy es el registrador y el DNS | Aceptada |
+| 0025 | Datos remotos en el renderizado en servidor | Aceptada |

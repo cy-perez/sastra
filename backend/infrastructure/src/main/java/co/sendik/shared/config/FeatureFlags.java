@@ -11,10 +11,16 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *
  * @param sellerVerification verificacion de identidad del vendedor (Fase 2)
  * @param publishing publicacion de prendas (Fase 2)
+ * @param catalog catalogo publico: listado, categorias, ficha y perfil del vendedor (Fase 2)
  * @param checkout proceso de compra y pago (Fase 3)
  * @param search busqueda con Typesense (Fase 3)
  * @param spinViewer visor 360 en la ficha de producto (Fase 2)
  */
 @ConfigurationProperties(prefix = "sendik.features")
 public record FeatureFlags(
-        boolean sellerVerification, boolean publishing, boolean checkout, boolean search, boolean spinViewer) {}
+        boolean sellerVerification,
+        boolean publishing,
+        boolean catalog,
+        boolean checkout,
+        boolean search,
+        boolean spinViewer) {}

@@ -1,0 +1,110 @@
+<!--
+  Un solo h1 por página y sin saltos de nivel: el título es el de la categoría abierta
+  cuando la hay, y el del catálogo cuando no. No hay dos encabezados compitiendo.
+-->
+<h1 class="tipo-h1">{{ titulo() ?? ('catalog.list.title' | transloco) }}</h1>
+
+@if (noExiste()) {
+  <!--
+    Criterio 9: una categoría retirada del árbol no es un listado vacío. Se dice que no
+    existe, que es distinto de «existe y no tiene nada».
+  -->
+  <p class="tipo-cuerpo">{{ 'catalog.categories.notFound' | transloco }}</p>
+  <p>
+    <a routerLink="/catalogo">{{ 'catalog.categories.backToAll' | transloco }}</a>
+  </p>
+} @else {
+  <p class="tipo-cuerpo catalogo__intro">{{ 'catalog.list.intro' | transloco }}</p>
+
+  <!--
+    La navegación por el árbol. Es un <nav> con su nombre porque son enlaces a otras
+    páginas, no un filtro que cambie esta.
+  -->
+  @if (!falloElArbol() && !cargandoArbol()) {
+    <nav class="catalogo__categorias" [attr.aria-label]="'catalog.categories.title' | transloco">
+      <ul class="catalogo__ramas">
+        <li>
+          <a routerLink="/catalogo" [attr.aria-current]="familiaSlug() === null ? 'page' : null">
+            {{ 'catalog.categories.all' | transloco }}
+          </a>
+        </li>
+        @for (familia of familias(); track familia.id) {
+          <li>
+            <a
+              [routerLink]="['/catalogo', familia.slug]"
+              [attr.aria-current]="
+                familiaSlug() === familia.slug && categoriaSlug() === null ? 'page' : null
+              "
+            >
+              {{ nombre(familia) }}
+            </a>
+          </li>
+        }
+      </ul>
+
+      @if (hijas().length > 0) {
+        <ul class="catalogo__hojas">
+          @for (hija of hijas(); track hija.id) {
+            <li>
+              <a
+                [routerLink]="['/catalogo', familiaSlug(), hija.slug]"
+                [attr.aria-current]="categoriaSlug() === hija.slug ? 'page' : null"
+              >
+                {{ nombre(hija) }}
+              </a>
+            </li>
+          }
+        </ul>
+      }
+    </nav>
+  } @else if (falloElArbol()) {
+    <!--
+      El árbol falló pero el listado sigue sirviendo: se pierde la navegación, no la
+      página. Es el caso borde que la historia anota.
+    -->
+    <p class="tipo-secundario" role="status">{{ 'catalog.categories.error' | transloco }}</p>
+  }
+
+  @if (cargando()) {
+    <p class="solo-lectores" role="status">{{ 'catalog.list.loading' | transloco }}</p>
+    <ul class="catalogo__rejilla" aria-hidden="true">
+      @for (hueco of [0, 1, 2, 3, 4, 5, 6, 7]; track hueco) {
+        <li><p class="esqueleto catalogo__esqueleto"></p></li>
+      }
+    </ul>
+  } @else if (fallo()) {
+    <div role="alert">
+      <p class="tipo-cuerpo">{{ 'catalog.list.error' | transloco }}</p>
+      <button type="button" class="btn btn-secundario" (click)="reintentar()">
+        {{ 'catalog.list.retry' | transloco }}
+      </button>
+    </div>
+  } @else if (vacio()) {
+    <p class="tipo-cuerpo">
+      {{
+        (familiaSlug() === null ? 'catalog.list.empty' : 'catalog.list.emptyInCategory') | transloco
+      }}
+    </p>
+  } @else {
+    <ul class="catalogo__rejilla">
+      @for (publicacion of publicaciones(); track publicacion.id; let primera = $first) {
+        <li>
+          <sendik-product-card [publicacion]="publicacion" [primera]="primera" />
+        </li>
+      }
+    </ul>
+
+    @if (hayMas()) {
+      <div class="catalogo__mas">
+        <button
+          type="button"
+          class="btn btn-secundario"
+          [disabled]="trayendoMas()"
+          (click)="verMas()"
+        >
+          {{ 'catalog.list.more' | transloco }}
+        </button>
+      </div>
+    }
+  }
+}

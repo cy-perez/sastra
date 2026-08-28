@@ -1,0 +1,116 @@
+@if (cargando()) {
+  <p class="solo-lectores" role="status">{{ 'catalog.detail.loading' | transloco }}</p>
+  <p class="esqueleto ficha__esqueleto"></p>
+} @else if (noEncontrada()) {
+  <!--
+    Criterio 13. «Ya no está disponible» y no «no existe»: las dos son verdad y la API no
+    las distingue, así que el texto tampoco puede.
+  -->
+  <h1 class="tipo-h1">{{ 'catalog.detail.notFound' | transloco }}</h1>
+  <p class="tipo-cuerpo">{{ 'catalog.detail.notFoundBody' | transloco }}</p>
+  <p>
+    <a routerLink="/catalogo">{{ 'catalog.detail.backToCatalog' | transloco }}</a>
+  </p>
+} @else if (publicacion(); as producto) {
+  <article class="ficha">
+    <!--
+      El carrusel. Es una lista y no un componente con estado: se desplaza con el dedo y
+      con la rueda, y el teclado la recorre porque son elementos en el orden del documento.
+      Sin botones de anterior y siguiente que haya que replicar para el lector de pantalla.
+    -->
+    <section class="ficha__fotos" [attr.aria-label]="'catalog.detail.gallery' | transloco">
+      <ul class="ficha__tomas">
+        @for (imagen of tomas(); track imagen.id) {
+          <li class="ficha__toma">
+            <img
+              [src]="imagen.url"
+              width="900"
+              height="1200"
+              [alt]="
+                imagen.kind === 'REFERENCE'
+                  ? ('catalog.referenceImage.label' | transloco)
+                  : ('catalog.detail.shot' | transloco: { grados: gradosDe(imagen.position) })
+              "
+            />
+
+            <!--
+              RN-066: la imagen de referencia va rotulada en la ficha y en el carrusel. El
+              rótulo dice de quién es la foto, que es lo que impide que una imagen de
+              fabricante se lea como el producto que se va a recibir.
+            -->
+            @if (imagen.kind === 'REFERENCE') {
+              <p class="ficha__referencia tipo-secundario">
+                {{ 'catalog.referenceImage.label' | transloco }}
+              </p>
+            }
+          </li>
+        }
+      </ul>
+
+      @if (hayReferencia()) {
+        <p class="tipo-secundario">{{ 'catalog.referenceImage.hint' | transloco }}</p>
+      }
+    </section>
+
+    <div class="ficha__datos">
+      <h1 class="tipo-h1">{{ producto.product.title }}</h1>
+
+      @if (precio(); as valor) {
+        <p class="precio ficha__precio">{{ valor }}</p>
+      }
+
+      @if (producto.product.condition; as estado) {
+        <p class="tipo-cuerpo">{{ 'listing.condition.' + estado | transloco }}</p>
+      }
+
+      <!--
+        Quién vende. El enlace al perfil es el criterio 21, y la insignia es la única
+        aparición del acento bronce de la pantalla.
+      -->
+      @if (vendedor(); as quien) {
+        <p class="ficha__vendedor">
+          <span class="tipo-secundario">{{ 'catalog.seller.soldBy' | transloco }}</span>
+          <a [routerLink]="['/vendedor', quien.id]">{{ quien.name }}</a>
+          @if (quien.verified) {
+            <span class="insignia-verificado">{{ 'catalog.seller.verified' | transloco }}</span>
+          }
+        </p>
+      }
+
+      @if (producto.product.description; as texto) {
+        <p class="tipo-cuerpo ficha__descripcion">{{ texto }}</p>
+      }
+
+      <h2 class="tipo-titulo-tarjeta">{{ 'catalog.detail.declaredBy' | transloco }}</h2>
+      <dl class="ficha__declarado">
+        <dt class="tipo-secundario">{{ 'catalog.detail.brand' | transloco }}</dt>
+        <dd class="tipo-cuerpo">
+          {{ producto.product.brand ?? ('catalog.detail.noBrand' | transloco) }}
+        </dd>
+
+        @if (producto.product.size; as talla) {
+          <dt class="tipo-secundario">{{ 'listing.form.size' | transloco }}</dt>
+          <dd class="tipo-cuerpo">
+            {{ talla.value }} · {{ 'listing.sizeSystem.' + talla.system | transloco }}
+          </dd>
+        }
+
+        @if (producto.product.color; as color) {
+          <dt class="tipo-secundario">{{ 'listing.form.color' | transloco }}</dt>
+          <dd class="tipo-cuerpo">{{ 'listing.color.' + color | transloco }}</dd>
+        }
+      </dl>
+
+      @if (medidas().length > 0) {
+        <h2 class="tipo-titulo-tarjeta">{{ 'catalog.detail.measurements' | transloco }}</h2>
+        <p class="tipo-secundario">{{ 'catalog.detail.measurementsHint' | transloco }}</p>
+        <dl class="ficha__declarado">
+          @for (medida of medidas(); track medida.clase) {
+            <dt class="tipo-secundario">{{ 'listing.measurement.' + medida.clase | transloco }}</dt>
+            <dd class="tipo-cuerpo">{{ medida.valor }} cm</dd>
+          }
+        </dl>
+      }
+    </div>
+  </article>
+}

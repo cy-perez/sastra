@@ -1,5 +1,6 @@
 package co.sendik.catalog.persistence;
 
+import co.sendik.catalog.dto.CatalogCursor;
 import co.sendik.catalog.exception.ListingConcurrentlyModifiedException;
 import co.sendik.catalog.model.AttentionReason;
 import co.sendik.catalog.model.Brand;
@@ -44,6 +45,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.simple.JdbcClient;
+import org.springframework.jdbc.core.simple.JdbcClient.StatementSpec;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -126,6 +128,73 @@ public class JdbcListingRepository implements ListingRepository {
                 .stream()
                 .map(this::conImagenes)
                 .toList();
+    }
+
+    /**
+     * El catalogo publico. HU-009, criterios 1, 2, 3 y 8. Va contra el indice parcial de
+     * V14, que es esta consulta escrita como indice.
+     *
+     * <p><strong>La condicion de RN-068 se escribe aqui una sola vez</strong>, y por eso
+     * el escaparate del vendedor pasa por el mismo SQL con otro filtro: dos consultas
+     * separadas serian dos sitios donde olvidar el estado, y olvidarlo publica borradores.
+     *
+     * <p><strong>El cursor compara la pareja entera y no la fecha suelta.</strong>
+     * {@code (published_at, id) < (:fecha, :id)} es una comparacion de filas de
+     * PostgreSQL, no dos condiciones sueltas unidas por AND: con dos publicaciones
+     * aprobadas en el mismo instante —normal con un reloj fijo en pruebas, y posible en
+     * produccion— filtrar solo por fecha se salta la segunda del par, y filtrar por
+     * {@code <=} la repite para siempre.
+     */
+    @Override
+    public List<Listing> publicadas(List<CategoryId> categorias, @Nullable CatalogCursor desde, int limite) {
+        String filtroDeCategoria = categorias.isEmpty() ? "" : " AND p.category_id IN (:categorias)";
+
+        var consulta = jdbc.sql(SELECT_BASE + """
+                         WHERE l.status = 'PUBLISHED'
+                        """ + filtroDeCategoria + condicionDelCursor(desde) + """
+                         ORDER BY l.published_at DESC, l.id DESC
+                         LIMIT :limite
+                        """)
+                .param("limite", limite);
+
+        if (!categorias.isEmpty()) {
+            consulta = consulta.param(
+                    "categorias", categorias.stream().map(CategoryId::value).toList());
+        }
+        consulta = conParametrosDelCursor(consulta, desde);
+
+        return conPortadas(
+                consulta.query(JdbcListingRepository::filaAPublicacion).list());
+    }
+
+    /** Lo publicado de un vendedor. Mismo SQL y misma regla, otro filtro. */
+    @Override
+    public List<Listing> publicadasDelVendedor(SellerId vendedor, @Nullable CatalogCursor desde, int limite) {
+        var consulta = jdbc.sql(SELECT_BASE + """
+                         WHERE l.status = 'PUBLISHED' AND p.seller_id = :vendedor
+                        """ + condicionDelCursor(desde) + """
+                         ORDER BY l.published_at DESC, l.id DESC
+                         LIMIT :limite
+                        """)
+                .param("vendedor", vendedor.value())
+                .param("limite", limite);
+
+        consulta = conParametrosDelCursor(consulta, desde);
+
+        return conPortadas(
+                consulta.query(JdbcListingRepository::filaAPublicacion).list());
+    }
+
+    private static String condicionDelCursor(@Nullable CatalogCursor desde) {
+        return desde == null ? "" : " AND (l.published_at, l.id) < (:publicadaEn, :ultimaId)";
+    }
+
+    private static StatementSpec conParametrosDelCursor(StatementSpec consulta, @Nullable CatalogCursor desde) {
+        if (desde == null) {
+            return consulta;
+        }
+        return consulta.param("publicadaEn", Timestamp.from(desde.publicadaEn()))
+                .param("ultimaId", desde.id().value());
     }
 
     /**

@@ -878,6 +878,13 @@
       "HOLDER_MISMATCH": "Holder does not match",
       "DOCUMENT_ALREADY_VERIFIED": "Document already verified on another account",
       "REQUIREMENTS_NOT_MET": "Does not meet the requirements"
+    },
+    "revocationReasons": {
+      "DOCUMENT_NOT_ITS_HOLDER": "The document does not belong to the person who submitted it",
+      "BANK_ACCOUNT_NOT_HOLDER": "The bank account does not belong to the holder",
+      "REPEATED_PROHIBITED_LISTINGS": "Published prohibited items repeatedly",
+      "HOLDER_REQUEST": "The person asked for it",
+      "REQUIREMENTS_NO_LONGER_MET": "No longer meets the requirements"
     }
   },
   "listing": {
@@ -1245,6 +1252,32 @@
       "frame": "View at {{grados}} degrees",
       "fallbackAlt": "{{titulo}}, front view",
       "roleDescription": "rotating viewer"
+    }
+  },
+  "moderation": {
+    "undo": {
+      "reasonLabel": "Reason",
+      "reasonPlaceholder": "Choose a reason",
+      "reasonRequired": "Choose a reason before confirming.",
+      "noteLabel": "Note (optional)",
+      "noteHint": "The person receives it by email. Do not write judicial information or third-party data.",
+      "confirm": "Confirm",
+      "cancel": "Cancel",
+      "failed": "Could not complete. Try again.",
+      "alreadyDone": "Someone got there first: this is no longer as it was. Take another look.",
+      "ownListing": "It is your listing and you cannot decide on it. Someone else resolves it.",
+      "ownSeal": "It is your seal and you cannot decide on it. Someone else resolves it.",
+      "listing": {
+        "title": "Moderation",
+        "action": "Take this listing down",
+        "confirm": "Take this listing down? It stops showing in the catalog and the seller receives the reason. It cannot be reactivated."
+      },
+      "seal": {
+        "title": "Moderation",
+        "action": "Revoke the seal",
+        "confirm": "Revoke this person's seal? They stop being able to publish and receive the reason by email.",
+        "listingsStayVisible": "What they already published stays visible. To remove it, each listing has to be taken down separately."
+      }
     }
   }
 }

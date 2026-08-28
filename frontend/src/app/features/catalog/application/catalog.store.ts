@@ -1,6 +1,7 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { injectInfiniteQuery, injectQuery } from '@tanstack/angular-query-experimental';
 
+import { SessionStore } from '../../../core/session/session.store';
 import type { Category } from '../../../shared/domain/listing';
 import type { CatalogPage, PublicListing } from '../domain/public-listing';
 import { CatalogApi } from '../infrastructure/catalog.api';
@@ -25,6 +26,17 @@ import { queryKeys } from './query-keys';
 @Injectable({ providedIn: 'root' })
 export class CatalogStore {
   private readonly api = inject(CatalogApi);
+  private readonly sesion = inject(SessionStore);
+
+  /**
+   * Si quien pregunta modera, que decide qué forma devuelve el servidor.
+   *
+   * <p>Entra en la clave de la ficha y en nada más: el listado y el perfil responden
+   * igual para todo el mundo (RN-068).
+   */
+  private readonly comoModerador = computed(
+    () => this.sesion.user()?.roles.includes('MODERATOR') === true,
+  );
 
   /**
    * Qué categoría se está viendo.
@@ -97,7 +109,7 @@ export class CatalogStore {
    * retrasa el mensaje que la pantalla ya sabe dar.
    */
   readonly publicacion = injectQuery(() => ({
-    queryKey: queryKeys.one(this.ficha() ?? 'ninguna'),
+    queryKey: queryKeys.one(this.ficha() ?? 'ninguna', this.comoModerador()),
     queryFn: () => this.api.una(this.ficha() ?? ''),
     enabled: this.ficha() !== null,
     retry: false,

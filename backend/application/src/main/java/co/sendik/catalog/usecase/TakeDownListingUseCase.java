@@ -66,7 +66,7 @@ public class TakeDownListingUseCase {
                 ModerationAction.ARCHIVED,
                 comando.motivo().name(),
                 comando.nota());
-        avisos.publicacionRetirada(retirada, comando.nota());
+        avisos.publicacionRetirada(retirada, comando.motivo(), comando.nota());
 
         // Lo que se retira por RN-024 no puede seguir servido. Es el caso mas claro:
         // una replica bajada del catalogo con sus fotos todavia accesibles.

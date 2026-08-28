@@ -11,7 +11,10 @@ import { Meta, Title } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
+import { MOTIVOS_DE_REVOCACION } from '../../../shared/domain/revocation-reason';
+import { UndoAction, type DecisionDeshecha } from '../../../shared/ui/moderation/undo-action';
 import { CatalogStore } from '../application/catalog.store';
+import { ModerationStore } from '../application/moderation.store';
 import { ProductCard } from './product-card';
 
 /**
@@ -27,7 +30,7 @@ import { ProductCard } from './product-card';
 @Component({
   selector: 'sendik-seller-page',
   standalone: true,
-  imports: [ProductCard, RouterLink, TranslocoPipe],
+  imports: [ProductCard, RouterLink, TranslocoPipe, UndoAction],
   templateUrl: './seller-page.html',
   styleUrl: './seller-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -58,10 +61,62 @@ export class SellerPage {
 
   protected readonly hayMas = computed(() => this.store.deVendedor.hasNextPage());
 
+  // --- HU-010: revocar el sello ----------------------------------------------
+
+  private readonly moderacion = inject(ModerationStore);
+
+  protected readonly motivos = MOTIVOS_DE_REVOCACION;
+
+  /**
+   * Si se ofrece revocar. Criterios 9, 10 y 11.
+   *
+   * <p>La condición del sello no sale de `quien.verified`, que es lo que la pantalla ya
+   * tenía a mano, sino del estado de la verificación. Son dos cosas distintas: la insignia
+   * dice que hay sello, y para revocar hace falta además el identificador de la solicitud
+   * sobre la que actuar, que es lo que trae esta consulta. Usar la bandera y luego no tener
+   * identificador sería ofrecer un botón que no puede hacer nada.
+   *
+   * <p>Falso para quien no modera, y en el servidor de renderizado también: allí la sesión
+   * no está resuelta, así que la acción no llega al HTML que sale (criterio 10).
+   */
+  protected readonly puedeRevocar = computed(
+    () => this.moderacion.puedeModerar() && this.moderacion.haySello(),
+  );
+
+  protected readonly revocando = computed(() => this.moderacion.revocar.isPending());
+
+  protected readonly errorAlRevocar = computed(() => {
+    if (!this.moderacion.revocar.isError()) {
+      return null;
+    }
+    const fallo = this.moderacion.revocar.error() as { status?: number } | null;
+
+    if (fallo?.status === 409) {
+      return 'moderation.undo.alreadyDone';
+    }
+    return fallo?.status === 403 ? 'moderation.undo.ownSeal' : 'moderation.undo.failed';
+  });
+
+  protected revocar(decision: DecisionDeshecha): void {
+    const verificacion = this.moderacion.verificacion.data()?.id;
+    if (verificacion === undefined) {
+      return;
+    }
+
+    this.moderacion.revocar.mutate({
+      verificacion,
+      motivo: decision.motivo as (typeof MOTIVOS_DE_REVOCACION)[number],
+      nota: decision.nota,
+    });
+  }
+
   constructor() {
     effect(() => {
       const id = this.id();
-      untracked(() => this.store.abrirPerfil(id));
+      untracked(() => {
+        this.store.abrirPerfil(id);
+        this.moderacion.mirarVendedor(id);
+      });
     });
 
     effect(() => {

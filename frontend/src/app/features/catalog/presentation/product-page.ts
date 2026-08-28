@@ -13,7 +13,10 @@ import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
 import { precioFormateado } from '../../../shared/domain/listing';
 import { SpinViewer, type FotogramaDelVisor } from '../../../shared/ui/viewer/spin-viewer';
+import { MOTIVOS_DE_RECHAZO_DE_PUBLICACION } from '../../../shared/domain/listing';
+import { UndoAction, type DecisionDeshecha } from '../../../shared/ui/moderation/undo-action';
 import { CatalogStore } from '../application/catalog.store';
+import { ModerationStore } from '../application/moderation.store';
 import type { PublicListing } from '../domain/public-listing';
 import {
   ofreceVisor,
@@ -39,7 +42,7 @@ import {
 @Component({
   selector: 'sendik-product-page',
   standalone: true,
-  imports: [RouterLink, SpinViewer, TranslocoPipe],
+  imports: [RouterLink, SpinViewer, TranslocoPipe, UndoAction],
   templateUrl: './product-page.html',
   styleUrl: './product-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -126,6 +129,64 @@ export class ProductPage {
   });
 
   protected readonly vendedor = computed(() => this.store.vendedor.data() ?? null);
+
+  // --- HU-010: bajar una publicación visible ---------------------------------
+
+  private readonly moderacion = inject(ModerationStore);
+
+  /** Los motivos que ofrece el desplegable. Los mismos que acepta el servidor. */
+  protected readonly motivos = MOTIVOS_DE_RECHAZO_DE_PUBLICACION;
+
+  /**
+   * Si se ofrece bajar esta publicación. Criterios 1, 2 y 3.
+   *
+   * <p>Hacen falta las dos condiciones y ninguna sobra. El rol es evidente. El estado no
+   * tanto: esta misma ruta sirve la ficha pública y la vista del dueño y la del moderador,
+   * así que un moderador puede llegar por su dirección a un borrador o a algo ya archivado,
+   * y bajar es para lo que **ya fue visible**. Sobre lo que espera revisión se decide en su
+   * bandeja, que es donde está el motivo del rechazo.
+   *
+   * <p>Para quien no modera esto es falso siempre, y en el servidor de renderizado también:
+   * allí la sesión no está resuelta —la cookie de refresco es de quien navega— así que la
+   * acción no llega a existir en el HTML que sale. Es el criterio 2, y sale solo.
+   */
+  protected readonly puedeBajar = computed(() => {
+    const estado = this.publicacion()?.status;
+    return this.moderacion.puedeModerar() && (estado === 'PUBLISHED' || estado === 'PAUSED');
+  });
+
+  protected readonly bajando = computed(() => this.moderacion.bajar.isPending());
+
+  /**
+   * Qué decirle a quien acaba de fallar.
+   *
+   * <p>El conflicto tiene texto propio porque no es un fallo: alguien más la bajó primero,
+   * y lo que hay que hacer es mirar de nuevo, no reintentar. Es el criterio 7.
+   */
+  protected readonly errorAlBajar = computed(() => {
+    if (!this.moderacion.bajar.isError()) {
+      return null;
+    }
+    const fallo = this.moderacion.bajar.error() as { status?: number } | null;
+
+    if (fallo?.status === 409) {
+      return 'moderation.undo.alreadyDone';
+    }
+    return fallo?.status === 403 ? 'moderation.undo.ownListing' : 'moderation.undo.failed';
+  });
+
+  protected bajar(decision: DecisionDeshecha): void {
+    const id = this.id();
+    if (id === null) {
+      return;
+    }
+
+    this.moderacion.bajar.mutate({
+      id,
+      motivo: decision.motivo as (typeof MOTIVOS_DE_RECHAZO_DE_PUBLICACION)[number],
+      nota: decision.nota,
+    });
+  }
 
   constructor() {
     effect(() => {

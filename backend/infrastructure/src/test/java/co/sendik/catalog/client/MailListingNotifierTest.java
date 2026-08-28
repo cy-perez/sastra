@@ -93,13 +93,25 @@ class MailListingNotifierTest {
         assertThat(cuerpoDelRechazo()).contains("we suspect it is not authentic");
     }
 
+    /**
+     * El motivo llega por argumento, y la publicacion va <strong>sin motivo dentro</strong>.
+     *
+     * <p>Asi es como sale del dominio: {@code archivar()} no guarda ninguno, a diferencia de
+     * {@code rechazar()}. Esta prueba lo construia con {@code PROHIBITED_ITEM} puesto en la
+     * publicacion —un estado que el dominio no produce nunca— y por eso pasaba en verde
+     * mientras {@code POST /listings/&#123;id&#125;/removal} reventaba con un 500 en cada
+     * llamada, deshaciendo el retiro entero por estar dentro de la transaccion. Lo encontro
+     * el recorrido de extremo a extremo de HU-010, que fue el primero en llamar a esa ruta.
+     */
     @Test
     void deberia_avisar_con_su_motivo_cuando_el_moderador_retira_criterio_31() {
         SellerId vendedor = new SellerId(UUID.randomUUID());
         User cuenta = cuentaDe(vendedor, UserLocale.ES);
 
         avisos.publicacionRetirada(
-                publicacion(vendedor, ListingStatus.ARCHIVED, ListingRejectionReason.PROHIBITED_ITEM), "No se admite.");
+                publicacion(vendedor, ListingStatus.ARCHIVED, null),
+                ListingRejectionReason.PROHIBITED_ITEM,
+                "No se admite.");
 
         ArgumentCaptor<String> cuerpo = ArgumentCaptor.forClass(String.class);
         verify(correo).enviar(eq(cuenta.email().value()), any(), cuerpo.capture());

@@ -16,8 +16,9 @@ import {
  * recortada. Declararlo aquí como un tipo propio hace que una plantilla del catálogo no
  * pueda pintar por descuido un campo que nunca va a llegar.
  *
- * <p>El estado tampoco está, y no falta: si algo aparece en el catálogo es porque está
- * publicado (RN-068).
+ * <p>El estado no está para quien mira el catálogo, y no falta: si algo aparece ahí es
+ * porque está publicado (RN-068). Sí llega para quien modera, y eso es lo único que este
+ * tipo tiene de más desde HU-010; el porqué está en el campo.
  */
 export interface PublicListing {
   readonly id: string;
@@ -25,6 +26,20 @@ export interface PublicListing {
   readonly product: Product;
   readonly images: readonly ListingImage[];
   readonly publishedAt: string | null;
+
+  /**
+   * El estado, y **solo cuando quien pregunta modera o es el dueño**.
+   *
+   * <p>Opcional porque de verdad puede no venir: `GET /listings/{id}` es una sola ruta que
+   * responde una forma u otra según quién pregunte, y a un visitante le devuelve la
+   * pública, que no lo lleva. No es un campo que a veces se olvida: es la diferencia entre
+   * las dos formas, y declararlo opcional es lo que impide que una plantilla del catálogo
+   * lo pinte creyendo que siempre está.
+   *
+   * <p>Lo usa HU-010 para el criterio 3: bajar se ofrece sobre lo que ya fue visible, y
+   * sin el estado no hay forma de distinguir eso de un borrador abierto por su dirección.
+   */
+  readonly status?: string;
 }
 
 /**

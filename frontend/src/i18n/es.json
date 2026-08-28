@@ -878,6 +878,13 @@
       "HOLDER_MISMATCH": "Titular no coincide",
       "DOCUMENT_ALREADY_VERIFIED": "Documento ya verificado en otra cuenta",
       "REQUIREMENTS_NOT_MET": "No cumple los requisitos"
+    },
+    "revocationReasons": {
+      "DOCUMENT_NOT_ITS_HOLDER": "El documento no corresponde a quien lo presentó",
+      "BANK_ACCOUNT_NOT_HOLDER": "La cuenta bancaria no es del titular",
+      "REPEATED_PROHIBITED_LISTINGS": "Publicó lo prohibido de forma reiterada",
+      "HOLDER_REQUEST": "Lo pidió la propia persona",
+      "REQUIREMENTS_NO_LONGER_MET": "Ya no cumple los requisitos"
     }
   },
   "listing": {
@@ -1245,6 +1252,32 @@
       "frame": "Vista a {{grados}} grados",
       "fallbackAlt": "{{titulo}}, vista frontal",
       "roleDescription": "visor giratorio"
+    }
+  },
+  "moderation": {
+    "undo": {
+      "reasonLabel": "Motivo",
+      "reasonPlaceholder": "Elige un motivo",
+      "reasonRequired": "Elige un motivo antes de confirmar.",
+      "noteLabel": "Nota (opcional)",
+      "noteHint": "La persona la recibe por correo. No escribas información judicial ni datos de un tercero.",
+      "confirm": "Confirmar",
+      "cancel": "Cancelar",
+      "failed": "No se pudo completar. Vuelve a intentarlo.",
+      "alreadyDone": "Alguien más se adelantó: esto ya no está como estaba. Vuelve a mirarlo.",
+      "ownListing": "Es tu publicación y no puedes decidir sobre ella. La resuelve otra persona.",
+      "ownSeal": "Es tu sello y no puedes decidir sobre él. Lo resuelve otra persona.",
+      "listing": {
+        "title": "Moderación",
+        "action": "Bajar esta publicación",
+        "confirm": "¿Bajar esta publicación? Deja de verse en el catálogo y el vendedor recibe el motivo. No se puede reactivar."
+      },
+      "seal": {
+        "title": "Moderación",
+        "action": "Revocar el sello",
+        "confirm": "¿Revocar el sello de esta persona? Deja de poder publicar y recibe el motivo por correo.",
+        "listingsStayVisible": "Lo que ya tiene publicado sigue visible. Para retirarlo hay que bajar cada publicación por separado."
+      }
     }
   }
 }

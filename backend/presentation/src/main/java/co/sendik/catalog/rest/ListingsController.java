@@ -233,6 +233,16 @@ public class ListingsController {
      * <p>{@code desdeGaleria} lo declara el cliente y solo suma una marca de atencion:
      * el backend no puede distinguir una foto capturada de una elegida, asi que esto
      * nunca quita una validacion, solo agrega una sospecha (criterio 18).
+     *
+     * <p><strong>Omitirlo vale por «desde la galeria», que es la lectura conservadora.</strong>
+     * Hasta HU-003 el unico cliente lo mandaba siempre en verdadero y el valor por omision no
+     * se ejercia nunca; desde que existe el asistente de captura hay quien manda falso, y
+     * entonces omitir el parametro pasa a equivaler a declarar «esto lo tome con la camara»
+     * sin que nadie pueda desmentirlo. Un cliente viejo en cache, un script o alguien
+     * curioso no consiguen asi quitarse la marca.
+     *
+     * <p>Ninguna regla puede depender de la AUSENCIA de la marca: se agrega para que el
+     * moderador lo lea, y no se consulta en ninguna decision.
      */
     @PostMapping("/{id}/images")
     public ResponseEntity<ListingResponse> subirImagen(
@@ -240,7 +250,7 @@ public class ListingsController {
             @PathVariable String id,
             @RequestParam(name = "kind", defaultValue = "SELLER_SHOT") String clase,
             @RequestParam("position") int posicion,
-            @RequestParam(name = "fromGallery", defaultValue = "false") boolean desdeGaleria,
+            @RequestParam(name = "fromGallery", defaultValue = "true") boolean desdeGaleria,
             @RequestPart("archivo") MultipartFile archivo)
             throws IOException {
 

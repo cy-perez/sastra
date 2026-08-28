@@ -956,6 +956,183 @@ lleve la copia, no de paso.
 - **Nada que enlace al catálogo público.** No existe todavía, y HU-004 y HU-005 ya
   fijaron que no se enlaza a rutas que no están.
 
+## Captura asistida y visor 360º — Fase 2
+
+El texto de HU-003, que tiene dos mitades y dos dueños: el **asistente de captura**
+lo usa el vendedor y va bajo `listing.capture.*`; el **visor giratorio** lo usa
+cualquiera en la ficha y va bajo `catalog.viewer.*`.
+
+**Cada mitad va detrás de su bandera.** El asistente detrás de `FEATURE_PUBLISHING`
+y el visor detrás de `FEATURE_CATALOG`, que son las que ya cubren las pantallas
+donde cada uno aparece. No estrena bandera propia: no hay ningún escenario en el
+que tenga sentido encender el catálogo sin su visor.
+
+Ruta del asistente: `/publicar/:id/capturar`, colgada del formulario que ya existe.
+
+### La entrada al asistente — `listing.capture.entry.*`
+
+`.action`: Tomar las fotos con la cámara
+`.hint`: Te guiamos las ocho tomas, una por cada giro.
+`.resume`: Sigue donde ibas: te faltan {{cuantas}}.
+`.unsupported`: Este dispositivo no tiene cámara disponible. Puedes subir las fotos
+desde tu galería.
+
+`.action` nombra la cámara y no «el asistente», que no significa nada para quien
+llega. `.hint` dice **por qué son ocho** en una línea: porque el producto gira.
+
+### Los estados de la pantalla — `listing.capture.*`
+
+`.loading`: Cargando la publicación
+`.notFound`: No pudimos abrir esta publicación. Puede que ya no exista o que no sea tuya.
+`.backToListings`: Volver a mis publicaciones
+`.notForSealed`: Este producto no usa el asistente de captura.
+
+`.notForSealed` va seguido de `listing.shots.sealedBody`, que ya explica cuáles son las
+cuatro tomas. Se dice **qué pasa** antes de **qué hacer**: quien llega aquí desde un enlace
+necesita primero entender por qué la pantalla no es la que esperaba.
+
+### Los ocho pasos — `listing.capture.shot.*`
+
+En el orden del giro, empezando por el frente. Las cuatro en negrita son las
+canónicas de RN-016, las que no pueden faltar.
+
+| Clave | Grados | Nombre |
+|---|---|---|
+| `.front` | 0 | **Frente** |
+| `.frontRight` | 45 | Frente y lado derecho |
+| `.right` | 90 | **Lado derecho** |
+| `.backRight` | 135 | Espalda y lado derecho |
+| `.back` | 180 | **Espalda** |
+| `.backLeft` | 225 | Espalda y lado izquierdo |
+| `.left` | 270 | **Lado izquierdo** |
+| `.frontLeft` | 315 | Frente y lado izquierdo |
+
+**Se nombran, no se numeran.** El criterio 1 pide el nombre de cada toma, y «paso 4
+de 8» no le dice a nadie hacia dónde girar el producto. Las intermedias se nombran
+por las dos que tienen a cada lado, que es como se explicaría de viva voz.
+
+**Derecha e izquierda son las de quien mira**, no las de la prenda. Es la
+convención de una fotografía y la que evita que alguien voltee una camisa buscando
+«su» manga derecha.
+
+### El progreso — `listing.capture.progress.*`
+
+`.label`: Toma {{numero}} de {{total}}
+`.aria`: {{hechas}} de {{total}} tomas listas
+`.canonical`: Esta no puede faltar
+`.done`: Ya tienes las ocho. Revísalas y súbelas.
+
+### El nivel — `listing.capture.level.*`
+
+`.ok`: Nivelado
+`.tilted`: Endereza el teléfono para tomar la foto.
+`.tiltedHint`: Está inclinado más de 5 grados y las tomas quedarían desalineadas.
+
+`.tilted` manda hacer algo y `.tiltedHint` explica por qué; separadas porque la
+primera va junto al obturador deshabilitado y la segunda solo hace falta si la
+persona se queda mirando sin entender. **Ninguna de las dos culpa a la persona**:
+«está inclinado» y no «lo tienes torcido».
+
+### Los sensores en iOS — `listing.capture.sensors.*`
+
+`.request`: Activar el nivel
+`.requestHint`: Usamos el sensor de movimiento para avisarte si el teléfono está
+inclinado. No sale del dispositivo.
+`.denied`: Seguimos sin el nivel. Las tomas pueden quedar desalineadas entre sí.
+
+⚠️ Las tres son de un permiso que **solo pide iOS**. `.requestHint` dice para qué
+se usa y que no se envía a ninguna parte, que es lo que la Ley 1581 pide de
+cualquier dato que se recoja, aunque este no se guarde.
+
+**`.denied` no es un error y no ofrece reintentar.** El criterio 4 es explícito:
+si se niega, el asistente sigue y nunca se bloquea la publicación. El texto avisa
+de la consecuencia real —desalineadas *entre sí*, que es lo que estropea el giro—
+y no insiste.
+
+### La galería — `listing.capture.gallery.*`
+
+`.action`: Subir desde la galería
+`.hint`: La recortamos igual que si la hubieras tomado aquí.
+`.attention`: Las fotos que subes desde la galería pasan una revisión más atenta.
+
+`.attention` es el aviso del criterio 8, y **se dice antes y no después**: enterarse
+de que tu publicación va a mirarse con lupa cuando ya la enviaste es lo que hace
+sentir engañado a alguien. No dice «sospechosa»; dice lo que pasa.
+
+### Cuando la foto no sirve — `listing.capture.rejected.*`
+
+`.RESOLUCION_INSUFICIENTE`: Esta foto es muy pequeña. Necesitamos al menos 900 ×
+1200 píxeles después de recortarla a vertical.
+`.NO_SE_PUDO_COMPRIMIR`: No pudimos preparar esta foto. Intenta con otra.
+`.IMAGEN_ILEGIBLE`: No pudimos leer este archivo. Asegúrate de que sea una imagen.
+`.SIN_SOPORTE`: Este navegador no puede preparar la foto. Prueba con otro o actualízalo.
+
+El primero es el único que se ve a menudo, y **dice «después de recortarla»** a
+propósito: una foto cuadrada de 1000 píxeles pasa los dos mínimos por separado y
+su recorte vertical no, y sin esa frase el número parece mentir.
+
+`.SIN_SOPORTE` existe para no mentir en el otro sentido. Cuando el navegador no tiene el
+worker que recorta, el problema no es la foto, y decir «no pudimos leer este archivo» manda
+a la persona a buscarle un defecto a una imagen que está perfecta.
+
+⚠️ Esto **no sustituye** a `FILE_DIMENSIONS_TOO_SMALL`, que sigue saliendo del
+servidor y sigue mal redactado (ver el aviso de la sección anterior). Lo que hace
+es que casi nunca se llegue a él: ahora el recorte se decide en el dispositivo y
+lo que no cumple no se sube.
+
+### La subida — `listing.capture.upload.*`
+
+`.progress`: Subiendo {{porcentaje}}%
+`.retry`: Reintentar esta toma
+`.failed`: No se pudo subir esta toma.
+`.done`: Listo
+`.saved`: Toma {{nombre}} lista
+
+`.saved` no se ve: es lo que se le anuncia a un lector de pantalla cuando una toma acaba de
+subir. Sin él, quien no ve la pantalla no tiene forma de saber si la foto entró —cambian el
+encabezado y la barra, y ninguno de los dos se anuncia solo—.
+
+`.retry` dice «esta toma» porque el criterio 10 pide reintentar **solo la que
+falló**, y un botón que dijera «reintentar» a secas haría temer que se repitan las
+ocho.
+
+### El visor giratorio — `catalog.viewer.*`
+
+`.label`: Vista giratoria del producto
+`.roleDescription`: visor giratorio
+`.instructions`: Arrastra para girar, o usa las flechas del teclado.
+`.loading`: Cargando la vista giratoria
+`.frame`: Vista a {{grados}} grados
+`.fallbackAlt`: {{titulo}}, vista frontal
+
+`.roleDescription` es lo que un lector de pantalla dice en lugar de «control deslizante»:
+el visor se marca con ese rol porque es el único que hace que el lector **ceda las flechas**
+al componente, pero «control deslizante» no describe lo que hay. `.label` queda para el
+título del producto. `.instructions` da las dos formas de usarlo —dedo y teclado— porque el
+criterio 15 exige que las dos existan y quien navega con teclado no tiene cómo adivinarlo;
+mientras el visor no puede girar todavía, en su lugar se dice `.loading`, porque prometer
+unas flechas que aún no responden es peor que no decir nada.
+
+`.fallbackAlt` es el `alt` de la imagen que el servidor entrega antes de que el
+visor se active (criterio 18). Lleva el título del producto porque esa imagen es lo
+que un buscador indexa, y «vista frontal» a secas no describe nada.
+
+En inglés se conserva la distinción entre girar y desplazar: `Drag to rotate, or
+use the arrow keys.`
+
+### Lo que no se escribe aquí, y por qué
+
+- **Ningún texto de la tecnología sellada.** El asistente no aplica ahí: son cuatro
+  tomas del empaque y no hay giro que guiar (RN-065). Esa pantalla sigue siendo la
+  rejilla de HU-007, con sus textos.
+- **Ninguna instrucción de fondo, luz o distancia.** Sería prometer un resultado
+  que el asistente no comprueba: mide inclinación y encuadre, no iluminación.
+  Escribir «usa luz natural» convierte en regla lo que hoy es un consejo sin nadie
+  detrás.
+- **Nada sobre cuánto pesa una foto ni cuánto se comprime.** Es una decisión
+  técnica (criterio 9), no una promesa al vendedor, y anunciarla la volvería
+  exigible.
+
 ## Moderación de publicaciones — Fase 2
 
 El texto de HU-008. Las claves van bajo `listingReview.*`.

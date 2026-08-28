@@ -14,6 +14,7 @@ import {
 import type { Session } from '../../../core/session/session';
 import { APP_CONFIG } from '../../../core/config/app-config';
 import { SessionStore } from '../../../core/session/session.store';
+import { PhotoNormalizer } from '../../../shared/infrastructure/photo-normalizer';
 import { ESPERA_DE_GUARDADO, PublishPage } from './publish-page';
 
 /**
@@ -247,6 +248,15 @@ describe('PublishPage', () => {
 
     TestBed.configureTestingModule({
       providers: [
+        // Desde HU-003 toda toma pasa por el recorte a 3:4 antes de subir (criterio 8).
+        // El normalizador vive en un worker con `OffscreenCanvas`, y ninguno de los dos
+        // existe en jsdom: se dobla por uno que devuelve la imagen tal cual. Lo que aqui
+        // se comprueba es el formulario, no el recorte, que prueban photo-crop.spec.ts
+        // sobre la aritmetica y la suite de extremo a extremo sobre pixeles de verdad.
+        {
+          provide: PhotoNormalizer,
+          useValue: { soportado: () => true, normalizar: async (imagen: Blob) => imagen },
+        },
         provideRouter([{ path: 'publicar/:id', component: PublishPage }]),
         { provide: ActivatedRoute, useValue: { paramMap: parametros.asObservable() } },
         // Sin espera: el guardado automático se comprueba por lo que manda, no por

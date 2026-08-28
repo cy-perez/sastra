@@ -86,8 +86,15 @@ Es la fase en curso desde el 21 de agosto de 2026.
   con la que se usan es el punto de más abajo. Detrás de
   `FEATURE_SELLER_VERIFICATION`, hoy apagada.
 - Asistente de captura de fotos con overlay, nivelador y recorte en cliente
-  (HU-003, pendiente).
-- Visor 360º en la ficha de producto (HU-003, pendiente).
+  (HU-003). **Hecho el 28 de agosto de 2026**, en `/publicar/:id/capturar`: ocho pasos
+  con nombre, silueta y cuadrícula, nivel de 5 grados, recorte a 3:4 en un worker y
+  subida con progreso real. Es enteramente frontend: el backend ya tenía el endpoint
+  desde HU-007.
+- Visor 360º en la ficha de producto (HU-003). **Hecho el mismo día**, en `shared/ui`
+  y sin ninguna librería. Se ofrece solo con la secuencia completa de ocho.
+  **Con una salvedad**: el recorrido de extremo a extremo con cámara simulada que la
+  historia pide sigue sin escribirse, y es lo único que puede verificar el criterio 18
+  y el recorte sobre píxeles de verdad. El motivo está en la historia.
 - Publicación de producto con las cuatro tomas obligatorias y las intermedias, en
   las dos familias: moda —nueva y de segunda— y **tecnología, solo nueva**
   (RN-064). La tecnología se agregó al alcance el 24 de agosto de 2026 y entra en
@@ -110,9 +117,9 @@ Es la fase en curso desde el 21 de agosto de 2026.
   publicaciones —RN-015, la otra mitad de este punto— tiene sus reglas y sus
   endpoints de decisión en HU-007, y **HU-008 la cerró el 27 de agosto de 2026**: la
   cola, la bandeja y el detalle donde se decide. Con ella este punto queda completo.
-  **Con una salvedad anotada**: el recorrido de punta a punta del ciclo está escrito en
-  `e2e-completo/` y tres de sus seis pruebas siguen en rojo, con su diagnóstico en la
-  historia. Las que pasan son las de acceso; las que no, las que publican. Fuera de las dos historias
+  El recorrido de punta a punta del ciclo está escrito en `e2e-completo/`; las tres pruebas
+  que nacieron en rojo se arreglaron el 27 de agosto de 2026 y el diagnóstico quedó en la
+  historia. Fuera de las dos historias
   quedan, con el mismo argumento y cada una esperando la suya, revocar un sello ya
   otorgado y bajar una publicación ya visible (RN-024): los endpoints existen,
   pero no hay forma de llegar a esos identificadores desde la interfaz.

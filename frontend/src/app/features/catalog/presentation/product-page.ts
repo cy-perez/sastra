@@ -12,9 +12,15 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
 import { precioFormateado } from '../../../shared/domain/listing';
+import { SpinViewer, type FotogramaDelVisor } from '../../../shared/ui/viewer/spin-viewer';
 import { CatalogStore } from '../application/catalog.store';
 import type { PublicListing } from '../domain/public-listing';
-import { portada, tieneImagenDeReferencia } from '../domain/public-listing';
+import {
+  ofreceVisor,
+  portada,
+  secuenciaDeGiro,
+  tieneImagenDeReferencia,
+} from '../domain/public-listing';
 
 /**
  * La ficha de producto. HU-009, criterios 11 a 17 y 21.
@@ -33,7 +39,7 @@ import { portada, tieneImagenDeReferencia } from '../domain/public-listing';
 @Component({
   selector: 'sendik-product-page',
   standalone: true,
-  imports: [RouterLink, TranslocoPipe],
+  imports: [RouterLink, SpinViewer, TranslocoPipe],
   templateUrl: './product-page.html',
   styleUrl: './product-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -63,6 +69,30 @@ export class ProductPage {
   protected readonly noEncontrada = computed(() => this.store.publicacion.isError());
 
   protected readonly tomas = computed(() => this.ordenadas());
+
+  /**
+   * La secuencia del visor, ya en la forma que el componente pinta.
+   *
+   * <p>Aquí solo se mapea. **Qué tomas entran en el giro y cuándo se ofrece lo decide
+   * `domain/public-listing.ts`**: son RN-066 y RN-017, y una pantalla no es sitio para una
+   * regla de negocio.
+   */
+  protected readonly secuencia = computed<readonly FotogramaDelVisor[]>(() => {
+    const publicacion = this.publicacion();
+    if (publicacion === null) {
+      return [];
+    }
+
+    return secuenciaDeGiro(publicacion).map((imagen) => ({
+      url: imagen.url,
+      grados: this.gradosDe(imagen.position),
+    }));
+  });
+
+  protected readonly conVisor = computed(() => {
+    const publicacion = this.publicacion();
+    return publicacion !== null && ofreceVisor(publicacion);
+  });
 
   /**
    * Si hay alguna imagen que no tomó el vendedor (RN-066).

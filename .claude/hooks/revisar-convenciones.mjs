@@ -52,6 +52,23 @@ if (enFrontend && es('.css', '.scss', '.html') && !esHojaDelSistema) {
 
 // --- Angular: API vigentes ------------------------------------------------
 if (enFrontend && es('.ts', '.html')) {
+  // Fuera de la revision: los comentarios, igual que en el bloque de estilos de arriba.
+  // Este codigo se documenta explicando por que NO se hace algo —"con document.querySelector
+  // el foco podia acabar en otro sitio", "en IndexedDB y no en localStorage"—, y castigar
+  // esa prosa deja dos salidas, las dos malas: empeorar la explicacion, o acostumbrarse a
+  // ignorar el hook. Es justo el falso positivo que la cabecera de este archivo dice que no
+  // se admite. Lo que se busca son llamadas, y una llamada no vive en un comentario.
+  // El comentario de linea solo se quita cuando ocupa la linea entera. Quitar tambien el
+  // que va al final de una linea de codigo obligaria a distinguir un `//` de comentario de
+  // uno dentro de una cadena, y no distinguirlo abre un agujero de verdad: cualquier linea
+  // con `https://` perderia todo lo que va detras, incluido un `document.cookie`. Se
+  // acepta a cambio que un comentario al final de una linea de codigo pueda dar un falso
+  // positivo; los dos que motivaron esto eran de bloque.
+  const codigo = texto
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^[ \t]*\/\/[^\n]*$/gm, '')
+    .replace(/<!--[\s\S]*?-->/g, '');
+
   const reglas = [
     [/\*ngIf|\*ngFor|\*ngSwitch/, 'Directivas estructurales antiguas. Este proyecto usa el flujo de control de plantilla: @if, @for con track, @switch.'],
     [/@NgModule/, 'NgModule. Todos los componentes son standalone.'],
@@ -60,7 +77,7 @@ if (enFrontend && es('.ts', '.html')) {
     [/HttpClientModule/, 'HttpClientModule. Se usa provideHttpClient().'],
     [/localStorage|sessionStorage|window\.|document\./, 'Acceso directo a API del navegador. Rompe el renderizado en servidor: aislalo tras afterNextRender o una comprobacion de plataforma.'],
   ];
-  for (const [patron, mensaje] of reglas) if (patron.test(texto)) hallazgos.push(mensaje);
+  for (const [patron, mensaje] of reglas) if (patron.test(codigo)) hallazgos.push(mensaje);
 
   if (es('.ts') && /@Component\(/.test(texto) && !/OnPush/.test(texto)) {
     hallazgos.push('Componente sin ChangeDetectionStrategy.OnPush.');

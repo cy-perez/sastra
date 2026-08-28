@@ -1059,6 +1059,68 @@
     },
     "edit": {
       "title": "Your listing"
+    },
+    "capture": {
+      "entry": {
+        "action": "Take the photos with your camera",
+        "hint": "We guide you through the eight shots, one per turn.",
+        "resume": "Pick up where you left off: {{cuantas}} to go.",
+        "unsupported": "No camera available on this device. You can upload the photos from your gallery."
+      },
+      "shot": {
+        "front": "Front",
+        "frontRight": "Front and right side",
+        "right": "Right side",
+        "backRight": "Back and right side",
+        "back": "Back",
+        "backLeft": "Back and left side",
+        "left": "Left side",
+        "frontLeft": "Front and left side"
+      },
+      "progress": {
+        "label": "Shot {{numero}} of {{total}}",
+        "aria": "{{hechas}} of {{total}} shots ready",
+        "canonical": "This one is required",
+        "done": "All eight are in. Review them and upload."
+      },
+      "level": {
+        "ok": "Level",
+        "tilted": "Straighten the phone to take the photo.",
+        "tiltedHint": "It is tilted more than 5 degrees and the shots would not line up."
+      },
+      "sensors": {
+        "request": "Turn on the level",
+        "requestHint": "We use the motion sensor to warn you when the phone is tilted. It never leaves your device.",
+        "denied": "Carrying on without the level. Your shots may not line up with each other."
+      },
+      "gallery": {
+        "action": "Upload from gallery",
+        "hint": "We crop it just as if you had taken it here.",
+        "attention": "Photos you upload from your gallery get a closer review."
+      },
+      "rejected": {
+        "RESOLUCION_INSUFICIENTE": "This photo is too small. We need at least 900 × 1200 pixels after cropping it to portrait.",
+        "NO_SE_PUDO_COMPRIMIR": "We could not prepare this photo. Try another one.",
+        "IMAGEN_ILEGIBLE": "We could not read this file. Make sure it is an image.",
+        "SIN_SOPORTE": "This browser cannot prepare the photo. Try another one, or update it."
+      },
+      "upload": {
+        "progress": "Uploading {{porcentaje}}%",
+        "retry": "Retry this shot",
+        "failed": "This shot could not be uploaded.",
+        "done": "Done",
+        "saved": "Shot {{nombre}} ready"
+      },
+      "close": "Leave the assistant",
+      "take": "Take the photo",
+      "retake": "Retake this shot",
+      "next": "Next",
+      "previous": "Previous",
+      "finish": "Finish",
+      "loading": "Loading the listing",
+      "notFound": "We could not open this listing. It may no longer exist, or it may not be yours.",
+      "backToListings": "Back to my listings",
+      "notForSealed": "This product does not use the capture assistant."
     }
   },
   "listingReview": {
@@ -1175,6 +1237,14 @@
       "notFound": "We couldn't find this seller.",
       "loading": "Loading the profile",
       "soldBy": "Sold by"
+    },
+    "viewer": {
+      "label": "Rotating view of the product",
+      "instructions": "Drag to rotate, or use the arrow keys.",
+      "loading": "Loading the rotating view",
+      "frame": "View at {{grados}} degrees",
+      "fallbackAlt": "{{titulo}}, front view",
+      "roleDescription": "rotating viewer"
     }
   }
 }

@@ -12,8 +12,8 @@ import {
 } from '../../../core/http/interceptors';
 import type { Session } from '../../../core/session/session';
 import { SessionStore } from '../../../core/session/session.store';
-import type { ImagenEnGrises } from '../domain/blur';
-import { CameraService, type Fotograma } from '../infrastructure/camera.service';
+import { CameraService } from '../../../shared/infrastructure/camera.service';
+import { SharpnessService } from '../infrastructure/sharpness.service';
 import { DocumentCaptureForm } from './document-capture-form';
 import { SelfieCaptureForm } from './selfie-capture-form';
 
@@ -24,14 +24,6 @@ describe('formularios de captura', () => {
   const SESION: Session = {
     accessToken: 'un-token',
     user: { email: 'ana@correo.co', displayName: 'Ana Maria', emailVerified: true, roles: [] },
-  };
-
-  const nitida = (): ImagenEnGrises => {
-    const pixeles = new Uint8Array(400);
-    for (let i = 0; i < pixeles.length; i++) {
-      pixeles[i] = i % 2 === 0 ? 0 : 255;
-    }
-    return { ancho: 20, alto: 20, pixeles };
   };
 
   class CamaraFalsa {
@@ -48,8 +40,15 @@ describe('formularios de captura', () => {
       // camara se apague lo prueba capture-field.spec.ts.
       this.apagadas++;
     }
-    async capturar(): Promise<Fotograma> {
-      return { imagen: new Blob(['unos bytes'], { type: 'image/jpeg' }), grises: nitida() };
+    async capturar(): Promise<Blob> {
+      return new Blob(['unos bytes'], { type: 'image/jpeg' });
+    }
+  }
+
+  /** Aqui se comprueba el envio, no el umbral: lo borroso lo prueba capture-field.spec.ts. */
+  class NitidezFalsa {
+    async estaNitida(): Promise<boolean> {
+      return true;
     }
   }
 
@@ -130,6 +129,7 @@ describe('formularios de captura', () => {
         ),
         provideHttpClientTesting(),
         { provide: CameraService, useValue: new CamaraFalsa() },
+        { provide: SharpnessService, useValue: new NitidezFalsa() },
       ],
     });
     TestBed.inject(SessionStore).set(SESION);

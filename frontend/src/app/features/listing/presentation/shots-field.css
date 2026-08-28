@@ -133,3 +133,11 @@
 .tomas__anadir {
   margin: 0;
 }
+
+/* La entrada al asistente de captura (HU-003). */
+.tomas__asistente {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-8);
+  align-items: center;
+}

@@ -222,4 +222,65 @@ describe('ProductPage', () => {
 
     expect(fixture.nativeElement.textContent).not.toContain('12');
   });
+
+  /**
+   * El visor giratorio de HU-003, montado sobre la ficha de HU-009.
+   *
+   * <p>Aquí se comprueba **cuándo se ofrece**, que es la regla; cómo gira lo prueba
+   * `spin-viewer.spec.ts` sobre el componente, y la aritmética `frame-index.spec.ts`.
+   */
+  describe('el visor giratorio', () => {
+    const ocho = () => [0, 1, 2, 3, 4, 5, 6, 7].map(toma);
+
+    const referencia = (position: number) => ({
+      id: `referencia-${position}`,
+      kind: 'REFERENCE',
+      position,
+      angleDegrees: null,
+      url: `/referencia-${position}.jpg`,
+    });
+
+    const visor = (fixture: ComponentFixture<ProductPage>) =>
+      fixture.nativeElement.querySelector('sendik-spin-viewer');
+
+    it('se ofrece con la secuencia completa de ocho tomas', async () => {
+      const { fixture, backend } = await montar();
+      await responder(fixture, backend, { ...publicacion(), images: ocho() });
+
+      expect(visor(fixture)).not.toBeNull();
+    });
+
+    /**
+     * Caso borde de la historia: «publicación antigua con menos de ocho tomas: el visor no
+     * se ofrece y se muestra solo el carrusel».
+     */
+    it('no se ofrece con siete tomas, y el carrusel sigue estando', async () => {
+      const { fixture, backend } = await montar();
+      await responder(fixture, backend, { ...publicacion(), images: ocho().slice(0, 7) });
+
+      expect(visor(fixture)).toBeNull();
+      expect(fixture.nativeElement.querySelectorAll('.ficha__toma').length).toBe(7);
+    });
+
+    it('no se ofrece con las tres tomas sueltas de una publicación vieja', async () => {
+      const { fixture, backend } = await montar();
+      await responder(fixture, backend, publicacion());
+
+      expect(visor(fixture)).toBeNull();
+    });
+
+    /**
+     * RN-066: una imagen de referencia es del fabricante y no del producto que se recibe,
+     * así que no completa la secuencia ni entra en el giro.
+     */
+    it('no cuenta una imagen de referencia para completar las ocho', async () => {
+      const { fixture, backend } = await montar();
+      await responder(fixture, backend, {
+        ...publicacion(),
+        images: [...ocho().slice(0, 7), referencia(7)],
+      });
+
+      expect(visor(fixture)).toBeNull();
+    });
+  });
 });

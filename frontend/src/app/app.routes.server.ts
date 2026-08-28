@@ -63,6 +63,9 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'publicar', renderMode: RenderMode.Server },
   { path: 'publicar/:id', renderMode: RenderMode.Server },
   { path: 'mis-publicaciones', renderMode: RenderMode.Server },
+  // HU-003, el asistente de captura. Cuelga del formulario y se renderiza en servidor por
+  // lo mismo que el: APP_CONFIG llega por el estado transferido y sin el no arranca.
+  { path: 'publicar/:id/capturar', renderMode: RenderMode.Server },
   // HU-008, la bandeja de moderacion de publicaciones. Mismo razonamiento que la de
   // HU-006: se renderizan en servidor porque APP_CONFIG llega por el estado transferido,
   // y `exigirRol` deniega alli, asi que lo que se sirve a quien no modera es la pagina de

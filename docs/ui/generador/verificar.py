@@ -122,6 +122,9 @@ PARES = [
     # Y los mismos sobre el fondo de pagina, que es donde caen en las pantallas de
     # publicacion: alli el mensaje no vive dentro de una tarjeta.
     ("Mensaje de aviso sobre el fondo",       "--color-aviso",          "--color-fondo",          AA_TEXTO),
+    # HU-003: el nivel del asistente de captura dice "Nivelado" en verde sobre el fondo de
+    # pagina. El exito estaba solo como BORDE a 3:1; como texto no se comprobaba.
+    ("Mensaje de exito sobre el fondo",       "--color-exito",          "--color-fondo",          AA_TEXTO),
     ("Mensaje de error sobre el fondo",       "--color-error",          "--color-fondo",          AA_TEXTO),
     ("Anillo de foco sobre el fondo",         "--color-foco",           "--color-fondo",          AA_GRANDE),
     ("Anillo de foco sobre tarjeta",          "--color-foco",           "--color-superficie",     AA_GRANDE),

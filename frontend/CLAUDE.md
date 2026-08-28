@@ -19,6 +19,8 @@ src/app/
   shared/                     lo que usan dos funcionalidades y no es de ninguna
     ui/                       botón, campo, tarjeta, sello, visor 360
     domain/                   vocabulario común: TypeScript puro, sin Angular
+    infrastructure/           servicios que hablan con el navegador, no con la red:
+                              cámara, acelerómetro, normalizador de fotos (ADR-0026)
     directives/  pipes/
   features/<funcionalidad>/
     domain/                   modelos y reglas puras. Sin Angular.

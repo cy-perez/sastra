@@ -299,6 +299,16 @@ export class PublishPage {
     await this.router.navigate(['/publicar', creada.id]);
   }
 
+  /**
+   * Sube una toma elegida desde la galería.
+   *
+   * <p>{@code desdeGaleria} va en verdadero y aquí eso **sí es la verdad**: esta pantalla
+   * es la rejilla, y a la rejilla se llega con un selector de archivos. Lo que se captura
+   * con la cámara entra por el asistente, que sube por su cuenta y lo declara en falso.
+   *
+   * <p>Desde HU-003 el archivo pasa por el mismo recorte a 3:4 que una toma de cámara antes
+   * de salir del dispositivo (criterio 8), y eso lo hace el store.
+   */
   protected alSubir(toma: { posicion: number; imagen: File }): void {
     const actual = this.publicacion();
     if (actual === null) {
@@ -307,7 +317,7 @@ export class PublishPage {
 
     this.subiendo.set(toma.posicion);
     this.subida.mutate(
-      { id: actual.id, posicion: toma.posicion, imagen: toma.imagen },
+      { id: actual.id, posicion: toma.posicion, imagen: toma.imagen, desdeGaleria: true },
       { onSettled: () => this.subiendo.set(null) },
     );
   }

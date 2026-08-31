@@ -21,9 +21,9 @@ assertj = "3.27.7"
 mockito = "5.23.0"
 archunit = "1.5.0"
 jacoco = "0.8.15"
-spotless = "8.10.0"
+spotless = "8.10.1"
 bouncycastle = "1.85.2"
-google-cloud-storage = "2.71.0"
+google-cloud-storage = "2.72.0"
 palantir-java-format = "2.97.0"
 
 [libraries]

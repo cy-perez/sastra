@@ -50,3 +50,4 @@ la referencia.
 | 0025 | Datos remotos en el renderizado en servidor | Aceptada |
 | 0026 | La cámara sube a `shared` y la nitidez se queda | Aceptada |
 | 0027 | El borrador de captura vive en IndexedDB | Aceptada |
+| 0028 | Las acciones del CI suben de versión mayor en bloque | Aceptada con riesgo abierto |

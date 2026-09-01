@@ -546,7 +546,9 @@ aparezcan tachadas en los registros cuando haga falta leerlas.
 | `COMMISSION_RATE` | `0.05` | `0.05` |
 | `LEGAL_TERMS_VERSION`, `LEGAL_PRIVACY_VERSION` | `borrador-local` hasta que existan los textos | la versión real |
 | `STORAGE_PROVIDER` | `gcs` | `gcs` |
-| `STORAGE_PUBLIC_BASE_URL` | `https://storage.googleapis.com/sendik-publico-dev` | el dominio del CDN |
+| `STORAGE_PUBLIC_BUCKET` | `sendik-publico` | ídem |
+| `STORAGE_RESTRICTED_BUCKET` | `sendik-reservado` | ídem |
+| `STORAGE_PUBLIC_BASE_URL` | `https://storage.googleapis.com/sendik-publico` | el dominio del CDN |
 
 Y las del frontend, que desde ADR-0024 también se despliega desde aquí. Van en el
 mismo sitio y por la misma razón: ninguna es secreta —el sitio las dice en voz alta
@@ -571,6 +573,18 @@ El frontend reusa `APP_API_BASE_URL` —que le llega como `API_BASE_URL`, el nom
 con el que lo lee `read-app-config.ts`—, `SUPPORT_EMAIL`, `COMPANY_*` y
 `COMMISSION_RATE` de la tabla de arriba: son el mismo valor para las dos piezas, y
 declararlos dos veces es la forma de que un día dejen de coincidir.
+
+> **Los dos nombres de cubo son obligatorios con `gcs`, y esta tabla no los tenía.**
+> El paso 3 ya los daba por sabidos, pero el paso 8 no los pedía y `despliegue.yml` no
+> los pasaba, así que el backend se desplegaba y **no arrancaba**:
+> `IllegalStateException: Falta STORAGE_PUBLIC_BUCKET, que es obligatoria con
+> sendik.storage.provider=gcs`. Cuesta encontrarlo porque el fallo llega tarde —después
+> de que Flyway aplique las quince migraciones sin una queja— y Cloud Run lo reporta como
+> un contenedor que no escuchó en el puerto a tiempo, que suena a otra cosa.
+>
+> Ojo también al nombre: el cubo es `sendik-publico`, **sin sufijo de entorno**, así que
+> `STORAGE_PUBLIC_BASE_URL` termina en `sendik-publico` y no en `sendik-publico-dev`,
+> como decía esta tabla hasta hoy.
 
 `STORAGE_PUBLIC_BASE_URL` **no** va al frontend: las direcciones de las imágenes
 llegan ya formadas en la respuesta de la API y el navegador no compone ninguna.

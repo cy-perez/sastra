@@ -28,6 +28,7 @@ import co.sendik.identity.model.IdentityDocumentNumber;
 import co.sendik.identity.model.IdentityDocumentType;
 import co.sendik.identity.model.LegalName;
 import co.sendik.identity.model.RejectionReason;
+import co.sendik.identity.model.RevocationReason;
 import co.sendik.identity.model.Role;
 import co.sendik.identity.model.SellerVerification;
 import co.sendik.identity.model.SellerVerificationId;
@@ -279,7 +280,7 @@ class ModeratorVerificationUseCasesTest {
 
         SellerVerification revocada = new RevokeVerificationUseCase(verificaciones, usuarios, bitacora, correo, RELOJ)
                 .execute(new RevokeVerificationCommand(
-                        moderador, solicitud, RejectionReason.REQUIREMENTS_NOT_MET, null));
+                        moderador, solicitud, RevocationReason.REQUIREMENTS_NO_LONGER_MET, null));
 
         assertThat(revocada.status()).isEqualTo(VerificationStatus.REVOKED);
         assertThat(revocada.status().esVerificado()).isFalse();
@@ -294,7 +295,7 @@ class ModeratorVerificationUseCasesTest {
         RevokeVerificationUseCase caso =
                 new RevokeVerificationUseCase(verificaciones, usuarios, bitacora, correo, RELOJ);
         RevokeVerificationCommand comando =
-                new RevokeVerificationCommand(moderador, solicitud, RejectionReason.REQUIREMENTS_NOT_MET, null);
+                new RevokeVerificationCommand(moderador, solicitud, RevocationReason.REQUIREMENTS_NO_LONGER_MET, null);
 
         assertThatThrownBy(() -> caso.execute(comando)).isInstanceOf(InvalidVerificationTransitionException.class);
         verify(usuarios, never()).revocarRol(any(), any());
@@ -339,9 +340,10 @@ class ModeratorVerificationUseCasesTest {
 
         new RevokeVerificationUseCase(verificaciones, usuarios, bitacora, correo, RELOJ)
                 .execute(new RevokeVerificationCommand(
-                        moderador, solicitud, RejectionReason.REQUIREMENTS_NOT_MET, null));
+                        moderador, solicitud, RevocationReason.REQUIREMENTS_NO_LONGER_MET, null));
 
-        verify(correo).enviarAvisoDeVerificacionRevocada(any(), eq(RejectionReason.REQUIREMENTS_NOT_MET), eq(null));
+        verify(correo)
+                .enviarAvisoDeVerificacionRevocada(any(), eq(RevocationReason.REQUIREMENTS_NO_LONGER_MET), eq(null));
     }
 
     /**

@@ -6,6 +6,7 @@ import co.sendik.catalog.dto.SellerProfileView;
 import co.sendik.catalog.model.Category;
 import co.sendik.catalog.model.CategoryId;
 import co.sendik.catalog.model.Listing;
+import co.sendik.catalog.model.ListingRejectionReason;
 import co.sendik.catalog.model.ListingId;
 import co.sendik.catalog.model.ListingStatus;
 import co.sendik.catalog.model.MeasurementGroup;
@@ -346,7 +347,8 @@ final class CatalogoEnMemoria {
         }
 
         @Override
-        public void publicacionRetirada(Listing publicacion, @Nullable String nota) {
+        public void publicacionRetirada(
+                Listing publicacion, ListingRejectionReason motivo, @Nullable String nota) {
             enviados.add(new Aviso("retirada", publicacion.id(), nota));
         }
 

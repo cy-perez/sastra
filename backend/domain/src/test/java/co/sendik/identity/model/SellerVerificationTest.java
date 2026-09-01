@@ -165,7 +165,7 @@ class SellerVerificationTest {
         SellerVerification revocada = completa()
                 .enviarARevision(AHORA)
                 .aprobar(AHORA)
-                .revocar(RejectionReason.REQUIREMENTS_NOT_MET, null, AHORA);
+                .revocar(RevocationReason.DOCUMENT_NOT_ITS_HOLDER, null, AHORA);
 
         assertThat(revocada.status()).isEqualTo(VerificationStatus.REVOKED);
         assertThat(revocada.status().esVerificado()).isFalse();
@@ -176,11 +176,75 @@ class SellerVerificationTest {
         SellerVerification rechazada =
                 completa().enviarARevision(AHORA).rechazar(RejectionReason.ILLEGIBLE_PHOTOS, null, AHORA);
 
-        assertThatThrownBy(() -> rechazada.revocar(RejectionReason.REQUIREMENTS_NOT_MET, null, AHORA))
+        assertThatThrownBy(() -> rechazada.revocar(RevocationReason.HOLDER_REQUEST, null, AHORA))
                 .isInstanceOf(InvalidVerificationTransitionException.class);
     }
 
+    // --- RN-069 --------------------------------------------------------------
+
+    /**
+     * El motivo de la revocacion se guarda en su propio campo, y no en el del rechazo.
+     *
+     * <p>Es toda la razon de que RN-069 exista. Con un solo campo, quien lee lo guardado
+     * tiene que mirar el estado para saber que lista cerrada esta leyendo, y el correo que
+     * recibe la persona sale con el texto de la otra.
+     */
+    @Test
+    void deberia_cumplir_RN_069_guardando_el_motivo_de_la_revocacion_aparte_del_rechazo() {
+        SellerVerification revocada = completa()
+                .enviarARevision(AHORA)
+                .aprobar(AHORA)
+                .revocar(RevocationReason.REPEATED_PROHIBITED_LISTINGS, "  Tres replicas en un mes  ", AHORA);
+
+        assertThat(revocada.revocationReason()).isEqualTo(RevocationReason.REPEATED_PROHIBITED_LISTINGS);
+        assertThat(revocada.rejectionReason()).isNull();
+        // La nota se normaliza igual que en el rechazo: es el mismo campo.
+        assertThat(revocada.rejectionNote()).isEqualTo("Tres replicas en un mes");
+    }
+
+    /**
+     * Revocar borra el motivo del rechazo anterior.
+     *
+     * <p>Quien llega a {@code VERIFIED} pudo haber sido rechazado antes, y ese motivo
+     * describe un estado por el que ya no pasa. Dejarlo puesto deja a la fila diciendo dos
+     * cosas a la vez, y a la pantalla eligiendo cual ensena.
+     */
+    @Test
+    void deberia_limpiar_el_motivo_del_rechazo_anterior_al_revocar() {
+        SellerVerification revocada = completa()
+                .enviarARevision(AHORA)
+                .rechazar(RejectionReason.ILLEGIBLE_PHOTOS, "Sale oscuro", AHORA)
+                .reintentar(AHORA)
+                .enviarARevision(AHORA)
+                .aprobar(AHORA)
+                .revocar(RevocationReason.BANK_ACCOUNT_NOT_HOLDER, null, AHORA);
+
+        assertThat(revocada.rejectionReason()).isNull();
+        assertThat(revocada.rejectionNote()).isNull();
+        assertThat(revocada.revocationReason()).isEqualTo(RevocationReason.BANK_ACCOUNT_NOT_HOLDER);
+    }
+
+    @Test
+    void deberia_exigir_un_motivo_para_revocar() {
+        SellerVerification verificada = completa().enviarARevision(AHORA).aprobar(AHORA);
+
+        assertThatThrownBy(() -> verificada.revocar(null, null, AHORA)).isInstanceOf(NullPointerException.class);
+    }
+
     // --- RN-014 --------------------------------------------------------------
+
+    @Test
+    void deberia_limpiar_el_motivo_de_la_revocacion_al_reintentar() {
+        SellerVerification reintentada = completa()
+                .enviarARevision(AHORA)
+                .aprobar(AHORA)
+                .revocar(RevocationReason.HOLDER_REQUEST, "Lo pidio ella", AHORA)
+                .reintentar(AHORA);
+
+        assertThat(reintentada.status()).isEqualTo(VerificationStatus.IN_PROGRESS);
+        assertThat(reintentada.revocationReason()).isNull();
+        assertThat(reintentada.rejectionNote()).isNull();
+    }
 
     @Test
     void deberia_conservar_los_datos_y_limpiar_el_motivo_al_reintentar() {

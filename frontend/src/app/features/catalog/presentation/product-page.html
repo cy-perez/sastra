@@ -130,6 +130,33 @@
           }
         </dl>
       }
+
+      <!--
+        HU-010. Al final del contenido y nunca junto al precio: la ficha es sobre todo una
+        pantalla de compra, y esto es de quien modera. En móvil eso significa que aparece
+        cuando ya se pasó todo lo demás, que es exactamente donde debe estar.
+
+        Sin `@if` sobre el rol dentro de la plantilla y también con él: lo decide
+        `puedeBajar`, que en el servidor de renderizado es falso siempre porque la sesión
+        no está resuelta ahí. Por eso la acción no existe en el HTML que sale (criterio 2).
+      -->
+      @if (puedeBajar()) {
+        <section class="ficha__moderacion" aria-labelledby="titulo-moderacion">
+          <h2 id="titulo-moderacion" class="tipo-titulo-tarjeta">
+            {{ 'moderation.undo.listing.title' | transloco }}
+          </h2>
+
+          <sendik-undo-action
+            accion="moderation.undo.listing.action"
+            confirmacion="moderation.undo.listing.confirm"
+            prefijoDeMotivos="listingReview.reasons."
+            [motivos]="motivos"
+            [enCurso]="bajando()"
+            [error]="errorAlBajar()"
+            (decidido)="bajar($event)"
+          />
+        </section>
+      }
     </div>
   </article>
 }

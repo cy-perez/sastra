@@ -6,17 +6,21 @@ import co.sendik.identity.dto.RevokeVerificationCommand;
 import co.sendik.identity.dto.VerificationImageContent;
 import co.sendik.identity.dto.ViewVerificationImageCommand;
 import co.sendik.identity.model.RejectionReason;
+import co.sendik.identity.model.RevocationReason;
 import co.sendik.identity.model.SellerVerification;
 import co.sendik.identity.model.SellerVerificationId;
 import co.sendik.identity.model.UserId;
 import co.sendik.identity.model.VerificationImage;
 import co.sendik.identity.rest.dto.PendingVerificationResponse;
 import co.sendik.identity.rest.dto.RejectVerificationRequest;
+import co.sendik.identity.rest.dto.RevokeVerificationRequest;
 import co.sendik.identity.rest.dto.SellerVerificationResponse;
+import co.sendik.identity.rest.dto.SellerVerificationSummaryResponse;
 import co.sendik.identity.rest.mapper.PendingVerificationResponses;
 import co.sendik.identity.rest.mapper.SellerVerificationResponses;
 import co.sendik.identity.usecase.ApproveVerificationUseCase;
 import co.sendik.identity.usecase.ListPendingVerificationsUseCase;
+import co.sendik.identity.usecase.ReadSellerVerificationUseCase;
 import co.sendik.identity.usecase.RejectVerificationUseCase;
 import co.sendik.identity.usecase.RevokeVerificationUseCase;
 import co.sendik.identity.usecase.ViewVerificationImageUseCase;
@@ -69,18 +73,21 @@ public class VerificationReviewController {
     private final ApproveVerificationUseCase casoDeAprobar;
     private final RejectVerificationUseCase casoDeRechazar;
     private final RevokeVerificationUseCase casoDeRevocar;
+    private final ReadSellerVerificationUseCase casoDeLeer;
 
     public VerificationReviewController(
             ListPendingVerificationsUseCase casoDeListar,
             ViewVerificationImageUseCase casoDeVerImagen,
             ApproveVerificationUseCase casoDeAprobar,
             RejectVerificationUseCase casoDeRechazar,
-            RevokeVerificationUseCase casoDeRevocar) {
+            RevokeVerificationUseCase casoDeRevocar,
+            ReadSellerVerificationUseCase casoDeLeer) {
         this.casoDeListar = casoDeListar;
         this.casoDeVerImagen = casoDeVerImagen;
         this.casoDeAprobar = casoDeAprobar;
         this.casoDeRechazar = casoDeRechazar;
         this.casoDeRevocar = casoDeRevocar;
+        this.casoDeLeer = casoDeLeer;
     }
 
     /** La bandeja: lo que espera revision, lo mas viejo primero. */
@@ -94,6 +101,41 @@ public class VerificationReviewController {
         return casoDeListar.execute(limite).stream()
                 .map(verificacion -> PendingVerificationResponses.de(verificacion, quienMira))
                 .toList();
+    }
+
+    /**
+     * La verificacion de un vendedor, por su identificador de cuenta. HU-010.
+     *
+     * <p>Existe para una sola cosa: que un moderador parado en el perfil publico de
+     * alguien pueda saber si hay sello que revocar y sobre que identificador. El perfil
+     * publico entrega el del vendedor, y las tres decisiones de este controlador van sobre
+     * el de la verificacion, que hasta ahora solo se podia conseguir desde la cola de
+     * pendientes. Sin esto, revocar era un endpoint al que no se podia llegar.
+     *
+     * <p><strong>Cuelga de aqui y no de {@code /users/{id}/verification}, que es lo que la
+     * jerarquia del contrato pediria.</strong> El motivo es de seguridad y esta escrito en
+     * {@code SecurityConfig}: bajo {@code /users/**} la regla generica es "autenticado", y
+     * las rutas del moderador necesitan {@code hasRole("MODERATOR")}. Poner una regla
+     * especifica antes tampoco sirve, porque {@code /api/v1/users/*&#47;verification}
+     * casaria tambien con {@code /users/me/verification} y le quitaria a cualquier persona
+     * el acceso a su propia solicitud. Bajo {@code /verifications/**} ya rige la regla
+     * correcta y no hay colision posible.
+     *
+     * <p>Responde dos campos y nada mas. No entrega ningun dato personal, asi que no anota
+     * en la bitacora: lo que RN-046 obliga a registrar es ver la cedula, la selfie o la
+     * cuenta, y eso sigue pasando por {@link #imagen}.
+     *
+     * <p>404 cuando esa persona nunca empezo. No haber empezado no es un error.
+     */
+    @GetMapping("/by-seller/{sellerId}")
+    @PreAuthorize("hasRole('MODERATOR')")
+    public ResponseEntity<SellerVerificationSummaryResponse> porVendedor(@PathVariable String sellerId) {
+        return casoDeLeer
+                .execute(UserId.de(sellerId))
+                .map(verificacion -> ResponseEntity.ok(new SellerVerificationSummaryResponse(
+                        verificacion.id().value().toString(),
+                        verificacion.status().name())))
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     /**
@@ -152,16 +194,22 @@ public class VerificationReviewController {
         return SellerVerificationResponses.de(rechazada);
     }
 
-    /** Revocar el sello de quien ya lo tenia. RN-013. */
+    /**
+     * Revocar el sello de quien ya lo tenia. RN-013 y RN-069.
+     *
+     * <p>Su propio cuerpo y su propia lista cerrada, que no son los del rechazo. Hasta
+     * HU-010 reutilizaba {@code RejectionReason}, cuyos valores describen una solicitud:
+     * revocar por cualquier otra cosa mandaba un correo que decia "fotos ilegibles".
+     */
     @PostMapping("/{id}/revocation")
     @PreAuthorize("hasRole('MODERATOR')")
     public SellerVerificationResponse revocar(
             @AuthenticationPrincipal Jwt token,
             @PathVariable String id,
-            @Valid @RequestBody RejectVerificationRequest peticion) {
+            @Valid @RequestBody RevokeVerificationRequest peticion) {
 
         SellerVerification revocada = casoDeRevocar.execute(new RevokeVerificationCommand(
-                moderadorDe(token), SellerVerificationId.de(id), motivoDe(peticion.reason()), peticion.note()));
+                moderadorDe(token), SellerVerificationId.de(id), revocacionDe(peticion.reason()), peticion.note()));
 
         return SellerVerificationResponses.de(revocada);
     }
@@ -180,6 +228,15 @@ public class VerificationReviewController {
             return RejectionReason.valueOf(valor.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("El motivo no es uno de los de la lista cerrada", e);
+        }
+    }
+
+    /** Lo mismo, sobre la otra lista cerrada. RN-069: son dos y no se mezclan. */
+    private static RevocationReason revocacionDe(String valor) {
+        try {
+            return RevocationReason.valueOf(valor.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("El motivo de la revocacion no es uno de los de la lista cerrada", e);
         }
     }
 

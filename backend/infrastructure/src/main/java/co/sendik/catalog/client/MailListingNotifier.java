@@ -64,14 +64,15 @@ public class MailListingNotifier implements ListingNotifier {
     }
 
     @Override
-    public void publicacionRetirada(Listing publicacion, @Nullable String nota) {
+    public void publicacionRetirada(Listing publicacion, ListingRejectionReason motivo, @Nullable String nota) {
         User vendedor = vendedorDe(publicacion);
         UserLocale idioma = vendedor.locale();
 
         correo.enviar(
                 vendedor.email().value(),
                 ListingMailTexts.asuntoDeRetirada(idioma),
-                ListingMailTexts.cuerpoDeRetirada(idioma, tituloDe(publicacion), motivoDe(publicacion, idioma), nota));
+                ListingMailTexts.cuerpoDeRetirada(
+                        idioma, tituloDe(publicacion), ListingRejectionTexts.de(idioma, motivo), nota));
     }
 
     private User vendedorDe(Listing publicacion) {
@@ -97,8 +98,11 @@ public class MailListingNotifier implements ListingNotifier {
     }
 
     /**
-     * El motivo, ya traducido. Sin motivo no se rechaza ni se retira: el dominio lo exige
-     * en las dos transiciones, asi que aqui no puede ser nulo.
+     * El motivo del rechazo, ya traducido.
+     *
+     * <p>Solo del rechazo: ahi el dominio si lo guarda en la publicacion, porque el
+     * vendedor tiene que poder leer que corregir (RN-022). El del retiro llega por
+     * argumento, y el porque esta en {@code ListingNotifier#publicacionRetirada}.
      */
     private static String motivoDe(Listing publicacion, UserLocale idioma) {
         ListingRejectionReason motivo = publicacion.rejectionReason();

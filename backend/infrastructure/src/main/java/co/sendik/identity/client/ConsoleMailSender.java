@@ -2,6 +2,7 @@ package co.sendik.identity.client;
 
 import co.sendik.identity.model.Email;
 import co.sendik.identity.model.RejectionReason;
+import co.sendik.identity.model.RevocationReason;
 import co.sendik.identity.model.User;
 import co.sendik.identity.port.out.MailSender;
 import co.sendik.shared.port.out.MailTransport;
@@ -159,7 +160,7 @@ public class ConsoleMailSender implements MailSender, MailTransport {
     }
 
     @Override
-    public void enviarAvisoDeVerificacionRevocada(User titular, RejectionReason motivo, String nota) {
+    public void enviarAvisoDeVerificacionRevocada(User titular, RevocationReason motivo, String nota) {
         registrar("VERIFICACION REVOCADA (RN-013)", titular, "Motivo: " + motivo);
     }
 

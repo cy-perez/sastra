@@ -119,6 +119,7 @@ RN-014 se cuentan en `attempts` y sobrescriben la misma fila.
 | bank_account_holder_name | text | Debe coincidir con `document_holder_name` (criterio 4) |
 | attempts | smallint | RN-014: máximo tres. El cuarto exige que una persona intervenga |
 | rejection_reason | text | `ILLEGIBLE_PHOTOS`, `EXPIRED_DOCUMENT`, `HOLDER_MISMATCH`, `DOCUMENT_ALREADY_VERIFIED`, `REQUIREMENTS_NOT_MET` |
+| revocation_reason | text | (`V15`) `DOCUMENT_NOT_ITS_HOLDER`, `BANK_ACCOUNT_NOT_HOLDER`, `REPEATED_PROHIBITED_LISTINGS`, `HOLDER_REQUEST`, `REQUIREMENTS_NO_LONGER_MET`. Lista cerrada propia (RN-069): **no es la del rechazo**. Excluyente con `rejection_reason`, y reintentar limpia las dos |
 | rejection_note | text | Nota libre y opcional del moderador |
 | created_at, updated_at | timestamptz | |
 

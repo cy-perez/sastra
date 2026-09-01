@@ -123,9 +123,14 @@ Es la fase en curso desde el 21 de agosto de 2026.
   El recorrido de punta a punta del ciclo está escrito en `e2e-completo/`; las tres pruebas
   que nacieron en rojo se arreglaron el 27 de agosto de 2026 y el diagnóstico quedó en la
   historia. Fuera de las dos historias
-  quedan, con el mismo argumento y cada una esperando la suya, revocar un sello ya
-  otorgado y bajar una publicación ya visible (RN-024): los endpoints existen,
-  pero no hay forma de llegar a esos identificadores desde la interfaz.
+  quedan revocar un sello ya otorgado y bajar una publicación ya visible (RN-024):
+  los endpoints existen, pero no hay forma de llegar a esos identificadores desde la
+  interfaz. **Las recoge HU-010, y las dos juntas**: esta línea decía que cada una
+  esperaba su propia historia, y el 28 de agosto de 2026 se decidió lo contrario —el
+  mismo rol, el mismo gesto de deshacer y la misma pantalla de confirmación—.
+  Escribirla dejó a la vista que la lista de motivos de revocación no existe: el
+  endpoint reutiliza la del rechazo, y sus cuatro valores hablan de la solicitud, no de
+  un sello ya otorgado.
 - Catálogo, categorías, ficha de producto y favoritos. **HU-009 lo cerró el 27 de
   agosto de 2026**, salvo los favoritos: listado paginado por cursor, navegación
   por el árbol en sus dos niveles, ficha de producto y perfil público del

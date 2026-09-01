@@ -109,6 +109,7 @@ class VerifiedSellerEligibilityTest {
                 0,
                 null,
                 null,
+                null,
                 AHORA,
                 AHORA);
 

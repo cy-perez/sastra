@@ -29,6 +29,30 @@
     </div>
   </header>
 
+  <!--
+    HU-010. Debajo de la cabecera y antes de las publicaciones: es una decisión sobre la
+    persona, no sobre lo que vende. No compite con la insignia, que es el único acento
+    bronce de esta pantalla; esto va en botón secundario.
+  -->
+  @if (puedeRevocar()) {
+    <section class="vendedor__moderacion" aria-labelledby="titulo-moderacion">
+      <h2 id="titulo-moderacion" class="tipo-titulo-tarjeta">
+        {{ 'moderation.undo.seal.title' | transloco }}
+      </h2>
+
+      <sendik-undo-action
+        accion="moderation.undo.seal.action"
+        confirmacion="moderation.undo.seal.confirm"
+        aviso="moderation.undo.seal.listingsStayVisible"
+        prefijoDeMotivos="verificationReview.revocationReasons."
+        [motivos]="motivos"
+        [enCurso]="revocando()"
+        [error]="errorAlRevocar()"
+        (decidido)="revocar($event)"
+      />
+    </section>
+  }
+
   <h2 class="tipo-titulo-tarjeta">{{ 'catalog.seller.listings' | transloco }}</h2>
 
   @if (cargandoPublicaciones()) {

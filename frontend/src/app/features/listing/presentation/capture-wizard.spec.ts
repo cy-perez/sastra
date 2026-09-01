@@ -220,7 +220,19 @@ describe('CaptureWizard', () => {
 
     TestBed.configureTestingModule({
       providers: [
-        provideRouter([]),
+        /*
+         * Con rutas y no con la lista vacia.
+         *
+         * `salir()` navega a /publicar/:id, y con `provideRouter([])` esa navegacion se
+         * rechaza con NG04002 fuera del ciclo de vida de la prueba: las asserciones pasan,
+         * pero Vitest cuenta un rechazo no gestionado y **la suite entera sale con codigo
+         * 1**. Es decir, `npm run verify` fallaba en verde. Dos rutas vacias bastan: lo que
+         * se prueba es que se navega, no a que se llega.
+         */
+        provideRouter([
+          { path: 'publicar/:id', children: [] },
+          { path: 'mis-publicaciones', children: [] },
+        ]),
         provideHttpClient(
           withInterceptors([
             apiUrlInterceptor,

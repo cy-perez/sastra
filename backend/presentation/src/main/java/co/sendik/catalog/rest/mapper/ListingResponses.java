@@ -7,6 +7,7 @@ import co.sendik.catalog.model.Condition;
 import co.sendik.catalog.model.Description;
 import co.sendik.catalog.model.Listing;
 import co.sendik.catalog.model.ListingRejectionReason;
+import co.sendik.catalog.model.ListingStatus;
 import co.sendik.catalog.model.ModeratorId;
 import co.sendik.catalog.model.Product;
 import co.sendik.catalog.model.ShippingDimensions;
@@ -63,13 +64,31 @@ public final class ListingResponses {
      * moderador, que es un identificador tipado usado para significar lo contrario.
      */
     public static ListingResponse de(Listing publicacion, PublicFileStore almacen, @Nullable ModeratorId quienModera) {
-        // Quien modera solo recibe el vendedor si la publicacion es suya. Ver el javadoc
-        // de ListingResponse: sin esto, la cola omitia el dato y el detalle lo devolvia.
         boolean esSuya = quienModera == null || publicacion.laPublico(quienModera);
+
+        /*
+         * Quien modera recibe el vendedor si la publicacion es suya **o si esta visible**.
+         *
+         * La primera mitad es de HU-007: la cola omite el dato para no ser de paso una
+         * lista de quien vende que, y el detalle tenia que hacer lo mismo o esa proteccion
+         * se deshacia con una peticion por fila.
+         *
+         * La segunda es de HU-010, y arregla algo que estaba roto. Esta misma ruta sirve la
+         * ficha publica, y responde la forma completa a un moderador con sesion abierta:
+         * o sea que un moderador navegando el catalogo recibia sellerId en nulo, y el
+         * enlace al perfil del vendedor no se pintaba. Justo para el, que es quien tiene
+         * que llegar de la publicacion a la persona para revocarle el sello.
+         *
+         * No filtra nada: de una publicacion visible el vendedor es publico de todos modos
+         * y viaja en PublicListingResponse a cualquiera que mire. Lo dice el javadoc de
+         * ListingResponse desde que se escribio. Lo que sigue omitido es lo que no es
+         * publico: un borrador, algo en revision o algo rechazado de otra persona.
+         */
+        boolean visibleParaCualquiera = publicacion.status() == ListingStatus.PUBLISHED;
 
         return new ListingResponse(
                 publicacion.id().value().toString(),
-                esSuya ? publicacion.sellerId().value().toString() : null,
+                esSuya || visibleParaCualquiera ? publicacion.sellerId().value().toString() : null,
                 publicacion.status().name(),
                 producto(publicacion.product()),
                 imagenes(publicacion, almacen),

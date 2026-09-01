@@ -509,11 +509,28 @@ Van como *variables*, no como secretos, porque ninguna lo es: son direcciones y
 datos públicos de la empresa. Ponerlas como secretos solo conseguiría que
 aparezcan tachadas en los registros cuando haga falta leerlas.
 
+> **`GCP_PROJECT_ID` va además como variable del repositorio, y no solo de los dos
+> entornos.** Es la única que se repite, y sin esa copia **no se despliega nada**:
+> los tres `if: vars.GCP_PROJECT_ID` de `despliegue.yml` se evalúan *antes* de que
+> GitHub resuelva el `environment` del trabajo, así que ahí las variables de entorno
+> todavía no existen y la condición lee la cadena vacía. El síntoma es engañoso y
+> costó un despliegue entero: la ejecución termina **en verde**, con los dos trabajos
+> de Cloud Run omitidos y el aviso «Falta configurar el proyecto de Google Cloud»,
+> que es exactamente lo que se ve cuando de verdad no hay nada configurado.
+>
+> ```bash
+> gh variable set GCP_PROJECT_ID --body sendik-col
+> ```
+>
+> La del entorno se mantiene igual: dentro del trabajo, que sí declara
+> `environment`, es la que gana. La del repositorio existe solo para que la
+> condición pueda leerla.
+
 | Variable | `dev` | `prod` |
 |---|---|---|
 | `GCP_PROJECT_ID` | `sendik-col` | `sendik-col` (uno solo, ver paso 1) |
 | `GCP_REGION` | `us-east1` | `us-east1` |
-| `GCP_WORKLOAD_IDENTITY_PROVIDER` | ruta completa del proveedor del paso 5 | ídem |
+| `GCP_WORKLOAD_IDENTITY_PROVIDER` | ruta completa del proveedor del paso 6 | ídem |
 | `GCP_DEPLOY_SERVICE_ACCOUNT` | `sendik-despliegue@…` | ídem |
 | `CLOUD_RUN_SERVICE` | `sendik-backend-dev` | `sendik-backend` |
 | `CLOUD_RUN_SERVICE_ACCOUNT` | `sendik-backend@…` | ídem |

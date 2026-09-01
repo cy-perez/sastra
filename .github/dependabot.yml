@@ -63,8 +63,20 @@ updates:
         exclude-patterns: ['@angular/*', 'angular-eslint', '@angular-eslint/*']
         update-types: ['minor', 'patch']
 
-  # Las propias acciones de este flujo. Se fijan por version mayor (@v4), asi
-  # que aqui las de parche son las que traen las correcciones de seguridad.
+  # Las propias acciones de este flujo. Se fijan por version mayor, y esa
+  # etiqueta es flotante: GitHub la mueve a cada parche y a cada menor, asi que
+  # esas llegan solas y sin pull request. Lo unico que Dependabot puede proponer
+  # aqui es, por tanto, el salto de mayor.
+  #
+  # Por eso esta seccion tambien ignora los mayores, igual que las otras dos.
+  # Hasta el 1 de septiembre de 2026 no lo hacia, y el resultado fue una pull
+  # request con siete saltos de mayor de golpe (#19) que contradecia lo que dice
+  # el encabezado de este archivo. Se fusiono, pero a mano y con ADR-0028
+  # detras, que es justamente el camino que esta regla obliga a tomar.
+  #
+  # Consecuencia buscada: de aqui ya no sale ninguna pull request de rutina. Las
+  # alertas de seguridad siguen llegando igual, y el dia que haya que subir de
+  # mayor se hace a mano, se lee que rompe y se escribe la ADR.
   - package-ecosystem: github-actions
     directory: /
     schedule:
@@ -74,6 +86,9 @@ updates:
     labels:
       - dependencias
       - ci
+    ignore:
+      - dependency-name: '*'
+        update-types: ['version-update:semver-major']
     groups:
       acciones:
         patterns: ['*']

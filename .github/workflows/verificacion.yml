@@ -40,17 +40,17 @@ jobs:
         working-directory: backend
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # El JDK se instala aqui en lugar de dejar que lo descargue el toolchain
       # de Gradle: es el mismo Temurin 25 y ahorra la descarga en cada ejecucion.
       # La version sale de backend/gradle/libs.versions.toml.
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '25'
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
 
       # `check` es compilar, formato con Spotless, las doce reglas de
       # arquitectura de ArchUnit, las pruebas con Testcontainers y el minimo de
@@ -61,7 +61,7 @@ jobs:
 
       - name: Publicar informes si algo falla
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: informes-backend
           path: backend/*/build/reports/
@@ -76,9 +76,9 @@ jobs:
         working-directory: frontend
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: npm
@@ -108,7 +108,7 @@ jobs:
 
       - name: Publicar informes si algo falla
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: informes-frontend
           path: |
@@ -151,16 +151,16 @@ jobs:
           --health-retries 10
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '25'
 
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
           cache: npm
@@ -197,7 +197,7 @@ jobs:
       # siempre la causa esta ahi y no en la captura del navegador.
       - name: Publicar informes si algo falla
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: informes-extremo-a-extremo
           # Sin esto el registro del backend no viaja: upload-artifact v4 ignora los
@@ -257,7 +257,7 @@ jobs:
           --health-retries 10
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Las mismas ordenes que ejecuta el despliegue, con el mismo contexto de
       # construccion. Lo que aqui no construya, alli tampoco.

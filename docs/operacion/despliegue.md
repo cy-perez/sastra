@@ -97,6 +97,87 @@ Crea la base y guarda los tres valores como secretos. **Con Cloud SQL hace falta
 además el conector**, y entonces el `DB_URL` cambia de forma; con Neon o Supabase
 basta la cadena normal con `sslmode=require`.
 
+### La cadena del proveedor no es la que va en el secreto
+
+Neon entrega una sola cadena, en formato libpq, con todo dentro:
+
+```
+postgresql://ROL:CONTRASEÑA@ep-algo-pooler.REGION.aws.neon.tech/BASE?sslmode=require&channel_binding=require
+```
+
+De ahí salen los tres secretos, y traducirla de memoria es donde se pierde el
+tiempo:
+
+| Secreto | De dónde sale |
+|---|---|
+| `sendik-db-url` | `jdbc:postgresql://` + el host + `/` + **la base tal como viene** + `?sslmode=require` |
+| `sendik-db-username` | el **rol** de la cadena, no el nombre del proyecto |
+| `sendik-db-password` | la contraseña de la cadena |
+
+**El rol y la base no se llaman `sendik`.** Neon crea por omisión `neondb_owner`
+y `neondb`. Suponer otra cosa deja el arranque en
+
+```
+FlywaySqlUnableToConnectToDbException: Unable to obtain connection from database:
+ERROR: password authentication failed for user 'sendik'
+SQL State : 28P01
+```
+
+que se lee como una contraseña equivocada y es un rol que no existe. Costó un
+diagnóstico entero el 1 de septiembre de 2026: la contraseña estaba bien desde el
+principio.
+
+**`channel_binding=require` no se copia.** Es un parámetro de libpq, no de JDBC:
+el driver de PostgreSQL negocia SCRAM con enlace de canal por su cuenta sobre
+SSL, y pasárselo en la URL lo rechaza como propiedad desconocida.
+
+**El host `-pooler` sirve para la aplicación y no para migrar.** Neon desaconseja
+su agrupador de conexiones para migraciones, y Flyway corre al arrancar cada
+revisión. Hoy funciona; si algún día se queja de sentencias preparadas o de
+transacciones, la salida es el endpoint directo, que es el mismo host sin
+`-pooler`.
+
+**El rol tiene que poder crear en el esquema `public`.** Flyway crea su tabla
+`flyway_schema_history` antes de la primera migración, y desde PostgreSQL 15 un rol
+que no es dueño del esquema no tiene ese permiso aunque la base se haya creado para
+él. El arranque se cae con
+
+```
+ERROR: permission denied for schema public
+```
+
+dentro de `JdbcTableSchemaHistory.create`, así que ninguna migración llega a
+ejecutarse y el error no señala a ningún archivo. Lo más simple es que el rol de la
+aplicación sea el dueño; si se creó un rol aparte, se le concede desde el dueño de
+la base, en el editor SQL del proveedor y conectado a esa base:
+
+```sql
+ALTER SCHEMA public OWNER TO EL-ROL;
+GRANT ALL ON SCHEMA public TO EL-ROL;
+```
+
+Un rol de aplicación con menos permisos que estos tendrá sentido el día que las
+migraciones dejen de correr al arrancar. Hoy corren, y el rol que se conecta es el
+que migra.
+
+### Corregir un valor después
+
+Cada corrección es una versión nueva del secreto y no un secreto nuevo. Como
+Cloud Run monta `:latest`, el despliegue siguiente la toma sin tocar nada más:
+
+```bash
+printf '%s' 'EL-VALOR-REAL' | gcloud secrets versions add sendik-db-password --data-file=-
+```
+
+`printf` y no `echo`, que agrega un salto de línea: un salto de línea dentro de
+una contraseña da otra vez `28P01` y parece exactamente el mismo problema.
+
+**Una credencial que pasa por un chat, un correo o un ticket queda escrita ahí.**
+Copiar la cadena completa a cualquiera de esos sitios para que otro la traduzca no
+es reversible: se rota en la consola del proveedor y se agrega la versión nueva
+con el comando de arriba. Lo correcto es ejecutar ese comando donde vive la
+credencial y no moverla.
+
 ## 3. El almacén de archivos
 
 Dos cubos con garantías distintas (ADR-0018): el **público** sirve la foto de perfil
@@ -283,8 +364,10 @@ crear_secreto() {
   printf '%s' "$2" | gcloud secrets create "$1" --data-file=- --replication-policy=automatic
 }
 
-crear_secreto sendik-db-url      'jdbc:postgresql://HOST:5432/sendik?sslmode=require'
-crear_secreto sendik-db-username 'sendik'
+# Los tres de la base salen de la cadena del proveedor y no se inventan: el rol y
+# el nombre de la base rara vez son 'sendik' (paso 2).
+crear_secreto sendik-db-url      'jdbc:postgresql://HOST/BASE?sslmode=require'
+crear_secreto sendik-db-username 'EL-ROL'
 crear_secreto sendik-db-password 'LA-CONTRASEÑA'
 crear_secreto sendik-jwt-issuer  'https://sendik.co'
 crear_secreto sendik-mail-api-key 're_LA-CLAVE-DE-RESEND'
@@ -526,6 +609,28 @@ aparezcan tachadas en los registros cuando haga falta leerlas.
 > `environment`, es la que gana. La del repositorio existe solo para que la
 > condición pueda leerla.
 
+> **Una variable cuyo valor lleve coma se escribe distinto en el flujo.**
+> `gcloud run deploy --set-env-vars` usa la coma para separar pares `clave=valor`,
+> así que un valor que la contenga se parte y `gcloud` rechaza el resto como un par
+> mal formado:
+>
+> ```
+> AVAILABLE_LOCALES=es,en                               -> Bad syntax for dict arg: [en]
+> COMPANY_ADDRESS=Cra. 26C # 38b-31. Medellín, Colombia -> Bad syntax for dict arg: [ Colombia]
+> ```
+>
+> La salida es el delimitador alternativo de `gcloud`: escribir el argumento como
+> `--set-env-vars "^;^CLAVE=$VALOR"` cambia el separador a `;` **solo en ese
+> argumento**. `despliegue.yml` ya lo lleva en las cinco que pueden traer coma
+> —`CORS_ALLOWED_ORIGINS`, `NG_ALLOWED_HOSTS`, `AVAILABLE_LOCALES`, `COMPANY_NAME` y
+> `COMPANY_ADDRESS`—, incluidas las que hoy no la traen pero la traerían en cuanto
+> haya un segundo origen o un segundo nombre.
+>
+> **Al agregar una variable a estas tablas, la pregunta es si su valor podrá llevar
+> coma algún día.** Si podrá, va con `^;^` desde el primer momento: el fallo no
+> aparece hasta que alguien pone el segundo valor, y para entonces nadie relaciona
+> las dos cosas. Lo que ya no puede contener es un punto y coma.
+
 | Variable | `dev` | `prod` |
 |---|---|---|
 | `GCP_PROJECT_ID` | `sendik-col` | `sendik-col` (uno solo, ver paso 1) |
@@ -562,7 +667,7 @@ porque la configuración llega por entorno y no compilada dentro.
 | `CLOUD_RUN_WEB_MIN_INSTANCES` | `0` | `1` |
 | `CLOUD_RUN_WEB_MAX_INSTANCES` | `2` | `10` |
 | `CLOUD_RUN_WEB_MEMORY` | `512Mi` | `1Gi` |
-| `NG_ALLOWED_HOSTS` | `dev.sendik.co` | `sendik.co` |
+| `NG_ALLOWED_HOSTS` | `dev.sendik.co` **y el host de `run.app`**, separados por coma | ídem con los de `prod` |
 | `DEFAULT_LOCALE`, `AVAILABLE_LOCALES` | `es`, `es,en` | ídem |
 | `CLAIM_WINDOW_DAYS` | `3` | `3` |
 | `VERIFICATION_REVIEW_DAYS` | `2` | `2` |
@@ -585,6 +690,24 @@ declararlos dos veces es la forma de que un día dejen de coincidir.
 > Ojo también al nombre: el cubo es `sendik-publico`, **sin sufijo de entorno**, así que
 > `STORAGE_PUBLIC_BASE_URL` termina en `sendik-publico` y no en `sendik-publico-dev`,
 > como decía esta tabla hasta hoy.
+
+> **`NG_ALLOWED_HOSTS` tiene que incluir la dirección de `run.app`, y no solo el
+> nombre propio.** La comprobación del flujo pide la portada por `status.url`, que es
+> la de `run.app`, y `@angular/ssr` responde **400** a un `Host` que no esté en la
+> lista. No es un render a medias: es un rechazo, y con solo `dev.sendik.co` el
+> frontend se despliega bien y el trabajo se pone rojo en el último paso.
+>
+> Esa dirección la asigna Cloud Run y no se conoce antes del primer despliegue, así
+> que este valor se completa cuando el servicio ya existe:
+>
+> ```bash
+> gcloud run services describe sendik-web-dev \
+>   --region us-east1 --format 'value(status.url)'
+> ```
+>
+> El valor final es la lista con los dos nombres separados por coma —de ahí que esta
+> variable vaya con `^;^` en el flujo—, y el del nombre propio se deja puesto aunque
+> el DNS todavía no resuelva: no estorba y evita tener que volver aquí en el paso 7.
 
 `STORAGE_PUBLIC_BASE_URL` **no** va al frontend: las direcciones de las imágenes
 llegan ya formadas en la respuesta de la API y el navegador no compone ninguna.
@@ -625,6 +748,36 @@ git tag v0.1.0 && git push origin v0.1.0
 ```
 
 Y entonces hay que entrar a aprobarlo en la pestaña de Actions.
+
+### Cuando falla, el síntoma apunta a otro sitio
+
+El primer despliegue real, el 1 de septiembre de 2026, acumuló seis fallos
+distintos, y ninguno de los seis decía lo que de verdad pasaba. Esta tabla es para
+buscar por síntoma, que es lo único que hay cuando ocurre:
+
+| Lo que se ve | Lo que es | Dónde |
+|---|---|---|
+| La ejecución termina **en verde** sin desplegar nada, con los dos trabajos omitidos y el aviso «Falta configurar el proyecto de Google Cloud» | `GCP_PROJECT_ID` no está como variable **del repositorio**, solo de los entornos | paso 8 |
+| `Bad syntax for dict arg: [en]` al desplegar | Una variable cuyo valor lleva coma, sin el delimitador `^;^` | paso 8 |
+| `password authentication failed for user '…'` (`28P01`) | El rol o la base no son los que da la cadena del proveedor; también lo da un salto de línea colado en la contraseña | paso 2 |
+| `permission denied for schema public`, sin que corra ninguna migración | El rol no puede crear en `public`, así que Flyway no puede ni crear su propia tabla | paso 2 |
+| «El contenedor no escuchó en el puerto a tiempo», después de que Flyway aplique las migraciones sin una queja | Falta una variable obligatoria del arranque. La primera vez fueron los dos cubos | paso 8 |
+| El frontend se despliega bien y la comprobación devuelve **400** | Falta el host de `run.app` en `NG_ALLOWED_HOSTS` | paso 8 |
+
+Cuatro de los seis eran huecos de esta lista o del flujo —el proyecto, las comas,
+los cubos y el host de `run.app`— y no errores de quien la seguía; los otros dos
+venían de traducir a mano la cadena del proveedor. Lo que comparten es que el
+trabajo que falla no es el que tiene la culpa, así que **el primer sitio donde
+mirar no es el registro de Actions sino el del contenedor**:
+
+```bash
+gcloud logging read \
+  'resource.type="cloud_run_revision" AND resource.labels.revision_name="LA-REVISION"' \
+  --project sendik-col --limit 60 --format 'value(textPayload)'
+```
+
+El nombre de la revisión lo dice el propio error de `gcloud run deploy`, en el
+enlace a los registros que imprime al fallar.
 
 ## Volver atrás
 

@@ -166,6 +166,8 @@ jobs:
             --set-env-vars "LEGAL_PRIVACY_VERSION=${{ vars.LEGAL_PRIVACY_VERSION }}" \
             --set-env-vars "STORAGE_PROVIDER=${{ vars.STORAGE_PROVIDER }}" \
             --set-env-vars "STORAGE_PUBLIC_BASE_URL=${{ vars.STORAGE_PUBLIC_BASE_URL }}" \
+            --set-env-vars "STORAGE_PUBLIC_BUCKET=${{ vars.STORAGE_PUBLIC_BUCKET }}" \
+            --set-env-vars "STORAGE_RESTRICTED_BUCKET=${{ vars.STORAGE_RESTRICTED_BUCKET }}" \
             --set-secrets "DB_URL=sendik-db-url:latest" \
             --set-secrets "DB_USERNAME=sendik-db-username:latest" \
             --set-secrets "DB_PASSWORD=sendik-db-password:latest" \

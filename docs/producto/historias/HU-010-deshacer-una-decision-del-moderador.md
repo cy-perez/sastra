@@ -1,6 +1,6 @@
 # HU-010 — Deshacer una decisión del moderador
 
-**Fase:** 2 | **Estado:** pendiente
+**Fase:** 2 | **Estado:** hecha el 1 de septiembre de 2026
 **Reglas que aplica:** RN-013, RN-024, RN-059, RN-060, RN-061, RN-063, RN-068, RN-069
 
 > **Es la mitad que le falta a la moderación.** HU-006 y HU-008 entregaron el camino de
@@ -127,9 +127,14 @@ No entra:
 - **La mitad de revocación sí.** `POST /verifications/{id}/revocation` existe y hace todo,
   pero no hay forma de llegar a ese identificador: el controlador de revisión solo expone
   la cola de pendientes, y el perfil público entrega un `sellerId`, que no es el de la
-  verificación. Hace falta una lectura nueva —`GET /api/v1/users/{id}/verification` o
-  equivalente— con rol de moderador. **Es la única pieza de servidor que esta historia
-  agrega.**
+  verificación. Hace falta una lectura nueva con rol de moderador. **Es la única pieza de
+  servidor que esta historia agrega.** Al implementarla quedó en
+  `GET /api/v1/verifications/by-seller/{sellerId}` y **no** en `/users/{id}/verification`,
+  que es donde esta nota la había puesto: bajo `/users/**` la regla genérica de
+  `SecurityConfig` es «autenticado», y una regla específica antes tampoco sirve, porque
+  `/api/v1/users/*/verification` casaría también con `/users/me/verification` y le quitaría
+  a cualquier persona su propia lectura. Colgándola de `/verifications`, hereda la regla de
+  moderador que ya rige ahí.
 - **La lista de motivos de revocación la fija RN-069**, escrita el 28 de agosto de 2026 al
   redactar esta historia. Son cinco: `DOCUMENT_NOT_ITS_HOLDER`, `BANK_ACCOUNT_NOT_HOLDER`,
   `REPEATED_PROHIBITED_LISTINGS`, `HOLDER_REQUEST` y `REQUIREMENTS_NO_LONGER_MET`. Hasta
@@ -160,7 +165,10 @@ decidir los motivos. RN-069 fija la lista cerrada y explica por qué sus valores
 hechos y no delitos; el glosario suma Revocación / `Revocation`, Motivo de revocación /
 `RevocationReason` y Retiro de publicación / `ListingRemoval`.
 
-**Modelo de datos.** Es lo único que queda pendiente, y llega con la implementación, no
-antes: `RevocationReason` como enumeración de dominio y la columna donde se guarda en la
-tabla de verificación, que hoy comparte con el motivo de rechazo. Separarlas es una
-migración nueva. La bitácora no cambia: guarda el motivo como texto.
+**Modelo de datos.** Era lo único que quedaba pendiente y llegó con la implementación:
+`RevocationReason` como enumeración de dominio y su propia columna en la tabla de
+verificación, que hasta entonces compartía con el motivo de rechazo. Las separa
+`V15__revocation_reason.sql`, que **no migra ningún dato**: entre las dos listas no hay
+traducción que no sea inventarse la decisión que alguien tomó, así que las filas `REVOKED`
+que pudieran existir conservan su motivo viejo en `rejection_reason`. La bitácora no
+cambió: guarda el motivo como texto.

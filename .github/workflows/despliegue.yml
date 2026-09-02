@@ -274,17 +274,48 @@ jobs:
       # Aquí se pide la portada y no una sonda: es la ruta que de verdad renderiza,
       # así que un fallo del servidor de SSR sale a la luz ahora y no cuando entre
       # alguien.
+      # Un 200 no basta, y costó una tarde averiguarlo. `@angular/ssr` renuncia al
+      # renderizado en servidor si recibe una cabecera `x-forwarded-*` que no esté
+      # declarada como confiable, y entrega la página de renderizado en cliente: raíz
+      # vacía, sin estado transferido y estado 200. La comprobación anterior la daba
+      # por buena y el sitio quedaba en blanco para todo el mundo.
+      #
+      # Se pide por la dirección de `run.app`, que pasa por el proxy de Google y por
+      # tanto trae la cabecera: es el mismo camino que recorre un visitante.
       - name: Comprobar que responde
         run: |
           DIRECCION=$(gcloud run services describe ${{ vars.CLOUD_RUN_WEB_SERVICE }} \
             --region ${{ vars.GCP_REGION }} --format 'value(status.url)')
           echo "Comprobando $DIRECCION"
+          RESPONDIO=no
           for intento in $(seq 1 20); do
-            if curl --fail --silent --show-error "$DIRECCION/" > /dev/null; then
+            if curl --fail --silent --show-error "$DIRECCION/" > portada.html; then
               echo "Responde."
-              exit 0
+              RESPONDIO=si
+              break
             fi
             sleep 5
           done
-          echo "No respondió tras 100 segundos."
-          exit 1
+          if [ "$RESPONDIO" = no ]; then
+            echo "No respondió tras 100 segundos."
+            exit 1
+          fi
+
+          # La raíz vacía es la firma exacta del renderizado en cliente.
+          if grep -q '<sendik-root></sendik-root>' portada.html; then
+            echo "::error::Respondió 200 pero la página llegó SIN renderizar: <sendik-root> viene vacía."
+            echo "Es el fallo de trustProxyHeaders de frontend/src/server.ts. Sin renderizado"
+            echo "en servidor no hay estado transferido, APP_CONFIG no llega y la aplicación"
+            echo "no arranca en el navegador: página en blanco (ADR-0006, ADR-0021)."
+            exit 1
+          fi
+
+          # Y la comprobación en positivo: el estado transferido solo existe si de
+          # verdad se renderizó en el servidor.
+          if ! grep -q 'ng-state' portada.html; then
+            echo "::error::Respondió 200 y con marcado, pero sin estado transferido."
+            echo "APP_CONFIG viaja ahí y sin él la aplicación no arranca (ADR-0021)."
+            exit 1
+          fi
+
+          echo "Renderizada en servidor y con estado transferido."

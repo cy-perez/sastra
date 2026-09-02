@@ -188,6 +188,43 @@ test.describe('renderizado en servidor', () => {
     expect(await response.text()).toContain('Esta página no existe');
   });
 
+  /**
+   * Detras de un proxy la pagina tiene que seguir llegando renderizada.
+   *
+   * <p>Es el fallo que dejo `dev.sendik.co` en blanco el 2 de septiembre de 2026 y
+   * el resto de la suite no vio: `@angular/ssr` renuncia al renderizado en servidor
+   * en cuanto recibe una cabecera `x-forwarded-*` que no este declarada como
+   * confiable, y devuelve la pagina de renderizado en cliente con la raiz vacia. Las
+   * demas pruebas piden sin proxy delante, asi que ninguna la manda y todas pasan.
+   *
+   * <p>No basta con mirar el estado: la respuesta es 200 en los dos casos. Lo que
+   * distingue el fallo es que dentro de `<sendik-root>` no hay nada.
+   */
+  test('la pagina llega renderizada aunque venga por un proxy', async ({ request }) => {
+    const respuesta = await request.get('/', {
+      headers: { 'X-Forwarded-For': '203.0.113.7' },
+    });
+    const html = await respuesta.text();
+
+    expect(respuesta.status()).toBe(200);
+    expect(html).not.toContain('<sendik-root></sendik-root>');
+    expect(html).toContain('Compra y vende de forma ágil y segura');
+  });
+
+  /**
+   * La otra mitad de lo mismo, y la que de verdad explica la pagina en blanco:
+   * `APP_CONFIG` viaja en el estado transferido y sin el la aplicacion no arranca
+   * en el navegador (ADR-0021). Si el estado no viene, lo que ve el visitante no es
+   * una pagina a medias sino ninguna.
+   */
+  test('el estado transferido viaja en el HTML aunque venga por un proxy', async ({ request }) => {
+    const html = await (
+      await request.get('/', { headers: { 'X-Forwarded-For': '203.0.113.7' } })
+    ).text();
+
+    expect(html).toContain('ng-state');
+  });
+
   // Sin Vary, una cache intermedia le daria a un visitante la pagina
   // renderizada para otro, en otro idioma y con otro tema.
   test('declara Vary para que ninguna cache mezcle idiomas', async ({ request }) => {

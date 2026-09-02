@@ -277,6 +277,47 @@ describe('FavoriteToggle', () => {
     backend.expectNone((llamada) => llamada.method === 'PUT');
   });
 
+  /**
+   * Criterio 9: abandonar el ingreso no deja nada guardado.
+   *
+   * <p>Volver atrás desde el formulario es exactamente esto: la ficha se monta otra vez y
+   * la sesión resuelve **anónima**. Si la intención sobreviviera a eso, el favorito
+   * aparecería la próxima vez que alguien entrara desde ese navegador, sobre algo que ya
+   * no recuerda haber pulsado.
+   */
+  it('descarta la intención pendiente cuando la sesión resuelve anónima, criterio 9', async () => {
+    TestBed.inject(FavoriteIntent).recordar(ID);
+
+    const { fixture, backend } = await montar(false);
+    await bombear(fixture);
+
+    expect(TestBed.inject(FavoriteIntent).consumir(ID)).toBe(false);
+    backend.expectNone((llamada) => llamada.method === 'PUT');
+  });
+
+  /**
+   * Criterio 8, segunda mitad: al volver con sesión, la intención se dispara sola y una
+   * sola vez.
+   *
+   * <p>Es el caso que pasa por la recarga: el componente nace sin sesión, la cookie de
+   * refresco la trae después, y solo entonces se puede guardar nada.
+   */
+  it('retoma la intención al resolverse la sesión, y no la repite', async () => {
+    TestBed.inject(FavoriteIntent).recordar(ID);
+
+    const { fixture, backend } = await montar(true);
+    await bombear(fixture);
+
+    const marcados = backend.match(
+      (llamada) => llamada.method === 'PUT' && llamada.url === `${API}/users/me/favorites/${ID}`,
+    );
+    expect(marcados).toHaveLength(1);
+    marcados.forEach((llamada) => llamada.flush(null, { status: 204, statusText: 'No Content' }));
+    await bombear(fixture);
+
+    expect(TestBed.inject(FavoriteIntent).consumir(ID)).toBe(false);
+  });
+
   /** El estado marcado se anuncia sin depender del color (criterio 17). */
   it('anuncia el estado con aria-pressed y con texto, no solo con color', async () => {
     const { fixture, backend } = await montar(true);

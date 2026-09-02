@@ -2,6 +2,7 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
+import { QueryClient } from '@tanstack/angular-query-experimental';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -146,6 +147,40 @@ describe('SessionMenu', () => {
 
     expect(TestBed.inject(SessionStore).isAuthenticated()).toBe(false);
     expect(fixture.nativeElement.querySelector('a')).not.toBeNull();
+  });
+
+  /**
+   * Lo que el servidor respondio tampoco se queda.
+   *
+   * <p>El perfil, las sesiones abiertas y la lista de favoritos son datos privados, y
+   * TanStack los conserva en la cache de la pestana. Sin limpiarla, quien entrara despues
+   * en ese mismo navegador —sin recargar— los veia un instante antes de que llegara la
+   * respuesta suya: la cache se sirve primero y se revalida despues.
+   *
+   * <p>En un equipo compartido «cerre sesion» tiene que significar que no queda nada
+   * recuperable (docs/operacion/datos-personales.md), y RN-070 dice que los favoritos no
+   * los ve nadie mas.
+   */
+  it('no deja en la cache lo que el servidor respondio de la sesion anterior', async () => {
+    TestBed.inject(SessionStore).set(SESION);
+    const fixture = await render();
+    const consultas = TestBed.inject(QueryClient);
+
+    consultas.setQueryData(['catalog', 'favorites'], { items: [{ id: 'algo-privado' }] });
+    consultas.setQueryData(['auth', 'profile'], { email: 'ana@correo.co' });
+
+    await asentarRespondiendoLaCuenta(fixture);
+
+    (fixture.nativeElement.querySelector('button') as HTMLButtonElement).click();
+    await fixture.whenStable();
+
+    TestBed.inject(HttpTestingController)
+      .expectOne(`${API}/auth/logout`)
+      .flush(null, { status: 204, statusText: 'No Content' });
+    await asentar(fixture);
+
+    expect(consultas.getQueryData(['catalog', 'favorites'])).toBeUndefined();
+    expect(consultas.getQueryData(['auth', 'profile'])).toBeUndefined();
   });
 
   /**

@@ -61,6 +61,11 @@ export class FavoritesStore {
     queryKey: queryKeys.favorite(this.ficha() ?? 'ninguna'),
     queryFn: () => this.api.estado(this.ficha() ?? ''),
     enabled: this.ficha() !== null && this.haySesion(),
+    // Sin frescura, al contrario que el catalogo. El minuto de `provideQuery` esta pensado
+    // para datos publicos que cambian solos; esto es de una persona y cambia porque ella lo
+    // cambia, a veces en otra pestana. Y es dato privado: cuanto menos viva en la cache,
+    // mejor (docs/operacion/datos-personales.md).
+    staleTime: 0,
     retry: false,
   }));
 
@@ -154,6 +159,8 @@ export class FavoritesStore {
     queryKey: queryKeys.favorites,
     queryFn: ({ pageParam }: { pageParam: string | null }) => this.api.lista(pageParam),
     enabled: this.haySesion() && this.mirandoLaLista(),
+    // Sin frescura, por lo mismo que el estado del control.
+    staleTime: 0,
     initialPageParam: null as string | null,
     getNextPageParam: (ultimo: CatalogPage) => ultimo.nextCursor,
     retry: false,

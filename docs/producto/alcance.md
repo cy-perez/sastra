@@ -145,10 +145,26 @@ Es la fase en curso desde el 21 de agosto de 2026.
   vendedor, todo detrás de `FEATURE_CATALOG` y todo aplicando RN-068 —en el
   catálogo se ve solo lo `PUBLISHED`—. Con ella el ciclo de la fase deja de ser un
   callejón sin salida: lo que un moderador aprueba ya lo ve alguien sin cuenta.
-  **Los favoritos salen a su propia historia**: el catálogo es anónimo y de
-  lectura, y ellos son de cuenta y de escritura, con reglas que todavía no
-  existen. Queda fuera también la frase de la garantía del fabricante en la ficha
-  (RN-067), aplazada a la tanda legal por decisión del 26 de agosto.
+  **Los favoritos salieron a su propia historia**, HU-011, porque el catálogo es
+  anónimo y de lectura y ellos son de cuenta y de escritura, con reglas que no
+  existían. **Quedó hecha el 2 de septiembre de 2026** y con ella este punto se
+  cierra entero: el control en la ficha, la lista propia en `/mis-favoritos`
+  paginada por cursor, y la intención que sobrevive al ingreso —quien no tiene
+  sesión pulsa, entra, y vuelve con el favorito ya guardado (ADR-0029)—. Escribirla
+  obligó a fijar las cuatro reglas que faltaban: RN-070 a RN-073, que responden por
+  escrito lo que HU-009 dejó abierto —si un favorito sobrevive a que la publicación
+  se archive o se venda, y si hay tope—. La tabla es `V16__favorites.sql`, con clave
+  primaria sobre el par, que es lo que hace idempotente marcar dos veces sin leer
+  antes de escribir.
+
+  Destapó además dos defectos que estaban en producción y no eran suyos: el límite
+  de los listados por cursor respondía 500 en vez del 400 que exige
+  `contrato-api.md`, y cerrar sesión no borraba de la caché del navegador el perfil,
+  las sesiones abiertas ni la lista de favoritos. Los dos arreglados, cada uno con
+  la prueba que sí puede verlos.
+
+  Queda fuera todavía la frase de la garantía del fabricante en la ficha (RN-067),
+  aplazada a la tanda legal por decisión del 26 de agosto.
 - Panel del vendedor con sus publicaciones y su estado. **Hecho a medias** y sin
   historia propia: `/mis-publicaciones` llegó con HU-007 y da la lista con el
   estado de cada una, que es lo que hacía falta para retomar un borrador. Lo que

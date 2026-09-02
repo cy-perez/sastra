@@ -34,15 +34,22 @@ const app = express();
  * previa de WhatsApp reciben un documento vacio mientras el sitio parece
  * funcionar.
  *
- * <p>Se declara **solo** `x-forwarded-for`, que es la unica que manda Cloud Run
- * y la unica que hace falta. Las que construyen la URL —`x-forwarded-host`,
- * `-proto`, `-port` y `-prefix`— se quedan fuera a proposito: confiar en ellas
- * dejaria que quien pide la pagina eligiera el nombre de dominio con el que se
- * renderiza, que es la falsificacion de peticiones del lado del servidor contra
- * la que protege `NG_ALLOWED_HOSTS`.
+ * <p>Se declaran las dos que manda Cloud Run y ninguna mas. Que son estas dos no
+ * se supone: el aviso de arriba se emite por cada cabecera no confiable, asi que
+ * al declarar solo `x-forwarded-for` quedo `x-forwarded-proto` sola en el
+ * registro, y con las dos declaradas no queda ninguna.
+ *
+ * <p>**`x-forwarded-host` se queda fuera a proposito**, y es la que importa: es
+ * la que elige el nombre de dominio con el que se renderiza la pagina, o sea la
+ * falsificacion de peticiones del lado del servidor contra la que existe
+ * `NG_ALLOWED_HOSTS` (ADR-0006). `-port` y `-prefix` tampoco llegan.
+ *
+ * <p>El precio de dejarlas fuera es que una peticion que traiga una de ellas
+ * —solo puede ponerla quien la manda— se sirve sin renderizar. Afecta a esa
+ * peticion y a nadie mas, y es preferible a confiar en el nombre de dominio.
  */
 const angularApp = new AngularNodeAppEngine({
-  trustProxyHeaders: ['x-forwarded-for'],
+  trustProxyHeaders: ['x-forwarded-for', 'x-forwarded-proto'],
 });
 
 /** Un anio, en segundos: lo que se cachean las fuentes. */

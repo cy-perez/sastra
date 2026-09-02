@@ -189,21 +189,34 @@ test.describe('renderizado en servidor', () => {
   });
 
   /**
+   * El juego de cabeceras que Cloud Run pone delante de cada peticion, entero.
+   *
+   * <p>**Entero es la palabra.** `@angular/ssr` renuncia al renderizado en servidor si
+   * ve UNA sola cabecera `x-forwarded-*` que no este declarada como confiable, asi que
+   * una prueba que mande menos de las que manda el proxy real pasa sin demostrar nada.
+   * Es exactamente lo que ocurrio el 2 de septiembre de 2026: la primera version de
+   * esta prueba mandaba solo `x-forwarded-for`, quedo verde, y el despliegue siguiente
+   * seguia sirviendo la pagina vacia por `x-forwarded-proto`.
+   *
+   * <p>Al agregar una cabecera aqui hay que agregarla tambien a `trustProxyHeaders` en
+   * src/server.ts, o esta prueba se pone roja. Que es justo lo que tiene que pasar.
+   */
+  const CABECERAS_DE_CLOUD_RUN = {
+    'X-Forwarded-For': '203.0.113.7',
+    'X-Forwarded-Proto': 'https',
+  };
+
+  /**
    * Detras de un proxy la pagina tiene que seguir llegando renderizada.
    *
-   * <p>Es el fallo que dejo `dev.sendik.co` en blanco el 2 de septiembre de 2026 y
-   * el resto de la suite no vio: `@angular/ssr` renuncia al renderizado en servidor
-   * en cuanto recibe una cabecera `x-forwarded-*` que no este declarada como
-   * confiable, y devuelve la pagina de renderizado en cliente con la raiz vacia. Las
-   * demas pruebas piden sin proxy delante, asi que ninguna la manda y todas pasan.
+   * <p>Es el fallo que dejo `dev.sendik.co` en blanco: sin renderizado en servidor la
+   * raiz llega vacia. El resto de la suite no lo vio porque pide sin proxy delante.
    *
    * <p>No basta con mirar el estado: la respuesta es 200 en los dos casos. Lo que
    * distingue el fallo es que dentro de `<sendik-root>` no hay nada.
    */
   test('la pagina llega renderizada aunque venga por un proxy', async ({ request }) => {
-    const respuesta = await request.get('/', {
-      headers: { 'X-Forwarded-For': '203.0.113.7' },
-    });
+    const respuesta = await request.get('/', { headers: CABECERAS_DE_CLOUD_RUN });
     const html = await respuesta.text();
 
     expect(respuesta.status()).toBe(200);
@@ -218,12 +231,25 @@ test.describe('renderizado en servidor', () => {
    * una pagina a medias sino ninguna.
    */
   test('el estado transferido viaja en el HTML aunque venga por un proxy', async ({ request }) => {
-    const html = await (
-      await request.get('/', { headers: { 'X-Forwarded-For': '203.0.113.7' } })
-    ).text();
+    const html = await (await request.get('/', { headers: CABECERAS_DE_CLOUD_RUN })).text();
 
     expect(html).toContain('ng-state');
   });
+
+  /**
+   * Cada cabecera por separado, y no solo el juego completo.
+   *
+   * <p>Con las dos juntas, olvidar una en `trustProxyHeaders` se nota; pero si un dia
+   * se declara una de mas y otra de menos, el juego completo seguiria fallando sin
+   * decir cual es. Esta dice cual.
+   */
+  for (const [cabecera, valor] of Object.entries(CABECERAS_DE_CLOUD_RUN)) {
+    test(`la pagina llega renderizada con ${cabecera}`, async ({ request }) => {
+      const html = await (await request.get('/', { headers: { [cabecera]: valor } })).text();
+
+      expect(html, cabecera).not.toContain('<sendik-root></sendik-root>');
+    });
+  }
 
   // Sin Vary, una cache intermedia le daria a un visitante la pagina
   // renderizada para otro, en otro idioma y con otro tema.

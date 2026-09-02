@@ -71,7 +71,7 @@ un requisito de residencia de datos, se revisa.
 
 Todo por integración continua. Nadie despliega desde su máquina.
 
-> **Estado a agosto de 2026.** El flujo está escrito completo y cubre las dos
+> **Estado a septiembre de 2026.** El flujo está escrito completo y cubre las dos
 > piezas: `.github/workflows/verificacion.yml` compila, prueba y analiza en cada
 > pull request y en cada integración a `main`, y `despliegue.yml` publica **el
 > backend y el frontend** en `dev` con cada integración a `main`, y en `prod` con
@@ -83,9 +83,14 @@ Todo por integración continua. Nadie despliega desde su máquina.
 > canalización diga la verdad —no hay dónde desplegar— en vez de quedarse roja y
 > dejar de leerse.
 >
-> Lo que falta no es código, son las cuentas: el proyecto de Google Cloud, la base
-> gestionada, los secretos en Secret Manager y los registros de DNS en GoDaddy, con
-> el procedimiento en orden y una sola vez en `despliegue.md`.
+> **`dev` está en pie desde el 2 de septiembre de 2026**, y con eso deja de ser
+> teoría: `https://dev.sendik.co` y `https://api-dev.sendik.co` responden con
+> certificado gestionado y siguen costando cero. Las cuentas que hacían falta —el
+> proyecto de Google Cloud, la base gestionada, los secretos, la federación de
+> identidades y el DNS— están creadas, y lo que costó cada una quedó anotado en
+> `despliegue.md`.
+>
+> Lo que falta ahora es **`prod`**, que es otra vuelta a esa misma lista.
 
 ```
 rama de trabajo -> pull request -> verificación -> main -> dev automático

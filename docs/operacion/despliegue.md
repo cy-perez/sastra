@@ -9,9 +9,18 @@ procedimiento.
 
 ## Cuándo se ejecuta esta lista
 
-**Ahora, para `dev`.** El dominio `sendik.co` se contrató en GoDaddy el 26 de
-agosto de 2026 y con eso se cerró la última decisión que faltaba, la del hospedaje
-(ADR-0024). **La lista se sigue entera**, de principio a fin.
+**Ya se ejecutó, para `dev`.** El 2 de septiembre de 2026 quedó en pie:
+`https://dev.sendik.co` sirve la portada renderizada en servidor y
+`https://api-dev.sendik.co` responde, las dos con certificado gestionado por Google
+y sin costo. Los nueve pasos están hechos para ese entorno.
+
+Esta sigue siendo la lista que hay que seguir para levantar **`prod`**, y por eso
+está escrita en presente. Lo que cambió es que ahora está recorrida entera al menos
+una vez, y lo que costó cada paso está anotado donde ocurrió.
+
+El dominio `sendik.co` se contrató en GoDaddy el 26 de agosto de 2026 y con eso se
+cerró la última decisión que faltaba, la del hospedaje (ADR-0024). **La lista se
+sigue entera**, de principio a fin.
 
 Los nueve pasos hacen falta para levantar `dev`: el proyecto (1), la base de datos
 en capa gratuita (2), los dos cubos (3), los secretos en Secret Manager (4), las
@@ -159,6 +168,20 @@ GRANT ALL ON SCHEMA public TO EL-ROL;
 Un rol de aplicación con menos permisos que estos tendrá sentido el día que las
 migraciones dejen de correr al arrancar. Hoy corren, y el rol que se conecta es el
 que migra.
+
+**La salida más limpia es crear la base con su propio rol y no reutilizar el que
+viene.** Es lo que se hizo en `dev` el 2 de septiembre de 2026: una base `sendik`
+creada por un rol `sendik`. Entonces el dueño de `public` es `pg_database_owner`,
+que resuelve al dueño de la base, y el `GRANT` de arriba no hace falta:
+
+```
+duenio_de_public = pg_database_owner
+has_schema_privilege(current_user,'public','CREATE') = t
+```
+
+Comprobarlo antes de desplegar cuesta una consulta y ahorra el diagnóstico entero:
+el error de permisos no aparece hasta que Flyway intenta crear su tabla, dentro de
+un contenedor que Cloud Run reporta como "no escuchó en el puerto".
 
 ### Corregir un valor después
 
@@ -518,6 +541,34 @@ gcloud beta run domain-mappings create \
 Cada comando responde con **los registros DNS que hay que crear**. Anótalos: son
 los del paso siguiente y no se inventan, se copian de esa salida.
 
+> **El servicio tiene que existir antes que su mapeo, y si no, el mapeo se queda
+> muerto.** Un `domain-mappings create` contra un servicio que todavía no se ha
+> desplegado se acepta sin protestar y queda en
+>
+> ```
+> Route sendik-web-dev does not exist.   reason: RouteMissing
+> ```
+>
+> Lo que engaña es que no se arregla solo cuando el servicio aparece: el reintento
+> se espacia hasta 24 horas y el mapeo sigue en ese estado con el servicio ya en
+> pie. Por fuera se ve un `404` servido por `ghs` y un `https://` que ni siquiera
+> negocia TLS, porque sin ruta no se emite certificado.
+>
+> Se sale recreándolo, y entonces tarda minutos:
+>
+> ```bash
+> gcloud beta run domain-mappings delete --domain dev.sendik.co --region us-east1
+> gcloud beta run domain-mappings create \
+>   --service sendik-web-dev --domain dev.sendik.co --region us-east1
+> ```
+>
+> El DNS no hay que tocarlo: ya está puesto y verificado. Pasó con los dos nombres
+> el 2 de septiembre de 2026.
+>
+> **El orden que evita esto** es dejar el paso 7.2 para después del primer
+> despliegue, que es el que crea los dos servicios de Cloud Run. Si ya se hizo
+> antes, basta con recrear los mapeos al terminar.
+
 > **Si el mapeo de dominios no está disponible en la región**, la alternativa sin
 > costo es Firebase Hosting delante de Cloud Run, que da el mismo dominio propio y
 > el mismo certificado gestionado. No se documenta aquí porque hoy no hace falta;
@@ -568,6 +619,24 @@ Las cuatro cabeceras y las dos políticas de caché son de la aplicación, no de
 hospedaje: viven en `frontend/src/server.ts` y las comprueba
 `frontend/e2e/cabeceras.spec.ts`. Cloud Run no las toca, que era el sexto requisito
 de ADR-0019.
+
+**Un 200 no demuestra que la página se vea.** Detrás de un proxy, `@angular/ssr`
+puede servir la versión de renderizado en cliente —raíz vacía, sin estado
+transferido— con estado 200 y sin un error en ninguna parte. El sitio queda en
+blanco y todas las señales dicen que está bien. La comprobación de verdad mira el
+cuerpo:
+
+```bash
+# Con contenido dentro de la raíz, no solo <sendik-root></sendik-root>.
+curl -s https://dev.sendik.co/ | grep -c '<sendik-root></sendik-root>'   # debe dar 0
+
+# Y con el estado transferido, que es por donde llega APP_CONFIG.
+curl -s https://dev.sendik.co/ | grep -c 'ng-state'                      # debe dar 1 o más
+```
+
+Una portada renderizada pesa unos 75KB; el cascarón sin renderizar, unos 6KB. Es la
+diferencia más rápida de ver. El detalle de por qué ocurría está más abajo, en la
+tabla de síntomas, y el flujo ya lo comprueba solo.
 
 ## 8. Los entornos de GitHub
 
@@ -741,6 +810,13 @@ El flujo hace la comprobación de estado por su cuenta y falla si la aplicación
 responde, así que un trabajo verde significa que responde de verdad y no solo que
 `gcloud` no dio error.
 
+En el frontend comprueba además **que la página llegó renderizada**: que
+`<sendik-root>` no venga vacía y que el HTML traiga el estado transferido. Un 200
+con el cuerpo vacío es un despliegue roto que antes pasaba en verde, y es lo que
+dejó el sitio en blanco el 2 de septiembre de 2026. Se pide por la dirección de
+`run.app`, que pasa por el proxy de Google y por tanto trae las cabeceras que
+provocan el fallo: es el mismo camino que recorre un visitante.
+
 Para producción:
 
 ```bash
@@ -751,9 +827,9 @@ Y entonces hay que entrar a aprobarlo en la pestaña de Actions.
 
 ### Cuando falla, el síntoma apunta a otro sitio
 
-El primer despliegue real, el 1 de septiembre de 2026, acumuló seis fallos
-distintos, y ninguno de los seis decía lo que de verdad pasaba. Esta tabla es para
-buscar por síntoma, que es lo único que hay cuando ocurre:
+Levantar `dev` costó ocho fallos distintos entre el 1 y el 2 de septiembre de
+2026, y ninguno decía lo que de verdad pasaba. Esta tabla es para buscar por
+síntoma, que es lo único que hay cuando ocurre:
 
 | Lo que se ve | Lo que es | Dónde |
 |---|---|---|
@@ -763,12 +839,15 @@ buscar por síntoma, que es lo único que hay cuando ocurre:
 | `permission denied for schema public`, sin que corra ninguna migración | El rol no puede crear en `public`, así que Flyway no puede ni crear su propia tabla | paso 2 |
 | «El contenedor no escuchó en el puerto a tiempo», después de que Flyway aplique las migraciones sin una queja | Falta una variable obligatoria del arranque. La primera vez fueron los dos cubos | paso 8 |
 | El frontend se despliega bien y la comprobación devuelve **400** | Falta el host de `run.app` en `NG_ALLOWED_HOSTS` | paso 8 |
+| El mapeo de dominio no sale de `RouteMissing` aunque el servicio ya exista, y el nombre propio da `404` de `ghs` sin llegar a negociar TLS | El mapeo se creó antes que el servicio y su reintento se espació a 24 horas. Se recrea | paso 7.2 |
+| Todo en verde, el sitio responde **200** y la página se ve **en blanco** | `@angular/ssr` renunció al renderizado en servidor y sirvió la versión de cliente: raíz vacía, sin estado transferido, sin `APP_CONFIG` y sin arranque | ver abajo |
 
-Cuatro de los seis eran huecos de esta lista o del flujo —el proyecto, las comas,
-los cubos y el host de `run.app`— y no errores de quien la seguía; los otros dos
-venían de traducir a mano la cadena del proveedor. Lo que comparten es que el
-trabajo que falla no es el que tiene la culpa, así que **el primer sitio donde
-mirar no es el registro de Actions sino el del contenedor**:
+Seis de los ocho eran huecos de esta lista o del flujo —el proyecto, las comas,
+los cubos, el host de `run.app`, el orden del mapeo y el proxy— y no errores de
+quien la seguía; los otros dos venían de traducir a mano la cadena del proveedor.
+Lo que comparten es que el trabajo que falla no es el que tiene la culpa, así que
+**el primer sitio donde mirar no es el registro de Actions sino el del
+contenedor**:
 
 ```bash
 gcloud logging read \
@@ -778,6 +857,86 @@ gcloud logging read \
 
 El nombre de la revisión lo dice el propio error de `gcloud run deploy`, en el
 enlace a los registros que imprime al fallar.
+
+### La página en blanco que responde 200
+
+Es el más difícil de los ocho, porque todas las señales dicen que está bien: el
+despliegue en verde, el estado 200, el HTML servido con sus cabeceras y su idioma
+resuelto. Y la página no se ve.
+
+Lo que pasa es que `@angular/ssr` **renuncia al renderizado en servidor** en cuanto
+recibe una cabecera `x-forwarded-*` que no esté declarada como confiable. No lanza
+ni registra un error: borra la cabecera, deja un `console.warn` y sirve la versión
+de renderizado en cliente. Está en `sanitizeRequestHeaders`:
+
+```js
+if (lowerKey.startsWith('x-forwarded-') && !isProxyHeaderAllowed(lowerKey, trustProxyHeaders)) {
+  console.warn(`Received "${key}" header but "trustProxyHeaders" was not set up to allow it.`);
+  deoptToCSR = true;
+}
+...
+if (deoptToCSR) {
+  return serverApp.serveClientSidePage();
+}
+```
+
+Cloud Run pone siempre `x-forwarded-for` y `x-forwarded-proto`, así que esto ocurre
+en Cloud Run y **no en local**, que es donde nadie lo ve venir.
+
+Y el cascarón vacío no degrada a una página que se pinte en el navegador: se queda
+en blanco. `APP_CONFIG` viaja en el estado transferido del renderizado en servidor
+(ADR-0021), así que sin él la aplicación ni siquiera arranca. En la consola del
+navegador queda `La configuracion no llego en el estado transferido`.
+
+La corrección es declarar las dos cabeceras en `frontend/src/server.ts`:
+
+```ts
+const angularApp = new AngularNodeAppEngine({
+  trustProxyHeaders: ['x-forwarded-for', 'x-forwarded-proto'],
+});
+```
+
+**`x-forwarded-host` se queda fuera a propósito.** Es la que elegiría el nombre de
+dominio con el que se renderiza la página, o sea la falsificación de peticiones del
+lado del servidor contra la que existe `NG_ALLOWED_HOSTS` (ADR-0006).
+
+Para saber qué cabecera falta, el registro lo dice sin adivinar: el aviso se emite
+**una vez por cada cabecera no confiable**, así que declarar una y ver cuál queda
+sola en el registro fija el conjunto exacto.
+
+```bash
+gcloud logging read \
+  'resource.type="cloud_run_revision" AND resource.labels.service_name="sendik-web-dev"' \
+  --project sendik-col --limit 200 --format 'value(textPayload)' --freshness=30m \
+  | grep -oE 'Received "x-forwarded-[a-z]+"' | sort | uniq -c
+```
+
+**Cuidado al leerlo: la ventana de tiempo mezcla revisiones.** Justo después de
+desplegar la corrección, ese comando sigue devolviendo los avisos de la revisión
+anterior, que todavía está dentro de `--freshness` y ya no sirve tráfico. Antes de
+concluir nada hay que ver de qué revisión salen:
+
+```bash
+gcloud logging read \
+  'resource.type="cloud_run_revision" AND resource.labels.service_name="sendik-web-dev"' \
+  --project sendik-col --limit 300 \
+  --format 'value(resource.labels.revision_name,textPayload)' --freshness=30m \
+  | grep -iE 'Received "x-forwarded' | sed -E 's/.*(sendik-web-dev-[0-9]+).*/\1/' \
+  | sort | uniq -c
+```
+
+La revisión que sirve hoy la dice `gcloud run services describe sendik-web-dev
+--region us-east1 --format 'value(status.latestReadyRevisionName)'`. Con la
+corrección puesta, esa revisión no aparece en la lista.
+
+> **Declarar las cabeceras a medias sale igual de mal, y no se nota.** La primera
+> corrección declaró solo `x-forwarded-for`, y la prueba que la acompañaba mandaba
+> solo esa cabecera: quedó verde y el despliegue siguiente seguía sirviendo la
+> página vacía por `x-forwarded-proto`. **Basta una cabecera sin declarar para
+> perder el renderizado entero**, así que una prueba que mande menos de las que
+> manda el proxy real no demuestra nada. `frontend/e2e/ssr.spec.ts` las tiene ahora
+> en una constante única, `CABECERAS_DE_CLOUD_RUN`, y prueba el juego completo y
+> cada una por separado.
 
 ## Volver atrás
 
@@ -797,6 +956,9 @@ al menos un despliegue.
 
 Se anota para no confundir lo que falta con lo que está:
 
+- **Producción entera.** `dev` está en pie desde el 2 de septiembre de 2026; `prod`
+  no. Falta el revisor obligatorio, la columna `prod` de las tablas de variables,
+  Cloud SQL y los tres textos legales, que siguen en `borrador-local`.
 - **El dominio raíz `sendik.co`.** No apunta a ningún sitio todavía, a propósito:
   en `dev` no se usa, y apuntarlo antes de tener `prod` haría que lo que la gente
   encuentre sea un sitio a medias. Necesita registros `A` y `AAAA`, no un `CNAME`

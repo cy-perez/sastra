@@ -1,25 +1,32 @@
 package co.sendik.config;
 
 import co.sendik.catalog.port.out.Categories;
+import co.sendik.catalog.port.out.Favorites;
 import co.sendik.catalog.port.out.ListingNotifier;
 import co.sendik.catalog.port.out.ListingRepository;
 import co.sendik.catalog.port.out.ModerationLog;
 import co.sendik.catalog.port.out.SellerEligibility;
 import co.sendik.catalog.port.out.SellerProfiles;
+import co.sendik.catalog.usecase.AddFavoriteUseCase;
 import co.sendik.catalog.usecase.ApproveListingUseCase;
 import co.sendik.catalog.usecase.ArchiveListingUseCase;
 import co.sendik.catalog.usecase.ChangeListingPriceUseCase;
 import co.sendik.catalog.usecase.ChangeListingShippingUseCase;
 import co.sendik.catalog.usecase.CreateListingUseCase;
+import co.sendik.catalog.usecase.EraseFavoritesUseCase;
+import co.sendik.catalog.usecase.ExportFavoritesUseCase;
 import co.sendik.catalog.usecase.ListCatalogUseCase;
 import co.sendik.catalog.usecase.ListCategoriesUseCase;
+import co.sendik.catalog.usecase.ListFavoritesUseCase;
 import co.sendik.catalog.usecase.ListPendingListingsUseCase;
 import co.sendik.catalog.usecase.ListSellerCatalogUseCase;
 import co.sendik.catalog.usecase.ListSellerListingsUseCase;
 import co.sendik.catalog.usecase.PauseListingUseCase;
+import co.sendik.catalog.usecase.ReadFavoriteStateUseCase;
 import co.sendik.catalog.usecase.ReadListingUseCase;
 import co.sendik.catalog.usecase.ReadSellerProfileUseCase;
 import co.sendik.catalog.usecase.RejectListingUseCase;
+import co.sendik.catalog.usecase.RemoveFavoriteUseCase;
 import co.sendik.catalog.usecase.RemoveListingImageUseCase;
 import co.sendik.catalog.usecase.ReopenListingUseCase;
 import co.sendik.catalog.usecase.ResumeListingUseCase;
@@ -229,5 +236,47 @@ public class CatalogWiring {
     @Bean
     ReadSellerProfileUseCase readSellerProfileUseCase(SellerProfiles perfiles) {
         return new ReadSellerProfileUseCase(perfiles);
+    }
+
+    // --- Los favoritos. HU-011 -----------------------------------------------
+
+    /**
+     * Marcar necesita el reloj porque la fecha del gesto es lo que ordena la lista
+     * (criterio 11). Quitar no lo necesita: borrar una fila no tiene fecha que sellar.
+     */
+    @Bean
+    AddFavoriteUseCase addFavoriteUseCase(Favorites favoritos, ListingRepository publicaciones, Clock reloj) {
+        return new AddFavoriteUseCase(favoritos, publicaciones, reloj);
+    }
+
+    @Bean
+    RemoveFavoriteUseCase removeFavoriteUseCase(Favorites favoritos) {
+        return new RemoveFavoriteUseCase(favoritos);
+    }
+
+    @Bean
+    ReadFavoriteStateUseCase readFavoriteStateUseCase(Favorites favoritos, ListingRepository publicaciones) {
+        return new ReadFavoriteStateUseCase(favoritos, publicaciones);
+    }
+
+    @Bean
+    ListFavoritesUseCase listFavoritesUseCase(Favorites favoritos) {
+        return new ListFavoritesUseCase(favoritos);
+    }
+
+    /**
+     * Los dos que no usa ninguna pantalla del catalogo: los llama {@code identity} por el
+     * puerto {@code UserFavorites}, para la descarga de datos y el cierre de cuenta. Son
+     * beans como los demas porque son casos de uso publicos de este contexto, que es
+     * justamente la puerta por la que el otro tiene permitido entrar.
+     */
+    @Bean
+    ExportFavoritesUseCase exportFavoritesUseCase(Favorites favoritos) {
+        return new ExportFavoritesUseCase(favoritos);
+    }
+
+    @Bean
+    EraseFavoritesUseCase eraseFavoritesUseCase(Favorites favoritos) {
+        return new EraseFavoritesUseCase(favoritos);
     }
 }

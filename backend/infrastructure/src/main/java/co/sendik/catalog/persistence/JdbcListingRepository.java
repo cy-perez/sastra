@@ -68,18 +68,41 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class JdbcListingRepository implements ListingRepository {
 
-    private static final String SELECT_BASE = """
-            SELECT l.id, l.status, l.submitted_at, l.published_at, l.sold_at,
-                   l.moderated_by, l.moderated_at, l.rejection_reason, l.rejection_note,
-                   l.attention_reasons, l.version,
-                   l.created_at, l.updated_at,
-                   p.id AS product_id, p.seller_id, p.category_id, p.title, p.description, p.brand,
-                   p.condition, p.size_system, p.size_value, p.measurements, p.color, p.price,
-                   p.weight_grams, p.length_cm, p.width_cm, p.height_cm,
-                   p.is_sealed, p.manufacturer_warranty_months
+    /**
+     * La proyeccion de una publicacion con su producto.
+     *
+     * <p>Visible en el paquete y no privada desde HU-011: la lista de favoritos entrega
+     * las mismas publicaciones con otro filtro y otro orden, y copiar aqui treinta
+     * columnas seria dejar dos proyecciones que alguien tendria que acordarse de cambiar
+     * a la vez. La alternativa era duplicar tambien {@link #filaAPublicacion}, que son
+     * sesenta lineas de mapeo.
+     */
+    static final String COLUMNAS_BASE = """
+            l.id, l.status, l.submitted_at, l.published_at, l.sold_at,
+            l.moderated_by, l.moderated_at, l.rejection_reason, l.rejection_note,
+            l.attention_reasons, l.version,
+            l.created_at, l.updated_at,
+            p.id AS product_id, p.seller_id, p.category_id, p.title, p.description, p.brand,
+            p.condition, p.size_system, p.size_value, p.measurements, p.color, p.price,
+            p.weight_grams, p.length_cm, p.width_cm, p.height_cm,
+            p.is_sealed, p.manufacturer_warranty_months
+            """;
+
+    /**
+     * De donde salen esas columnas.
+     *
+     * <p>Partido en dos desde HU-011, y no por gusto: la lista de favoritos necesita
+     * <strong>anteponer</strong> una columna suya a la proyeccion para leer la fecha del
+     * gesto en la misma pasada, y con la sentencia entera en una sola cadena eso solo se
+     * podia hacer trozeando SQL con expresiones regulares. Las dos mitades por separado se
+     * componen sin tocar ninguna.
+     */
+    static final String DESDE_BASE = """
             FROM listings l
             JOIN products p ON p.id = l.product_id
             """;
+
+    static final String SELECT_BASE = "SELECT " + COLUMNAS_BASE + DESDE_BASE;
 
     private final JdbcClient jdbc;
 
@@ -164,7 +187,7 @@ public class JdbcListingRepository implements ListingRepository {
         consulta = conParametrosDelCursor(consulta, desde);
 
         return conPortadas(
-                consulta.query(JdbcListingRepository::filaAPublicacion).list());
+                jdbc, consulta.query(JdbcListingRepository::filaAPublicacion).list());
     }
 
     /** Lo publicado de un vendedor. Mismo SQL y misma regla, otro filtro. */
@@ -182,7 +205,7 @@ public class JdbcListingRepository implements ListingRepository {
         consulta = conParametrosDelCursor(consulta, desde);
 
         return conPortadas(
-                consulta.query(JdbcListingRepository::filaAPublicacion).list());
+                jdbc, consulta.query(JdbcListingRepository::filaAPublicacion).list());
     }
 
     private static String condicionDelCursor(@Nullable CatalogCursor desde) {
@@ -217,7 +240,7 @@ public class JdbcListingRepository implements ListingRepository {
                 .query(JdbcListingRepository::filaAPublicacion)
                 .list();
 
-        return conPortadas(cola);
+        return conPortadas(jdbc, cola);
     }
 
     /**
@@ -231,7 +254,7 @@ public class JdbcListingRepository implements ListingRepository {
      * <p>Se traen **solo las de posicion 0**, que es la frontal de RN-016 y lo unico que la
      * fila muestra. El detalle si carga el agregado entero, por {@code buscar}.
      */
-    private List<Listing> conPortadas(List<Listing> cola) {
+    static List<Listing> conPortadas(JdbcClient jdbc, List<Listing> cola) {
         if (cola.isEmpty()) {
             return cola;
         }
@@ -497,7 +520,7 @@ public class JdbcListingRepository implements ListingRepository {
                 .armar();
     }
 
-    private static Listing filaAPublicacion(ResultSet fila, int numero) throws SQLException {
+    static Listing filaAPublicacion(ResultSet fila, int numero) throws SQLException {
         Product producto = filaAProducto(fila);
 
         String motivoRechazo = fila.getString("rejection_reason");

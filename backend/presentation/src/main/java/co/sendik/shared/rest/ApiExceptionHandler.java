@@ -253,7 +253,13 @@ public class ApiExceptionHandler {
                     // RN-063, el gemelo de RN-060 en el catalogo: es moderador y la
                     // publicacion es suya. Codigo propio por lo mismo, para no dejarlo
                     // buscando un problema de permisos que no tiene.
-                    CATALOG_SELF_MODERATION_FORBIDDEN -> HttpStatus.FORBIDDEN;
+                    CATALOG_SELF_MODERATION_FORBIDDEN,
+                    // RN-072: la publicacion que intenta guardar es suya. Codigo propio
+                    // por lo mismo que los dos de arriba, y ademas porque es el unico 403
+                    // de esta historia: con el generico, quien vuelve del ingreso con una
+                    // intencion pendiente (criterio 10) no tendria como saber si le falta
+                    // sesion o si es que esa publicacion no se puede guardar.
+                    CATALOG_SELF_FAVORITE_FORBIDDEN -> HttpStatus.FORBIDDEN;
             // 409: la peticion es correcta y choca con el estado actual del
             // sistema, que es lo que significa un conflicto.
             //

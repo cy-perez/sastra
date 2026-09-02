@@ -14,6 +14,7 @@ import co.sendik.identity.port.out.PasswordHasher;
 import co.sendik.identity.port.out.RefreshTokenRepository;
 import co.sendik.identity.port.out.SellerVerificationRepository;
 import co.sendik.identity.port.out.TokenGenerator;
+import co.sendik.identity.port.out.UserFavorites;
 import co.sendik.identity.port.out.UserRepository;
 import co.sendik.identity.port.out.VerificationAccessLog;
 import co.sendik.identity.port.out.VerificationTokenRepository;
@@ -233,8 +234,12 @@ public class IdentityWiring {
 
     @Bean
     ExportUserDataUseCase exportUserDataUseCase(
-            UserRepository usuarios, ConsentRepository consentimientos, RefreshTokenRepository refrescos, Clock reloj) {
-        return new ExportUserDataUseCase(usuarios, consentimientos, refrescos, reloj);
+            UserRepository usuarios,
+            ConsentRepository consentimientos,
+            RefreshTokenRepository refrescos,
+            UserFavorites favoritos,
+            Clock reloj) {
+        return new ExportUserDataUseCase(usuarios, consentimientos, refrescos, favoritos, reloj);
     }
 
     @Bean
@@ -243,8 +248,9 @@ public class IdentityWiring {
             RefreshTokenRepository refrescos,
             MailSender correo,
             PublicFileStore almacen,
+            UserFavorites favoritos,
             Clock reloj) {
-        return new CloseAccountUseCase(usuarios, refrescos, correo, almacen, reloj);
+        return new CloseAccountUseCase(usuarios, refrescos, correo, almacen, favoritos, reloj);
     }
 
     /**

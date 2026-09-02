@@ -284,6 +284,47 @@ Cada regla tiene identificador. Úsalo en el código y en las pruebas:
   distingue desde fuera, por lo mismo que el 404 de una publicación ajena: decir
   «esto existía» ya es decir algo.
 
+## Favoritos
+
+Las cuatro nacen con HU-011 y son las respuestas a lo que HU-009 dejó por
+escrito sin responder: si un favorito sobrevive a que la publicación se archive
+o se venda, y si hay tope.
+
+- **RN-070** Los favoritos son **privados**. Son de quien los marca y no los ve
+  nadie más: ni el vendedor de la publicación marcada, ni en agregado, ni
+  convertidos en una cifra.
+
+  De aquí salen dos cosas que por eso no existen: no hay contador público de
+  cuánta gente marcó una publicación, y no se puede compartir la lista. Un
+  contador es una señal pública derivada de un dato privado, y quien la ve la
+  interpreta como demanda.
+
+- **RN-071** En la lista de favoritos se ve **solo lo que está `PUBLISHED`**. Es
+  RN-068 aplicada a la lista propia, sin excepción por ser de uno.
+
+  Lo que deja de estar publicado desaparece de la lista **sin borrarse**: si el
+  vendedor vuelve a publicarlo, vuelve a verse. Nada se borra al pausar ni al
+  archivar; simplemente deja de casar con el filtro.
+
+  Que quien mire su lista no entienda por qué algo se fue es el precio aceptado a
+  cambio de no inventar estados intermedios en una lista personal.
+
+- **RN-072** **Nadie marca como favorita su propia publicación.** No significa
+  nada, y el día que exista cualquier señal derivada de los favoritos sería la
+  forma más barata de inflarla.
+
+  Se comprueba en el servidor. Esconder el control no es la regla, por lo mismo
+  que en RN-060 y RN-063: la petición se puede mandar sin pasar por la interfaz.
+
+- **RN-073** **No hay tope de favoritos por cuenta.** Se decidió a propósito:
+  cualquier número que se ponga es arbitrario, molesta a quien lo alcanza y no
+  protege de nada que un tope alto detenga.
+
+  Lo que sí hay que vigilar es que la tabla crece sin techo, porque RN-071
+  conserva las filas de lo que ya no se puede volver a ver. Si crece más rápido
+  de lo previsto, lo que se reabre no es el tope sino si se limpian las filas
+  cuya publicación quedó `SOLD` o `ARCHIVED` hace mucho.
+
 ## Precio y comisión
 
 - **RN-026** La comisión es del **5% sobre el valor del producto**, a cargo del

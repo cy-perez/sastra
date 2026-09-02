@@ -63,6 +63,12 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'publicar', renderMode: RenderMode.Server },
   { path: 'publicar/:id', renderMode: RenderMode.Server },
   { path: 'mis-publicaciones', renderMode: RenderMode.Server },
+  // HU-011, la lista propia de favoritos. En servidor como todo lo demas: alli no hay
+  // cookie de nadie, asi que lo que sale es el esqueleto y la lista llega al hidratar,
+  // que es lo correcto para algo privado. No se usa RenderMode.Client aunque seria lo
+  // natural, por lo mismo que anota `role.guard.ts`: APP_CONFIG llega por el estado
+  // transferido y una ruta que no se renderiza en servidor arranca sin configuracion.
+  { path: 'mis-favoritos', renderMode: RenderMode.Server },
   // HU-003, el asistente de captura. Cuelga del formulario y se renderiza en servidor por
   // lo mismo que el: APP_CONFIG llega por el estado transferido y sin el no arranca.
   { path: 'publicar/:id/capturar', renderMode: RenderMode.Server },

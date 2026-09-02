@@ -1,0 +1,66 @@
+<h1 class="tipo-h1">{{ 'catalog.favorites.title' | transloco }}</h1>
+
+@if (cargando()) {
+  <p class="solo-lectores" role="status">{{ 'catalog.favorites.loading' | transloco }}</p>
+  <ul class="favoritos__rejilla" aria-hidden="true">
+    @for (hueco of huecos; track hueco) {
+      <li><p class="esqueleto favoritos__esqueleto"></p></li>
+    }
+  </ul>
+} @else if (!haySesion()) {
+  <!--
+    Criterio 16. Se explica y se ofrece entrar; no se redirige. Una redireccion desde una
+    direccion que alguien escribio a proposito hace pensar que se equivoco.
+  -->
+  <p class="tipo-cuerpo">{{ 'catalog.favorites.signedOut' | transloco }}</p>
+  <p>
+    <a class="btn btn-primario" routerLink="/ingresar">
+      {{ 'catalog.favorites.signIn' | transloco }}
+    </a>
+  </p>
+} @else if (fallo()) {
+  <div role="alert">
+    <p class="tipo-cuerpo">{{ 'catalog.favorites.error' | transloco }}</p>
+    <button type="button" class="btn btn-secundario" (click)="reintentar()">
+      {{ 'catalog.favorites.retry' | transloco }}
+    </button>
+  </div>
+} @else if (vacio()) {
+  <!--
+    Criterio 15: el vacio es una pantalla y no una linea. Es lo primero que ve todo el
+    mundo, porque todo el mundo empieza sin favoritos, y explica para que sirve la lista
+    antes de llevar al catalogo.
+  -->
+  <div class="favoritos__vacio">
+    <h2 class="tipo-titulo-tarjeta">{{ 'catalog.favorites.empty.title' | transloco }}</h2>
+    <p class="tipo-cuerpo">{{ 'catalog.favorites.empty.body' | transloco }}</p>
+    <p>
+      <a class="btn btn-primario" routerLink="/catalogo">
+        {{ 'catalog.favorites.empty.action' | transloco }}
+      </a>
+    </p>
+  </div>
+} @else {
+  <p class="tipo-cuerpo favoritos__intro">{{ 'catalog.favorites.intro' | transloco }}</p>
+
+  <ul class="favoritos__rejilla">
+    @for (publicacion of publicaciones(); track publicacion.id; let primera = $first) {
+      <li>
+        <sendik-product-card [publicacion]="publicacion" [primera]="primera" />
+      </li>
+    }
+  </ul>
+
+  @if (hayMas()) {
+    <div class="favoritos__mas">
+      <button
+        type="button"
+        class="btn btn-secundario"
+        [disabled]="trayendoMas()"
+        (click)="verMas()"
+      >
+        {{ 'catalog.favorites.more' | transloco }}
+      </button>
+    </div>
+  }
+}

@@ -17,6 +17,7 @@ import { MOTIVOS_DE_RECHAZO_DE_PUBLICACION } from '../../../shared/domain/listin
 import { UndoAction, type DecisionDeshecha } from '../../../shared/ui/moderation/undo-action';
 import { CatalogStore } from '../application/catalog.store';
 import { ModerationStore } from '../application/moderation.store';
+import { FavoriteToggle } from './favorite-toggle';
 import type { PublicListing } from '../domain/public-listing';
 import {
   ofreceVisor,
@@ -42,7 +43,7 @@ import {
 @Component({
   selector: 'sendik-product-page',
   standalone: true,
-  imports: [RouterLink, SpinViewer, TranslocoPipe, UndoAction],
+  imports: [FavoriteToggle, RouterLink, SpinViewer, TranslocoPipe, UndoAction],
   templateUrl: './product-page.html',
   styleUrl: './product-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

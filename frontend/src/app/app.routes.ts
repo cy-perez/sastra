@@ -75,6 +75,22 @@ export const routes: Routes = [
       import('./features/catalog/presentation/seller-page').then((m) => m.SellerPage),
   },
   {
+    // HU-011. La lista propia de favoritos.
+    //
+    // Sin guard, y es deliberado: `exigirRol` sirve una pagina de «no existe» a quien no
+    // pasa, y aqui no hay nada que esconder —que exista una lista de favoritos no es un
+    // secreto—. Lo que hace falta es explicar y ofrecer entrar, que es el criterio 16, y
+    // eso lo hace la pantalla.
+    //
+    // Existe aunque FEATURE_CATALOG este apagada, igual que las tres del catalogo: la API
+    // responde 404 y la pantalla muestra su estado de error.
+    path: 'mis-favoritos',
+    title: 'meta.favorites.title',
+    data: { descriptionKey: 'meta.favorites.description' },
+    loadComponent: () =>
+      import('./features/catalog/presentation/favorites-page').then((m) => m.FavoritesPage),
+  },
+  {
     path: 'registro',
     title: 'meta.register.title',
     data: { descriptionKey: 'meta.register.description' },

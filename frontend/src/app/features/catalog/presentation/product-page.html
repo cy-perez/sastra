@@ -74,6 +74,16 @@
     <div class="ficha__datos">
       <h1 class="tipo-h1">{{ producto.product.title }}</h1>
 
+      <!--
+        HU-011. Junto al titulo y no al fondo de la ficha: en un telefono tiene que verse
+        sin desplazar, que es lo que la historia pide del control.
+
+        No lleva @if sobre la sesion: se ofrece tambien a quien no la tiene (criterio 7) y
+        pulsarlo lleva a entrar. Quien decide si se pinta es el propio componente, con lo
+        que responde el servidor sobre si esa publicacion se puede guardar.
+      -->
+      <sendik-favorite-toggle [publicacion]="producto.id" />
+
       @if (precio(); as valor) {
         <p class="precio ficha__precio">{{ valor }}</p>
       }

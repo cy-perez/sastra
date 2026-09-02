@@ -1,0 +1,23 @@
+:host {
+  display: block;
+}
+
+/* El destino tactil llega a 44px por el relleno y no por una altura fija: asi crece con
+   el texto cuando alguien agranda la letra. */
+.favorito__boton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--esp-8);
+  min-height: var(--destino-tactil);
+}
+
+/* Marcado: borde mas marcado ademas del icono relleno. Dos senales, ninguna de color. */
+.favorito__boton--marcado {
+  border-color: var(--color-texto);
+  font-weight: var(--peso-fuerte);
+}
+
+.favorito__error {
+  margin-top: var(--esp-8);
+  color: var(--color-error);
+}

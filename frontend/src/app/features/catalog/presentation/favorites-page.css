@@ -1,0 +1,51 @@
+/* `grid-column` es obligatorio: <main> es una rejilla y sin asignar carril la pagina cae
+   en el de sangria. Y sin `margin: 0 auto`, que en un elemento de rejilla anula el
+   estirado. Es lo mismo que hace el catalogo, y por lo mismo. */
+:host {
+  display: block;
+  grid-column: content;
+  max-width: var(--ancho-max);
+  padding: var(--esp-24) var(--esp-16);
+}
+
+.favoritos__intro {
+  color: var(--color-texto-suave);
+  margin-top: var(--esp-8);
+  margin-bottom: var(--esp-24);
+}
+
+/* La misma rejilla fluida del catalogo: mismas tarjetas, mismo minimo, mismo numero de
+   columnas segun el ancho. No se estrena nada. */
+.favoritos__rejilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--ancho-tarjeta-min), 1fr));
+  gap: var(--esp-24) var(--esp-16);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.favoritos__esqueleto {
+  aspect-ratio: var(--relacion-foto);
+  width: 100%;
+  height: auto;
+}
+
+/* El vacio ocupa la pantalla en vez de quedarse pegado al titulo: es lo primero que ve
+   todo el mundo y tiene que leerse como una pagina, no como un aviso. */
+.favoritos__vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--esp-16);
+  text-align: center;
+  padding: var(--esp-48) var(--esp-16);
+  max-width: var(--ancho-texto);
+  margin: 0 auto;
+}
+
+.favoritos__mas {
+  display: flex;
+  justify-content: center;
+  margin-top: var(--esp-32);
+}

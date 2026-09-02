@@ -110,6 +110,10 @@
     "sellerProfile": {
       "title": "{{nombre}}",
       "description": "What {{nombre}} sells on Sendik."
+    },
+    "favorites": {
+      "title": "Your favorites · Sendik",
+      "description": "The listings you saved on Sendik."
     }
   },
   "layout": {
@@ -1252,6 +1256,32 @@
       "frame": "View at {{grados}} degrees",
       "fallbackAlt": "{{titulo}}, front view",
       "roleDescription": "rotating viewer"
+    },
+    "favorite": {
+      "add": "Save",
+      "remove": "Remove from favorites",
+      "saved": "Saved to your favorites",
+      "notSaved": "Not in your favorites",
+      "errors": {
+        "own": "This listing is yours, so you cannot save it to your favorites.",
+        "unavailable": "This listing is no longer available.",
+        "failed": "We could not save the change. Please try again."
+      }
+    },
+    "favorites": {
+      "title": "Your favorites",
+      "intro": "What you saved, most recent first.",
+      "loading": "Loading your favorites",
+      "error": "We could not load your favorites. Please try again.",
+      "retry": "Try again",
+      "more": "Show more",
+      "signedOut": "Your favorites are yours and nobody else sees them. Sign in to view them.",
+      "signIn": "Sign in",
+      "empty": {
+        "title": "You have not saved anything yet",
+        "body": "Save what catches your eye and find it again here, all in one place. Only you can see this list.",
+        "action": "Browse the catalog"
+      }
     }
   },
   "moderation": {

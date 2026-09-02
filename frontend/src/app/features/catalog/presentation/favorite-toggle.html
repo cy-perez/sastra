@@ -1,0 +1,41 @@
+<!--
+  Un <button> de verdad y no un div con rol: el teclado lo alcanza y lo activa sin que
+  nadie escriba un manejador de tecla (criterio 17).
+
+  aria-pressed dice si esta marcado. Es lo que permite anunciar el estado sin repetirlo
+  en el texto, que describe la accion -que pasa si lo pulsas- y no el estado.
+-->
+@if (seOfrece()) {
+  <div class="favorito">
+    <button
+      type="button"
+      class="btn btn-secundario favorito__boton"
+      [class.favorito__boton--marcado]="marcado()"
+      [attr.aria-pressed]="marcado()"
+      [disabled]="enCurso()"
+      (click)="pulsar()"
+    >
+      <!--
+        Contorno o relleno, no dos colores. El icono es el mismo trazo de siempre y lo que
+        cambia es si esta lleno, que se ve igual sin percibir color (criterio 17).
+      -->
+      <svg class="icono" [class.icono--relleno]="marcado()" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 4h16v16l-8-5-8 5z" />
+      </svg>
+
+      {{ etiqueta() | transloco }}
+    </button>
+
+    <!--
+      role="status" y no "alert": el cambio de estado es informacion, no una interrupcion.
+      El error si es un alert, mas abajo, porque ahi algo no salio como se pidio.
+    -->
+    <p class="solo-lectores" role="status">
+      {{ (marcado() ? 'catalog.favorite.saved' : 'catalog.favorite.notSaved') | transloco }}
+    </p>
+
+    @if (error(); as clave) {
+      <p class="favorito__error tipo-secundario" role="alert">{{ clave | transloco }}</p>
+    }
+  </div>
+}

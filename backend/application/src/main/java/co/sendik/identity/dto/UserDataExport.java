@@ -28,7 +28,11 @@ import org.jspecify.annotations.Nullable;
  *     momento corresponde
  */
 public record UserDataExport(
-        Instant generado, Cuenta cuenta, List<Consentimiento> consentimientos, List<Sesion> sesiones) {
+        Instant generado,
+        Cuenta cuenta,
+        List<Consentimiento> consentimientos,
+        List<Sesion> sesiones,
+        List<Favorito> favoritos) {
 
     /**
      * @param ciudad nula si nunca se puso o si se quito. Se emite igual con valor
@@ -56,4 +60,19 @@ public record UserDataExport(
 
     /** Las mismas que muestra el criterio 17, y por el mismo motivo sin la IP. */
     public record Sesion(@Nullable String navegador, Instant iniciada, Instant expira) {}
+
+    /**
+     * Una publicacion guardada, y cuando se guardo. HU-011.
+     *
+     * <p><strong>Salen todas, tambien las que la lista ya no ensena.</strong> RN-071 hace
+     * que un favorito cuya publicacion se vendio o se archivo deje de verse, y aqui si
+     * aparece: lo que Sendik guarda de esta persona es el par y su fecha, y el derecho a
+     * conocer es sobre lo que hay, no sobre lo que se muestra.
+     *
+     * <p>Va el identificador de la publicacion y no su titulo. El titulo es del vendedor
+     * —puede cambiar, y desaparece cuando se archiva—, asi que copiarlo aqui seria
+     * entregar como dato propio algo que no lo es y que ademas podria estar viejo. Lo que
+     * es de esta persona es que guardo eso, y cuando.
+     */
+    public record Favorito(String publicacion, Instant marcadoEl) {}
 }

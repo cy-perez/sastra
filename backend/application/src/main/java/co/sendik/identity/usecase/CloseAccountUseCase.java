@@ -6,6 +6,7 @@ import co.sendik.identity.exception.CloseConfirmationMismatchException;
 import co.sendik.identity.model.User;
 import co.sendik.identity.port.out.MailSender;
 import co.sendik.identity.port.out.RefreshTokenRepository;
+import co.sendik.identity.port.out.UserFavorites;
 import co.sendik.identity.port.out.UserRepository;
 import co.sendik.shared.port.out.PublicFileStore;
 import java.time.Clock;
@@ -36,6 +37,7 @@ public class CloseAccountUseCase {
     private final RefreshTokenRepository refrescos;
     private final MailSender correo;
     private final PublicFileStore almacen;
+    private final UserFavorites favoritos;
     private final Clock reloj;
 
     public CloseAccountUseCase(
@@ -43,11 +45,13 @@ public class CloseAccountUseCase {
             RefreshTokenRepository refrescos,
             MailSender correo,
             PublicFileStore almacen,
+            UserFavorites favoritos,
             Clock reloj) {
         this.usuarios = usuarios;
         this.refrescos = refrescos;
         this.correo = correo;
         this.almacen = almacen;
+        this.favoritos = favoritos;
         this.reloj = reloj;
     }
 
@@ -63,6 +67,16 @@ public class CloseAccountUseCase {
         correo.enviarAvisoDeCuentaCerrada(cuenta);
 
         refrescos.revocarTodasDe(cuenta.id(), ahora);
+
+        // Los favoritos se van con la cuenta, y se borran en vez de anonimizarse. La fila
+        // de users sobrevive vaciada porque hay integridad referencial que sostener; un
+        // favorito sin dueno no le sirve a nadie y seguiria diciendo que a alguien le
+        // interesaba eso (HU-011, docs/operacion/datos-personales.md).
+        //
+        // Dentro de la misma transaccion que lo demas y antes de anonimizar: si esto
+        // fallara despues, la cuenta quedaria sin dueno y con los favoritos puestos.
+        favoritos.borrarDe(cuenta.id());
+
         usuarios.cerrarYAnonimizar(cuenta.id(), ahora);
 
         // La foto de perfil se borra del almacen, no solo la referencia de la fila.

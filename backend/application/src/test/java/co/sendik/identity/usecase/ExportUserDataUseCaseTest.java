@@ -22,6 +22,7 @@ import co.sendik.identity.model.UserLocale;
 import co.sendik.identity.model.UserStatus;
 import co.sendik.identity.port.out.ConsentRepository;
 import co.sendik.identity.port.out.RefreshTokenRepository;
+import co.sendik.identity.port.out.UserFavorites;
 import co.sendik.identity.port.out.UserRepository;
 import java.time.Clock;
 import java.time.Duration;
@@ -63,12 +64,16 @@ class ExportUserDataUseCaseTest {
     @Mock
     private RefreshTokenRepository refrescos;
 
+    @Mock
+    private UserFavorites favoritos;
+
     private ExportUserDataUseCase caso;
     private UserId usuario;
 
     @BeforeEach
     void prepararCaso() {
-        caso = new ExportUserDataUseCase(usuarios, consentimientos, refrescos, Clock.fixed(AHORA, ZoneOffset.UTC));
+        caso = new ExportUserDataUseCase(
+                usuarios, consentimientos, refrescos, favoritos, Clock.fixed(AHORA, ZoneOffset.UTC));
         usuario = UserId.nuevo();
     }
 
@@ -150,6 +155,25 @@ class ExportUserDataUseCaseTest {
         assertThat(caso.execute(usuario).consentimientos())
                 .extracting(UserDataExport.Consentimiento::documento, UserDataExport.Consentimiento::version)
                 .containsExactly(tuple("TERMS", "2026-08-01"), tuple("PRIVACY", "2026-08-02"));
+    }
+
+    /**
+     * Los favoritos son dato personal y entran en la descarga (HU-011,
+     * docs/operacion/datos-personales.md). Vienen de catalog por un puerto: la tabla no
+     * es de este contexto y este caso de uso no la lee.
+     */
+    @Test
+    void deberia_incluir_los_favoritos_HU_011() {
+        when(usuarios.buscarPorId(usuario)).thenReturn(Optional.of(cuentaCon(null, null)));
+        when(consentimientos.listarDe(usuario)).thenReturn(List.of());
+        when(refrescos.listarSesionesActivasDe(usuario, AHORA)).thenReturn(List.of());
+        when(favoritos.de(usuario))
+                .thenReturn(List.of(new UserDataExport.Favorito("una-publicacion", AHORA.minus(Duration.ofDays(2)))));
+
+        assertThat(caso.execute(usuario).favoritos())
+                .singleElement()
+                .extracting(UserDataExport.Favorito::publicacion, UserDataExport.Favorito::marcadoEl)
+                .containsExactly("una-publicacion", AHORA.minus(Duration.ofDays(2)));
     }
 
     @Test

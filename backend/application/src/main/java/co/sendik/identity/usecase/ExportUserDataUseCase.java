@@ -7,6 +7,7 @@ import co.sendik.identity.model.User;
 import co.sendik.identity.model.UserId;
 import co.sendik.identity.port.out.ConsentRepository;
 import co.sendik.identity.port.out.RefreshTokenRepository;
+import co.sendik.identity.port.out.UserFavorites;
 import co.sendik.identity.port.out.UserRepository;
 import java.time.Clock;
 import java.time.Instant;
@@ -27,13 +28,19 @@ public class ExportUserDataUseCase {
     private final UserRepository usuarios;
     private final ConsentRepository consentimientos;
     private final RefreshTokenRepository refrescos;
+    private final UserFavorites favoritos;
     private final Clock reloj;
 
     public ExportUserDataUseCase(
-            UserRepository usuarios, ConsentRepository consentimientos, RefreshTokenRepository refrescos, Clock reloj) {
+            UserRepository usuarios,
+            ConsentRepository consentimientos,
+            RefreshTokenRepository refrescos,
+            UserFavorites favoritos,
+            Clock reloj) {
         this.usuarios = usuarios;
         this.consentimientos = consentimientos;
         this.refrescos = refrescos;
+        this.favoritos = favoritos;
         this.reloj = reloj;
     }
 
@@ -68,6 +75,10 @@ public class ExportUserDataUseCase {
                 refrescos.listarSesionesActivasDe(usuario, ahora).stream()
                         .map(token ->
                                 new UserDataExport.Sesion(token.userAgent(), token.createdAt(), token.expiresAt()))
-                        .toList());
+                        .toList(),
+                // Los favoritos son dato personal: dicen que le interesa a una persona
+                // identificada (docs/operacion/datos-personales.md, HU-011). Vienen de
+                // catalog por un puerto, porque la tabla no es de este contexto.
+                favoritos.de(usuario));
     }
 }

@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.UUID;
@@ -108,6 +109,25 @@ class PublishingDisabledTest {
         // linea, la unica ruta del catalogo que se quedaba fuera del criterio 3 era la
         // que el formulario necesita para pintar su primer desplegable.
         mvc.perform(get("/api/v1/categories").with(jwt())).andExpect(status().isNotFound());
+    }
+
+    /**
+     * Los favoritos tampoco existen sin la bandera. HU-011, caso borde: sin catalogo no hay
+     * ficha ni lista, asi que no hay donde marcar.
+     *
+     * <p>Aqui no hacia falta tocar {@code SecurityConfig}, al reves que en las rutas de
+     * moderacion: la regla de {@code /api/v1/users/**} es "autenticado", asi que con token
+     * la peticion atraviesa la cadena, no encuentra manejador y sale el 404. Esta prueba es
+     * lo que fija esa propiedad: si alguien colgara estas rutas de un prefijo protegido por
+     * rol, empezarian a responder 403 y a confirmar que la funcionalidad esta ahi.
+     */
+    @Test
+    void no_deberia_existir_ninguna_ruta_de_favoritos_HU_011() throws Exception {
+        mvc.perform(get("/api/v1/users/me/favorites").with(jwt())).andExpect(status().isNotFound());
+        mvc.perform(get("/api/v1/users/me/favorites/" + CUALQUIERA).with(jwt())).andExpect(status().isNotFound());
+        mvc.perform(put("/api/v1/users/me/favorites/" + CUALQUIERA).with(jwt())).andExpect(status().isNotFound());
+        mvc.perform(delete("/api/v1/users/me/favorites/" + CUALQUIERA).with(jwt()))
+                .andExpect(status().isNotFound());
     }
 
     /**

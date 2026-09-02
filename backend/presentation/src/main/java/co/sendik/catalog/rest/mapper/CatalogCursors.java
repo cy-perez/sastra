@@ -2,60 +2,30 @@ package co.sendik.catalog.rest.mapper;
 
 import co.sendik.catalog.dto.CatalogCursor;
 import co.sendik.catalog.model.ListingId;
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.util.Base64;
 import org.jspecify.annotations.Nullable;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 
 /**
  * El cursor del catalogo, de par de valores a cadena opaca y vuelta. HU-009, criterio 3.
  *
- * <p><strong>Vive en el borde y no en {@code application}, y eso no es un detalle de
- * organizacion.</strong> {@link CatalogCursor} es la pregunta —desde cuando y desde cual—;
- * que viaje en base64 dentro de una URL es una decision de transporte. Poner el base64 en
- * el caso de uso ataria la aplicacion a HTTP, que es justo lo que la direccion de las
- * dependencias prohibe.
+ * <p>La mecanica del transporte —base64 de URL, el JSON de dentro y el rechazo de lo que no
+ * se entiende— vive en {@link Cursores} desde HU-011, porque la lista de favoritos necesita
+ * exactamente la misma y copiarla habria dejado dos sitios donde dejar de rechazar un
+ * cursor corrupto. Lo que se queda aqui es lo unico propio del catalogo: que ese par es una
+ * fecha de publicacion y una publicacion.
  *
- * <p><strong>Opaco a proposito.</strong> El cliente no lo lee ni lo construye: lo recibe y
- * lo devuelve. Asi el dia que el orden del catalogo cambie —y cambiara cuando llegue la
- * relevancia de Fase 3— el contenido del cursor cambia sin romper a nadie. Es tambien la
- * razon de que se codifique en lugar de mandar dos parametros sueltos: dos parametros
- * legibles invitan a que alguien los fabrique a mano y quedan en el contrato para siempre.
- *
- * <p>En base64 <strong>de URL</strong> y sin relleno: viaja en una cadena de consulta, y
- * el {@code +} del alfabeto normal se interpreta como espacio.
- *
- * <p>Cualquier cadena que no descifre es un 400 y no un tramo arbitrario. Un cursor
- * corrupto que se ignorara en silencio devolveria la primera pagina, y quien esta
- * recorriendo el catalogo volveria al principio sin enterarse.
+ * <p><strong>El tipo no se comparte y eso es lo importante.</strong> {@link CatalogCursor}
+ * y {@code FavoriteCursor} siguen siendo records distintos, asi que el compilador impide
+ * que el cursor de un listado sirva en el otro; si lo permitiera, pasar el de aqui a la
+ * lista de favoritos devolveria un tramo arbitrario en vez de un error.
  */
 public final class CatalogCursors {
-
-    private static final ObjectMapper JSON = new ObjectMapper();
-    private static final Base64.Encoder ENCODER = Base64.getUrlEncoder().withoutPadding();
-    private static final Base64.Decoder DECODER = Base64.getUrlDecoder();
-
-    /** Cuando se publico el ultimo elemento entregado. */
-    private static final String CAMPO_INSTANTE = "p";
-
-    /** Cual era, para desempatar. */
-    private static final String CAMPO_ID = "i";
 
     private CatalogCursors() {}
 
     public static @Nullable String texto(@Nullable CatalogCursor cursor) {
-        if (cursor == null) {
-            return null;
-        }
-
-        String json = JSON.createObjectNode()
-                .put(CAMPO_INSTANTE, cursor.publicadaEn().toString())
-                .put(CAMPO_ID, cursor.id().value().toString())
-                .toString();
-
-        return ENCODER.encodeToString(json.getBytes(StandardCharsets.UTF_8));
+        return cursor == null
+                ? null
+                : Cursores.texto(cursor.publicadaEn(), cursor.id().value());
     }
 
     /**
@@ -67,17 +37,7 @@ public final class CatalogCursors {
             return null;
         }
 
-        try {
-            JsonNode nodo = JSON.readTree(new String(DECODER.decode(texto), StandardCharsets.UTF_8));
-
-            return new CatalogCursor(
-                    Instant.parse(nodo.get(CAMPO_INSTANTE).asString()),
-                    ListingId.de(nodo.get(CAMPO_ID).asString()));
-
-        } catch (RuntimeException e) {
-            // Se traga el motivo a proposito: decirle a quien manda un cursor inventado
-            // que le falta el campo "p" es ensenarle a fabricar uno valido.
-            throw new IllegalArgumentException("El cursor no es valido", e);
-        }
+        Cursores.Par par = Cursores.par(texto);
+        return new CatalogCursor(par.instante(), new ListingId(par.id()));
     }
 }

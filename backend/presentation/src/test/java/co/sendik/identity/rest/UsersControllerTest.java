@@ -237,7 +237,10 @@ class UsersControllerTest {
                                 List.of("BUYER"),
                                 AHORA),
                         List.of(new UserDataExport.Consentimiento("PRIVACY", "2026-08-01", AHORA)),
-                        List.of()));
+                        List.of(),
+                        // HU-011: los favoritos entran en la descarga. Con una lista y no
+                        // vacia, para que el archivo que esta prueba inspecciona los lleve.
+                        List.of(new UserDataExport.Favorito(UUID.randomUUID().toString(), AHORA))));
 
         MvcResult resultado = mvc.perform(get("/api/v1/users/me/export"))
                 .andExpect(status().isOk())

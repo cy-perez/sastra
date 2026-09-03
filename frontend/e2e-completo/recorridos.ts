@@ -136,6 +136,31 @@ export async function entrarComoModeradora(page: Page): Promise<void> {
 }
 
 /**
+ * Espera a que la bandeja termine de cargar, sea cual sea el resultado.
+ *
+ * <p>Hace falta porque `isVisible()` no espera: responde por lo que hay en pantalla en ese
+ * instante. Preguntado nada más llegar, mientras la pantalla todavía muestra el esqueleto,
+ * dice que no está la fila aunque vaya a estarlo, y el recorrido se va a buscarla a una
+ * página siguiente que no existe. Era una carrera, y de ahí salían las pruebas que fallaban
+ * unas veces sí y otras no.
+ *
+ * <p>Se espera a cualquiera de los tres finales de la carga —la lista, el estado vacío o el
+ * error— y no solo a la lista: si la bandeja queda vacía o rompe, esperar la lista sería
+ * esperar para siempre, y quien lea el fallo merece verlo en la comprobación que importa y
+ * no en un tiempo agotado aquí.
+ */
+async function esperarAQueAterriceLaBandeja(page: Page): Promise<void> {
+  // Las filas se reconocen por lo que todas dicen —desde cuándo espera la solicitud— que es
+  // texto de la pantalla y no una clase de CSS. El esqueleto no cuenta: está oculto a la
+  // accesibilidad, así que ningún localizador por rol lo alcanza.
+  const algunaFila = page.getByRole('link').filter({ hasText: 'Espera desde' }).first();
+  const vacia = page.getByText('No hay nada por revisar');
+  const rota = page.getByText('No pudimos cargar la bandeja');
+
+  await expect(algunaFila.or(vacia).or(rota)).toBeVisible();
+}
+
+/**
  * Abre en la bandeja la solicitud de un titular concreto, buscándola por sus páginas.
  *
  * <p><strong>Recorre, y no mira solo la primera página.</strong> La bandeja es FIFO —lo
@@ -160,15 +185,26 @@ async function abrirEnLaBandeja(page: Page, titular: string): Promise<void> {
   // Acotado: sin tope, una bandeja que devolviera siempre la página llena daría una vuelta
   // infinita, y el fallo sería un tiempo de espera agotado sin ninguna pista de por qué.
   for (let numeroDePagina = 1; numeroDePagina <= 50; numeroDePagina++) {
+    await esperarAQueAterriceLaBandeja(page);
+
     if (await fila.first().isVisible()) {
       await fila.first().click();
       await expect(page.getByRole('button', { name: 'Aprobar' })).toBeVisible();
       return;
     }
 
+    // La navegación de páginas solo se pinta cuando hay a dónde ir: con una sola página
+    // no está en el DOM, que es el caso normal contra una base recién levantada. Se
+    // pregunta primero si está, porque cualquier cosa que se le pida a un localizador que
+    // no resuelve —`getAttribute` incluida— espera a que aparezca, y aquí eso significa
+    // agotar el tiempo de la prueba esperando algo que no va a llegar.
+    if (!(await siguiente.isVisible())) {
+      break;
+    }
+
     // `aria-disabled` y no `disabled`: los botones siguen habilitados a propósito para no
     // perder el foco al llegar al extremo, así que preguntar por `isDisabled()` diría
-    // siempre que no. Y si no hay paginación, el atributo no existe: tampoco hay a dónde ir.
+    // siempre que no.
     if ((await siguiente.getAttribute('aria-disabled')) !== 'false') {
       break;
     }

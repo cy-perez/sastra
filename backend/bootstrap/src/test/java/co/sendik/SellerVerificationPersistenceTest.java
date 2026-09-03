@@ -333,7 +333,8 @@ class SellerVerificationPersistenceTest {
         List<SellerVerificationId> mias = new ArrayList<>();
 
         for (int cuantas = 0; cuantas < 3; cuantas++) {
-            SellerVerification enviada = completaDe(cuentaNueva(), cedulaNueva()).enviarARevision(ahora);
+            SellerVerification enviada =
+                    completaDe(cuentaNueva(), cedulaNueva()).enviarARevision(ahora);
             verificaciones.guardar(enviada);
             mias.add(enviada.id());
         }

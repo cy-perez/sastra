@@ -114,8 +114,8 @@ public class VerificationReviewController {
     public PendingVerificationsPage pendientes(
             @AuthenticationPrincipal Jwt token,
             @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
-            @RequestParam(name = "size", defaultValue = "20") @Min(1)
-                    @Max(ListPendingVerificationsQuery.TAMANO_MAXIMO) int size) {
+            @RequestParam(name = "size", defaultValue = "20") @Min(1) @Max(ListPendingVerificationsQuery.TAMANO_MAXIMO)
+                    int size) {
 
         UserId quienMira = moderadorDe(token);
 

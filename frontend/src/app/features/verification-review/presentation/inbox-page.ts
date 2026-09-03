@@ -33,6 +33,7 @@ export class InboxPage {
   protected readonly pagina = this.store.pagina;
   protected readonly hayMas = this.store.hayMas;
   protected readonly hayAnterior = this.store.hayAnterior;
+  protected readonly actualizando = this.store.actualizando;
 
   /** Constante y no un literal en la plantilla, que se recrearía en cada ciclo. */
   protected readonly filasDelEsqueleto = [1, 2, 3];

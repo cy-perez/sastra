@@ -313,6 +313,63 @@ describe('InboxPage', () => {
   });
 
   /**
+   * <strong>El foco no se pierde al pasar de página.</strong>
+   *
+   * <p>La consulta lleva la página en su clave, así que cambiarla la devolvía a `pending`:
+   * el bloque de paginación se desmontaba con el foco dentro y `document.activeElement`
+   * acababa en `body`. Quien navega con teclado tenía que tabular desde el principio del
+   * documento en cada página.
+   *
+   * <p>Es la misma lección que ya pagó el `aria-disabled` de estos botones, que la resolvió
+   * para «llegar al extremo» y no para «pasar de página», que es el uso normal. Lo que lo
+   * sujeta es que la página anterior se queda de relleno mientras llega la siguiente.
+   */
+  it('no le quita el foco a «Siguiente» mientras carga la página siguiente', async () => {
+    const fixture = await montar(paginaLlena().items, true);
+    const backend = TestBed.inject(HttpTestingController);
+
+    const siguiente = botonDe(fixture, 'Siguiente');
+    siguiente?.focus();
+    expect(document.activeElement).toBe(siguiente);
+
+    siguiente?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    // Justo aquí: la petición sigue en vuelo y es el momento en que se desmontaba.
+    expect(navegacionDe(fixture)).not.toBeNull();
+    expect(document.activeElement).toBe(siguiente);
+
+    esperarBandeja(backend).flush(paginaLlena(1));
+    await asentar(fixture);
+
+    expect(document.activeElement).toBe(botonDe(fixture, 'Siguiente'));
+  });
+
+  /**
+   * Mientras llega la página siguiente, lo que se ve es la anterior. Sin decirlo, un lector
+   * de pantalla lee filas viejas como si fueran las nuevas.
+   */
+  it('declara la lista ocupada mientras llega la página siguiente', async () => {
+    const fixture = await montar(paginaLlena().items, true);
+    const backend = TestBed.inject(HttpTestingController);
+
+    const lista = () => fixture.nativeElement.querySelector('ul.lista');
+    expect(lista()?.getAttribute('aria-busy')).toBe('false');
+
+    botonDe(fixture, 'Siguiente')?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(lista()?.getAttribute('aria-busy')).toBe('true');
+
+    esperarBandeja(backend).flush(paginaLlena(1));
+    await asentar(fixture);
+
+    expect(lista()?.getAttribute('aria-busy')).toBe('false');
+  });
+
+  /**
    * <strong>La forma peligrosa del mismo defecto.</strong> En la página 0 la navegación
    * entera desaparece, así que no hay nada que pulsar. En la página 1 sí está —hace falta
    * «Anterior» para volver— y «Siguiente» sigue en el DOM y sigue recibiendo el clic,

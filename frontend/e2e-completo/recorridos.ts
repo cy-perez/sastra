@@ -148,6 +148,11 @@ export async function entrarComoModeradora(page: Page): Promise<void> {
  * error— y no solo a la lista: si la bandeja queda vacía o rompe, esperar la lista sería
  * esperar para siempre, y quien lea el fallo merece verlo en la comprobación que importa y
  * no en un tiempo agotado aquí.
+ *
+ * <p>Y se espera además a que la lista deje de estar ocupada. Hizo falta al arreglar el
+ * foco: la bandeja conserva la página anterior mientras llega la siguiente, así que ver
+ * filas dejó de significar que sean las de esta página. Sin esto, el recorrido decide
+ * sobre contenido viejo y se salta una página entera.
  */
 async function esperarAQueAterriceLaBandeja(page: Page): Promise<void> {
   // Las filas se reconocen por lo que todas dicen —desde cuándo espera la solicitud— que es
@@ -158,6 +163,12 @@ async function esperarAQueAterriceLaBandeja(page: Page): Promise<void> {
   const rota = page.getByText('No pudimos cargar la bandeja');
 
   await expect(algunaFila.or(vacia).or(rota)).toBeVisible();
+
+  // Y que lo que se ve sea de ahora. Al cambiar de página la bandeja conserva la anterior
+  // en pantalla —para no desmontar la paginación con el foco dentro— así que «hay filas»
+  // ya no significa «son las de esta página». Mientras llega la nueva, la lista se declara
+  // ocupada, que es la misma señal que recibe un lector de pantalla.
+  await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
 }
 
 /**

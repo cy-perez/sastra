@@ -34,7 +34,10 @@
     <p>{{ 'verificationReview.inbox.empty.body' | transloco }}</p>
   </div>
 } @else {
-  <ul class="lista">
+  <!-- `aria-busy` mientras llega la página siguiente: la lista que se ve es todavía la
+       anterior, y sin esta señal un lector de pantalla lee filas viejas como si fueran
+       las nuevas. Va aquí y no en la paginación, que es lo que no cambia. -->
+  <ul class="lista" [attr.aria-busy]="actualizando()">
     @for (solicitud of pendientes(); track solicitud.id) {
       <li class="solicitud">
         <!-- El enlace envuelve toda la fila para que el destino táctil sea la fila

@@ -81,6 +81,18 @@ export async function registrar(page: Page, correo: string, nombre = 'Ana María
  * usa tambien quien todavia no tiene cuenta: ahi el 401 es la respuesta correcta y quien
  * llama decide que hacer con ella.
  */
+/**
+ * Rellena el formulario de ingreso y espera la respuesta.
+ *
+ * <p><strong>No comprueba que el ingreso saliera bien</strong>, y es a propósito: un 401 o
+ * un 429 también son respuestas, y {@link entrarComoModeradora} necesita que un ingreso
+ * fallido se tolere —así crea la cuenta la primera vez que corre la suite.
+ *
+ * <p>La consecuencia es que quien necesite la sesión abierta tiene que **comprobarlo
+ * después**, y comprobarlo afirmando lo que tiene que estar. Costó una corrida entenderlo:
+ * un ingreso que falla aquí no rompe nada, sigue de largo, y el fallo aparece cinco pasos
+ * más allá con un síntoma que no lo explica.
+ */
 export async function ingresar(page: Page, correo: string): Promise<void> {
   await page.goto('/ingresar');
   await page.getByLabel('Correo electrónico').fill(correo);
@@ -284,9 +296,21 @@ export async function dejarUnaVendedoraVerificada(page: Page, quien: string): Pr
   await salirSiHaySesion(page);
   await ingresar(page, correo);
 
+  // **Que la sesión quedó abierta.** `ingresar` no lo comprueba —no puede, ver su
+  // documentación— así que se afirma aquí, y se afirma sobre algo que solo existe con
+  // sesión. Sin esto, un ingreso que falla sigue adelante y el recorrido se rompe después
+  // en otro ayudante: en integración continua se vio como un `Título` que no llegaba
+  // nunca, cinco pasos más allá, porque no había sesión con la que crear el borrador.
+  await expect(page.getByRole('button', { name: 'Salir' })).toBeVisible();
+
   // Se comprueba el sello antes de seguir: sin verificacion, la pantalla lo dice en vez
   // de ofrecer el formulario (RN-011).
+  //
+  // **Se afirma también lo que tiene que estar, y no solo lo que no.** La ausencia del
+  // aviso se cumple igual en una pantalla que no es esta —la de ingresar, por ejemplo—,
+  // así que sola no distingue «está verificada» de «no llegamos aquí».
   await page.goto(RUTA_PUBLICAR);
+  await expect(page.getByLabel('Categoría')).toBeVisible();
   await expect(page.getByText('Verifícate como vendedor para poder publicar.')).toHaveCount(0);
 
   return correo;

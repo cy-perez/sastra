@@ -79,6 +79,27 @@ export default defineConfig({
   // producen no es el fallo que buscan.
   fullyParallel: false,
   workers: 1,
+
+  /**
+   * Un minuto por prueba, y no los treinta segundos que trae Playwright.
+   *
+   * <p>El valor por omision esta pensado para pruebas de una pantalla, y aqui una prueba
+   * es un recorrido entero: dejar una vendedora verificada -registro, correo, documento,
+   * selfie, cuenta, y la aprobacion por la bandeja- y encima publicar con sus ocho tomas.
+   * Eso ronda los diez segundos en local y el doble o mas en un corredor compartido, asi
+   * que estaba rozando el techo y cualquier lentitud lo pasaba.
+   *
+   * <p><strong>Se nota porque el fallo miente.</strong> Cuando el presupuesto se agota,
+   * Playwright culpa a la accion que estaba en vuelo, asi que el mismo problema aparecia
+   * unas veces como una espera de respuesta colgada y otras como un boton que no llegaba;
+   * dos causas distintas para el mismo intermitente, y las dos falsas. Los temporizadores
+   * de los servidores de aqui abajo -180 y 420 segundos- si estan puestos a conciencia;
+   * este era el unico que nadie habia elegido.
+   *
+   * <p>No tapa nada: una prueba que de verdad se cuelgue sigue fallando, solo que treinta
+   * segundos mas tarde.
+   */
+  timeout: 60_000,
   forbidOnly: Boolean(process.env['CI']),
   retries: process.env['CI'] ? 1 : 0,
   reporter: process.env['CI'] ? 'github' : 'list',

@@ -124,16 +124,6 @@
      que la rejilla no se descoloque y se vea cual falta. */
   --alto-min-toma-ausente: 200px;
 
-  /* Ancho de un bloque de texto centrado en una pantalla ancha (HU-011).
-
-     El estado vacio de los favoritos es una pantalla y no una linea: dos frases y una
-     accion, centradas en el carril de 1140px. Sin un tope, esas frases se estiran a todo
-     el ancho y se leen mal — la medida comoda de lectura esta entre 45 y 75 caracteres, y
-     este numero es donde cae con el cuerpo de Inter del sistema.
-
-     No es --ancho-max ni una fraccion suya: aquel es el carril de la pagina y este es
-     cuanto texto se pone en una linea, que son dos decisiones distintas. */
-  --ancho-texto: 480px;
 
   /* El esqueleto del detalle mientras carga. Un solo bloque y no ocho: la publicacion
      llega entera en una respuesta, asi que no hay estados intermedios que dibujar. */
@@ -387,7 +377,7 @@
 
    No abre la puerta a iconos rellenos por gusto: se usa solo donde un mismo icono
    tiene que decir "puesto" y "no puesto". */
-.icono--relleno {
+.icono-relleno {
   fill: currentColor;
 }
 

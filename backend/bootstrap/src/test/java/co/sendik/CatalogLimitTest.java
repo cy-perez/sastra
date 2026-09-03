@@ -51,13 +51,21 @@ class CatalogLimitTest {
                 .build();
     }
 
-    /** El detalle por campo, ademas del estado: quien manda mal dos parametros sabe cual. */
+    /**
+     * El detalle por campo, ademas del estado: quien manda mal dos parametros sabe cual.
+     *
+     * <p><strong>Y el nombre es el del contrato, no el del argumento Java.</strong>
+     * contrato-api.md dice que {@code field} es el campo que el cliente escribio. Salia
+     * {@code "limite"} —el identificador interno del servidor, en espanol— porque el
+     * argumento se llamaba distinto que su {@code @RequestParam}. Esta asercion es lo que
+     * lo fija.
+     */
     @Test
     void deberia_rechazar_con_400_un_limite_por_encima_del_tope() throws Exception {
         mvc.perform(get("/api/v1/listings").param("limit", "500"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("COMMON_VALIDATION_FAILED"))
-                .andExpect(jsonPath("$.errors[0].field").value("limite"))
+                .andExpect(jsonPath("$.errors[0].field").value("limit"))
                 .andExpect(jsonPath("$.errors[0].code").value("VALIDATION_MAX"));
     }
 

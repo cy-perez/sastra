@@ -1,4 +1,5 @@
-import { computed, Injectable, signal } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
+import { QueryClient } from '@tanstack/angular-query-experimental';
 
 import type { Session } from './session';
 
@@ -28,6 +29,8 @@ export type SessionStatus = 'desconocida' | 'anonima' | 'abierta';
 
 @Injectable({ providedIn: 'root' })
 export class SessionStore {
+  private readonly consultas = inject(QueryClient);
+
   private readonly sesion = signal<Session | null>(null);
 
   /**
@@ -87,9 +90,34 @@ export class SessionStore {
    * <p>Sirve para las dos cosas que acaban igual: cerrar sesion y descubrir que
    * no habia ninguna que recuperar. En ambos casos la respuesta pasa a ser
    * conocida, que es lo que saca a la interfaz del estado de espera.
+   *
+   * <p><strong>Y si habia sesion, se lleva por delante lo que el servidor habia
+   * respondido.</strong> El perfil, las sesiones abiertas y la lista de favoritos son
+   * datos privados que TanStack conserva en la cache de la pestana: sin borrarlos, quien
+   * entre despues en ese mismo navegador -sin recargar- los ve un instante antes de que
+   * llegue la respuesta suya, porque la cache se sirve primero y se revalida despues. En
+   * un equipo compartido «cerre sesion» tiene que significar que no queda nada
+   * recuperable (docs/operacion/datos-personales.md), y RN-070 dice que los favoritos no
+   * los ve nadie mas que quien los marco.
+   *
+   * <p><strong>Aqui y no en cada sitio que cierra sesion.</strong> Hay tres: el boton de
+   * salir, el cierre de cuenta y el refresco que caduca. El primer intento lo puso solo en
+   * el boton y los otros dos se quedaron fuera; centralizado, cualquier camino que acabe
+   * sin sesion lo arrastra.
+   *
+   * <p><strong>Solo cuando de verdad habia sesion.</strong> Este metodo lo llama tambien
+   * el arranque de cada visita anonima al descubrir que no hay nada que recuperar, y
+   * purgar ahi tiraria la cache que llega del renderizado en servidor: cada pagina
+   * publica volveria a pedir lo que acababa de recibir dentro del HTML.
    */
   clear(): void {
+    const habiaSesion = this.sesion() !== null;
+
     this.sesion.set(null);
     this.resuelta.set(true);
+
+    if (habiaSesion) {
+      this.consultas.removeQueries();
+    }
   }
 }

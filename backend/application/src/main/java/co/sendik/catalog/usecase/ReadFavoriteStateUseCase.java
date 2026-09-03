@@ -5,7 +5,6 @@ import co.sendik.catalog.dto.FavoriteState;
 import co.sendik.catalog.model.Listing;
 import co.sendik.catalog.port.out.Favorites;
 import co.sendik.catalog.port.out.ListingRepository;
-import java.util.Optional;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -48,21 +47,9 @@ public class ReadFavoriteStateUseCase {
         boolean sePuede = publicaciones
                 .buscar(consulta.publicacion())
                 .filter(Listing::esVisible)
-                .filter(publicacion -> !esSuya(consulta, publicacion))
+                .filter(publicacion -> !publicacion.esDe(consulta.quien()))
                 .isPresent();
 
         return new FavoriteState(marcado, sePuede);
-    }
-
-    /**
-     * Los dos identificadores envuelven el mismo UUID y son tipos distintos: la
-     * comparacion baja a los valores, igual que en {@code Favorite}. Aqui se repite
-     * porque el dominio no puede exponer su comprobacion sin construir el favorito, y
-     * construirlo lanzaria en el caso que esta consulta tiene que responder con calma.
-     */
-    private static boolean esSuya(FavoriteCommand consulta, Listing publicacion) {
-        return Optional.of(publicacion.sellerId().value())
-                .filter(vendedor -> vendedor.equals(consulta.quien().value()))
-                .isPresent();
     }
 }

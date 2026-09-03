@@ -18,8 +18,9 @@ import java.util.UUID;
  *
  * <p>Que sea un tipo distinto de {@link SellerId} es justo lo que hace visible RN-072: la
  * comparacion entre quien marca y quien vende no puede escribirse por descuido, hay que
- * bajar a los UUID a proposito. Lo hace {@link Favorite}, que es el unico sitio donde esa
- * regla vive.
+ * bajar a los UUID a proposito. Lo hace {@link Listing#esDe}, que es el unico sitio donde
+ * esa comparacion vive; {@link Favorite} y la lectura del estado del control preguntan por
+ * ella en vez de repetirla.
  */
 public record BuyerId(UUID value) {
 

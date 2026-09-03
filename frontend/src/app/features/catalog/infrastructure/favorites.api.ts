@@ -28,6 +28,13 @@ export interface FavoriteState {
  * persona: el identificador sale del token, nunca de la ruta.
  *
  * <p>El cursor viaja opaco y no se interpreta. Se recibe, se guarda y se devuelve.
+ *
+ * <p><strong>El identificador se codifica al meterlo en la ruta.</strong> Hoy llega
+ * siempre de la respuesta del servidor y no de un parámetro de dirección, así que no hay
+ * nada que escapar; se hace igual porque el día que alguien le pase un valor que venga de
+ * la barra de direcciones —que el enrutador entrega ya descodificado, así que un `%2F`
+ * llega como barra— estos tres métodos serían la forma de emitir escrituras con el token
+ * de quien mira contra rutas que nadie eligió.
  */
 @Injectable({ providedIn: 'root' })
 export class FavoritesApi {
@@ -40,12 +47,16 @@ export class FavoritesApi {
    * operación que se puede repetir sin cambiar el resultado.
    */
   async marcar(listingId: string): Promise<void> {
-    await firstValueFrom(this.http.put<void>(`users/me/favorites/${listingId}`, {}));
+    await firstValueFrom(
+      this.http.put<void>(`users/me/favorites/${encodeURIComponent(listingId)}`, {}),
+    );
   }
 
   /** Quita. Idempotente también: quitar lo que no está responde 204. */
   async quitar(listingId: string): Promise<void> {
-    await firstValueFrom(this.http.delete<void>(`users/me/favorites/${listingId}`));
+    await firstValueFrom(
+      this.http.delete<void>(`users/me/favorites/${encodeURIComponent(listingId)}`),
+    );
   }
 
   /**
@@ -55,7 +66,9 @@ export class FavoritesApi {
    * una ficha descargaría trescientas publicaciones para mirar una.
    */
   async estado(listingId: string): Promise<FavoriteState> {
-    return firstValueFrom(this.http.get<FavoriteState>(`users/me/favorites/${listingId}`));
+    return firstValueFrom(
+      this.http.get<FavoriteState>(`users/me/favorites/${encodeURIComponent(listingId)}`),
+    );
   }
 
   /** La lista propia, paginada por cursor igual que el catálogo. */

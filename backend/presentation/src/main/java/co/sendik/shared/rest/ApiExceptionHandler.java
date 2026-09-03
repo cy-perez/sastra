@@ -136,8 +136,7 @@ public class ApiExceptionHandler {
      * entero, que es donde vive la aplicacion.
      *
      * <p>Devuelve {@code errors} con una entrada por restriccion incumplida, igual que su
-     * gemelo de los cuerpos: el nombre del parametro sale del ultimo nodo de la ruta de la
-     * propiedad —{@code catalogo.limite} es «el argumento limite del metodo catalogo»— y el
+     * gemelo de los cuerpos. El nombre sale del ultimo nodo de la ruta de la propiedad y el
      * codigo, del nombre de la anotacion. Sin eso, quien manda dos parametros mal recibe un
      * error que no dice cual de los dos.
      */
@@ -429,9 +428,21 @@ public class ApiExceptionHandler {
     /**
      * El nombre del parametro, no la ruta entera de la propiedad.
      *
-     * <p>La ruta es {@code metodo.argumento} —por ejemplo {@code catalogo.limite}—, y el
-     * nombre del metodo es un detalle de implementacion que no tiene por que salir en una
+     * <p>La ruta es {@code metodo.argumento} —por ejemplo {@code lista.limit}—, y el nombre
+     * del metodo es un detalle de implementacion que no tiene por que salir en una
      * respuesta publica.
+     *
+     * <p><strong>Lo que queda es el nombre del argumento Java, y por eso los argumentos de
+     * estos parametros se llaman igual que el parametro HTTP.</strong> Es la condicion que
+     * hace correcto lo que sale en {@code errors}: contrato-api.md dice que {@code field}
+     * es el campo que el cliente escribio, y {@code ConstraintViolation} no trae la
+     * anotacion {@code @RequestParam} de la que leer su {@code name}. Llegaron a llamarse
+     * distinto —{@code @RequestParam(name = "limit") int limite}— y la respuesta publica
+     * salia con {@code "field": "limite"}: el identificador interno del servidor, en
+     * espanol, y un nombre que el cliente no habia escrito nunca.
+     *
+     * <p>Un parametro nuevo cuyo argumento no se llame como su {@code name} vuelve a
+     * filtrarlo. Lo fija {@code CatalogLimitTest}, que afirma el nombre del contrato.
      */
     private static String nombreDe(ConstraintViolation<?> violacion) {
         String ruta = violacion.getPropertyPath().toString();

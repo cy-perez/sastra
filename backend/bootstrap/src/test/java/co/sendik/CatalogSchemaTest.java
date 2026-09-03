@@ -147,4 +147,37 @@ class CatalogSchemaTest {
     private long contar(String sql) {
         return jdbc.sql(sql).query(Long.class).single();
     }
+
+    /**
+     * El indice de la lista de favoritos. HU-011, criterios 11 y 12.
+     *
+     * <p>{@code V16} lo justifica en veinte lineas como «la consulta escrita como indice»,
+     * y sin esta prueba se podia borrar sin que fallara nada: la consulta seguiria dando el
+     * resultado correcto, ordenando en memoria la lista entera de alguien antes de entregar
+     * las primeras veinticuatro.
+     *
+     * <p>Se comprueban tambien las tres columnas y su orden, que es lo que lo hace servir
+     * para esta consulta y no para otra.
+     */
+    @Test
+    void deberia_tener_el_indice_de_la_lista_de_favoritos() {
+        String definicion = jdbc.sql("SELECT indexdef FROM pg_indexes WHERE indexname = :nombre")
+                .param("nombre", "idx_favorites_recent")
+                .query(String.class)
+                .single();
+
+        assertThat(definicion).contains("user_id", "created_at DESC", "listing_id DESC");
+    }
+
+    /** Y la clave primaria compuesta, que es lo que sostiene la idempotencia del criterio 4. */
+    @Test
+    void deberia_tener_la_clave_primaria_sobre_el_par() {
+        String definicion = jdbc.sql("""
+                        SELECT pg_get_constraintdef(oid)
+                        FROM pg_constraint
+                        WHERE conrelid = 'favorites'::regclass AND contype = 'p'
+                        """).query(String.class).single();
+
+        assertThat(definicion).isEqualTo("PRIMARY KEY (user_id, listing_id)");
+    }
 }

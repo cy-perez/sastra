@@ -1,5 +1,6 @@
 package co.sendik.config;
 
+import co.sendik.catalog.port.out.BuyerAccounts;
 import co.sendik.catalog.port.out.Categories;
 import co.sendik.catalog.port.out.Favorites;
 import co.sendik.catalog.port.out.ListingNotifier;
@@ -245,8 +246,9 @@ public class CatalogWiring {
      * (criterio 11). Quitar no lo necesita: borrar una fila no tiene fecha que sellar.
      */
     @Bean
-    AddFavoriteUseCase addFavoriteUseCase(Favorites favoritos, ListingRepository publicaciones, Clock reloj) {
-        return new AddFavoriteUseCase(favoritos, publicaciones, reloj);
+    AddFavoriteUseCase addFavoriteUseCase(
+            Favorites favoritos, ListingRepository publicaciones, BuyerAccounts cuentas, Clock reloj) {
+        return new AddFavoriteUseCase(favoritos, publicaciones, cuentas, reloj);
     }
 
     @Bean

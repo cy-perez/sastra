@@ -7,7 +7,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import co.sendik.catalog.dto.FavoriteCommand;
 import co.sendik.catalog.dto.FavoritePage;
 import co.sendik.catalog.dto.FavoriteState;
+import co.sendik.catalog.dto.ListCatalogQuery;
 import co.sendik.catalog.dto.ListFavoritesQuery;
+import co.sendik.catalog.exception.BuyerAccountClosedException;
 import co.sendik.catalog.exception.ListingNotFoundException;
 import co.sendik.catalog.exception.SelfFavoriteForbiddenException;
 import co.sendik.catalog.model.BuyerId;
@@ -68,6 +70,7 @@ class FavoritosTest {
 
     private CatalogoEnMemoria.Publicaciones publicaciones;
     private CatalogoEnMemoria.Guardados guardados;
+    private CatalogoEnMemoria.Cuentas cuentas;
 
     private AddFavoriteUseCase marcar;
     private RemoveFavoriteUseCase quitar;
@@ -82,8 +85,9 @@ class FavoritosTest {
     void montar() {
         publicaciones = new CatalogoEnMemoria.Publicaciones();
         guardados = new CatalogoEnMemoria.Guardados(publicaciones);
+        cuentas = new CatalogoEnMemoria.Cuentas();
 
-        marcar = new AddFavoriteUseCase(guardados, publicaciones, new RelojMovible());
+        marcar = new AddFavoriteUseCase(guardados, publicaciones, cuentas, new RelojMovible());
         quitar = new RemoveFavoriteUseCase(guardados);
         estado = new ReadFavoriteStateUseCase(guardados, publicaciones);
         listar = new ListFavoritesUseCase(guardados);
@@ -158,6 +162,35 @@ class FavoritosTest {
         void deberia_rechazar_una_publicacion_que_no_existe() {
             assertThatThrownBy(() -> marcar.execute(new FavoriteCommand(ALGUIEN, ListingId.nuevo())))
                     .isInstanceOf(ListingNotFoundException.class);
+        }
+
+        /**
+         * El token sobrevive quince minutos al cierre de la cuenta (ADR-0003), y
+         * datos-personales.md promete que en cuanto la cuenta deja de existir las rutas que
+         * tocan datos responden que la sesion ya no sirve.
+         *
+         * <p>Sin esto, una cuenta ya cerrada escribia favoritos que nada volveria a borrar,
+         * porque el cierre ya habia pasado: dato personal vivo justo despues de haber
+         * ejercido el derecho de supresion.
+         */
+        @Test
+        void deberia_rechazar_a_una_cuenta_ya_cerrada() {
+            Listing publicada = publicar();
+            cuentas.cerrar(ALGUIEN);
+
+            assertThatThrownBy(() -> marcar.execute(new FavoriteCommand(ALGUIEN, publicada.id())))
+                    .isInstanceOf(BuyerAccountClosedException.class);
+
+            assertThat(guardados.cuantos()).isZero();
+        }
+
+        /** Y lo comprueba antes de mirar la publicacion: es lo primero que deja de valer. */
+        @Test
+        void deberia_rechazar_a_una_cuenta_cerrada_antes_que_por_la_publicacion() {
+            cuentas.cerrar(ALGUIEN);
+
+            assertThatThrownBy(() -> marcar.execute(new FavoriteCommand(ALGUIEN, ListingId.nuevo())))
+                    .isInstanceOf(BuyerAccountClosedException.class);
         }
     }
 
@@ -366,9 +399,28 @@ class FavoritosTest {
             assertThat(tramo.hayMas()).isFalse();
         }
 
+        /**
+         * El tope, por los dos lados.
+         *
+         * <p>Se probaba solo con 500, y con eso una comparacion escrita como
+         * {@code > LIMITE_MAXIMO + 1} pasaba. Lo que fija el borde es el par: 50 vale y 51
+         * no.
+         */
         @Test
-        void deberia_rechazar_un_limite_por_encima_del_tope() {
-            assertThatThrownBy(() -> new ListFavoritesQuery(ALGUIEN, null, 500))
+        void deberia_admitir_el_tope_y_rechazar_lo_que_lo_pasa_por_uno() {
+            assertThatCode(() -> new ListFavoritesQuery(ALGUIEN, null, ListCatalogQuery.LIMITE_MAXIMO))
+                    .doesNotThrowAnyException();
+
+            assertThatThrownBy(() -> new ListFavoritesQuery(ALGUIEN, null, ListCatalogQuery.LIMITE_MAXIMO + 1))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        /** Y por abajo: cero elementos no es una pagina. */
+        @Test
+        void deberia_admitir_uno_y_rechazar_cero() {
+            assertThatCode(() -> new ListFavoritesQuery(ALGUIEN, null, 1)).doesNotThrowAnyException();
+
+            assertThatThrownBy(() -> new ListFavoritesQuery(ALGUIEN, null, 0))
                     .isInstanceOf(IllegalArgumentException.class);
         }
     }

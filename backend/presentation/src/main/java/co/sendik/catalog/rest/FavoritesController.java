@@ -149,11 +149,11 @@ public class FavoritesController {
     @GetMapping
     public CatalogPageResponse lista(
             @AuthenticationPrincipal Jwt token,
-            @RequestParam(name = "limit", defaultValue = "24") @Min(1) @Max(ListCatalogQuery.LIMITE_MAXIMO) int limite,
+            @RequestParam(name = "limit", defaultValue = "24") @Min(1) @Max(ListCatalogQuery.LIMITE_MAXIMO) int limit,
             @RequestParam(name = "cursor", required = false) @Nullable String cursor) {
 
         FavoritePage tramo =
-                casoDeListar.execute(new ListFavoritesQuery(quienDe(token), FavoriteCursors.cursor(cursor), limite));
+                casoDeListar.execute(new ListFavoritesQuery(quienDe(token), FavoriteCursors.cursor(cursor), limit));
 
         return FavoritePages.de(tramo, almacen);
     }

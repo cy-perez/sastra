@@ -210,14 +210,15 @@ export class FavoritesStore {
    * nada. Es el caso borde de la historia, y se resuelve aquí y no en la plantilla para
    * que valga también si el control se lleva algún día a otra pantalla.
    */
-  alternar(listingId: string): 'hecho' | 'hay-que-entrar' {
+  alternar(listingId: string): { que: 'hecho' } | { que: 'hay-que-entrar'; pase: string } {
     if (!this.haySesion()) {
-      this.intencion.recordar(listingId);
-      return 'hay-que-entrar';
+      // El pase vuelve a la pantalla, que lo pone en la direccion del ingreso. Es lo que
+      // ata la intencion a este recorrido y no a la siguiente persona que abra esta ficha.
+      return { que: 'hay-que-entrar', pase: this.intencion.recordar(listingId) };
     }
 
     if (this.marcar.isPending() || this.quitar.isPending()) {
-      return 'hecho';
+      return { que: 'hecho' };
     }
 
     if (this.control().marcado) {
@@ -225,7 +226,7 @@ export class FavoritesStore {
     } else {
       this.marcar.mutate(listingId);
     }
-    return 'hecho';
+    return { que: 'hecho' };
   }
 
   /**
@@ -236,12 +237,15 @@ export class FavoritesStore {
    * existe para cubrir.
    *
    * <p>Si resolvió anónima —volver atrás, cerrar el ingreso— la intención se descarta y no
-   * se guarda nada (criterio 9). Si resolvió abierta se consume y se marca; que la
-   * publicación resulte ser suya lo rechaza el servidor con RN-072, y el mensaje del
-   * criterio 10 sale del error como cualquier otro. Pasar por el ingreso no salta ninguna
-   * regla.
+   * se guarda nada (criterio 9). Si resolvió abierta se consume y se marca, **pero solo si
+   * el pase coincide**: sin esa condición, quien entrara después en la misma pestaña y
+   * abriera esta ficha por su cuenta se llevaba el favorito que pidió otra persona.
+   *
+   * <p>Que la publicación resulte ser suya lo rechaza el servidor con RN-072, y el mensaje
+   * del criterio 10 sale del error como cualquier otro. Pasar por el ingreso no salta
+   * ninguna regla.
    */
-  retomarIntencion(listingId: string): void {
+  retomarIntencion(listingId: string, pase: string | null): void {
     if (!this.sesionResuelta()) {
       return;
     }
@@ -251,7 +255,7 @@ export class FavoritesStore {
       return;
     }
 
-    if (this.intencion.consumir(listingId)) {
+    if (this.intencion.consumir(listingId, pase)) {
       this.marcar.mutate(listingId);
     }
   }

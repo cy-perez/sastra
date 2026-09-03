@@ -19,6 +19,14 @@ import { SubmitButton } from '../../../shared/ui/form/submit-button';
 import { TextField } from '../../../shared/ui/form/text-field';
 
 /**
+ * Un origen que no existe, para resolver el destino de la vuelta sin tocar `window`.
+ *
+ * <p>Cualquier destino que al resolverse se salga de aqui es de otro sitio, y no se
+ * obedece. El dominio real no importa: lo que se comprueba es que el destino sea relativo.
+ */
+const BASE_SINTETICA = 'http://sendik.invalid';
+
+/**
  * Formulario de ingreso. Criterios 10 a 13 de HU-001.
  *
  * <p><strong>Lo que esta pantalla no hace es lo que importa.</strong> No dice si
@@ -129,10 +137,33 @@ export class LoginPage {
   private aDondeVolver(): string {
     const destino = this.ruta.snapshot.queryParamMap.get('redirectTo');
 
-    if (destino === null || !destino.startsWith('/') || destino.startsWith('//')) {
+    if (destino === null || !destino.startsWith('/')) {
       return '/';
     }
-    return destino;
+
+    // **Se resuelve como URL y se comprueba que no se haya movido de sitio.** La version
+    // anterior miraba solo que no empezara por `//`, y eso deja pasar `/\evil.com`,
+    // `/%5C%5Cevil.com` -el parametro llega ya descodificado- y variantes con tabuladores
+    // o saltos de linea: la especificacion de URL trata la barra invertida como barra en
+    // los esquemas http, asi que las tres son `//evil.com` al resolverlas.
+    //
+    // Hoy nada de eso sale del sitio, porque `navigateByUrl` no puede: lo que el enrutador
+    // no entiende acaba en la ruta comodin. Pero entonces quien protege es el enrutador y
+    // no esta comprobacion, y ADR-0029 contempla en «Cuando revisar» el dia en que el
+    // ingreso pase por un proveedor externo y la vuelta deje de ser una navegacion
+    // interna. Ese dia esta linea tiene que seguir siendo la que decide.
+    //
+    // La base es sintetica y no `window.location.origin` a proposito: esta clase se
+    // renderiza tambien en el servidor, donde `window` no existe, y ademas asi la
+    // comprobacion no depende de en que dominio este desplegado el sitio.
+    try {
+      const resuelto = new URL(destino, BASE_SINTETICA);
+      return resuelto.origin === BASE_SINTETICA
+        ? `${resuelto.pathname}${resuelto.search}${resuelto.hash}`
+        : '/';
+    } catch {
+      return '/';
+    }
   }
 
   protected control(nombre: 'email' | 'password'): FormControl<string> {

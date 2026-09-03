@@ -2,6 +2,7 @@ package co.sendik;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import co.sendik.catalog.dto.FavoriteCursor;
 import co.sendik.catalog.dto.FavoritedListing;
@@ -37,13 +38,17 @@ import co.sendik.shared.money.Money;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -148,6 +153,92 @@ class FavoritePersistenceTest {
 
         assertThat(cuantasFilas(una)).isEqualTo(1);
         assertThat(cuantasFilas(otra)).isEqualTo(1);
+    }
+
+    /**
+     * Criterio 4, **de verdad**: dos escrituras simultaneas sobre el mismo par.
+     *
+     * <p>La prueba secuencial de arriba pasaria igual con un {@code if (existe) return;}
+     * delante del {@code INSERT}, asi que no demuestra lo que su nombre dice. Lo que hay
+     * que demostrar es lo que el puerto, el caso de uso, la migracion y la historia repiten
+     * en cinco sitios: que entre esa lectura y la escritura cabe la peticion de la otra
+     * pestana, y que lo unico que decide entonces es la clave primaria.
+     *
+     * <p>Los dos hilos escriben a la vez, cada uno con su conexion —cada uno abre la suya
+     * al pedirla al {@code JdbcClient}—, y se sueltan con la misma barrera para que se
+     * pisen de verdad. Ninguno puede fallar y tiene que quedar una fila.
+     */
+    @Test
+    void deberia_ser_idempotente_entre_dos_escrituras_simultaneas_criterio_4() throws Exception {
+        BuyerId quien = nuevoComprador();
+        Listing publicada = publicada();
+        Favorite favorito = Favorite.reconstruir(quien, publicada.id(), AHORA);
+
+        CountDownLatch salida = new CountDownLatch(1);
+        List<Throwable> fallos = Collections.synchronizedList(new ArrayList<>());
+
+        Runnable escribir = () -> {
+            try {
+                salida.await();
+                favoritos.guardar(favorito);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } catch (RuntimeException e) {
+                fallos.add(e);
+            }
+        };
+
+        Thread una = new Thread(escribir);
+        Thread otra = new Thread(escribir);
+        una.start();
+        otra.start();
+        salida.countDown();
+        una.join();
+        otra.join();
+
+        assertThat(fallos).isEmpty();
+        assertThat(cuantasFilas(quien)).isEqualTo(1);
+    }
+
+    /**
+     * Las dos claves foraneas rechazan lo que no existe.
+     *
+     * <p>El doble en memoria no las tiene, asi que alli se puede guardar un favorito de una
+     * cuenta inventada. Es la clase de divergencia que estas pruebas existen para cazar.
+     */
+    @Test
+    void deberia_rechazar_un_favorito_de_alguien_o_de_algo_que_no_existe() {
+        BuyerId quien = nuevoComprador();
+        Listing publicada = publicada();
+
+        assertThatThrownBy(() ->
+                        favoritos.guardar(Favorite.reconstruir(new BuyerId(UUID.randomUUID()), publicada.id(), AHORA)))
+                .isInstanceOf(DataIntegrityViolationException.class);
+
+        assertThatThrownBy(() -> favoritos.guardar(Favorite.reconstruir(quien, ListingId.nuevo(), AHORA)))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    /**
+     * Y la fila sobrevive a que la cuenta se anonimice.
+     *
+     * <p>De eso depende que las claves foraneas no lleven {@code ON DELETE CASCADE}: cerrar
+     * una cuenta no borra su fila de {@code users}, la vacia. Si algun dia el cierre pasara
+     * a borrar de verdad, esta prueba se cae y avisa de que hay que decidir que pasa con
+     * estas filas —que hoy las borra el propio cierre, explicitamente—.
+     */
+    @Test
+    void deberia_conservar_la_fila_cuando_la_cuenta_se_anonimiza() {
+        BuyerId quien = nuevoComprador();
+        Listing publicada = publicada();
+        favoritos.guardar(Favorite.reconstruir(quien, publicada.id(), AHORA));
+
+        jdbc.sql("UPDATE users SET status = 'CLOSED', email = :correo WHERE id = :id")
+                .param("correo", quien.value() + "@anonimo.invalid")
+                .param("id", quien.value())
+                .update();
+
+        assertThat(cuantasFilas(quien)).isEqualTo(1);
     }
 
     // ------------------------------------------------------------- la lista

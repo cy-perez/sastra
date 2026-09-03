@@ -518,6 +518,23 @@ public final class Listing {
         return sellerId().value().equals(quienDecide.value());
     }
 
+    /**
+     * RN-072: si esta publicacion es de quien pregunta. Hermano de {@link #laPublico}.
+     *
+     * <p>Existe por lo mismo: los identificadores de persona de este contexto son tipos
+     * distintos a proposito —una persona no es «un vendedor» ni «un comprador», lo es segun
+     * lo que este haciendo— asi que {@code equals} entre ellos seria siempre falso y la
+     * regla no protegeria de nada. La comparacion baja a los UUID, y baja **en un solo
+     * sitio**: aqui.
+     *
+     * <p>Lo preguntan {@link Favorite#de}, que la usa para negarse a existir sobre lo
+     * propio, y la lectura del estado del control, que la usa para no ofrecerlo. Antes cada
+     * uno la escribia por su cuenta, que es tener la misma regla en dos capas.
+     */
+    public boolean esDe(BuyerId quien) {
+        return sellerId().value().equals(quien.value());
+    }
+
     public boolean requiereAtencion() {
         return !attentionReasons.isEmpty();
     }

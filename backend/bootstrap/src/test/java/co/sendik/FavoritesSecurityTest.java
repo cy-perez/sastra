@@ -1,5 +1,6 @@
 package co.sendik;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -45,7 +46,9 @@ import co.sendik.shared.money.Money;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -58,6 +61,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Quien puede hacer que con los favoritos. HU-011.
@@ -78,12 +82,17 @@ import org.springframework.web.context.WebApplicationContext;
  *   <li>Quitar es idempotente hasta en el borde: 204 aunque no hubiera nada que quitar.
  * </ul>
  */
-@SpringBootTest(properties = "sendik.features.catalog=true")
+// Las dos banderas, que es la combinacion con la que el sitio se despliega de verdad: los
+// favoritos cuelgan del catalogo, y la lectura de una publicacion por identificador -que
+// aqui se usa para comprobar que su forma publica no lleva nada de la sesion- la sirve el
+// controlador de HU-007.
+@SpringBootTest(properties = {"sendik.features.catalog=true", "sendik.features.publishing=true"})
 @ActiveProfiles("local")
 @Import(PostgresTestContainer.class)
 class FavoritesSecurityTest {
 
     private static final Instant AHORA = Instant.parse("2026-09-02T15:00:00Z");
+    private static final ObjectMapper JSON = new ObjectMapper();
     private static final String CUALQUIERA = UUID.randomUUID().toString();
 
     private final WebApplicationContext contexto;
@@ -246,6 +255,72 @@ class FavoritesSecurityTest {
                 .andExpect(jsonPath("$.items.length()").value(0));
     }
 
+    /**
+     * El cursor, ida y vuelta por HTTP. Criterio 12.
+     *
+     * <p>Es el unico sitio donde se comprueba el viaje completo: base64 de URL, JSON,
+     * {@code Instant.parse} y el desempate. Las pruebas de los casos de uso trabajan con el
+     * objeto en memoria, asi que un fallo en la codificacion se descubriria en produccion.
+     *
+     * <p>Los tres favoritos se marcan **en el mismo instante** a proposito: con eso lo que
+     * sostiene el recorrido es el desempate por identificador que viaja dentro del cursor.
+     */
+    @Test
+    void deberia_continuar_el_listado_con_el_cursor_que_devuelve_criterio_12() throws Exception {
+        UUID quien = nuevoUsuario();
+        String token = "Bearer " + tokenDe(quien);
+
+        for (int i = 0; i < 3; i++) {
+            mvc.perform(put("/api/v1/users/me/favorites/"
+                                    + publicadaDe(new SellerId(nuevoUsuario())).id())
+                            .header("Authorization", token))
+                    .andExpect(status().isNoContent());
+        }
+
+        String primero = mvc.perform(
+                        get("/api/v1/users/me/favorites").param("limit", "2").header("Authorization", token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(2))
+                .andExpect(jsonPath("$.hasMore").value(true))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        List<String> yaVistas = identificadores(primero);
+        String cursor = JSON.readTree(primero).get("nextCursor").asString();
+
+        String segundo = mvc.perform(get("/api/v1/users/me/favorites")
+                        .param("limit", "2")
+                        .param("cursor", cursor)
+                        .header("Authorization", token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.hasMore").value(false))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        assertThat(identificadores(segundo)).doesNotContainAnyElementsOf(yaVistas);
+    }
+
+    /**
+     * La ficha publica no se vuelve dependiente de la sesion.
+     *
+     * <p>Es el riesgo que la propia historia declara como el principal de la nota tecnica, y
+     * lo sostenia una sola linea del frontend sin nada que lo vigilara. Aqui se fija donde
+     * de verdad se decide: la forma publica de una publicacion no tiene donde llevar «esto
+     * es favorito tuyo», y si alguien se lo anade, esta prueba se cae.
+     */
+    @Test
+    void no_deberia_llevar_el_favorito_dentro_de_la_publicacion_publica() throws Exception {
+        Listing publicada = publicadaDe(new SellerId(nuevoUsuario()));
+
+        mvc.perform(get("/api/v1/listings/" + publicada.id()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.favorite").doesNotExist())
+                .andExpect(jsonPath("$.eligible").doesNotExist());
+    }
+
     // --- El borde ------------------------------------------------------------
 
     @Test
@@ -273,7 +348,16 @@ class FavoritesSecurityTest {
                         .header("Authorization", "Bearer " + tokenDe(nuevoUsuario())))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("COMMON_VALIDATION_FAILED"))
-                .andExpect(jsonPath("$.errors[0].field").value("limite"));
+                .andExpect(jsonPath("$.errors[0].field").value("limit"));
+    }
+
+    /** Los identificadores de un tramo, en el orden en que llegaron. */
+    private static List<String> identificadores(String cuerpo) {
+        List<String> ids = new ArrayList<>();
+        JSON.readTree(cuerpo)
+                .get("items")
+                .forEach(item -> ids.add(item.get("id").asString()));
+        return ids;
     }
 
     // ------------------------------------------------------------- datos

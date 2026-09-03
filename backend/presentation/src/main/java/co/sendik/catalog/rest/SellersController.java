@@ -91,12 +91,12 @@ public class SellersController {
     @GetMapping("/{id}/listings")
     public CatalogPageResponse publicaciones(
             @PathVariable String id,
-            @RequestParam(name = "limit", defaultValue = "24") @Min(1) @Max(ListCatalogQuery.LIMITE_MAXIMO) int limite,
+            @RequestParam(name = "limit", defaultValue = "24") @Min(1) @Max(ListCatalogQuery.LIMITE_MAXIMO) int limit,
             @RequestParam(name = "cursor", required = false) @Nullable String cursor) {
 
         return CatalogPages.de(
                 casoDeListar.execute(new ListSellerCatalogQuery(
-                        new SellerId(UUID.fromString(id)), CatalogCursors.cursor(cursor), limite)),
+                        new SellerId(UUID.fromString(id)), CatalogCursors.cursor(cursor), limit)),
                 almacen);
     }
 

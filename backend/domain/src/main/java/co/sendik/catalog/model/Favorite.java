@@ -51,7 +51,10 @@ public final class Favorite {
      *
      * @throws ListingNotFoundException si la publicacion no esta visible. RN-071 y RN-068:
      *     no se guarda lo que no se puede ver
-     * @throws SelfFavoriteForbiddenException si la publicacion es de quien la marca (RN-072)
+     * @throws SelfFavoriteForbiddenException si la publicacion es de quien la marca (RN-072).
+     *     La comparacion la hace {@link Listing#esDe}: los dos identificadores envuelven el
+     *     mismo UUID y son tipos distintos, asi que hay que bajar a los valores a proposito,
+     *     y eso se hace en un solo sitio del dominio
      */
     public static Favorite de(BuyerId quien, Listing publicacion, Instant ahora) {
         Objects.requireNonNull(quien, "Quien marca es obligatorio");
@@ -60,7 +63,7 @@ public final class Favorite {
         if (!publicacion.esVisible()) {
             throw new ListingNotFoundException(publicacion.id());
         }
-        if (esSuya(quien, publicacion)) {
+        if (publicacion.esDe(quien)) {
             throw new SelfFavoriteForbiddenException();
         }
 
@@ -76,24 +79,14 @@ public final class Favorite {
      * alguien pausara una de las publicaciones guardadas, que es justo lo contrario de lo
      * que RN-071 manda hacer: no se ve, pero sigue ahi.
      *
-     * <p>Solo lo usa la persistencia al leer una fila. Ninguna otra capa tiene por que
-     * construir un favorito sin pasar por la factoria.
+     * <p>Lo usa la persistencia al leer una fila, y el doble en memoria que la sustituye en
+     * las pruebas de los casos de uso —que ademas se apoya en que {@code equals} ignora la
+     * fecha para usar el favorito como clave de un mapa—. Ninguna otra capa tiene por que
+     * construir un favorito sin pasar por la factoria: quien quiera uno valido, que use
+     * {@link #de} y deje que las reglas lo comprueben.
      */
     public static Favorite reconstruir(BuyerId quien, ListingId publicacion, Instant marcadoEn) {
         return new Favorite(quien, publicacion, marcadoEn);
-    }
-
-    /**
-     * Si la publicacion es de quien la esta marcando.
-     *
-     * <p>Compara los UUID y no los objetos: {@link BuyerId} y {@link SellerId} son tipos
-     * distintos a proposito —una persona no es «un comprador» ni «un vendedor», lo es
-     * segun lo que este haciendo— asi que {@code equals} entre ellos seria siempre falso y
-     * la regla no protegeria de nada. Este es el unico sitio del dominio donde los dos se
-     * ponen uno al lado del otro.
-     */
-    private static boolean esSuya(BuyerId quien, Listing publicacion) {
-        return quien.value().equals(publicacion.sellerId().value());
     }
 
     public BuyerId quien() {

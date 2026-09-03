@@ -74,9 +74,12 @@ export class AuthStore {
     mutationFn: () => this.api.logout(),
     retry: false,
     onSettled: () => {
+      // `clear()` se lleva tambien lo que el servidor habia respondido: el perfil, las
+      // sesiones y la lista de favoritos. Vive alli y no aqui porque hay tres caminos que
+      // acaban sin sesion -este, el cierre de cuenta y el refresco que caduca- y el primer
+      // intento solo cubrio este.
       this.sesion.clear();
       this.olvidarLoEscrito();
-      this.olvidarLoCacheado();
     },
   }));
 
@@ -277,33 +280,6 @@ export class AuthStore {
     this.login.reset();
     this.registration.reset();
     this.passwordReset.reset();
-  }
-
-  /**
-   * Y lo que TanStack guardo de la sesion que se cierra.
-   *
-   * <p><strong>El gemelo del anterior para las consultas.</strong> Aquel borra lo que la
-   * persona escribio; este, lo que el servidor respondio. El perfil, las sesiones abiertas
-   * y —desde HU-011— la lista de favoritos son datos privados que se quedaban en la cache
-   * de la pestana despues de salir. Quien entrara despues en ese mismo navegador, sin
-   * recargar, los veia un instante antes de que llegara la respuesta suya: TanStack sirve
-   * lo cacheado primero y revalida despues, y en el caso de los favoritos ni siquiera
-   * revalidaba enseguida, porque heredaban el minuto de frescura general.
-   *
-   * <p>En un equipo compartido «cerre sesion» tiene que significar que no queda nada
-   * recuperable (docs/operacion/datos-personales.md), y RN-070 dice que los favoritos no
-   * los ve nadie mas que quien los marco. Esto es lo que lo sostiene.
-   *
-   * <p>{@code removeQueries} y no {@code clear()}: aquel se lleva tambien la cache de
-   * mutaciones, y esto corre dentro del {@code onSettled} de una de ellas. Lo que las
-   * mutaciones guardan lo limpia {@link #olvidarLoEscrito}.
-   *
-   * <p>Se borra todo y no una lista de claves: una lista hay que acordarse de ampliarla, y
-   * la que se olvide sera justo la del dato nuevo. Lo publico —el arbol de categorias, el
-   * catalogo— se vuelve a pedir y no cuesta nada.
-   */
-  private olvidarLoCacheado(): void {
-    this.consultas.removeQueries();
   }
 
   /**

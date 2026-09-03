@@ -29,42 +29,65 @@ describe('FavoriteIntent', () => {
   });
 
   it('guarda la intención y la devuelve una vez', () => {
+    const pase = intencion.recordar(ID);
+
+    expect(intencion.consumir(ID, pase)).toBe(true);
+  });
+
+  /**
+   * El pase es lo que ata la intención a su propio recorrido.
+   *
+   * <p>Sin él había un fallo de verdad: una persona pulsa «Guardar» sin sesión y no entra;
+   * otra entra después en esa misma pestaña, abre esa ficha por su cuenta, y se llevaba el
+   * favorito que pidió la primera.
+   */
+  it('no la consume sin el pase, ni con uno que no es el suyo', () => {
     intencion.recordar(ID);
 
-    expect(intencion.consumir(ID)).toBe(true);
+    expect(intencion.consumir(ID, null)).toBe(false);
+    expect(intencion.consumir(ID, 'un-pase-inventado')).toBe(false);
+  });
+
+  /** Y sigue ahí: un intento fallido no la gasta. */
+  it('sobrevive a un intento con el pase equivocado', () => {
+    const pase = intencion.recordar(ID);
+
+    intencion.consumir(ID, 'otro');
+
+    expect(intencion.consumir(ID, pase)).toBe(true);
   });
 
   /** Se consume una sola vez: es lo que impide que el favorito reaparezca. */
   it('no la devuelve dos veces', () => {
-    intencion.recordar(ID);
+    const pase = intencion.recordar(ID);
 
-    expect(intencion.consumir(ID)).toBe(true);
-    expect(intencion.consumir(ID)).toBe(false);
+    expect(intencion.consumir(ID, pase)).toBe(true);
+    expect(intencion.consumir(ID, pase)).toBe(false);
   });
 
   /** Y se borra de verdad, no solo se deja de devolver. */
   it('la borra del almacenamiento al consumirla', () => {
-    intencion.recordar(ID);
-    intencion.consumir(ID);
+    const pase = intencion.recordar(ID);
+    intencion.consumir(ID, pase);
 
     expect(sessionStorage.length).toBe(0);
   });
 
   /** Una intención sobre otra ficha no se consume aquí, y tampoco se pierde. */
   it('no consume la intención de otra publicación', () => {
-    intencion.recordar(ID);
+    const pase = intencion.recordar(ID);
 
-    expect(intencion.consumir(OTRA)).toBe(false);
-    expect(intencion.consumir(ID)).toBe(true);
+    expect(intencion.consumir(OTRA, pase)).toBe(false);
+    expect(intencion.consumir(ID, pase)).toBe(true);
   });
 
   /** Criterio 9: abandonar el ingreso no deja nada guardado. */
   it('descarta lo que hubiera', () => {
-    intencion.recordar(ID);
+    const pase = intencion.recordar(ID);
 
     intencion.descartar();
 
-    expect(intencion.consumir(ID)).toBe(false);
+    expect(intencion.consumir(ID, pase)).toBe(false);
     expect(sessionStorage.length).toBe(0);
   });
 
@@ -77,19 +100,32 @@ describe('FavoriteIntent', () => {
    * se pulsó horas antes.
    */
   it('descarta una intención vencida', () => {
-    intencion.recordar(ID);
+    const pase = intencion.recordar(ID);
 
     vi.useFakeTimers();
     vi.setSystemTime(Date.now() + 11 * 60 * 1000);
 
-    expect(intencion.consumir(ID)).toBe(false);
+    expect(intencion.consumir(ID, pase)).toBe(false);
+  });
+
+  /**
+   * Y justo por debajo del vencimiento sigue valiendo. Sin este lado, poner la vigencia en
+   * cero dejaría la suite en verde y el criterio 8 roto entero.
+   */
+  it('conserva una intención que todavía no ha vencido', () => {
+    const pase = intencion.recordar(ID);
+
+    vi.useFakeTimers();
+    vi.setSystemTime(Date.now() + 9 * 60 * 1000);
+
+    expect(intencion.consumir(ID, pase)).toBe(true);
   });
 
   /** Un valor corrupto no es una intención, y se limpia para no volver a tropezar. */
   it('descarta un valor que no se puede leer', () => {
     sessionStorage.setItem('sendik.favorito.pendiente', 'esto-no-es-json');
 
-    expect(intencion.consumir(ID)).toBe(false);
+    expect(intencion.consumir(ID, 'da-igual')).toBe(false);
     expect(sessionStorage.length).toBe(0);
   });
 
@@ -107,6 +143,6 @@ describe('FavoriteIntent', () => {
     });
 
     expect(() => intencion.recordar(ID)).not.toThrow();
-    expect(intencion.consumir(ID)).toBe(false);
+    expect(intencion.consumir(ID, 'da-igual')).toBe(false);
   });
 });

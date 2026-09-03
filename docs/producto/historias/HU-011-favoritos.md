@@ -327,6 +327,79 @@ probados. Las cuatro reglas que la historia obligaba a escribir —RN-070 a RN-0
 - **La frase de la garantía del fabricante en la ficha** (RN-067) sigue aplazada a la tanda
   legal, como la dejó HU-009.
 
+### Lo que cambió la revisión
+
+Cuatro subagentes revisaron la rama terminada —arquitectura, pruebas, accesibilidad y
+seguridad— y encontraron cosas que la autorrevisión no vio. Lo que se corrigió:
+
+- **El mensaje del criterio 10 no se podía ver nunca.** Lo encontraron accesibilidad y
+  pruebas por separado, en la misma línea. El bloque del error vivía dentro del `@if` del
+  control, así que en el camino exacto que el criterio describe —vuelvo del ingreso con una
+  intención pendiente sobre mi propia publicación, el servidor responde `eligible: false`—
+  el control dejaba de pintarse y se llevaba el mensaje por delante. La prueba del 403 no lo
+  veía porque montaba con `eligible: true`, que es el único caso en que el estado no
+  contradice al error.
+
+- **Una persona podía quedarse con el favorito que pidió otra.** Lo encontró seguridad. A
+  pulsa «Guardar» sin sesión y no entra; B entra después en esa misma pestaña y abre esa
+  ficha por su cuenta: la intención se disparaba y B acababa con un favorito que nunca
+  pidió, que es dato personal escrito en nombre de otra persona. Ahora la intención lleva un
+  **pase de un solo uso** que viaja en la dirección de vuelta y sin el cual no se consume.
+  El pase no es una credencial y no vale por sí solo —un enlace con un pase inventado y sin
+  intención local no marca nada—, así que ADR-0029 se sostiene: la acción sigue sin viajar
+  en el enlace.
+
+- **Una cuenta ya cerrada podía escribir favoritos durante quince minutos.** El token
+  sobrevive al cierre (ADR-0003) y todas las demás rutas de `/users/me` recargan la cuenta y
+  responden 401; estas no. Quedaba dato personal vivo justo después de ejercer el derecho de
+  supresión, y nada volvía a borrarlo porque el cierre ya había pasado. Lo comprueba ahora
+  el puerto `BuyerAccounts`, y solo en el caso de uso que escribe: los otros tres no crean
+  dato ni revelan nada sobre una cuenta cerrada.
+
+- **`errors[].field` publicaba el nombre del argumento Java, en español.** El cliente manda
+  `?limit=500` y recibía `{"field": "limite"}`. Lo encontraron arquitectura y seguridad. Es
+  un defecto que introduje al arreglar el 500 de HU-009, y mi propia prueba lo consagraba.
+  Los argumentos de esos parámetros pasan a llamarse como el parámetro HTTP, que es lo que
+  hace correcto lo que sale.
+
+- **RN-072 estaba escrita dos veces**, y el argumento con que justifiqué la copia era falso:
+  `Listing.laPublico(ModeratorId)` ya resolvía esa forma para RN-063. Ahora la comparación
+  vive en `Listing.esDe(BuyerId)` y los dos sitios preguntan por ella.
+
+- **`[disabled]` mataba el foco.** El botón se deshabilitaba en el mismo tick del clic, con
+  el foco dentro, y el navegador lo mandaba a `body`: quien pulsa con teclado tenía que
+  tabular desde el principio del documento. El doble pulsado ya lo bloquea el almacén
+  contando peticiones, así que el atributo no aportaba nada.
+
+- **`aria-pressed` con nombre variable se contradecía**: un lector leía «Quitar de
+  favoritos, botón de alternancia, pulsado». Se quitó `aria-pressed` y el estado lo lleva el
+  nombre, como manda la APG de ARIA.
+
+- **Las dos «señales que no son color» eran inertes**: en modo claro `--color-texto` y
+  `--color-primario` son el mismo valor, y `.btn` ya trae el peso fuerte. El comentario que
+  lo afirmaba era falso. El estado se distingue por el relleno del icono y por el texto.
+
+- **Dos cosas ya existían y no las busqué**: `--medida: 70ch` —el ancho de lectura del
+  sistema, que además crece con el texto— y `.vacio`, el estado vacío que ya usan la bandeja
+  y la cola. Sobraban el token nuevo en px y el bloque paralelo.
+
+- **`/mis-favoritos` se quedó fuera de la auditoría de axe**, que advierte en su propio
+  archivo que una página que no está en la lista no se audita y nadie se entera.
+
+- **Salir limpiaba la caché solo por una de las tres puertas.** El cierre de cuenta y el
+  refresco que caduca se quedaban fuera. La limpieza se movió a `SessionStore.clear()`, que
+  es por donde pasan las tres, y solo cuando de verdad había sesión: purgar en cada visita
+  anónima tiraría la caché que llega del renderizado en servidor.
+
+Y en pruebas, los huecos que señaló el revisor: la idempotencia concurrente se afirmaba en
+cinco sitios y se probaba secuencialmente en todos —ahora hay dos hilos con su propia
+conexión—; el adaptador que cruza contextos no tenía ninguna prueba, así que el cierre y la
+descarga estaban probados por mitades que no se tocaban; el cursor nunca daba la vuelta
+completa por HTTP; los umbrales se probaban por un solo lado; el índice de `V16` se podía
+borrar sin que fallara nada; una prueba afirmaba que un UUID es igual a sí mismo; y el
+riesgo que la propia historia declara como principal —que la ficha pública no se vuelva
+dependiente de la sesión— no tenía ningún guardián.
+
 ## Cuándo revisar, con lo que se sabe ahora
 
 Además de lo que ya decía la historia:

@@ -47,7 +47,14 @@ test.describe('favoritos', () => {
     // --- Se pulsa y lleva a entrar (criterio 8) ---
     await guardar.click();
     await expect(page.getByRole('heading', { name: 'Entra a tu cuenta' })).toBeVisible();
-    expect(page.url()).toContain('redirectTo=');
+
+    // La direccion de vuelta, tal como la puso el control: lleva la ficha y el pase de un
+    // solo uso que ata la intencion a este recorrido (ADR-0029). Sin el pase la intencion
+    // no se consume, que es lo que impide que se la lleve quien entre despues en esta
+    // misma pestana.
+    const vuelta = new URL(page.url()).searchParams.get('redirectTo');
+    expect(vuelta).not.toBeNull();
+    expect(vuelta).toContain('fav=');
 
     // Quien compra es otra persona: sobre lo propio el control no se ofrece (criterio 5),
     // y eso se comprueba más abajo con la cuenta de quien vende.
@@ -55,12 +62,13 @@ test.describe('favoritos', () => {
     await registrar(page, compradora, 'Quien Guarda');
     await ingresar(page, compradora);
 
-    // --- Al volver a la ficha, el favorito ya está guardado ---
+    // --- Al volver, el favorito ya está guardado ---
     //
-    // Se navega a mano y no se depende de la vuelta automática porque `registrar` pasa por
-    // el enlace del correo y se lleva la navegación por delante. Lo que la prueba fija es
-    // lo de después: que la intención sobrevivió a todo eso y se consume al abrir la ficha.
-    await page.goto(ficha);
+    // Se navega a la direccion que el control pidio, no a la ficha pelada: es la vuelta que
+    // `redirectTo` habria hecho sola si `registrar` no pasara por el enlace del correo y se
+    // llevara la navegacion por delante. Lo que la prueba fija es lo de despues: que la
+    // intencion sobrevivio a la recarga y al ingreso, y se consume al llegar con su pase.
+    await page.goto(vuelta ?? ficha);
     await expect(page.getByRole('button', { name: 'Quitar de favoritos' })).toBeVisible();
 
     // Criterio 2: sigue marcado después de recargar. Es la comprobación que separa

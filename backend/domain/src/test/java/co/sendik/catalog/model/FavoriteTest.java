@@ -37,19 +37,6 @@ class FavoriteTest {
             assertThatThrownBy(() -> Favorite.de(elVendedor, publicacion, AHORA))
                     .isInstanceOf(SelfFavoriteForbiddenException.class);
         }
-
-        /**
-         * Los dos identificadores envuelven el mismo UUID y son tipos distintos, asi que
-         * un {@code equals} entre ellos seria siempre falso y RN-072 no protegeria de
-         * nada. Esta prueba es la que fija que la comparacion baje a los UUID.
-         */
-        @Test
-        void deberia_reconocer_al_dueno_aunque_comprador_y_vendedor_sean_tipos_distintos() {
-            Listing publicacion = CatalogoDePrueba.publicada();
-
-            assertThat(publicacion.sellerId().value())
-                    .isEqualTo(new BuyerId(publicacion.sellerId().value()).value());
-        }
     }
 
     @Nested

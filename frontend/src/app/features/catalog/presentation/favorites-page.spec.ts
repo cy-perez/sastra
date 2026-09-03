@@ -2,7 +2,7 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
   apiUrlInterceptor,
@@ -67,12 +67,37 @@ describe('FavoritesPage', () => {
     });
   });
 
+  /**
+   * Ninguna peticion de mas.
+   *
+   * <p>Sin esto, una llamada que nadie esperaba —la lista pedida desde la ficha, un
+   * segundo estado— pasaba desapercibida en toda la suite. Es justo el defecto que hubo:
+   * el almacen es de raiz y con sesion abierta pedia la lista al abrir cualquier producto.
+   */
+  afterEach(() => {
+    TestBed.inject(HttpTestingController).verify();
+  });
+
   const bombear = async (fixture: ComponentFixture<FavoritesPage>) => {
     for (let vuelta = 0; vuelta < 5; vuelta++) {
       await new Promise((listo) => setTimeout(listo, 0));
       fixture.detectChanges();
     }
   };
+
+  /**
+   * Por nombre accesible y no por clase de CSS: es lo que ve quien usa la pantalla, y no
+   * se rompe al renombrar un bloque BEM (frontend/CLAUDE.md).
+   */
+  const botonLlamado = (fixture: ComponentFixture<FavoritesPage>, nombre: string) =>
+    Array.from(
+      fixture.nativeElement.querySelectorAll('button') as NodeListOf<HTMLButtonElement>,
+    ).find((boton) => boton.textContent?.trim() === nombre) ?? null;
+
+  const enlaceLlamado = (fixture: ComponentFixture<FavoritesPage>, nombre: string) =>
+    Array.from(fixture.nativeElement.querySelectorAll('a') as NodeListOf<HTMLAnchorElement>).find(
+      (enlace) => enlace.textContent?.trim() === nombre,
+    ) ?? null;
 
   const montar = async (conSesion: boolean) => {
     const fixture = TestBed.createComponent(FavoritesPage);
@@ -124,8 +149,7 @@ describe('FavoritesPage', () => {
     expect(texto).toContain('Todavía no has guardado nada');
     expect(texto).toContain('Solo tú ves esta lista');
 
-    const salida = fixture.nativeElement.querySelector('a[href="/catalogo"]');
-    expect(salida).not.toBeNull();
+    expect(enlaceLlamado(fixture, 'Ver el catálogo')).not.toBeNull();
   });
 
   /** Criterio 16: sin sesión no se ve la lista de nadie. Se explica y se ofrece entrar. */
@@ -133,7 +157,7 @@ describe('FavoritesPage', () => {
     const { fixture, backend } = await montar(false);
 
     expect(fixture.nativeElement.textContent).toContain('Entra para verlos');
-    expect(fixture.nativeElement.querySelector('a[href="/ingresar"]')).not.toBeNull();
+    expect(enlaceLlamado(fixture, 'Entrar')).not.toBeNull();
     backend.expectNone((llamada) => llamada.url === `${API}/users/me/favorites`);
   });
 
@@ -149,7 +173,10 @@ describe('FavoritesPage', () => {
     await bombear(fixture);
 
     expect(fixture.nativeElement.textContent).not.toContain('Entra para verlos');
-    expect(fixture.nativeElement.querySelector('.esqueleto')).not.toBeNull();
+    // Lo observable es que se anuncia la carga, no que exista una clase de CSS.
+    expect(fixture.nativeElement.querySelector('[role="status"]')?.textContent).toContain(
+      'Cargando tus favoritos',
+    );
   });
 
   it('ofrece reintentar cuando la lista falla', async () => {
@@ -161,7 +188,7 @@ describe('FavoritesPage', () => {
     await bombear(fixture);
 
     expect(fixture.nativeElement.textContent).toContain('No pudimos cargar tus favoritos');
-    expect(fixture.nativeElement.querySelector('[role="alert"] button')).not.toBeNull();
+    expect(botonLlamado(fixture, 'Reintentar')).not.toBeNull();
   });
 
   /** Criterio 12: «ver más» solo cuando de verdad hay más, y manda el cursor. */
@@ -173,10 +200,10 @@ describe('FavoritesPage', () => {
       hasMore: true,
     });
 
-    const mas = fixture.nativeElement.querySelector('.favoritos__mas button') as HTMLButtonElement;
+    const mas = botonLlamado(fixture, 'Ver más');
     expect(mas).not.toBeNull();
 
-    mas.click();
+    mas?.click();
     await bombear(fixture);
 
     const siguiente = backend.expectOne(
@@ -191,7 +218,7 @@ describe('FavoritesPage', () => {
     await bombear(fixture);
 
     expect(fixture.nativeElement.textContent).toContain('Jeans rectos');
-    expect(fixture.nativeElement.querySelector('.favoritos__mas button')).toBeNull();
+    expect(botonLlamado(fixture, 'Ver más')).toBeNull();
   });
 
   /** El último tramo no ofrece «ver más»: un botón que no lleva a nada es peor que ninguno. */
@@ -203,6 +230,6 @@ describe('FavoritesPage', () => {
       hasMore: false,
     });
 
-    expect(fixture.nativeElement.querySelector('.favoritos__mas button')).toBeNull();
+    expect(botonLlamado(fixture, 'Ver más')).toBeNull();
   });
 });

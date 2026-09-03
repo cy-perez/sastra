@@ -9,6 +9,8 @@ const CLAVE = 'sendik.favorito.pendiente';
 interface IntencionGuardada {
   readonly listingId: string;
   readonly cuando: number;
+  /** Correlador de un solo uso. Ver `recordar`. */
+  readonly pase: string;
 }
 
 /**
@@ -43,9 +45,29 @@ interface IntencionGuardada {
 export class FavoriteIntent {
   private readonly enElNavegador = isPlatformBrowser(inject(PLATFORM_ID));
 
-  /** Deja anotado que, al volver con sesión, hay que guardar esta publicación. */
-  recordar(listingId: string): void {
-    this.escribir({ listingId, cuando: Date.now() });
+  /**
+   * Deja anotado que, al volver con sesión, hay que guardar esta publicación.
+   *
+   * <p>Devuelve un **pase de un solo uso** que quien llama tiene que llevar en la dirección
+   * de vuelta. Sin él la intención no se consume, y eso es lo que ata la intención a su
+   * propio recorrido.
+   *
+   * <p><strong>Sin el pase había un fallo de verdad.</strong> Una persona pulsa «Guardar»
+   * sin sesión y no llega a entrar; otra entra después en esa misma pestaña, abre esa ficha
+   * por su cuenta, y la intención se disparaba: la segunda quedaba con un favorito que
+   * nunca pidió, que es dato personal escrito en nombre de otra persona.
+   *
+   * <p>El pase no es una credencial y no protege de nada por sí solo: viaja en una
+   * dirección que cualquiera puede escribir. Lo que hace es exigir que coincidan **dos**
+   * cosas —lo guardado en esta pestaña y lo que trae la vuelta—, y lo guardado en la
+   * pestaña no lo puede plantar nadie desde fuera. La acción sigue sin viajar en el enlace,
+   * que es lo que ADR-0029 decidió: un enlace con un pase inventado y sin intención local
+   * no marca nada.
+   */
+  recordar(listingId: string): string {
+    const pase = this.nuevoPase();
+    this.escribir({ listingId, cuando: Date.now(), pase });
+    return pase;
   }
 
   /**
@@ -56,16 +78,17 @@ export class FavoriteIntent {
    * reaparecería la próxima vez que alguien entrara desde ese navegador. Es exactamente lo
    * que la historia advierte.
    *
-   * <p>Solo la devuelve si es de esta misma publicación. Una intención sobre otra ficha no
-   * se consume aquí: se queda hasta que se visite la suya, se descarte o venza.
+   * <p>Solo la devuelve si es de esta misma publicación **y si el pase coincide**. Sin el
+   * pase, cualquiera que abriera esa ficha con sesión abierta en la misma pestaña
+   * consumiría la intención de otra persona.
    */
-  consumir(listingId: string): boolean {
+  consumir(listingId: string, pase: string | null): boolean {
     const pendiente = this.leer();
 
     if (pendiente === null) {
       return false;
     }
-    if (pendiente.listingId !== listingId) {
+    if (pendiente.listingId !== listingId || pendiente.pase !== pase) {
       return false;
     }
 
@@ -91,6 +114,20 @@ export class FavoriteIntent {
     }
   }
 
+  /**
+   * Un valor irrepetible para este recorrido.
+   *
+   * <p>`crypto.randomUUID` donde está —todos los navegadores que el proyecto admite— y una
+   * cadena aleatoria donde no. No es un secreto criptográfico: solo tiene que ser
+   * irrepetible dentro de una pestaña.
+   */
+  private nuevoPase(): string {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID();
+    }
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
+
   private leer(): IntencionGuardada | null {
     if (!this.enElNavegador) {
       return null;
@@ -111,7 +148,9 @@ export class FavoriteIntent {
         return null;
       }
 
-      return typeof intencion.listingId === 'string' ? intencion : null;
+      return typeof intencion.listingId === 'string' && typeof intencion.pase === 'string'
+        ? intencion
+        : null;
     } catch {
       // Un valor corrupto no es una intención. Se quita para no volver a tropezar.
       this.descartar();

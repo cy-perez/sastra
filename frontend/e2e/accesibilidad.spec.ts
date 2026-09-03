@@ -67,6 +67,10 @@ const RUTAS_PUBLICAS: readonly { readonly ruta: string; readonly nombre: string 
   // llegar al formulario en una suite sin backend.
   { ruta: '/publicar', nombre: 'publicar' },
   { ruta: '/mis-publicaciones', nombre: 'mis publicaciones' },
+  // HU-011. Sin sesion la lista no existe, asi que lo que axe recorre es su cuarta rama:
+  // el encabezado y la invitacion a entrar del criterio 16. Es una pantalla que ve
+  // cualquiera que escriba la direccion, y se quedo fuera de esta lista al escribirla.
+  { ruta: '/mis-favoritos', nombre: 'mis favoritos' },
   // El comodin. Es una pagina como cualquier otra y se llega a ella por error,
   // que es justo cuando conviene que no este rota.
   { ruta: '/esta-ruta-no-existe', nombre: 'no encontrada' },

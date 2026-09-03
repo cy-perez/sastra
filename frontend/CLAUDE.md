@@ -110,7 +110,11 @@ tabular-nums` sobre Inter. Tres pesos: 400, 500 y 600.
   vive en `marca.css`. Un `stroke-width` en el SVG no compite con ella —el CSS
   gana— pero deja la duda de dónde se decide, así que no se escribe. Mezclar
   grosores o terminaciones es lo que hace que un set de iconos se vea amateur.
-  `.icono-lg` es la única variante: sube el área viva a 24.
+  Hay dos variantes y solo dos: `.icono-lg` sube el área viva a 24, y
+  `.icono-relleno` rellena el trazo con `currentColor`. La segunda existe por una
+  razón concreta de accesibilidad y no por gusto: un mismo icono que tiene que
+  decir «puesto» y «no puesto» —el control de favorito de HU-011— no puede
+  distinguir los dos estados por color. No se usa para nada más.
 
 ## Accesibilidad
 

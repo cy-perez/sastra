@@ -227,16 +227,31 @@ public class JdbcListingRepository implements ListingRepository {
      * <p>{@code NULLS LAST} no deberia hacer falta —el dominio sella al entrar— pero
      * cubre las filas que quedaron en revision antes de que existiera la columna sin
      * mandarlas a la cabeza de la cola.
+     *
+     * <p><strong>Desempata por {@code id}, y eso es lo que hace correcto el
+     * desplazamiento.</strong> {@code submitted_at} sola no es un orden total: dos
+     * publicaciones enviadas en el mismo instante pueden salir en cualquier orden, y si
+     * ese orden cambia entre una pagina y la siguiente hay filas que aparecen dos veces y
+     * filas que no aparecen nunca. No es hipotetico: la retrollenada de V12 le puso a
+     * todas las que ya esperaban turno el valor de {@code updated_at}, y ahi los empates
+     * son faciles. Es la misma correccion que ya lleva la cola de verificaciones.
+     *
+     * <p>El indice parcial de V12 es solo {@code (submitted_at)}, igual que el de la otra
+     * cola en V8, asi que el desempate lo resuelve PostgreSQL ordenando los empates. Con
+     * el volumen de una cola de moderacion eso no se nota, y ampliar el indice pide una
+     * migracion nueva que hoy no compra nada.
      */
     @Override
-    public List<Listing> pendientesDeRevision(int pagina, int tamano) {
+    public List<Listing> pendientesDeRevision(long salto, int cuantas) {
         List<Listing> cola = jdbc.sql(SELECT_BASE + """
                          WHERE l.status = 'PENDING_REVIEW'
-                         ORDER BY l.submitted_at ASC NULLS LAST
+                         ORDER BY l.submitted_at ASC NULLS LAST, l.id ASC
                          LIMIT :limite OFFSET :salto
                         """)
-                .param("limite", tamano)
-                .param("salto", (long) pagina * tamano)
+                .param("limite", cuantas)
+                // El salto llega calculado y no se deriva de `cuantas`: derivarlo es lo que
+                // hace que pedir una fila de mas mueva tambien el arranque.
+                .param("salto", salto)
                 .query(JdbcListingRepository::filaAPublicacion)
                 .list();
 

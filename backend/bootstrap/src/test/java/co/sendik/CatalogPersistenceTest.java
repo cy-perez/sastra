@@ -42,11 +42,13 @@ import co.sendik.shared.money.Money;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
@@ -310,6 +312,69 @@ class CatalogPersistenceTest {
                 .as("la cola no puede traer nada que no este esperando")
                 .allSatisfy(publicacion -> assertThat(publicacion.status()).isEqualTo(ListingStatus.PENDING_REVIEW));
         assertThat(cola).extracting(Listing::id).contains(esperando.id());
+    }
+
+    /**
+     * <strong>Pedir mas filas no puede mover el arranque.</strong>
+     *
+     * <p>La firma de esta cola era {@code (pagina, tamano)} y el adaptador derivaba el
+     * desplazamiento del mismo argumento que el limite. Con esa forma, el dia que alguien
+     * pidiera una fila de mas -para saber si hay pagina siguiente sin contar la tabla- el
+     * salto se iria con ella y una publicacion por pagina dejaria de salir, en silencio.
+     * A la cola de verificaciones le paso exactamente eso en cuanto quiso su {@code
+     * hasMore}; aqui la prueba llega antes que el defecto.
+     */
+    @Test
+    void deberia_empezar_donde_dice_el_salto_aunque_se_pidan_mas_filas_HU_008() {
+        Instant temprano = AHORA.minus(Duration.ofHours(6));
+
+        for (int cuantas = 0; cuantas < 5; cuantas++) {
+            publicaciones.guardar(borradorConTomas().enviarARevision(temprano.plusSeconds(cuantas)));
+        }
+
+        var desdeElPrincipio = publicaciones.pendientesDeRevision(0, 5).stream()
+                .map(Listing::id)
+                .toList();
+        var saltandoUna = publicaciones.pendientesDeRevision(1, 4).stream()
+                .map(Listing::id)
+                .toList();
+
+        assertThat(saltandoUna).isEqualTo(desdeElPrincipio.subList(1, 5));
+    }
+
+    /**
+     * El desempate por {@code id}, que es lo que hace correcto el desplazamiento.
+     *
+     * <p>Las cuatro se envian en el <strong>mismo instante</strong>, que es justo el caso
+     * que {@code submitted_at} sola no ordena. Sin desempate, dos peticiones de paginas
+     * contiguas pueden traer la misma fila dos veces y dejarse otra sin traer. Se envian
+     * con un ano de antiguedad para que ocupen las primeras posiciones de la cola pase lo
+     * que pase con lo que dejen otras pruebas de esta clase.
+     */
+    @Test
+    void deberia_paginar_sin_repetir_ni_perder_cuando_el_instante_coincide_HU_008() {
+        Instant mismoInstante = AHORA.minus(Duration.ofDays(365));
+
+        List<ListingId> enviadas = new ArrayList<>();
+        for (int cuantas = 0; cuantas < 4; cuantas++) {
+            enviadas.add(publicaciones
+                    .guardar(borradorConTomas().enviarARevision(mismoInstante))
+                    .id());
+        }
+
+        List<ListingId> primera = idsDeLaCola(0, 2);
+        List<ListingId> segunda = idsDeLaCola(2, 2);
+
+        assertThat(primera).as("una fila no puede salir en dos paginas").doesNotContainAnyElementsOf(segunda);
+        assertThat(Stream.concat(primera.stream(), segunda.stream()).toList())
+                .as("entre las dos paginas tienen que estar las cuatro")
+                .containsExactlyInAnyOrderElementsOf(enviadas);
+    }
+
+    private List<ListingId> idsDeLaCola(long salto, int cuantas) {
+        return publicaciones.pendientesDeRevision(salto, cuantas).stream()
+                .map(Listing::id)
+                .toList();
     }
 
     @Test

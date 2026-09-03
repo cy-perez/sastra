@@ -85,14 +85,18 @@ final class CatalogoEnMemoria {
         }
 
         @Override
-        public List<Listing> pendientesDeRevision(int pagina, int tamano) {
+        public List<Listing> pendientesDeRevision(long salto, int cuantas) {
             List<Listing> esperando = filas.values().stream()
                     .filter(publicacion -> publicacion.status() == ListingStatus.PENDING_REVIEW)
-                    .sorted(Comparator.comparing(Listing::submittedAt, Comparator.nullsLast(Comparator.naturalOrder())))
+                    .sorted(Comparator.comparing(Listing::submittedAt, Comparator.nullsLast(Comparator.naturalOrder()))
+                            // El mismo desempate que el SQL: sin el, dos publicaciones
+                            // enviadas en el mismo instante salen en cualquier orden.
+                            .thenComparing(publicacion -> publicacion.id().value()))
                     .toList();
 
-            int desde = Math.min(pagina * tamano, esperando.size());
-            return esperando.subList(desde, Math.min(desde + tamano, esperando.size()));
+            // Corta igual que el SQL: el salto llega dado y el limite no lo mueve.
+            int desde = (int) Math.min(salto, esperando.size());
+            return esperando.subList(desde, Math.min(desde + cuantas, esperando.size()));
         }
 
         /**

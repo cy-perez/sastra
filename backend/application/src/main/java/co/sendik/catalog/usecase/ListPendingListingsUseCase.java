@@ -32,6 +32,6 @@ public class ListPendingListingsUseCase {
      */
     @Transactional
     public List<Listing> execute(ListPendingListingsQuery consulta) {
-        return publicaciones.pendientesDeRevision(consulta.pagina(), consulta.tamano());
+        return publicaciones.pendientesDeRevision((long) consulta.pagina() * consulta.tamano(), consulta.tamano());
     }
 }

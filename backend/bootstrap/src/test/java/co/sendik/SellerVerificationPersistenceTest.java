@@ -373,8 +373,40 @@ class SellerVerificationPersistenceTest {
         assertThat(primera).isEqualTo(otraVez);
     }
 
+    /**
+     * <strong>Pedir mas filas no puede mover el arranque.</strong>
+     *
+     * <p>Es el defecto que esta prueba existe para que no vuelva. La firma de la cola era
+     * {@code (pagina, tamano)} y el desplazamiento se derivaba del mismo argumento que el
+     * limite. En cuanto alguien pidio una fila de mas -para saber si hay pagina siguiente
+     * sin contar la tabla- el salto se fue con ella: {@code (1, 21)} saltaba 21 filas en
+     * vez de 20, la fila 21 no salia en ninguna pagina, y la bandeja la escondia sin
+     * decirlo. Peor que el defecto que se estaba arreglando.
+     *
+     * <p>Las pruebas que habia no podian verlo: la del recorrido va de una en una, y con
+     * tamano 1 el producto coincide con el salto. Esta pide dos ventanas del mismo sitio
+     * con limites distintos, que es donde el error aparece.
+     */
+    @Test
+    void deberia_empezar_donde_dice_el_salto_aunque_se_pidan_mas_filas() {
+        Instant ahora = reloj.instant();
+
+        for (int cuantas = 0; cuantas < 5; cuantas++) {
+            verificaciones.guardar(completaDe(cuentaNueva(), cedulaNueva()).enviarARevision(ahora));
+        }
+
+        List<SellerVerificationId> desdeElPrincipio = idsDesde(0, 5);
+        List<SellerVerificationId> saltandoUna = idsDesde(1, 4);
+
+        assertThat(saltandoUna).isEqualTo(desdeElPrincipio.subList(1, 5));
+    }
+
     private List<SellerVerificationId> idsDeLaCola(int pagina, int tamano) {
-        return verificaciones.pendientesDeRevision(pagina, tamano).stream()
+        return idsDesde((long) pagina * tamano, tamano);
+    }
+
+    private List<SellerVerificationId> idsDesde(long salto, int cuantas) {
+        return verificaciones.pendientesDeRevision(salto, cuantas).stream()
                 .map(SellerVerification::id)
                 .toList();
     }

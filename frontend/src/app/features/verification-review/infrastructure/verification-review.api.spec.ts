@@ -27,7 +27,7 @@ describe('VerificationReviewApi', () => {
     expect(peticion.request.method).toBe('GET');
     expect(peticion.request.params.get('page')).toBe('0');
     expect(peticion.request.params.get('size')).toBe('20');
-    peticion.flush({ items: [], page: 0, size: 20 });
+    peticion.flush({ items: [], page: 0, size: 20, hasMore: false });
   });
 
   /**
@@ -44,7 +44,7 @@ describe('VerificationReviewApi', () => {
     expect(peticion.request.params.get('limite')).toBeNull();
     expect(peticion.request.params.get('page')).toBe('2');
     expect(peticion.request.params.get('size')).toBe('5');
-    peticion.flush({ items: [], page: 2, size: 5 });
+    peticion.flush({ items: [], page: 2, size: 5, hasMore: false });
   });
 
   /**

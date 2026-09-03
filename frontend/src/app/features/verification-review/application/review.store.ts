@@ -82,16 +82,20 @@ export class ReviewStore {
   );
 
   /**
-   * Si puede haber otra página.
+   * Si puede haber otra página. Lo contesta el servidor.
    *
-   * <p>Se deduce de que la página venga llena, porque el servidor no dice cuántas hay en
-   * total. Contar exige una consulta más sobre la misma tabla en cada carga, y para lo
-   * único que serviría es para saber si el botón va deshabilitado.
+   * <p><strong>Se deducía de que la página viniera llena, y estaba mal.</strong> Esa
+   * deducción no distingue una página llena con más detrás de una página llena que es la
+   * última, que es exactamente lo que pasa cuando el total es múltiplo exacto del tamaño.
+   * El resultado era un «Siguiente» habilitado hacia una página vacía. No es tan raro como
+   * parecía: la bandeja es una cola que se vacía de veinte en veinte.
    *
-   * <p>El precio es una página vacía cuando el total es múltiplo exacto del tamaño. Es
-   * un caso raro, y el estado vacío de la pantalla ya lo cuenta bien.
+   * <p>El servidor lo resuelve pidiendo una fila más de las que caben, así que sigue sin
+   * costar la consulta de conteo que este comentario evitaba antes.
+   *
+   * <p>Sin datos todavía va en `false`: mientras carga no se ofrece pasar de página.
    */
-  readonly hayMas = computed(() => (this.inbox.data()?.items.length ?? 0) === ReviewStore.TAMANO);
+  readonly hayMas = computed(() => this.inbox.data()?.hasMore ?? false);
 
   readonly hayAnterior = computed(() => this.paginaActual() > 0);
 

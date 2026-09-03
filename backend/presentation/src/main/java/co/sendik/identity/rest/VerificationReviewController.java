@@ -2,6 +2,7 @@ package co.sendik.identity.rest;
 
 import co.sendik.identity.dto.ApproveVerificationCommand;
 import co.sendik.identity.dto.ListPendingVerificationsQuery;
+import co.sendik.identity.dto.PendingVerificationsResult;
 import co.sendik.identity.dto.RejectVerificationCommand;
 import co.sendik.identity.dto.RevokeVerificationCommand;
 import co.sendik.identity.dto.VerificationImageContent;
@@ -119,12 +120,13 @@ public class VerificationReviewController {
 
         UserId quienMira = moderadorDe(token);
 
-        List<PendingVerificationResponse> bandeja =
-                casoDeListar.execute(new ListPendingVerificationsQuery(page, size)).stream()
-                        .map(verificacion -> PendingVerificationResponses.de(verificacion, quienMira))
-                        .toList();
+        PendingVerificationsResult resultado = casoDeListar.execute(new ListPendingVerificationsQuery(page, size));
 
-        return new PendingVerificationsPage(bandeja, page, size);
+        List<PendingVerificationResponse> bandeja = resultado.items().stream()
+                .map(verificacion -> PendingVerificationResponses.de(verificacion, quienMira))
+                .toList();
+
+        return new PendingVerificationsPage(bandeja, page, size, resultado.hayMas());
     }
 
     /**

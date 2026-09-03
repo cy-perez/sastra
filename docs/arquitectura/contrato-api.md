@@ -171,6 +171,24 @@ solicitud que no estuviera entre las primeras. Se alineó al arreglar eso. **El
 nombre viejo no se admite**: llega como parámetro desconocido y se ignora, así que
 un cliente que no se haya actualizado recibe la primera página en vez de un error.
 
+La de verificaciones lleva además `hasMore`:
+
+```json
+{ "items": [], "page": 0, "size": 20, "hasMore": false }
+```
+
+**Existe porque «hay más» no se puede deducir de que la página venga llena.** La
+deducción falla justo cuando el total es múltiplo exacto del tamaño: con veinte
+pendientes y veinte por página, la última viene llena y la pantalla ofrecía un
+«Siguiente» hacia una página vacía. Quien revisa pulsaba, no encontraba nada, y no
+podía saber si la cola se acabó o si algo se rompió. El servidor lo resuelve
+pidiendo una fila más de las que caben y devolviéndola recortada, así que no cuesta
+una consulta de conteo en cada carga.
+
+La cola de publicaciones todavía no lo lleva, y esa asimetría es deliberada: hoy
+ninguna pantalla la pagina, así que no tiene a quién mentirle. Cuando se pagine,
+lleva el mismo campo con el mismo nombre.
+
 El tamaño va acotado a 50 y **por encima se rechaza con 400**, no se recorta en
 silencio: un cliente que pide 500 y recibe 50 sin que nadie se lo diga cree que ya
 tiene todo. Un `page` o un `size` que no sean números también dan 400.

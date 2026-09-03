@@ -94,6 +94,16 @@ export interface PendingVerificationsPage {
   readonly items: readonly PendingVerification[];
   readonly page: number;
   readonly size: number;
+  /**
+   * Si detrás de esta página queda al menos una solicitud.
+   *
+   * <p><strong>Lo dice el servidor.</strong> Antes lo deducía la pantalla de que `items`
+   * viniera lleno, y esa deducción se equivoca justo cuando el total es múltiplo exacto
+   * del tamaño: con veinte pendientes y veinte por página ofrecía un «Siguiente» hacia
+   * una página vacía. Quien revisa pulsaba, no encontraba nada, y no podía saber si la
+   * cola se acabó o si algo se rompió.
+   */
+  readonly hasMore: boolean;
 }
 
 /**

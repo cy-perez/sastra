@@ -224,15 +224,15 @@ public class JdbcSellerVerificationRepository implements SellerVerificationRepos
      * aparecen nunca. Mientras esto era un tope sin salto el defecto no se podia observar.
      */
     @Override
-    public List<SellerVerification> pendientesDeRevision(int pagina, int tamano) {
+    public List<SellerVerification> pendientesDeRevision(long salto, int cuantas) {
         return jdbc.sql(SELECT_BASE
                         + " WHERE status = 'PENDING_REVIEW' ORDER BY updated_at ASC, id ASC"
                         + " LIMIT :limite OFFSET :salto")
-                .param("limite", tamano)
-                // Como long: con pagina y tamano en su tope, el producto en int desbordaria
-                // mucho antes de que la tabla llegue ahi, pero desbordar da un salto negativo
-                // y PostgreSQL responde a eso con un error, no con una pagina vacia.
-                .param("salto", (long) pagina * tamano)
+                .param("limite", cuantas)
+                // El salto llega calculado y no se deriva de `cuantas`. Derivarlo era el
+                // defecto: quien pide una fila de mas para saber si hay pagina siguiente
+                // movia tambien el arranque, y se perdia una fila por pagina.
+                .param("salto", salto)
                 .query(this::mapear)
                 .list();
     }

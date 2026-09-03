@@ -10,7 +10,12 @@ import java.util.List;
  * saltaria elementos, y admite pagina y tamano en los listados administrativos acotados.
  * Este lo es.
  *
- * <p>Es la misma forma que {@code PendingListingsPage}, y a proposito: son las dos colas
- * de la misma pantalla y quien las consume no tiene por que aprender dos contratos.
+ * <p>Es la misma forma que {@code PendingListingsPage} mas {@code hasMore}, y esa
+ * diferencia es deliberada: la cola de publicaciones todavia no se pagina en ninguna
+ * pantalla, asi que hoy no tiene a quien mentirle. Cuando se pagine, lleva el mismo campo.
+ *
+ * @param hasMore si detras de esta pagina queda al menos una solicitud. Lo dice el
+ *     servidor y no se deduce de que {@code items} venga lleno: con un total multiplo
+ *     exacto de {@code size}, deducirlo ofrece un «Siguiente» hacia una pagina vacia
  */
-public record PendingVerificationsPage(List<PendingVerificationResponse> items, int page, int size) {}
+public record PendingVerificationsPage(List<PendingVerificationResponse> items, int page, int size, boolean hasMore) {}

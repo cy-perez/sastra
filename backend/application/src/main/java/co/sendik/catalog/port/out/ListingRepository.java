@@ -84,6 +84,39 @@ public interface ListingRepository {
      * <p>No recibe quien pregunta. Filtrar por moderador seria un error: la cola es una
      * sola y RN-063 —que nadie decida sobre lo suyo— se comprueba al decidir, no al
      * listar. Esconderle su propia publicacion le impediria ver que esta en la fila.
+     *
+     * <p><strong>Salto y no numero de pagina.</strong> Con {@code (pagina, tamano)} el
+     * desplazamiento se deriva del mismo argumento que el limite, asi que quien pida una
+     * fila de mas -para saber si hay pagina siguiente sin contar la tabla- mueve tambien
+     * el arranque: {@code (1, 21)} salta 21 filas en vez de 20 y la fila 21 no sale en
+     * ninguna pagina. Se pierde una por pagina, en silencio.
+     *
+     * <p>Aqui no llego a pasar porque nadie pide de mas todavia; le paso a la cola de
+     * verificaciones en cuanto quiso su {@code hasMore}, y esta firma es la misma leccion
+     * aplicada antes de pagarla. Ver {@code SellerVerificationRepository}.
+     *
+     * @param salto cuantas filas se saltan antes de empezar. Como {@code long}: el
+     *     producto de pagina por tamano desborda en {@code int} mucho antes de que la
+     *     tabla llegue ahi, y desbordar da un salto negativo, que PostgreSQL responde con
+     *     un error y no con una pagina vacia
+     * @param cuantas cuantas traer
      */
-    List<Listing> pendientesDeRevision(int pagina, int tamano);
+    List<Listing> pendientesDeRevision(long salto, int cuantas);
+
+    /**
+     * Si queda al menos una esperando revision a partir de esa posicion. La respuesta a
+     * «¿hay pagina siguiente?».
+     *
+     * <p>Existe para no tener que traer a nadie para contestarlo. Pedir una fila de mas y
+     * usar su presencia como señal funciona, pero {@link #pendientesDeRevision} devuelve
+     * la publicacion entera y ademas resuelve su portada: seria una consulta de imagenes
+     * mas por cada carga, para una fila que nadie va a ver.
+     *
+     * <p>Tampoco es contar: no dice cuantas quedan -que exigiria recorrerlas todas- sino
+     * si queda alguna, y para eso basta con llegar hasta la primera.
+     *
+     * @param salto la posicion a partir de la cual se pregunta. Para saber si hay pagina
+     *     siguiente es el final de la actual
+     */
+    boolean hayPendientesDesde(long salto);
 }

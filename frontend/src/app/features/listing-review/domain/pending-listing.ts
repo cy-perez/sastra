@@ -61,6 +61,15 @@ export interface PendingListingsPage {
   readonly items: readonly PendingListing[];
   readonly page: number;
   readonly size: number;
+  /**
+   * Si detrás de esta página queda al menos una publicación.
+   *
+   * <p><strong>Lo dice el servidor.</strong> Deducirlo de que `items` venga lleno se
+   * equivoca justo cuando el total es múltiplo exacto del tamaño: la última página viene
+   * llena y la pantalla ofrecería un «Siguiente» hacia una página vacía. Es la misma
+   * lección que ya pagó la bandeja de verificaciones.
+   */
+  readonly hasMore: boolean;
 }
 
 /**

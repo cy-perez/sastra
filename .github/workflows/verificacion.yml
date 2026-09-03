@@ -131,7 +131,10 @@ jobs:
   extremo-a-extremo:
     name: Extremo a extremo completo
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # Sube de 30 desde que la suite corre dos veces y una de sus pruebas llena la cola
+    # con veintiuna solicitudes por la interfaz. Con margen: un corredor lento no debe
+    # producir un fallo que se lee como una prueba rota.
+    timeout-minutes: 45
 
     services:
       postgres:
@@ -185,7 +188,25 @@ jobs:
         working-directory: frontend
         run: npx playwright install --with-deps chromium
 
-      - name: Pruebas de extremo a extremo completas
+      - name: Pruebas de extremo a extremo completas, primera vuelta
+        working-directory: frontend
+        env:
+          DB_URL: jdbc:postgresql://localhost:5432/sendik
+          DB_USERNAME: sendik
+          DB_PASSWORD: sendik
+        run: npm run e2e:completo
+
+      # La segunda vuelta, contra la base que dejo la primera y sin volver a
+      # levantarla. **Es lo unico que comprueba de verdad que la suite se puede repetir**,
+      # que es una propiedad que esta suite dice tener y que nada verificaba: hasta ahora
+      # cada ejecucion empezaba con la base recien creada, asi que un caso que solo falla
+      # cuando ya hay datos de antes -una cola que arrastra pendientes, una cuenta de
+      # moderadora que ya existe, un documento ya registrado- pasaba desapercibido arriba
+      # y solo aparecia en local, que es exactamente al reves de lo que conviene.
+      #
+      # Es la misma orden y el mismo contenedor de PostgreSQL: el servicio vive lo que
+      # dura el trabajo, y Playwright levanta y apaga sus servidores en cada llamada.
+      - name: Pruebas de extremo a extremo completas, segunda vuelta
         working-directory: frontend
         env:
           DB_URL: jdbc:postgresql://localhost:5432/sendik

@@ -397,7 +397,8 @@ class CasosDeUsoDelCatalogoTest {
         void deberia_estar_vacia_cuando_no_hay_nada_esperando_criterio_4() {
             borradorConTomas();
 
-            assertThat(bandeja().execute(new ListPendingListingsQuery(0, 20))).isEmpty();
+            assertThat(bandeja().execute(new ListPendingListingsQuery(0, 20)).items())
+                    .isEmpty();
         }
 
         @Test
@@ -411,7 +412,7 @@ class CasosDeUsoDelCatalogoTest {
 
             borradorConTomas();
 
-            var cola = bandeja().execute(new ListPendingListingsQuery(0, 20));
+            var cola = bandeja().execute(new ListPendingListingsQuery(0, 20)).items();
 
             assertThat(cola).singleElement().satisfies(publicacion -> {
                 assertThat(publicacion.id()).isEqualTo(enRevision.id());
@@ -429,7 +430,7 @@ class CasosDeUsoDelCatalogoTest {
             enviarEn(TEMPRANO).execute(new SellerListingCommand(vendedor, temprano.id()));
             enviarEn(MEDIODIA).execute(new SellerListingCommand(vendedor, mediodia.id()));
 
-            var cola = bandeja().execute(new ListPendingListingsQuery(0, 20));
+            var cola = bandeja().execute(new ListPendingListingsQuery(0, 20)).items();
 
             assertThat(cola).extracting(Listing::id).containsExactly(temprano.id(), mediodia.id(), tarde.id());
         }
@@ -448,9 +449,27 @@ class CasosDeUsoDelCatalogoTest {
             new ChangeListingPriceUseCase(publicaciones, Clock.fixed(TARDE, ZoneOffset.UTC))
                     .execute(new ChangeListingPriceCommand(vendedor, primera.id(), Money.dePesos(190_000)));
 
-            var cola = bandeja().execute(new ListPendingListingsQuery(0, 20));
+            var cola = bandeja().execute(new ListPendingListingsQuery(0, 20)).items();
 
             assertThat(cola).extracting(Listing::id).containsExactly(primera.id(), segunda.id());
+        }
+
+        /**
+         * <strong>El caso que la longitud de la pagina no distingue.</strong> Con el total
+         * multiplo exacto del tamano, deducir «hay mas» de que la pagina venga llena
+         * ofrece un «Siguiente» hacia una pagina vacia.
+         */
+        @Test
+        void no_deberia_decir_que_hay_mas_cuando_la_pagina_llena_es_la_ultima() {
+            Listing temprano = borradorConTomas();
+            Listing mediodia = borradorConTomas();
+            enviarEn(TEMPRANO).execute(new SellerListingCommand(vendedor, temprano.id()));
+            enviarEn(MEDIODIA).execute(new SellerListingCommand(vendedor, mediodia.id()));
+
+            var pagina = bandeja().execute(new ListPendingListingsQuery(0, 2));
+
+            assertThat(pagina.items()).hasSize(2);
+            assertThat(pagina.hayMas()).isFalse();
         }
 
         @Test
@@ -465,8 +484,13 @@ class CasosDeUsoDelCatalogoTest {
             var primera = bandeja().execute(new ListPendingListingsQuery(0, 2));
             var segunda = bandeja().execute(new ListPendingListingsQuery(1, 2));
 
-            assertThat(primera).extracting(Listing::id).containsExactly(temprano.id(), mediodia.id());
-            assertThat(segunda).extracting(Listing::id).containsExactly(tarde.id());
+            assertThat(primera.items()).extracting(Listing::id).containsExactly(temprano.id(), mediodia.id());
+            assertThat(segunda.items()).extracting(Listing::id).containsExactly(tarde.id());
+
+            // Y lo que la longitud de la pagina no puede decir: la primera viene llena y
+            // aun asi hay otra; la segunda no viene llena y no hay ninguna mas.
+            assertThat(primera.hayMas()).isTrue();
+            assertThat(segunda.hayMas()).isFalse();
         }
 
         @Test

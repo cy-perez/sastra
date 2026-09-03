@@ -45,6 +45,12 @@ function cedulaNueva(): string {
  */
 const NOMBRE_MODERADORA = 'Quien Modera';
 
+/** Desempata los titulares creados dentro del mismo milisegundo. */
+let cuantasSolicitudes = 0;
+
+/** El mismo que usa la pantalla. Si cambia allí, esta prueba deja de medir lo que cree. */
+const TAMANO_DE_PAGINA = 20;
+
 async function registrar(page: Page, correo: string, nombre = 'Ana María'): Promise<void> {
   const yaVistos = enlacesVistos('/verificar-correo');
 
@@ -78,13 +84,17 @@ async function ingresar(page: Page, correo: string): Promise<void> {
  * la anterior en pie y el resto de la prueba corre con la cuenta equivocada, que con las
  * dos llamandose igual no se nota.
  */
-async function entrarComoModeradora(page: Page): Promise<void> {
+async function salirSiHaySesion(page: Page): Promise<void> {
   await page.goto('/');
   const salir = page.getByRole('button', { name: 'Salir' });
   if (await salir.isVisible().catch(() => false)) {
     await salir.click();
     await expect(page.getByRole('link', { name: 'Entrar' })).toBeVisible();
   }
+}
+
+async function entrarComoModeradora(page: Page): Promise<void> {
+  await salirSiHaySesion(page);
 
   await ingresar(page, MODERADORA);
 
@@ -102,14 +112,40 @@ async function entrarComoModeradora(page: Page): Promise<void> {
 }
 
 /** Una solicitud completa, enviada a revision, con una cuenta nueva. */
-async function dejarUnaSolicitudEnRevision(page: Page, quien: string): Promise<void> {
-  await registrar(page, correoNuevo(quien));
+/**
+ * Deja una solicitud esperando revisión.
+ *
+ * <p>Devuelve el titular, y es único: la bandeja lo muestra, y es lo único que permite
+ * señalar **esta** solicitud entre todas las que esperan. Con un nombre fijo, una prueba
+ * que quiera una concreta acaba abriendo la más vieja de la cola, que en una base que
+ * arrastra datos puede ser de otra corrida.
+ *
+ * <p>El contador va además del reloj porque creando varias seguidas `Date.now()` repite
+ * dentro del mismo milisegundo.
+ */
+async function dejarUnaSolicitudEnRevision(page: Page, quien: string): Promise<string> {
+  const cual = (cuantasSolicitudes += 1);
+  const titular = `Ana Maria Garcia ${Date.now()}-${cual}`;
+
+  // **Se cierra la sesión anterior y cada cuenta se llama distinto**, y las dos cosas son
+  // por lo mismo. `registrar` no cierra nada, así que encadenando varias la sesión de una
+  // puede sobrevivir a la siguiente; y con todas llamándose igual, la comprobación que
+  // `registrar` hace al terminar -que la cabecera muestre el nombre- pasa aunque la sesión
+  // sea la de otra cuenta. Es la misma trampa que este archivo ya documenta para la
+  // moderadora, y encadenando veintiuna deja de ser teórica: se manifestó en integración
+  // continua como un `Empezar` que no llegaba nunca, porque la pantalla estaba enseñando
+  // la verificación ya enviada de la cuenta anterior.
+  //
+  // Con un nombre propio por cuenta, esa confusión falla en el acto y diciendo cuál es,
+  // en vez de agotar el tiempo de la prueba cinco pasos más allá.
+  await salirSiHaySesion(page);
+  await registrar(page, correoNuevo(quien), `Ana Maria ${cual}`);
   await page.goto(RUTA_VERIFICACION);
   await page.getByRole('button', { name: 'Empezar' }).click();
 
   await page.getByLabel('Tipo de documento').selectOption('CC');
   await page.getByLabel('Número del documento').fill(cedulaNueva());
-  await page.getByLabel('Nombre completo, como aparece en el documento').fill('Ana Maria Garcia');
+  await page.getByLabel('Nombre completo, como aparece en el documento').fill(titular);
   await tomarUnaFoto(page);
   await tomarUnaFoto(page);
   await page.getByRole('button', { name: 'Guardar el documento' }).click();
@@ -122,12 +158,60 @@ async function dejarUnaSolicitudEnRevision(page: Page, quien: string): Promise<v
   await page.getByLabel('Entidad').selectOption('bancolombia');
   await page.getByLabel('Tipo de cuenta').selectOption('SAVINGS');
   await page.getByLabel('Número de cuenta').fill('91500123456');
-  await page.getByLabel('Nombre del titular').fill('Ana Maria Garcia');
+  await page.getByLabel('Nombre del titular').fill(titular);
   await page.getByRole('button', { name: 'Guardar la cuenta' }).click();
   await expect(page.getByText('Guardamos tu cuenta.')).toBeVisible();
 
   await page.getByRole('button', { name: 'Enviar para revisión' }).click();
   await expect(page.getByText('Estamos revisando tu solicitud.')).toBeVisible();
+
+  return titular;
+}
+
+/**
+ * Cuántas solicitudes esperan revisión, contadas por la interfaz.
+ *
+ * <p>Recorriendo, no preguntando a la API: si esta suite empieza a leer el estado por un
+ * atajo, deja de ser de extremo a extremo. Y es barato -dos o tres clics- comparado con
+ * crear solicitudes de más, que es lo que evita saber esto.
+ */
+async function cuantasEsperanRevision(page: Page): Promise<number> {
+  await entrarComoModeradora(page);
+  await page.goto(RUTA_BANDEJA);
+
+  const paginacion = page.getByRole('navigation', { name: 'Páginas de la bandeja' });
+  const siguiente = paginacion.getByRole('button', { name: 'Siguiente' });
+
+  // **Las filas por su rol y no por su clase.** `.solicitud` es también la clase de las
+  // filas del esqueleto de carga, así que contando por ahí una bandeja vacía devuelve
+  // tres. Costó una corrida entera: creaba dieciocho solicitudes en vez de veintiuna, la
+  // cola cabía en una página y la prueba fallaba diciendo que no había paginación. El
+  // esqueleto está oculto a la accesibilidad, así que ningún localizador por rol lo ve.
+  const filas = page.getByRole('link').filter({ hasText: 'Espera desde' });
+  const vacia = page.getByText('No hay nada por revisar');
+
+  let total = 0;
+
+  for (let pagina = 1; pagina <= 50; pagina++) {
+    // Que la carga haya terminado, sea con filas o sin ellas. Sin esto se cuenta una
+    // pantalla a medio pintar.
+    await expect(filas.first().or(vacia)).toBeVisible();
+    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+
+    total += await filas.count();
+
+    if (!(await siguiente.isVisible())) {
+      break;
+    }
+    if ((await siguiente.getAttribute('aria-disabled')) !== 'false') {
+      break;
+    }
+
+    await siguiente.click();
+    await expect(paginacion.getByRole('status')).toHaveText(`Página ${pagina + 1}`);
+  }
+
+  return total;
 }
 
 test.describe('bandeja del moderador', () => {
@@ -208,6 +292,82 @@ test.describe('bandeja del moderador', () => {
 
     // Criterio 8: vuelve a la lista y la solicitud ya no está.
     await expect(page.getByRole('heading', { name: 'Verificaciones pendientes' })).toBeVisible();
+  });
+
+  /**
+   * <strong>Llegar a una solicitud que no está en la primera página.</strong>
+   *
+   * <p>Es el motivo por el que la bandeja se paginó, y hasta ahora nada lo comprobaba de
+   * punta a punta: contra una base recién creada la cola cabe entera en una página, así
+   * que el recorrido por páginas —el botón, la espera del número, el corte al llegar al
+   * final— era código que en integración continua no se ejecutaba nunca. Justo el que
+   * escondía el defecto que dejó esta suite sin poder pasar dos veces seguidas.
+   *
+   * <p>Llena la cola por encima del tamaño de página y va a por la última, que es la más
+   * nueva y por tanto la última de una cola que ordena por antigüedad. La premisa se
+   * comprueba antes de recorrer: si esta solicitud apareciera en la primera página, la
+   * prueba pasaría sin haber paginado y no valdría nada.
+   *
+   * <p><strong>Deja la cola llena a propósito.</strong> No aprueba ninguna de las que
+   * crea, así que las pruebas que vienen después —este archivo es el primero por orden
+   * alfabético— se encuentran una bandeja de varias páginas y recorren ese mismo camino
+   * para llegar a lo suyo. Es la única forma de que se ejercite de verdad, y de paso es
+   * la situación real de una cola que nadie ha vaciado.
+   */
+  test('se llega a una solicitud que no cabe en la primera pagina', async ({ page }) => {
+    // Cada solicitud se crea por la interfaz, con su cámara y su formulario. Es lento y no
+    // hay atajo: sembrarlas llamando a la API sería saltarse justo lo que se prueba.
+    test.setTimeout(600_000);
+
+    // Solo las que falten. Contra una base recién creada son veintiuna; contra una que
+    // arrastra pendientes de antes -la segunda vuelta de integración continua, o
+    // cualquier ejecución local repetida- basta con una, porque la cola ya es profunda y
+    // lo único que hace falta es una solicitud propia al final de todo.
+    const yaEsperan = await cuantasEsperanRevision(page);
+    const faltan = Math.max(1, TAMANO_DE_PAGINA + 1 - yaEsperan);
+
+    let laUltima = '';
+    for (let cuantas = 0; cuantas < faltan; cuantas++) {
+      laUltima = await dejarUnaSolicitudEnRevision(page, 'cola-larga');
+    }
+
+    await entrarComoModeradora(page);
+    await page.goto(RUTA_BANDEJA);
+
+    const paginacion = page.getByRole('navigation', { name: 'Páginas de la bandeja' });
+    const fila = page.getByRole('link').filter({ hasText: laUltima });
+
+    // La premisa. Se espera a la navegación primero: solo se pinta con la carga resuelta,
+    // así que su presencia es también la señal de que la lista ya está.
+    await expect(paginacion).toBeVisible();
+    await expect(fila).toHaveCount(0);
+
+    // Y ahora se recorre, con el botón que usa quien modera.
+    for (let pagina = 1; pagina <= 50; pagina++) {
+      // Antes de mirar, que lo que se ve sea de esta página. La bandeja conserva la
+      // anterior mientras llega la nueva -para no desmontar la paginación con el foco
+      // dentro- así que «no está la fila» puede significar solo «todavía no llegó», y
+      // `isVisible()` no espera. Sin esto el recorrido se salta una página entera.
+      await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+
+      if (await fila.first().isVisible()) {
+        break;
+      }
+
+      const siguiente = paginacion.getByRole('button', { name: 'Siguiente' });
+      expect(await siguiente.getAttribute('aria-disabled')).toBe('false');
+      await siguiente.click();
+      await expect(paginacion.getByRole('status')).toHaveText(`Página ${pagina + 1}`);
+    }
+
+    await expect(fila.first()).toBeVisible();
+    await fila.first().click();
+
+    // Se llegó a la solicitud, y es la suya: el detalle muestra su titular. Con
+    // `.first()` porque el nombre sale en tres sitios de esta pantalla -el encabezado,
+    // el documento y la cuenta- y pedirlos todos falla por ambigüedad.
+    await expect(page.getByRole('button', { name: 'Aprobar' })).toBeVisible();
+    await expect(page.getByText(laUltima).first()).toBeVisible();
   });
 
   /**

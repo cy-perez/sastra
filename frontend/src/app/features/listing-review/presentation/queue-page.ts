@@ -31,6 +31,11 @@ export class QueuePage {
   protected readonly consulta = this.store.queue;
   protected readonly pendientes = this.store.pendientes;
 
+  protected readonly pagina = this.store.pagina;
+  protected readonly hayMas = this.store.hayMas;
+  protected readonly hayAnterior = this.store.hayAnterior;
+  protected readonly actualizando = this.store.actualizando;
+
   /** Constante y no un literal en la plantilla, que se recrearía en cada ciclo. */
   protected readonly filasDelEsqueleto = [1, 2, 3];
 
@@ -64,6 +69,19 @@ export class QueuePage {
 
   protected precio(valor: Money): string {
     return precioFormateado(valor, this.idioma.getActiveLang());
+  }
+
+  /**
+   * Las dos siguen siendo llamables en el borde, y no es un descuido: los botones se
+   * marcan con `aria-disabled` y no con `disabled`, así que en la última página
+   * «Siguiente» todavía recibe el clic. Quien acota el movimiento es el estado.
+   */
+  protected siguiente(): void {
+    this.store.paginaSiguiente();
+  }
+
+  protected anterior(): void {
+    this.store.paginaAnterior();
   }
 
   protected reintentar(): void {

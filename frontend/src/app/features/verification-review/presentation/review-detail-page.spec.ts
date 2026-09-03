@@ -102,7 +102,7 @@ describe('ReviewDetailPage', () => {
     backend
       .expectOne((p) => p.method === 'GET' && p.url === `${API}/verifications`)
       // La bandeja responde una página, no una lista pelada: es un listado administrativo.
-      .flush({ items: respuesta, page: 0, size: 20 });
+      .flush({ items: respuesta, page: 0, size: 20, hasMore: false });
     await asentar(fixture);
 
     return { fixture, backend };
@@ -139,7 +139,7 @@ describe('ReviewDetailPage', () => {
       await new Promise((listo) => setTimeout(listo, 0));
       backend
         .match((p) => p.url === `${API}/verifications`)
-        .forEach((p) => p.flush({ items: respuesta, page: 0, size: 20 }));
+        .forEach((p) => p.flush({ items: respuesta, page: 0, size: 20, hasMore: false }));
       fixture.detectChanges();
     }
   };

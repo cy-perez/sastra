@@ -13,6 +13,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import co.sendik.identity.dto.ApproveVerificationCommand;
 import co.sendik.identity.dto.ListPendingVerificationsQuery;
+import co.sendik.identity.dto.PendingVerificationsResult;
 import co.sendik.identity.dto.RejectVerificationCommand;
 import co.sendik.identity.dto.VerificationImageContent;
 import co.sendik.identity.dto.ViewVerificationImageCommand;
@@ -154,7 +155,7 @@ class VerificationReviewControllerTest {
 
     @Test
     void deberia_listar_lo_que_espera_revision() throws Exception {
-        when(listado.execute(any())).thenReturn(List.of(enRevision()));
+        when(listado.execute(any())).thenReturn(new PendingVerificationsResult(List.of(enRevision()), false));
 
         mvc.perform(get("/api/v1/verifications"))
                 .andExpect(status().isOk())
@@ -171,7 +172,7 @@ class VerificationReviewControllerTest {
      */
     @Test
     void deberia_cumplir_el_criterio_11_tambien_para_el_moderador() throws Exception {
-        when(listado.execute(any())).thenReturn(List.of(enRevision()));
+        when(listado.execute(any())).thenReturn(new PendingVerificationsResult(List.of(enRevision()), false));
 
         MvcResult resultado = mvc.perform(get("/api/v1/verifications")).andReturn();
         String cuerpo = resultado.getResponse().getContentAsString();
@@ -187,7 +188,7 @@ class VerificationReviewControllerTest {
 
     @Test
     void deberia_respetar_la_pagina_y_el_tamano_pedidos() throws Exception {
-        when(listado.execute(any())).thenReturn(List.of());
+        when(listado.execute(any())).thenReturn(new PendingVerificationsResult(List.of(), false));
 
         mvc.perform(get("/api/v1/verifications").param("page", "3").param("size", "5"))
                 .andExpect(status().isOk())
@@ -211,7 +212,7 @@ class VerificationReviewControllerTest {
      */
     @Test
     void deberia_ignorar_el_nombre_viejo_del_parametro() throws Exception {
-        when(listado.execute(any())).thenReturn(List.of());
+        when(listado.execute(any())).thenReturn(new PendingVerificationsResult(List.of(), false));
 
         mvc.perform(get("/api/v1/verifications").param("limite", "5")).andExpect(status().isOk());
 
@@ -221,10 +222,61 @@ class VerificationReviewControllerTest {
         assertThat(consulta.getValue().tamano()).isEqualTo(20);
     }
 
+    /**
+     * Que «hay mas» lo diga el servidor, y no la longitud de la pagina.
+     *
+     * <p>Deducirlo de que {@code items} venga lleno se equivoca justo cuando el total es
+     * multiplo exacto del tamano: veinte pendientes y veinte por pagina daban un
+     * «Siguiente» hacia una pagina vacia. Estas dos pruebas sujetan los dos lados, porque
+     * el caso que falla —pagina llena y ultima— es indistinguible del otro sin este campo.
+     */
+    @Test
+    void deberia_decir_que_hay_mas_cuando_detras_queda_algo() throws Exception {
+        when(listado.execute(any())).thenReturn(new PendingVerificationsResult(List.of(enRevision()), true));
+
+        mvc.perform(get("/api/v1/verifications"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.hasMore").value(true));
+    }
+
+    @Test
+    void deberia_decir_que_no_hay_mas_aunque_la_pagina_venga_llena() throws Exception {
+        when(listado.execute(any())).thenReturn(new PendingVerificationsResult(List.of(enRevision()), false));
+
+        mvc.perform(get("/api/v1/verifications").param("size", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.hasMore").value(false));
+    }
+
     /** El tope lo pone la consulta; aqui se comprueba que llega al borde y no como 500. */
     @Test
     void deberia_rechazar_un_tamano_de_pagina_absurdo() throws Exception {
         mvc.perform(get("/api/v1/verifications").param("size", "500"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COMMON_VALIDATION_FAILED"));
+    }
+
+    /**
+     * Los dos lados del tope, que es donde se equivocan los limites.
+     *
+     * <p>El de arriba importa mas de lo que parece desde que existe la fila de sonda: en
+     * el tope exacto el caso de uso le pide al repositorio una mas de las que el contrato
+     * admite, y eso tiene que seguir siendo una peticion valida.
+     */
+    @Test
+    void deberia_admitir_el_tamano_del_tope() throws Exception {
+        when(listado.execute(any())).thenReturn(new PendingVerificationsResult(List.of(), false));
+
+        mvc.perform(get("/api/v1/verifications")
+                        .param("size", String.valueOf(ListPendingVerificationsQuery.TAMANO_MAXIMO)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void deberia_rechazar_una_fila_por_encima_del_tope() throws Exception {
+        mvc.perform(get("/api/v1/verifications")
+                        .param("size", String.valueOf(ListPendingVerificationsQuery.TAMANO_MAXIMO + 1)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("COMMON_VALIDATION_FAILED"));
     }
@@ -295,7 +347,8 @@ class VerificationReviewControllerTest {
      */
     @Test
     void deberia_decir_que_la_solicitud_es_propia_cuando_el_dueno_es_quien_mira() throws Exception {
-        when(listado.execute(any())).thenReturn(List.of(enRevisionDe(MODERADOR)));
+        when(listado.execute(any()))
+                .thenReturn(new PendingVerificationsResult(List.of(enRevisionDe(MODERADOR)), false));
 
         mvc.perform(get("/api/v1/verifications"))
                 .andExpect(status().isOk())
@@ -304,7 +357,8 @@ class VerificationReviewControllerTest {
 
     @Test
     void deberia_decir_que_la_solicitud_es_ajena_cuando_el_dueno_es_otro() throws Exception {
-        when(listado.execute(any())).thenReturn(List.of(enRevisionDe(UserId.nuevo())));
+        when(listado.execute(any()))
+                .thenReturn(new PendingVerificationsResult(List.of(enRevisionDe(UserId.nuevo())), false));
 
         mvc.perform(get("/api/v1/verifications"))
                 .andExpect(status().isOk())

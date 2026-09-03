@@ -1,5 +1,10 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { injectMutation, injectQuery, QueryClient } from '@tanstack/angular-query-experimental';
+import {
+  injectMutation,
+  injectQuery,
+  keepPreviousData,
+  QueryClient,
+} from '@tanstack/angular-query-experimental';
 
 import { ApiError } from '../../../core/http/api-error';
 import { SessionStore } from '../../../core/session/session.store';
@@ -63,6 +68,19 @@ export class ReviewStore {
     queryKey: queryKeys.inboxPagina(this.paginaActual()),
     queryFn: () => this.api.pendientes(this.paginaActual(), ReviewStore.TAMANO),
     staleTime: 0,
+    // **La página anterior se queda en pantalla mientras llega la siguiente.** No es
+    // cosmético: sin esto la consulta vuelve a `pending` al cambiar de página, el bloque
+    // de paginación se desmonta con el foco dentro y quien navega con teclado acaba en
+    // `body`, teniendo que tabular desde el principio del documento en cada página.
+    //
+    // Es la misma lección que ya pagó el `aria-disabled` de los botones, resuelta allí
+    // para «llegar al extremo» y no para «pasar de página», que es el uso normal. Con la
+    // página anterior de relleno, `isPending` solo es cierto en la primera carga: el
+    // esqueleto sigue apareciendo cuando no hay nada que enseñar, y no cuando ya lo hay.
+    //
+    // Lo que la lista dice mientras tanto es `aria-busy`, que es la señal que un lector
+    // de pantalla espera para una región que se está actualizando.
+    placeholderData: keepPreviousData,
     // Sin reintentos automaticos. La pantalla tiene su boton de reintentar (criterio 4),
     // y con tres reintentos y espera creciente el fallo tarda segundos en aparecer:
     // quien revisa se queda mirando un esqueleto sin saber si carga o esta roto. El
@@ -82,18 +100,31 @@ export class ReviewStore {
   );
 
   /**
-   * Si puede haber otra página.
+   * Si puede haber otra página. Lo contesta el servidor.
    *
-   * <p>Se deduce de que la página venga llena, porque el servidor no dice cuántas hay en
-   * total. Contar exige una consulta más sobre la misma tabla en cada carga, y para lo
-   * único que serviría es para saber si el botón va deshabilitado.
+   * <p><strong>Se deducía de que la página viniera llena, y estaba mal.</strong> Esa
+   * deducción no distingue una página llena con más detrás de una página llena que es la
+   * última, que es exactamente lo que pasa cuando el total es múltiplo exacto del tamaño.
+   * El resultado era un «Siguiente» habilitado hacia una página vacía. No es tan raro como
+   * parecía: la bandeja es una cola que se vacía de veinte en veinte.
    *
-   * <p>El precio es una página vacía cuando el total es múltiplo exacto del tamaño. Es
-   * un caso raro, y el estado vacío de la pantalla ya lo cuenta bien.
+   * <p>El servidor lo resuelve pidiendo una fila más de las que caben, así que sigue sin
+   * costar la consulta de conteo que este comentario evitaba antes.
+   *
+   * <p>Sin datos todavía va en `false`: mientras carga no se ofrece pasar de página.
    */
-  readonly hayMas = computed(() => (this.inbox.data()?.items.length ?? 0) === ReviewStore.TAMANO);
+  readonly hayMas = computed(() => this.inbox.data()?.hasMore ?? false);
 
   readonly hayAnterior = computed(() => this.paginaActual() > 0);
+
+  /**
+   * Si la bandeja se está actualizando con algo ya en pantalla.
+   *
+   * <p>No es lo mismo que `isPending`: eso es «no hay nada que enseñar todavía» y lo
+   * cuenta el esqueleto. Esto es «lo que ves es de hace un momento», que es lo que pasa
+   * al cambiar de página desde que la anterior se queda de relleno.
+   */
+  readonly actualizando = computed(() => this.inbox.isFetching() && !this.inbox.isPending());
 
   paginaSiguiente(): void {
     if (this.hayMas()) {

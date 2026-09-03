@@ -154,7 +154,7 @@ GET /api/v1/moderation/listings?page=0&size=20
 ```
 
 ```json
-{ "items": [], "page": 0, "size": 20 }
+{ "items": [], "page": 0, "size": 20, "hasMore": false }
 ```
 
 Las dos colas del moderador van así, con los mismos nombres: la de publicaciones
@@ -170,6 +170,14 @@ la consumía tenía que aprender una excepción, y no había forma de llegar a u
 solicitud que no estuviera entre las primeras. Se alineó al arreglar eso. **El
 nombre viejo no se admite**: llega como parámetro desconocido y se ignora, así que
 un cliente que no se haya actualizado recibe la primera página en vez de un error.
+
+El campo `hasMore` existe porque **«hay más» no se puede deducir de que la página
+venga llena**. La deducción falla justo cuando el total es múltiplo exacto del
+tamaño: con veinte pendientes y veinte por página, la última viene llena y la
+pantalla ofrecía un «Siguiente» hacia una página vacía. Quien revisa pulsaba, no encontraba nada, y no
+podía saber si la cola se acabó o si algo se rompió. El servidor lo resuelve
+preguntando si queda alguna después de esta página, que no es lo mismo que contar:
+no dice cuántas quedan —eso obligaría a recorrerlas todas— sino si queda alguna.
 
 El tamaño va acotado a 50 y **por encima se rechaza con 400**, no se recorta en
 silencio: un cliente que pide 500 y recibe 50 sin que nadie se lo diga cree que ya

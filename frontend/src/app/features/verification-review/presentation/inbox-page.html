@@ -5,7 +5,10 @@
   <p class="aviso-hecho tipo-cuerpo" role="status">{{ clave | transloco }}</p>
 }
 
-<h1 class="tipo-h1">{{ 'verificationReview.inbox.title' | transloco }}</h1>
+<!-- `tabindex="-1"` no lo mete en el orden de tabulacion: lo hace enfocable por codigo,
+     que es lo que hace falta para poder traer aqui el foco al reintentar, cuando el boton
+     que se pulso deja de existir. -->
+<h1 #titulo tabindex="-1" class="tipo-h1">{{ 'verificationReview.inbox.title' | transloco }}</h1>
 
 @if (consulta.isPending()) {
   <!-- El esqueleto se esconde de la accesibilidad: para quien no ve la pantalla es una
@@ -34,7 +37,10 @@
     <p>{{ 'verificationReview.inbox.empty.body' | transloco }}</p>
   </div>
 } @else {
-  <ul class="lista">
+  <!-- `aria-busy` mientras llega la página siguiente: la lista que se ve es todavía la
+       anterior, y sin esta señal un lector de pantalla lee filas viejas como si fueran
+       las nuevas. Va aquí y no en la paginación, que es lo que no cambia. -->
+  <ul class="lista" [attr.aria-busy]="actualizando()">
     @for (solicitud of pendientes(); track solicitud.id) {
       <li class="solicitud">
         <!-- El enlace envuelve toda la fila para que el destino táctil sea la fila

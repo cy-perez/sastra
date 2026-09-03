@@ -224,17 +224,35 @@ public class JdbcSellerVerificationRepository implements SellerVerificationRepos
      * aparecen nunca. Mientras esto era un tope sin salto el defecto no se podia observar.
      */
     @Override
-    public List<SellerVerification> pendientesDeRevision(int pagina, int tamano) {
+    public List<SellerVerification> pendientesDeRevision(long salto, int cuantas) {
         return jdbc.sql(SELECT_BASE
                         + " WHERE status = 'PENDING_REVIEW' ORDER BY updated_at ASC, id ASC"
                         + " LIMIT :limite OFFSET :salto")
-                .param("limite", tamano)
-                // Como long: con pagina y tamano en su tope, el producto en int desbordaria
-                // mucho antes de que la tabla llegue ahi, pero desbordar da un salto negativo
-                // y PostgreSQL responde a eso con un error, no con una pagina vacia.
-                .param("salto", (long) pagina * tamano)
+                .param("limite", cuantas)
+                // El salto llega calculado y no se deriva de `cuantas`. Derivarlo era el
+                // defecto: quien pide una fila de mas para saber si hay pagina siguiente
+                // movia tambien el arranque, y se perdia una fila por pagina.
+                .param("salto", salto)
                 .query(this::mapear)
                 .list();
+    }
+
+    /**
+     * Sin {@code ORDER BY} a proposito: la pregunta es cuantas hay, no cuales, y para
+     * «¿queda alguna despues de la posicion N?» el orden es irrelevante. Ordenar aqui
+     * seria pedirle a PostgreSQL un trabajo cuyo resultado no se mira.
+     *
+     * <p>Se apoya en el mismo indice parcial de V8. No descifra nada: no lee ninguna
+     * columna de la fila, solo comprueba que existe.
+     */
+    @Override
+    public boolean hayPendientesDesde(long salto) {
+        return jdbc.sql("""
+                        SELECT EXISTS (
+                            SELECT 1 FROM seller_verifications
+                            WHERE status = 'PENDING_REVIEW'
+                            OFFSET :salto LIMIT 1)
+                        """).param("salto", salto).query(Boolean.class).single();
     }
 
     private SellerVerification mapear(ResultSet fila, int numero) throws SQLException {

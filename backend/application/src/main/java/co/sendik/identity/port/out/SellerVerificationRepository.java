@@ -54,21 +54,56 @@ public interface SellerVerificationRepository {
     /**
      * Las que esperan revision, las mas viejas primero. La bandeja del moderador.
      *
-     * <p>Por pagina y tamano, no por cursor: el contrato reserva el cursor para el
+     * <p>Por desplazamiento y no por cursor: el contrato reserva el cursor para el
      * catalogo publico y admite pagina y tamano en los listados administrativos acotados
-     * (contrato-api.md). Es la misma forma que la cola de publicaciones, que es la otra
-     * mitad de la misma pantalla.
+     * (contrato-api.md). La pagina la calcula quien llama; aqui se recibe ya resuelta.
      *
-     * <p><strong>Aqui hubo un tope sin desplazamiento</strong>, con el argumento de que
-     * esta lista la trabaja una persona hasta vaciarla. Eso describe bien la carga y mal
-     * el alcance: la bandeja drena sola -decidir saca la fila- pero sin desplazamiento no
-     * habia forma de llegar a una solicitud concreta que no estuviera entre las primeras,
-     * ni nada que dijera que habia mas.
+     * <p><strong>Salto y no numero de pagina, y no es cosmetico.</strong> Con
+     * {@code (pagina, tamano)} el desplazamiento se deriva del mismo argumento que el
+     * limite, asi que quien pida una fila de mas para saber si hay pagina siguiente mueve
+     * tambien el arranque: {@code (1, 21)} salta 21 filas en vez de 20 y la fila 21 no
+     * sale en ninguna pagina. Se pierde una por pagina, en silencio. Separarlos es lo que
+     * permite pedir mas de las que caben sin mover de sitio la ventana.
+     *
+     * <p><strong>Quien llama pide una de mas</strong> para saber si hay pagina siguiente,
+     * igual que en {@code ListingRepository.publicadas}. Ver
+     * {@code ListPendingVerificationsUseCase}.
+     *
+     * <p>Aqui hubo un tope sin desplazamiento, con el argumento de que esta lista la
+     * trabaja una persona hasta vaciarla. Eso describe bien la carga y mal el alcance: la
+     * bandeja drena sola -decidir saca la fila- pero sin desplazamiento no habia forma de
+     * llegar a una solicitud concreta que no estuviera entre las primeras.
      *
      * <p>Devuelve el agregado entero, asi que descifra el numero de cada fila. Es
      * trabajo de mas para una lista, y se acepta mientras el volumen sea el que es:
      * partir el tipo en dos —uno para listar y otro para decidir— es lo que se hara
      * cuando la bandeja tenga cientos de filas y no antes.
+     *
+     * @param salto cuantas filas se saltan antes de empezar. Como {@code long}: el
+     *     producto de pagina por tamano desborda en {@code int} mucho antes de que la
+     *     tabla llegue ahi, y desbordar da un salto negativo, que PostgreSQL responde con
+     *     un error y no con una pagina vacia
+     * @param cuantas cuantas traer. Quien llama pide una de mas de las que va a mostrar
      */
-    List<SellerVerification> pendientesDeRevision(int pagina, int tamano);
+    List<SellerVerification> pendientesDeRevision(long salto, int cuantas);
+
+    /**
+     * Si queda al menos una pendiente a partir de esa posicion. La respuesta a «¿hay
+     * pagina siguiente?».
+     *
+     * <p><strong>Existe para no tener que traer a nadie para contestarlo.</strong> Antes
+     * se pedia una fila de mas de las que caben y se usaba su presencia como señal. Eso
+     * funciona, pero {@code pendientesDeRevision} devuelve el agregado entero, asi que
+     * descifraba la cedula y la cuenta bancaria de una persona con el unico proposito de
+     * comprobar que su fila existia, y las tiraba. Procesar un dato sensible sin
+     * finalidad es justo lo que la minimizacion de la Ley 1581 desaconseja
+     * (docs/operacion/datos-personales.md).
+     *
+     * <p>Tampoco es contar: no dice cuantas quedan -que exigiria recorrerlas todas- sino
+     * si queda alguna, y para eso basta con llegar hasta la primera.
+     *
+     * @param salto la posicion a partir de la cual se pregunta. Para saber si hay pagina
+     *     siguiente es el final de la actual
+     */
+    boolean hayPendientesDesde(long salto);
 }

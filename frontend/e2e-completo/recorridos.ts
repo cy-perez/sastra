@@ -136,6 +136,42 @@ export async function entrarComoModeradora(page: Page): Promise<void> {
 }
 
 /**
+ * Espera a que la bandeja termine de cargar, sea cual sea el resultado.
+ *
+ * <p>Hace falta porque `isVisible()` no espera: responde por lo que hay en pantalla en ese
+ * instante. Preguntado nada más llegar, mientras la pantalla todavía muestra el esqueleto,
+ * dice que no está la fila aunque vaya a estarlo, y el recorrido se va a buscarla a una
+ * página siguiente que no existe. Era una carrera, y de ahí salían las pruebas que fallaban
+ * unas veces sí y otras no.
+ *
+ * <p>Se espera a cualquiera de los tres finales de la carga —la lista, el estado vacío o el
+ * error— y no solo a la lista: si la bandeja queda vacía o rompe, esperar la lista sería
+ * esperar para siempre, y quien lea el fallo merece verlo en la comprobación que importa y
+ * no en un tiempo agotado aquí.
+ *
+ * <p>Y se espera además a que la lista deje de estar ocupada. Hizo falta al arreglar el
+ * foco: la bandeja conserva la página anterior mientras llega la siguiente, así que ver
+ * filas dejó de significar que sean las de esta página. Sin esto, el recorrido decide
+ * sobre contenido viejo y se salta una página entera.
+ */
+async function esperarAQueAterriceLaBandeja(page: Page): Promise<void> {
+  // Las filas se reconocen por lo que todas dicen —desde cuándo espera la solicitud— que es
+  // texto de la pantalla y no una clase de CSS. El esqueleto no cuenta: está oculto a la
+  // accesibilidad, así que ningún localizador por rol lo alcanza.
+  const algunaFila = page.getByRole('link').filter({ hasText: 'Espera desde' }).first();
+  const vacia = page.getByText('No hay nada por revisar');
+  const rota = page.getByText('No pudimos cargar la bandeja');
+
+  await expect(algunaFila.or(vacia).or(rota)).toBeVisible();
+
+  // Y que lo que se ve sea de ahora. Al cambiar de página la bandeja conserva la anterior
+  // en pantalla —para no desmontar la paginación con el foco dentro— así que «hay filas»
+  // ya no significa «son las de esta página». Mientras llega la nueva, la lista se declara
+  // ocupada, que es la misma señal que recibe un lector de pantalla.
+  await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+}
+
+/**
  * Abre en la bandeja la solicitud de un titular concreto, buscándola por sus páginas.
  *
  * <p><strong>Recorre, y no mira solo la primera página.</strong> La bandeja es FIFO —lo
@@ -160,15 +196,26 @@ async function abrirEnLaBandeja(page: Page, titular: string): Promise<void> {
   // Acotado: sin tope, una bandeja que devolviera siempre la página llena daría una vuelta
   // infinita, y el fallo sería un tiempo de espera agotado sin ninguna pista de por qué.
   for (let numeroDePagina = 1; numeroDePagina <= 50; numeroDePagina++) {
+    await esperarAQueAterriceLaBandeja(page);
+
     if (await fila.first().isVisible()) {
       await fila.first().click();
       await expect(page.getByRole('button', { name: 'Aprobar' })).toBeVisible();
       return;
     }
 
+    // La navegación de páginas solo se pinta cuando hay a dónde ir: con una sola página
+    // no está en el DOM, que es el caso normal contra una base recién levantada. Se
+    // pregunta primero si está, porque cualquier cosa que se le pida a un localizador que
+    // no resuelve —`getAttribute` incluida— espera a que aparezca, y aquí eso significa
+    // agotar el tiempo de la prueba esperando algo que no va a llegar.
+    if (!(await siguiente.isVisible())) {
+      break;
+    }
+
     // `aria-disabled` y no `disabled`: los botones siguen habilitados a propósito para no
     // perder el foco al llegar al extremo, así que preguntar por `isDisabled()` diría
-    // siempre que no. Y si no hay paginación, el atributo no existe: tampoco hay a dónde ir.
+    // siempre que no.
     if ((await siguiente.getAttribute('aria-disabled')) !== 'false') {
       break;
     }
@@ -310,7 +357,6 @@ export async function publicarYEnviarARevision(
   await envio.getByLabel('Peso en gramos').fill('600');
   await envio.getByLabel('Largo').fill('30');
   await envio.getByLabel('Ancho').fill('20');
-  await envio.getByLabel('Alto').fill('10');
 
   // El guardado es automático y sale 1,5 s después de dejar de escribir. Hay que verlo
   // aterrizar antes de subir nada: una subida y un guardado en vuelo a la vez escriben
@@ -320,15 +366,30 @@ export async function publicarYEnviarARevision(
   //
   // Se espera la respuesta que ya trae el envío —lo último que se escribe— y no el
   // cartel de «Guardado», que puede seguir puesto de un guardado anterior.
-  await page.waitForResponse(async (respuesta) => {
+  //
+  // **Se arma antes de escribir lo último, y eso no es estilo.** `waitForResponse` solo
+  // ve lo que ocurre desde que se registra, así que armándolo después queda un hueco
+  // entre el último `fill` y esta línea; si el guardado aterriza ahí, se espera para
+  // siempre algo que ya pasó. Con 1,5 s de margen casi nunca ocurre, y por eso esta
+  // prueba fallaba una vez de cada muchas en integración continua y nunca en local.
+  //
+  // Y se espera **el alto**, no un envío cualquiera: escribiendo de campo en campo el
+  // guardado puede salir a medias -con peso, largo y ancho ya puestos- y esa respuesta
+  // también traería `shipping`. Darla por buena dejaría el alto sin confirmar, que es
+  // justo el guardado que puede chocar con las subidas.
+  const guardadoConElEnvioCompleto = page.waitForResponse(async (respuesta) => {
     if (respuesta.request().method() !== 'PATCH' || !respuesta.url().includes('/listings/')) {
       return false;
     }
     const cuerpo = (await respuesta.json().catch(() => null)) as {
-      product?: { shipping?: unknown };
+      product?: { shipping?: { heightCm?: unknown } };
     } | null;
-    return cuerpo?.product?.shipping != null;
+    return cuerpo?.product?.shipping?.heightCm != null;
   });
+
+  await envio.getByLabel('Alto').fill('10');
+
+  await guardadoConElEnvioCompleto;
 
   // Las ocho tomas. Por el campo de archivo salvo que se pida lo contrario: la cámara es
   // de HU-003, y para las suites que prueban el ciclo de moderación o el catálogo es un

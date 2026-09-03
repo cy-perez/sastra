@@ -1,5 +1,10 @@
 import { computed, inject, Injectable, signal } from '@angular/core';
-import { injectMutation, injectQuery, QueryClient } from '@tanstack/angular-query-experimental';
+import {
+  injectMutation,
+  injectQuery,
+  keepPreviousData,
+  QueryClient,
+} from '@tanstack/angular-query-experimental';
 
 import { ApiError } from '../../../core/http/api-error';
 import { SessionStore } from '../../../core/session/session.store';
@@ -42,10 +47,29 @@ export class ListingReviewStore {
    * se reactivaría nunca. Es el fallo que dejó `/mi-cuenta` sin cargar
    * (frontend/CLAUDE.md).
    */
+  /**
+   * En qué página está quien revisa.
+   *
+   * <p>En el estado y no en la dirección, como en la otra cola: esto es una fila que se
+   * vacía, así que una página guardada en un enlace apunta a un sitio distinto cada día.
+   */
+  private readonly paginaActual = signal(0);
+
+  /** El tamaño de página. Es el mismo que el servidor da por omisión. */
+  private static readonly TAMANO = 20;
+
   readonly queue = injectQuery(() => ({
-    queryKey: queryKeys.queue,
-    queryFn: () => this.api.pendientes(),
+    // La página se lee **aquí**, en las opciones, que es donde TanStack sí observa las
+    // señales. Dentro de `queryFn` se leería una sola vez y pasar de página no pediría
+    // nada nuevo.
+    queryKey: queryKeys.queuePagina(this.paginaActual()),
+    queryFn: () => this.api.pendientes(this.paginaActual(), ListingReviewStore.TAMANO),
     staleTime: 0,
+    // La página anterior se queda en pantalla mientras llega la siguiente. No es
+    // cosmético: sin esto la consulta vuelve a `pending` al cambiar de página, el bloque
+    // de paginación se desmonta con el foco dentro y quien navega con teclado acaba en
+    // `body`. Es la misma lección que ya pagó la bandeja de verificaciones.
+    placeholderData: keepPreviousData,
     // Sin reintentos automaticos. La pantalla tiene su boton de reintentar (criterio 5),
     // y con tres reintentos y espera creciente el fallo tarda segundos en aparecer: quien
     // revisa se queda mirando un esqueleto sin saber si carga o esta roto.
@@ -95,6 +119,37 @@ export class ListingReviewStore {
   readonly pendientes = computed<readonly PendingListing[]>(() =>
     porEspera(this.queue.data()?.items ?? []),
   );
+
+  readonly pagina = this.paginaActual.asReadonly();
+
+  /**
+   * Si puede haber otra página. Lo contesta el servidor.
+   *
+   * <p>No se deduce de que la página venga llena: esa deducción no distingue una página
+   * llena con más detrás de una página llena que es la última, y con el total múltiplo
+   * exacto del tamaño ofrece un «Siguiente» hacia una página vacía.
+   *
+   * <p>Sin datos todavía va en `false`: mientras carga no se ofrece pasar de página.
+   */
+  readonly hayMas = computed(() => this.queue.data()?.hasMore ?? false);
+
+  readonly hayAnterior = computed(() => this.paginaActual() > 0);
+
+  /**
+   * Si la cola se está actualizando con algo ya en pantalla. No es lo mismo que
+   * `isPending`: eso es «no hay nada que enseñar todavía» y lo cuenta el esqueleto.
+   */
+  readonly actualizando = computed(() => this.queue.isFetching() && !this.queue.isPending());
+
+  paginaSiguiente(): void {
+    if (this.hayMas()) {
+      this.paginaActual.update((actual) => actual + 1);
+    }
+  }
+
+  paginaAnterior(): void {
+    this.paginaActual.update((actual) => Math.max(0, actual - 1));
+  }
 
   /**
    * Aprobar y rechazar. **Ninguna reintenta**, y esa es la decisión importante.

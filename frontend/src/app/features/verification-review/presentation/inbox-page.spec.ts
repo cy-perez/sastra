@@ -60,22 +60,29 @@ describe('InboxPage', () => {
     }
   };
 
+  const navegacionDe = (fixture: { nativeElement: HTMLElement }) =>
+    fixture.nativeElement.querySelector('nav[aria-label="Páginas de la bandeja"]');
+
   const esperarBandeja = (backend: HttpTestingController) =>
     backend.expectOne((p) => p.method === 'GET' && p.url === `${API}/verifications`);
 
   /** La bandeja responde una página, no una lista pelada: es un listado administrativo. */
-  const pagina = (filas: unknown[], numero = 0) => ({ items: filas, page: numero, size: 20 });
+  const pagina = (filas: unknown[], numero = 0, hayMas = false) => ({
+    items: filas,
+    page: numero,
+    size: 20,
+    hasMore: hayMas,
+  });
 
   /**
-   * Una página **llena**, que es lo que hace pensar que puede haber otra.
-   *
-   * <p>El servidor no dice cuántas hay en total, así que «hay más» se deduce de que la
-   * página venga completa. Con menos filas que el tamaño no habría botón que pulsar.
+   * Una página llena. **Que esté llena no dice nada sobre si hay otra**, y ese es el
+   * punto: quien lo dice es `hasMore`, que llega aparte y por eso se pasa aparte.
    */
-  const paginaLlena = (numero = 0) =>
+  const paginaLlena = (numero = 0, hayMas = false) =>
     pagina(
       Array.from({ length: 20 }, (_, cual) => solicitud({ id: `solicitud-${numero}-${cual}` })),
       numero,
+      hayMas,
     );
 
   const botonDe = (fixture: { nativeElement: HTMLElement }, texto: string) =>
@@ -101,7 +108,7 @@ describe('InboxPage', () => {
     TestBed.inject(SessionStore).set(SESION);
   });
 
-  const montar = async (respuesta: unknown[] | 'falla') => {
+  const montar = async (respuesta: unknown[] | 'falla', hayMas = false) => {
     const fixture = TestBed.createComponent(InboxPage);
     await fixture.whenStable();
 
@@ -111,12 +118,67 @@ describe('InboxPage', () => {
     if (respuesta === 'falla') {
       peticion.flush({ code: 'COMMON_UNEXPECTED' }, { status: 500, statusText: 'Error' });
     } else {
-      peticion.flush(pagina(respuesta));
+      peticion.flush(pagina(respuesta, 0, hayMas));
     }
     await asentar(fixture);
 
     return fixture;
   };
+
+  /**
+   * <strong>Reintentar no puede tirar el foco al body.</strong> El botón se destruye al
+   * pulsarlo —el bloque de error deja paso al esqueleto— y sin mover el foco quien navega
+   * con teclado tiene que tabular desde el principio del documento. Es la misma lección
+   * que pagaron los botones de paginación, por el otro camino.
+   *
+   * <p>Las tres pruebas cubren los tres desenlaces, porque cada uno quiere el foco en un
+   * sitio distinto.
+   */
+  it('al reintentar lleva el foco al encabezado y no al body', async () => {
+    const fixture = await montar('falla');
+
+    botonDe(fixture, 'Reintentar')?.focus();
+    botonDe(fixture, 'Reintentar')?.click();
+    await new Promise((listo) => setTimeout(listo, 0));
+    fixture.detectChanges();
+
+    expect(document.activeElement?.tagName).toBe('H1');
+  });
+
+  /** Vuelva a fallar o no, lo que no puede pasar es que el foco acabe en el body. */
+  it('sigue en el encabezado si el reintento vuelve a fallar', async () => {
+    const fixture = await montar('falla');
+    const backend = TestBed.inject(HttpTestingController);
+
+    botonDe(fixture, 'Reintentar')?.focus();
+    botonDe(fixture, 'Reintentar')?.click();
+    await new Promise((listo) => setTimeout(listo, 0));
+
+    esperarBandeja(backend).flush(
+      { code: 'COMMON_UNEXPECTED' },
+      { status: 500, statusText: 'Error' },
+    );
+    await asentar(fixture);
+
+    expect(document.activeElement?.tagName).toBe('H1');
+    expect(botonDe(fixture, 'Reintentar')).toBeDefined();
+  });
+
+  /** Si sale bien no hay botón al que volver: el foco se queda arriba, con la lista debajo. */
+  it('deja el foco en el encabezado si el reintento sale bien', async () => {
+    const fixture = await montar('falla');
+    const backend = TestBed.inject(HttpTestingController);
+
+    botonDe(fixture, 'Reintentar')?.focus();
+    botonDe(fixture, 'Reintentar')?.click();
+    await new Promise((listo) => setTimeout(listo, 0));
+
+    esperarBandeja(backend).flush(pagina([solicitud()]));
+    await asentar(fixture);
+
+    expect(document.activeElement?.tagName).toBe('H1');
+    expect(fixture.nativeElement.textContent).toContain('Espera desde');
+  });
 
   /** Criterio 1: la que lleva más tiempo esperando, primero. */
   it('muestra las solicitudes con la más vieja arriba', async () => {
@@ -249,7 +311,7 @@ describe('InboxPage', () => {
    * primeras veinte no se podía alcanzar por ningún camino: ni buscándola, ni esperando.
    */
   it('pide la página siguiente al pulsar', async () => {
-    const fixture = await montar(paginaLlena().items);
+    const fixture = await montar(paginaLlena().items, true);
     const backend = TestBed.inject(HttpTestingController);
 
     botonDe(fixture, 'Siguiente')?.click();
@@ -265,7 +327,7 @@ describe('InboxPage', () => {
   });
 
   it('vuelve a la página anterior', async () => {
-    const fixture = await montar(paginaLlena().items);
+    const fixture = await montar(paginaLlena().items, true);
     const backend = TestBed.inject(HttpTestingController);
 
     botonDe(fixture, 'Siguiente')?.click();
@@ -279,12 +341,134 @@ describe('InboxPage', () => {
     expect(esperarBandeja(backend).request.params.get('page')).toBe('0');
   });
 
-  /** Sin página llena no hay a dónde ir, así que la navegación no se pinta. */
-  it('no ofrece paginación cuando todo cabe en una página', async () => {
-    const fixture = await montar([solicitud()]);
+  /**
+   * <strong>El defecto que este campo vino a arreglar.</strong> Cuando el total es múltiplo
+   * exacto del tamaño —veinte pendientes, veinte por página— la última página viene llena.
+   * Deducir de eso que hay otra ofrecía un «Siguiente» hacia una página vacía: quien revisa
+   * pulsaba, no encontraba nada, y no podía saber si la cola se acabó o si algo se rompió.
+   *
+   * <p>La página de esta prueba viene llena y el servidor dice que no hay más. Es el caso
+   * que la longitud de `items` no puede distinguir.
+   */
+  it('no ofrece pasar de página cuando la página llena es la última', async () => {
+    const fixture = await montar(paginaLlena().items, false);
 
     expect(botonDe(fixture, 'Siguiente')).toBeUndefined();
-    expect(botonDe(fixture, 'Anterior')).toBeUndefined();
+  });
+
+  /**
+   * Con una sola página no hay navegación que pintar. **Se afirma la ausencia de la región
+   * y no la del literal**: preguntando por el texto del botón, esta prueba seguiría en
+   * verde el día que «Siguiente» pase a decir «Siguiente →».
+   */
+  it('no pinta la navegación cuando todo cabe en una página', async () => {
+    const fixture = await montar([solicitud()]);
+
+    expect(navegacionDe(fixture)).toBeNull();
+  });
+
+  /**
+   * <strong>El foco no se pierde al pasar de página.</strong>
+   *
+   * <p>La consulta lleva la página en su clave, así que cambiarla la devolvía a `pending`:
+   * el bloque de paginación se desmontaba con el foco dentro y `document.activeElement`
+   * acababa en `body`. Quien navega con teclado tenía que tabular desde el principio del
+   * documento en cada página.
+   *
+   * <p>Es la misma lección que ya pagó el `aria-disabled` de estos botones, que la resolvió
+   * para «llegar al extremo» y no para «pasar de página», que es el uso normal. Lo que lo
+   * sujeta es que la página anterior se queda de relleno mientras llega la siguiente.
+   */
+  it('no le quita el foco a «Siguiente» mientras carga la página siguiente', async () => {
+    const fixture = await montar(paginaLlena().items, true);
+    const backend = TestBed.inject(HttpTestingController);
+
+    const siguiente = botonDe(fixture, 'Siguiente');
+    siguiente?.focus();
+    expect(document.activeElement).toBe(siguiente);
+
+    siguiente?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    // Justo aquí: la petición sigue en vuelo y es el momento en que se desmontaba.
+    expect(navegacionDe(fixture)).not.toBeNull();
+    expect(document.activeElement).toBe(siguiente);
+
+    esperarBandeja(backend).flush(paginaLlena(1));
+    await asentar(fixture);
+
+    expect(document.activeElement).toBe(botonDe(fixture, 'Siguiente'));
+  });
+
+  /**
+   * Mientras llega la página siguiente, lo que se ve es la anterior. Sin decirlo, un lector
+   * de pantalla lee filas viejas como si fueran las nuevas.
+   */
+  it('declara la lista ocupada mientras llega la página siguiente', async () => {
+    const fixture = await montar(paginaLlena().items, true);
+    const backend = TestBed.inject(HttpTestingController);
+
+    const lista = () => fixture.nativeElement.querySelector('ul.lista');
+    expect(lista()?.getAttribute('aria-busy')).toBe('false');
+
+    botonDe(fixture, 'Siguiente')?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(lista()?.getAttribute('aria-busy')).toBe('true');
+
+    esperarBandeja(backend).flush(paginaLlena(1));
+    await asentar(fixture);
+
+    expect(lista()?.getAttribute('aria-busy')).toBe('false');
+  });
+
+  /**
+   * <strong>La forma peligrosa del mismo defecto.</strong> En la página 0 la navegación
+   * entera desaparece, así que no hay nada que pulsar. En la página 1 sí está —hace falta
+   * «Anterior» para volver— y «Siguiente» sigue en el DOM y sigue recibiendo el clic,
+   * porque se marca con `aria-disabled` y no con `disabled` para no perder el foco.
+   *
+   * <p>Lo que sujeta que no lleve a ninguna parte es el guardián de `paginaSiguiente()` en
+   * el store, y no había ninguna prueba que lo dijera: quitándolo, la suite entera pasaba.
+   */
+  it('en la última página no lleva a ningún sitio aunque el botón siga ahí', async () => {
+    const fixture = await montar(paginaLlena().items, true);
+    const backend = TestBed.inject(HttpTestingController);
+
+    botonDe(fixture, 'Siguiente')?.click();
+    await fixture.whenStable();
+    esperarBandeja(backend).flush(paginaLlena(1));
+    await asentar(fixture);
+
+    const siguiente = botonDe(fixture, 'Siguiente');
+    expect(siguiente?.getAttribute('aria-disabled')).toBe('true');
+    expect(siguiente?.disabled).toBe(false);
+
+    siguiente?.click();
+    await asentar(fixture);
+
+    backend.expectNone((p) => p.method === 'GET' && p.url === `${API}/verifications`);
+    expect(fixture.nativeElement.textContent).toContain('Página 2');
+  });
+
+  /**
+   * La página que se queda vacía porque se decidieron todas sus filas conserva «Anterior».
+   * Es el motivo por el que la navegación vive fuera de los tres estados de carga, y no
+   * había prueba que lo sujetara.
+   */
+  it('deja volver desde una página que se quedó vacía', async () => {
+    const fixture = await montar(paginaLlena().items, true);
+    const backend = TestBed.inject(HttpTestingController);
+
+    botonDe(fixture, 'Siguiente')?.click();
+    await fixture.whenStable();
+    esperarBandeja(backend).flush(pagina([], 1));
+    await asentar(fixture);
+
+    expect(fixture.nativeElement.textContent).toContain('No hay nada por revisar');
+    expect(botonDe(fixture, 'Anterior')?.getAttribute('aria-disabled')).toBe('false');
   });
 
   /**
@@ -294,7 +478,7 @@ describe('InboxPage', () => {
    * Aquí pasaría justo al llegar al extremo, que es cuando alguien está recorriendo.
    */
   it('marca el extremo sin quitarle el foco al botón', async () => {
-    const fixture = await montar(paginaLlena().items);
+    const fixture = await montar(paginaLlena().items, true);
 
     const anterior = botonDe(fixture, 'Anterior');
 

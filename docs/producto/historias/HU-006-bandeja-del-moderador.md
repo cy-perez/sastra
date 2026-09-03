@@ -340,6 +340,43 @@ persistencia**. Se podía borrar el desplazamiento entero —y de hecho no exist
 que nada se pusiera en rojo. Ahora hay dos, y una de ellas envía tres solicitudes en el
 mismo instante, que es el caso que el desempate existe para ordenar.
 
+### El «Siguiente» que llevaba a una página vacía
+
+La primera versión de la paginación dejó un defecto propio: la pantalla deducía si
+había otra página de que la página viniera llena. Esa deducción no distingue una página
+llena con más detrás de una página llena que es **la última**, y son el mismo dato.
+Ocurre siempre que el total es múltiplo exacto del tamaño, que en una cola que se vacía
+de veinte en veinte no es raro: pasa cada vez que da la vuelta. Quien revisa pulsaba
+«Siguiente», no encontraba nada, y no podía saber si la cola se había acabado o si algo
+se había roto.
+
+Ahora lo contesta el servidor, en `hasMore`. Se resuelve preguntando al repositorio si
+**queda alguna después de esta página**, no contando: un `COUNT` obliga a recorrerlas
+todas para responder un sí o un no.
+
+La primera versión lo resolvía distinto —pidiendo una fila de más y usando su presencia
+como señal— y de ahí salieron dos lecciones que conviene no repetir.
+
+La primera, un defecto peor en el propio puerto. Su firma era `(pagina, tamano)` y el
+adaptador derivaba el desplazamiento del mismo argumento que el límite: `OFFSET = pagina
+* tamano`. Pedir una fila de más movía también el arranque —`(1, 21)` saltaba 21 filas
+en vez de 20— y **la solicitud número 21 no salía en ninguna página**, sin que nada lo
+dijera. Es exactamente lo que la paginación vino a evitar, y en silencio. El puerto pasó
+a recibir `(salto, cuantas)`, que además es lo que impide que la trampa se pueda volver
+a escribir.
+
+La segunda, de datos personales. `pendientesDeRevision` devuelve el agregado entero, así
+que traer una fila de más **descifraba la cédula y la cuenta bancaria de una persona con
+el único propósito de comprobar que su fila existía**, y las tiraba. No era una fuga
+—nada de eso salía de la capa de aplicación— pero es procesar un dato sensible sin
+finalidad, que es lo que la minimización de la Ley 1581 desaconseja. Por eso la pregunta
+tiene ahora su propio método, `hayPendientesDesde`, que resuelve con un `EXISTS` sobre el
+índice parcial y no lee ninguna columna de la fila.
+
+Ninguna de las pruebas que había podía verlo —la del recorrido va de una en una, y con
+tamaño 1 el producto coincide con el salto—, así que hay una nueva que pide dos ventanas
+del mismo sitio con límites distintos.
+
 ## Lo que sigue abierto
 
 **La cola de publicaciones tiene la mitad del mismo problema.** Su backend pagina bien
@@ -348,3 +385,16 @@ y `ListingReviewApi.pendientes(pagina, tamano)` acepta página, pero
 `queue-page.html` no tiene ningún control para avanzar: la paginación existe entera y
 nadie la usa. No entró aquí porque esta historia es la bandeja de verificaciones. Es
 corto y ya está todo lo difícil hecho.
+
+Se hizo ya, y en dos pasos. Primero el cimiento: `ListingRepository` recibe
+`(salto, cuantas)` como esta, y su consulta **desempata por `id`**. Le faltaba, y no
+era teórico —la retrollenada de V12 le puso a todas las que ya esperaban turno el
+valor de `updated_at`, y ahí los empates son fáciles—: con el instante repetido, dos
+páginas contiguas traían la misma fila dos veces y se dejaban otra sin traer.
+Comprobado quitando el desempate y viendo la prueba en rojo.
+
+Y después la mitad de arriba, que es la que se ve: `hasMore` en su respuesta, la
+página en el estado del store y los controles en la pantalla, calcados de aquí
+—`aria-disabled` para no perder el foco, `aria-busy` mientras llega la siguiente—.
+Con eso la asimetría que el contrato anotaba deja de existir: las dos colas del
+moderador responden igual.

@@ -19,7 +19,7 @@ se anuncie en el idioma que se anuncie.
 | Español | Código | Definición |
 |---|---|---|
 | Usuario | `User` | Cuenta con credenciales. Puede ser comprador, vendedor o ambos. |
-| Comprador | `Buyer` | Rol del usuario cuando compra. |
+| Comprador | `Buyer` | Rol del usuario cuando compra, y también cuando guarda algo para volver a ello. En el contexto `catalog` su identificador es `BuyerId`, propio de ese contexto como `SellerId` y `ModeratorId`. Marcar un favorito no es comprar todavía: la palabra nombra el rol al que apunta el gesto, no una transacción hecha. |
 | Vendedor | `Seller` | Rol del usuario cuando publica y vende. Persona natural. |
 | Vendedor verificado | `VerifiedSeller` | Vendedor que superó identidad, selfie y validación bancaria. Lleva la insignia de vendedor verificado, que es la única pieza de la interfaz que va en bronce (`docs/marca/manual.md`). |
 | Moderador | `Moderator` | Persona de Sendik que aprueba o rechaza publicaciones y verificaciones de vendedor. Es el único rol que ve la cédula y la selfie de alguien, y solo a través de un endpoint que registra cada lectura (RN-046, ADR-0018). |
@@ -61,6 +61,7 @@ panel que los usa llega en Fase 4 (`docs/producto/alcance.md`).
 | Asistente de captura | `CaptureWizard` | Pantalla que guía al vendedor por las ocho tomas de la secuencia, con silueta, cuadrícula y nivel, y recorta cada una a 3:4 antes de subirla. No aplica a tecnología sellada, que son cuatro tomas del empaque (RN-065). |
 | Secuencia 360 | `SpinSequence` | Conjunto ordenado de tomas que alimenta el visor giratorio. |
 | Visor 360 | `SpinViewer` | Componente que simula el giro de la prenda. |
+| Favorito | `Favorite` | Publicación que alguien con cuenta guarda para volver a ella. Es **privado** y de quien lo marca: no lo ve el vendedor ni existe como cifra pública (RN-070). Se dice «favorito» y no «guardado» ni «lista de deseos», y el verbo en pantalla es guardar. |
 
 Un producto es único: si el vendedor tiene dos iguales, son dos publicaciones.
 Esto simplifica todo el modelo y es fiel al negocio de segunda mano.

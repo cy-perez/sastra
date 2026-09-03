@@ -2,9 +2,13 @@ package co.sendik.catalog.usecase;
 
 import co.sendik.catalog.dto.CatalogCursor;
 import co.sendik.catalog.dto.CategoryView;
+import co.sendik.catalog.dto.FavoriteCursor;
+import co.sendik.catalog.dto.FavoritedListing;
 import co.sendik.catalog.dto.SellerProfileView;
+import co.sendik.catalog.model.BuyerId;
 import co.sendik.catalog.model.Category;
 import co.sendik.catalog.model.CategoryId;
+import co.sendik.catalog.model.Favorite;
 import co.sendik.catalog.model.Listing;
 import co.sendik.catalog.model.ListingId;
 import co.sendik.catalog.model.ListingRejectionReason;
@@ -14,7 +18,9 @@ import co.sendik.catalog.model.ModerationAction;
 import co.sendik.catalog.model.ModeratorId;
 import co.sendik.catalog.model.SellerId;
 import co.sendik.catalog.model.SizeSystem;
+import co.sendik.catalog.port.out.BuyerAccounts;
 import co.sendik.catalog.port.out.Categories;
+import co.sendik.catalog.port.out.Favorites;
 import co.sendik.catalog.port.out.ListingNotifier;
 import co.sendik.catalog.port.out.ListingRepository;
 import co.sendik.catalog.port.out.ModerationLog;
@@ -140,6 +146,130 @@ final class CatalogoEnMemoria {
 
         int cuantas() {
             return filas.size();
+        }
+    }
+
+    /**
+     * Los favoritos, en memoria. HU-011.
+     *
+     * <p><strong>Ordena y filtra igual que el SQL, y eso es lo que le da valor.</strong> Un
+     * doble que devolviera lo guardado en cualquier orden dejaria pasar las pruebas del
+     * cursor y del criterio 13, que son justo las que tienen que fallar si el repositorio
+     * de verdad se escribe mal.
+     *
+     * <p>Necesita ver las publicaciones para aplicar RN-071 —solo lo {@code PUBLISHED}— y
+     * para eso recibe el mismo {@link Publicaciones} que use la prueba, igual que la
+     * consulta real cruza las dos tablas.
+     */
+    static final class Guardados implements Favorites {
+
+        /** La clave es el par, que es la identidad del favorito y la unicidad de la tabla. */
+        private final Map<Favorite, Favorite> filas = new LinkedHashMap<>();
+
+        private final Publicaciones publicaciones;
+
+        Guardados(Publicaciones publicaciones) {
+            this.publicaciones = publicaciones;
+        }
+
+        /**
+         * Idempotente, y de la misma forma que la tabla: el par ya presente se queda con
+         * su fecha original en vez de recibir la nueva. Con {@code put} a secas, marcar
+         * dos veces moveria el favorito a la cabeza de la lista, que es un comportamiento
+         * que el {@code ON CONFLICT DO NOTHING} de verdad no tiene.
+         */
+        @Override
+        public void guardar(Favorite favorito) {
+            filas.putIfAbsent(favorito, favorito);
+        }
+
+        @Override
+        public void quitar(BuyerId quien, ListingId publicacion) {
+            filas.remove(Favorite.reconstruir(quien, publicacion, java.time.Instant.EPOCH));
+        }
+
+        @Override
+        public boolean existe(BuyerId quien, ListingId publicacion) {
+            return filas.containsKey(Favorite.reconstruir(quien, publicacion, java.time.Instant.EPOCH));
+        }
+
+        @Override
+        public List<FavoritedListing> publicadasDe(BuyerId quien, @Nullable FavoriteCursor desde, int limite) {
+            return filas.values().stream()
+                    .filter(favorito -> favorito.quien().equals(quien))
+                    .flatMap(favorito -> publicaciones
+                            .buscar(favorito.publicacion())
+                            .filter(publicacion -> publicacion.status() == ListingStatus.PUBLISHED)
+                            .map(publicacion -> new FavoritedListing(publicacion, favorito.marcadoEn()))
+                            .stream())
+                    .sorted(Comparator.comparing(FavoritedListing::marcadoEn)
+                            .thenComparing(par -> par.publicacion().id().value())
+                            .reversed())
+                    .filter(par -> desde == null || despuesDelCursor(par, desde))
+                    .limit(limite)
+                    .toList();
+        }
+
+        /**
+         * Ordena como el SQL —{@code ORDER BY created_at DESC, listing_id DESC}— y no en el
+         * orden de insercion.
+         *
+         * <p>No lo hacia, y el javadoc de esta clase afirmaba que ordena igual que la base.
+         * Hoy no muerde porque ninguna prueba de la descarga afirma orden; el dia que una lo
+         * haga, pasaria aqui y podria fallar contra PostgreSQL, que es exactamente lo que
+         * estos dobles existen para evitar.
+         */
+        @Override
+        public List<Favorite> todosDe(BuyerId quien) {
+            return filas.values().stream()
+                    .filter(favorito -> favorito.quien().equals(quien))
+                    .sorted(Comparator.comparing(Favorite::marcadoEn)
+                            .thenComparing(favorito -> favorito.publicacion().value())
+                            .reversed())
+                    .toList();
+        }
+
+        @Override
+        public void borrarTodosDe(BuyerId quien) {
+            filas.keySet().removeIf(favorito -> favorito.quien().equals(quien));
+        }
+
+        /** La misma comparacion de pareja que hace `(created_at, listing_id) < (:fecha, :id)`. */
+        private static boolean despuesDelCursor(FavoritedListing par, FavoriteCursor cursor) {
+            int porFecha = par.marcadoEn().compareTo(cursor.marcadoEn());
+
+            return porFecha < 0
+                    || (porFecha == 0
+                            && par.publicacion()
+                                            .id()
+                                            .value()
+                                            .compareTo(cursor.id().value())
+                                    < 0);
+        }
+
+        int cuantos() {
+            return filas.size();
+        }
+    }
+
+    /**
+     * Las cuentas de quien marca, en memoria.
+     *
+     * <p>Todas activas salvo las que la prueba cierre. Es lo que permite ejercitar la
+     * promesa de {@code datos-personales.md}: el token sobrevive quince minutos al cierre,
+     * y marcar un favorito con el tiene que responder que la sesion ya no sirve.
+     */
+    static final class Cuentas implements BuyerAccounts {
+
+        private final Set<BuyerId> cerradas = new HashSet<>();
+
+        void cerrar(BuyerId quien) {
+            cerradas.add(quien);
+        }
+
+        @Override
+        public boolean estaActiva(BuyerId quien) {
+            return !cerradas.contains(quien);
         }
     }
 

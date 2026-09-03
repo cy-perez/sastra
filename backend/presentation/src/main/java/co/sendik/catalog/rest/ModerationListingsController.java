@@ -27,7 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
  * por dos razones que se refuerzan. La primera es del contrato: {@code GET
  * /api/v1/listings} esta reservado al catalogo publico, paginado por cursor porque entra
  * contenido constantemente; esta es una lista administrativa acotada, que el mismo
- * contrato deja paginar por pagina y tamano. La segunda es de seguridad: colgarla de
+ * contrato deja paginar por page y size. La segunda es de seguridad: colgarla de
  * {@code /listings/&#123;algo&#125;} la pondria a competir con la regla que hace publica la
  * lectura de una publicacion, y esa regla ya avisa en {@code SecurityConfig} de que un
  * segmento literal —{@code /queue}, {@code /pending}— casa igual que un identificador.
@@ -69,15 +69,15 @@ public class ModerationListingsController {
     @PreAuthorize("hasRole('MODERATOR')")
     public PendingListingsPage pendientes(
             @AuthenticationPrincipal Jwt token,
-            @RequestParam(name = "page", defaultValue = "0") @Min(0) int pagina,
-            @RequestParam(name = "size", defaultValue = "20") @Min(1) @Max(50) int tamano) {
+            @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
+            @RequestParam(name = "size", defaultValue = "20") @Min(1) @Max(50) int size) {
 
         ModeratorId quienModera = ModeratorId.de(token.getSubject());
 
-        List<PendingListingResponse> cola = casoDeListar.execute(new ListPendingListingsQuery(pagina, tamano)).stream()
+        List<PendingListingResponse> cola = casoDeListar.execute(new ListPendingListingsQuery(page, size)).stream()
                 .map(publicacion -> PendingListingResponses.de(publicacion, quienModera, almacen))
                 .toList();
 
-        return new PendingListingsPage(cola, pagina, tamano);
+        return new PendingListingsPage(cola, page, size);
     }
 }

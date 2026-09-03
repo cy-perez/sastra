@@ -70,7 +70,15 @@ describe('ProductPage', () => {
     TestBed.configureTestingModule({
       providers: [
         provideRouter([]),
-        { provide: ActivatedRoute, useValue: { paramMap: parametros.asObservable() } },
+        {
+          provide: ActivatedRoute,
+          // Con `snapshot`, que el objeto real siempre trae: el control de favorito lee de
+          // ahi el pase de la vuelta del ingreso (HU-011, ADR-0029).
+          useValue: {
+            paramMap: parametros.asObservable(),
+            snapshot: { queryParamMap: convertToParamMap({}) },
+          },
+        },
         provideHttpClient(
           withInterceptors([apiUrlInterceptor, languageInterceptor, errorInterceptor]),
         ),

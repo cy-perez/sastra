@@ -7,6 +7,8 @@ import co.sendik.identity.exception.AccountLockedException;
 import co.sendik.identity.exception.ResendLimitReachedException;
 import co.sendik.shared.error.DomainException;
 import co.sendik.shared.error.ErrorCode;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
@@ -108,6 +110,43 @@ public class ApiExceptionHandler {
 
         List<Map<String, String>> errores = e.getBindingResult().getFieldErrors().stream()
                 .map(campo -> Map.of("field", campo.getField(), "code", codigoDe(campo)))
+                .toList();
+
+        ProblemDetail problema = construir(HttpStatus.BAD_REQUEST, ErrorCode.COMMON_VALIDATION_FAILED, traceId);
+        problema.setProperty("errors", errores);
+
+        return ResponseEntity.badRequest().body(problema);
+    }
+
+    /**
+     * Un parametro de consulta que incumple su restriccion. 400, no 500.
+     *
+     * <p><strong>Es un defecto de HU-009 que HU-011 destapo.</strong> Los dos listados por
+     * cursor acotan su {@code limit} con {@code @Max} sobre el parametro, y
+     * contrato-api.md dice con esas palabras que por encima del tope «se rechaza con 400,
+     * no se recorta en silencio». Lo que pasaba de verdad es que {@code @Validated} sobre
+     * la clase hace que la restriccion la evalue el proxy de {@code MethodValidationInterceptor},
+     * que lanza {@link ConstraintViolationException} —no {@link MethodArgumentNotValidException},
+     * que es de los cuerpos—, y sin manejador caia en el de {@code Exception}: 500, con la
+     * traza entera en nivel error, para cualquiera que escribiera {@code ?limit=500}.
+     *
+     * <p><strong>Y la prueba de HU-009 no lo veia.</strong> {@code CatalogControllerTest}
+     * afirma ese 400 y pasa, porque el montaje autonomo de MockMvc no crea el proxy de
+     * validacion y ahi la restriccion la aplica otro camino. Solo aparece con el contexto
+     * entero, que es donde vive la aplicacion.
+     *
+     * <p>Devuelve {@code errors} con una entrada por restriccion incumplida, igual que su
+     * gemelo de los cuerpos. El nombre sale del ultimo nodo de la ruta de la propiedad y el
+     * codigo, del nombre de la anotacion. Sin eso, quien manda dos parametros mal recibe un
+     * error que no dice cual de los dos.
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ProblemDetail> deParametroInvalido(ConstraintViolationException e) {
+        String traceId = nuevoTraceId();
+        LOG.info("Parametro fuera de rango traceId={}: {}", traceId, e.getMessage());
+
+        List<Map<String, String>> errores = e.getConstraintViolations().stream()
+                .map(violacion -> Map.of("field", nombreDe(violacion), "code", codigoDe(violacion)))
                 .toList();
 
         ProblemDetail problema = construir(HttpStatus.BAD_REQUEST, ErrorCode.COMMON_VALIDATION_FAILED, traceId);
@@ -253,7 +292,13 @@ public class ApiExceptionHandler {
                     // RN-063, el gemelo de RN-060 en el catalogo: es moderador y la
                     // publicacion es suya. Codigo propio por lo mismo, para no dejarlo
                     // buscando un problema de permisos que no tiene.
-                    CATALOG_SELF_MODERATION_FORBIDDEN -> HttpStatus.FORBIDDEN;
+                    CATALOG_SELF_MODERATION_FORBIDDEN,
+                    // RN-072: la publicacion que intenta guardar es suya. Codigo propio
+                    // por lo mismo que los dos de arriba, y ademas porque es el unico 403
+                    // de esta historia: con el generico, quien vuelve del ingreso con una
+                    // intencion pendiente (criterio 10) no tendria como saber si le falta
+                    // sesion o si es que esa publicacion no se puede guardar.
+                    CATALOG_SELF_FAVORITE_FORBIDDEN -> HttpStatus.FORBIDDEN;
             // 409: la peticion es correcta y choca con el estado actual del
             // sistema, que es lo que significa un conflicto.
             //
@@ -377,6 +422,43 @@ public class ApiExceptionHandler {
     /** El nombre de la restriccion incumplida, como codigo estable para el frontend. */
     private static String codigoDe(FieldError campo) {
         String restriccion = campo.getCode() == null ? "INVALID" : campo.getCode();
+        return "VALIDATION_" + restriccion.toUpperCase(Locale.ROOT);
+    }
+
+    /**
+     * El nombre del parametro, no la ruta entera de la propiedad.
+     *
+     * <p>La ruta es {@code metodo.argumento} —por ejemplo {@code lista.limit}—, y el nombre
+     * del metodo es un detalle de implementacion que no tiene por que salir en una
+     * respuesta publica.
+     *
+     * <p><strong>Lo que queda es el nombre del argumento Java, y por eso los argumentos de
+     * estos parametros se llaman igual que el parametro HTTP.</strong> Es la condicion que
+     * hace correcto lo que sale en {@code errors}: contrato-api.md dice que {@code field}
+     * es el campo que el cliente escribio, y {@code ConstraintViolation} no trae la
+     * anotacion {@code @RequestParam} de la que leer su {@code name}. Llegaron a llamarse
+     * distinto —{@code @RequestParam(name = "limit") int limite}— y la respuesta publica
+     * salia con {@code "field": "limite"}: el identificador interno del servidor, en
+     * espanol, y un nombre que el cliente no habia escrito nunca.
+     *
+     * <p>Un parametro nuevo cuyo argumento no se llame como su {@code name} vuelve a
+     * filtrarlo. Lo fija {@code CatalogLimitTest}, que afirma el nombre del contrato.
+     */
+    private static String nombreDe(ConstraintViolation<?> violacion) {
+        String ruta = violacion.getPropertyPath().toString();
+        int ultimoPunto = ruta.lastIndexOf('.');
+
+        return ultimoPunto < 0 ? ruta : ruta.substring(ultimoPunto + 1);
+    }
+
+    /** Se deriva de la anotacion, igual que el de los cuerpos: {@code Max} da VALIDATION_MAX. */
+    private static String codigoDe(ConstraintViolation<?> violacion) {
+        String restriccion = violacion
+                .getConstraintDescriptor()
+                .getAnnotation()
+                .annotationType()
+                .getSimpleName();
+
         return "VALIDATION_" + restriccion.toUpperCase(Locale.ROOT);
     }
 

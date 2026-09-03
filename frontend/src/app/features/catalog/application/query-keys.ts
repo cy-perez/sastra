@@ -50,4 +50,21 @@ export const queryKeys = {
    * invalidar las dos entradas de esa persona sin volver a preguntar cuál era.
    */
   verification: (vendedor: string) => ['catalog', 'moderation', 'verification', vendedor] as const,
+  /**
+   * La lista propia de favoritos. HU-011.
+   *
+   * <p>No lleva de quién es, y no hace falta: la ruta responde siempre la de quien tiene
+   * el token, así que no hay dos listas que distinguir dentro de una misma sesión. Al
+   * cerrar sesión, `QueryClient` se limpia y con él esta entrada.
+   */
+  favorites: ['catalog', 'favorites'] as const,
+  /**
+   * El estado del control para una publicación concreta.
+   *
+   * <p>Entrada aparte de la de la ficha a propósito. `one(id)` guarda lo que responde
+   * `GET /listings/{id}`, que es igual para todo el mundo y se renderiza en el servidor;
+   * esto es de la sesión y se pide desde el navegador. Con una sola clave, el estado del
+   * favorito viajaría dentro del HTML servido y la ficha dejaría de ser pública.
+   */
+  favorite: (id: string) => ['catalog', 'favorites', 'one', id] as const,
 } as const;

@@ -208,6 +208,74 @@ class ArchitectureTest {
         regla.check(todasLasClases());
     }
 
+    /**
+     * El dominio y la aplicacion de un contexto no conocen otro contexto.
+     *
+     * <p><strong>Es la regla que hace supervivible el unico ciclo que hay entre
+     * contextos.</strong> Hasta HU-011 las cinco aristas iban de {@code catalog} a
+     * {@code identity}; los favoritos abrieron la de vuelta, porque el cierre de cuenta y
+     * la descarga de datos tienen que alcanzarlos. {@code vision-tecnica.md} lo permite
+     * —«si necesita algo, es por un caso de uso publico o por un evento de dominio»— y lo
+     * que lo hace tolerable es que todo ese acoplamiento viva en {@code infrastructure},
+     * donde es una decision de cableado y no de modelo.
+     *
+     * <p>Si un dia hay que separar los dos contextos en servicios, lo que habra que
+     * reescribir son adaptadores. Sin esta regla, la proxima vez podria ser el dominio.
+     */
+    @Test
+    void el_dominio_y_la_aplicacion_de_un_contexto_no_conocen_otro_contexto() {
+        for (String modulo : new String[] {"domain", "application"}) {
+            comprobarQueNoSeConocen(clasesDelModulo(modulo), "catalog", "identity");
+            comprobarQueNoSeConocen(clasesDelModulo(modulo), "identity", "catalog");
+        }
+    }
+
+    /**
+     * Y ningun contexto lee la persistencia de otro.
+     *
+     * <p>Es {@code vision-tecnica.md} —«el estado de un contexto no se consulta leyendo las
+     * tablas de otro. Nunca»— escrito como prueba, que hasta ahora solo estaba escrito como
+     * frase. Los tres adaptadores que cruzan preguntan por casos de uso publicos; esta
+     * regla es la que impide que el cuarto tome el atajo.
+     */
+    @Test
+    void ningun_contexto_lee_la_persistencia_de_otro() {
+        JavaClasses todas = todasLasClases();
+
+        noClasses()
+                .that()
+                .resideInAPackage("co.sendik.identity..")
+                .should()
+                .dependOnClassesThat()
+                .resideInAPackage("co.sendik.catalog.persistence..")
+                .because("un contexto no consulta las tablas de otro: pregunta por un caso de uso publico")
+                .allowEmptyShould(true)
+                .check(todas);
+
+        noClasses()
+                .that()
+                .resideInAPackage("co.sendik.catalog..")
+                .should()
+                .dependOnClassesThat()
+                .resideInAPackage("co.sendik.identity.persistence..")
+                .because("un contexto no consulta las tablas de otro: pregunta por un caso de uso publico")
+                .allowEmptyShould(true)
+                .check(todas);
+    }
+
+    private static void comprobarQueNoSeConocen(JavaClasses clases, String contexto, String otro) {
+        noClasses()
+                .that()
+                .resideInAPackage("co.sendik." + contexto + "..")
+                .should()
+                .dependOnClassesThat()
+                .resideInAPackage("co.sendik." + otro + "..")
+                .because("el acoplamiento entre contextos vive en infrastructure, donde es cableado."
+                        + " En domain o en application seria modelo, y separarlos costaria reescribirlo")
+                .allowEmptyShould(true)
+                .check(clases);
+    }
+
     /** Solo las clases de produccion del modulo indicado, filtradas por su carpeta de salida. */
     private static JavaClasses clasesDelModulo(String modulo) {
         return new ClassFileImporter()

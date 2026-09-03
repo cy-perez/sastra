@@ -215,6 +215,31 @@ el servidor por `Accept-Language`, que es lo que `contrato-api.md` ya decía.
 **moderation_events**: `id`, `listing_id`, `actor_id`, `action`, `reason`,
 `notes`, `created_at`.
 
+**favorites** (`V16`, HU-011)
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| user_id | uuid | FK a `users`. Parte de la clave primaria |
+| listing_id | uuid | FK a `listings`. La otra parte |
+| created_at | timestamptz | Cuándo se marcó. Es la fecha del **gesto**, no la de la publicación: es por lo que ordena la lista (RN-071, criterio 11 de HU-011) |
+
+**La clave primaria es el par y no un `id` propio.** Es la excepción que ya sienta
+`user_roles`: aquí la identidad de la fila *es* la pareja, y esa misma restricción es
+lo que hace idempotente a marcar dos veces —un `ON CONFLICT DO NOTHING` en vez de leer
+antes de escribir, que entre dos pestañas no bastaría—.
+
+No hay `updated_at`: un favorito no se modifica, se pone y se quita.
+
+**Nada borra estas filas cuando la publicación deja de estar `PUBLISHED`**, y es una
+decisión (RN-071): la lista las filtra al leer, así que pausar y volver a publicar
+devuelve el favorito sin haberlo tocado. Borrarlas obligaría a que archivar una
+publicación escribiera en la fila de todas las personas que la habían guardado, un
+trabajo que crece con la popularidad de lo que se archiva.
+
+Lo que sí las borra es **cerrar la cuenta**: son dato personal —dicen qué le interesa a
+una persona identificada— y `docs/operacion/datos-personales.md` manda. El cierre las
+arrastra y la descarga de datos las incluye.
+
 ## Fase 3
 
 **orders**: `id`, `buyer_id`, `seller_id`, `status`, `product_amount`,
@@ -261,6 +286,9 @@ El identificador único del proveedor es lo que garantiza idempotencia.
 - `listings(submitted_at)` parcial sobre `status = 'PENDING_REVIEW'`, para la
   bandeja de moderación de publicaciones. Parcial porque la cola solo mira uno de
   los siete estados, así que el índice no crece con el catálogo publicado.
+- `favorites(user_id, created_at desc, listing_id desc)` para la lista propia. Es
+  el criterio 11 de HU-011 escrito como índice: ordena por el gesto y desempata por
+  publicación, que es lo que el cursor compara.
 - `payment_events(provider_event_id)` único.
 - `orders(buyer_id, created_at desc)` y `orders(seller_id, created_at desc)`.
 

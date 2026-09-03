@@ -110,6 +110,10 @@
     "sellerProfile": {
       "title": "{{nombre}}",
       "description": "Lo que vende {{nombre}} en Sendik."
+    },
+    "favorites": {
+      "title": "Tus favoritos · Sendik",
+      "description": "Las publicaciones que guardaste en Sendik."
     }
   },
   "layout": {
@@ -1252,6 +1256,32 @@
       "frame": "Vista a {{grados}} grados",
       "fallbackAlt": "{{titulo}}, vista frontal",
       "roleDescription": "visor giratorio"
+    },
+    "favorite": {
+      "add": "Guardar",
+      "remove": "Quitar de favoritos",
+      "saved": "Guardado en tus favoritos",
+      "notSaved": "No está en tus favoritos",
+      "errors": {
+        "own": "Esta publicación es tuya, así que no puedes guardarla en favoritos.",
+        "unavailable": "Esta publicación ya no está disponible.",
+        "failed": "No pudimos guardar el cambio. Inténtalo de nuevo."
+      }
+    },
+    "favorites": {
+      "title": "Tus favoritos",
+      "intro": "Lo que guardaste, con lo más reciente primero.",
+      "loading": "Cargando tus favoritos",
+      "error": "No pudimos cargar tus favoritos. Inténtalo de nuevo.",
+      "retry": "Reintentar",
+      "more": "Ver más",
+      "signedOut": "Tus favoritos son tuyos y no los ve nadie más. Entra para verlos.",
+      "signIn": "Entrar",
+      "empty": {
+        "title": "Todavía no has guardado nada",
+        "body": "Guarda lo que te interese y vuelve a encontrarlo aquí, en un solo sitio. Solo tú ves esta lista.",
+        "action": "Ver el catálogo"
+      }
     }
   },
   "moderation": {

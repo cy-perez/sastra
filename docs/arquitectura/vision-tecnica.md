@@ -95,11 +95,29 @@ Un contexto no llama al repositorio de otro. Si necesita algo, es por un caso de
 uso público o por un evento de dominio. Esto mantiene abierta la puerta a
 separar servicios más adelante, sin pagar hoy el costo de hacerlo.
 
+**Con una salvedad, desde HU-011:** `catalog` e `identity` se preguntan cosas en
+las dos direcciones —aquel necesita saber si alguien está verificado y quién es un
+vendedor; este necesita alcanzar los favoritos para la descarga de datos y el
+cierre de cuenta—. Las cuatro conversaciones entran por la puerta pública del otro
+y todas viven en `infrastructure`, pero el grafo entre contextos deja de ser
+acíclico y con él la frase de arriba: hoy ninguno de los dos se puede extraer sin
+volver asíncrona una de las dos direcciones. Está anotado en la deuda aceptada.
+
 ## Comunicación entre contextos
 
-- Dentro del mismo proceso, por eventos de dominio publicados tras confirmar la
-  transacción.
 - El estado de un contexto no se consulta leyendo las tablas de otro. Nunca.
+- **Cuándo vale cada mecanismo**, que estaba dicho a medias y se aclaró con HU-011:
+  un **caso de uso público** cuando la respuesta hace falta ahora —una lectura, o
+  una escritura que tiene que ser atómica con la del contexto que llama, como el
+  borrado de favoritos dentro del cierre de cuenta—; un **evento de dominio tras
+  confirmar la transacción** cuando el otro contexto solo tiene que enterarse. La
+  frase anterior decía que dentro del mismo proceso se habla por eventos, y el
+  código nunca lo hizo así: no hay bus de eventos y las tres conversaciones que
+  existen son llamadas a casos de uso.
+- **El acoplamiento entre contextos vive en `infrastructure`.** Un adaptador puede
+  conocer a los dos; el dominio y la aplicación de un contexto no conocen otro. Lo
+  vigilan dos reglas de `ArchitectureTest`, y es lo que hace que separar dos
+  contextos algún día cueste reescribir adaptadores y no modelo.
 - Ejemplo: cuando `payment` confirma un pago, publica `PaymentApproved`;
   `catalog` marca la prenda vendida y `order` avanza el pedido. Ninguno de los
   tres conoce a los otros dos.
@@ -147,4 +165,5 @@ preferible a descubrirlo en producción. Ver `docs/operacion/configuracion.md`.
 | Monolito modular en un solo despliegue | Escala vertical al principio | Cuando un contexto necesite escalar solo |
 | Mapeo manual entre dominio y tablas | Más código repetitivo | Si el volumen lo hace insostenible |
 | Sin caché distribuida | Más consultas a la base | Cuando la latencia lo exija |
+| Ciclo entre `catalog` e `identity` | Ninguno de los dos se puede extraer a un servicio sin volver asíncrona una de las dos conversaciones | Cuando alguno tenga que escalar solo |
 | TanStack Query en estado experimental | Rupturas posibles al actualizar | Cuando el adaptador de Angular sea estable |

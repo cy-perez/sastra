@@ -7,9 +7,11 @@ import co.sendik.identity.model.User;
 import co.sendik.identity.model.UserId;
 import co.sendik.identity.port.out.ConsentRepository;
 import co.sendik.identity.port.out.RefreshTokenRepository;
+import co.sendik.identity.port.out.UserFavorites;
 import co.sendik.identity.port.out.UserRepository;
 import java.time.Clock;
 import java.time.Instant;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Reune todo lo que Sendik guarda de una persona. Criterio 22.
@@ -27,16 +29,34 @@ public class ExportUserDataUseCase {
     private final UserRepository usuarios;
     private final ConsentRepository consentimientos;
     private final RefreshTokenRepository refrescos;
+    private final UserFavorites favoritos;
     private final Clock reloj;
 
     public ExportUserDataUseCase(
-            UserRepository usuarios, ConsentRepository consentimientos, RefreshTokenRepository refrescos, Clock reloj) {
+            UserRepository usuarios,
+            ConsentRepository consentimientos,
+            RefreshTokenRepository refrescos,
+            UserFavorites favoritos,
+            Clock reloj) {
         this.usuarios = usuarios;
         this.consentimientos = consentimientos;
         this.refrescos = refrescos;
+        this.favoritos = favoritos;
         this.reloj = reloj;
     }
 
+    /*
+     * En una transaccion, y no por escribir: son cuatro lecturas -la cuenta, los
+     * consentimientos, las sesiones y, desde HU-011, los favoritos- y la ultima ademas
+     * atraviesa a otro contexto y abriria la suya. Sin esto, el archivo de datos personales
+     * se arma con cuatro instantaneas distintas, y para un artefacto de la Ley 1581
+     * conviene que sea una.
+     *
+     * Sin readOnly = true, por lo mismo que ReadListingUseCase: presentation no declara
+     * spring-tx, y al leer ese atributo para inyectar esta clase avisa de que no puede
+     * resolverlo. Con -Xlint:all -Werror el aviso rompe la compilacion.
+     */
+    @Transactional
     public UserDataExport execute(UserId usuario) {
         Instant ahora = reloj.instant();
 
@@ -68,6 +88,10 @@ public class ExportUserDataUseCase {
                 refrescos.listarSesionesActivasDe(usuario, ahora).stream()
                         .map(token ->
                                 new UserDataExport.Sesion(token.userAgent(), token.createdAt(), token.expiresAt()))
-                        .toList());
+                        .toList(),
+                // Los favoritos son dato personal: dicen que le interesa a una persona
+                // identificada (docs/operacion/datos-personales.md, HU-011). Vienen de
+                // catalog por un puerto, porque la tabla no es de este contexto.
+                favoritos.de(usuario));
     }
 }

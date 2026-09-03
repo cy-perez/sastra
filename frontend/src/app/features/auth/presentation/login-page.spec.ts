@@ -1,7 +1,7 @@
 import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { provideRouter, Router } from '@angular/router';
+import { ActivatedRoute, provideRouter, Router } from '@angular/router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
@@ -59,6 +59,18 @@ describe('LoginPage', () => {
     await new Promise((listo) => setTimeout(listo, 0));
     fixture.detectChanges();
     await fixture.whenStable();
+  };
+
+  /**
+   * Pone el `redirectTo` de la direccion. Se declara antes de crear el componente porque
+   * la pantalla lo lee del `snapshot`: es una decision de navegacion que se toma una vez.
+   */
+  const conRedirectTo = (destino: string) => {
+    TestBed.overrideProvider(ActivatedRoute, {
+      useValue: {
+        snapshot: { queryParamMap: new Map([['redirectTo', destino]]) },
+      },
+    });
   };
 
   const rellenarTodoBien = (fixture: { nativeElement: HTMLElement }) => {
@@ -199,6 +211,56 @@ describe('LoginPage', () => {
       password: 'una contrasena larga',
     });
   });
+
+  /**
+   * ADR-0029: la vuelta al sitio despues de entrar.
+   *
+   * <p>El primero que lo necesita es el control de favorito de HU-011, que lleva aqui a
+   * quien no tiene sesion y espera volver a la ficha con el favorito ya guardado.
+   */
+  it('vuelve a la direccion que le pidieron al entrar', async () => {
+    conRedirectTo('/producto/una-publicacion');
+
+    const fixture = await render();
+    const navegar = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+
+    rellenarTodoBien(fixture);
+    enviar(fixture);
+    await fixture.whenStable();
+
+    TestBed.inject(HttpTestingController).expectOne(`${API}/auth/login`).flush(SESION);
+    await asentarRespondiendoLaCuenta(fixture);
+
+    expect(navegar).toHaveBeenCalledWith('/producto/una-publicacion');
+  });
+
+  /**
+   * <strong>Sin esta comprobacion, este formulario es un redirector abierto.</strong>
+   * Manda a alguien recien autenticado a un sitio ajeno con la confianza puesta y con el
+   * nombre de Sendik en la barra de la que viene.
+   *
+   * <p>Las dos formas se prueban porque las dos existen: la URL absoluta es la evidente,
+   * y `//otro-sitio` es la que se cuela —empieza por barra, y el navegador la lee como
+   * otro dominio—.
+   */
+  it.each(['https://otro-sitio.example/phishing', '//otro-sitio.example/phishing'])(
+    'ignora una vuelta a otro sitio y va a la portada: %s',
+    async (destino) => {
+      conRedirectTo(destino);
+
+      const fixture = await render();
+      const navegar = vi.spyOn(TestBed.inject(Router), 'navigateByUrl').mockResolvedValue(true);
+
+      rellenarTodoBien(fixture);
+      enviar(fixture);
+      await fixture.whenStable();
+
+      TestBed.inject(HttpTestingController).expectOne(`${API}/auth/login`).flush(SESION);
+      await asentarRespondiendoLaCuenta(fixture);
+
+      expect(navegar).toHaveBeenCalledWith('/');
+    },
+  );
 
   it('guarda la sesion y sale de la pantalla al entrar', async () => {
     const fixture = await render();

@@ -64,21 +64,21 @@ public class CatalogController {
      * sino en una categoria suya. Una categoria retirada del arbol sale como 404 y no como
      * listado vacio, que se leeria como «existe y no tiene nada».
      *
-     * <p>El tope del limite lo pone {@link ListCatalogQuery} y ademas se declara aqui. Es
+     * <p>El tope del limit lo pone {@link ListCatalogQuery} y ademas se declara aqui. Es
      * redundante a proposito, igual que en la bandeja del moderador: el del caso de uso
      * protege a cualquiera que lo use, y el de aqui hace que el 400 salga antes de tocar
      * la base y con el nombre del parametro que el cliente escribio.
      */
     @GetMapping
     public CatalogPageResponse catalogo(
-            @RequestParam(name = "limit", defaultValue = "24") @Min(1) @Max(ListCatalogQuery.LIMITE_MAXIMO) int limite,
+            @RequestParam(name = "limit", defaultValue = "24") @Min(1) @Max(ListCatalogQuery.LIMITE_MAXIMO) int limit,
             @RequestParam(name = "cursor", required = false) @Nullable String cursor,
             @RequestParam(name = "category", required = false) @Nullable String categoria) {
 
         CatalogPage tramo = casoDeListar.execute(new ListCatalogQuery(
                 categoria == null || categoria.isBlank() ? null : CategoryId.de(categoria),
                 CatalogCursors.cursor(cursor),
-                limite));
+                limit));
 
         return CatalogPages.de(tramo, almacen);
     }

@@ -74,6 +74,10 @@ export class AuthStore {
     mutationFn: () => this.api.logout(),
     retry: false,
     onSettled: () => {
+      // `clear()` se lleva tambien lo que el servidor habia respondido: el perfil, las
+      // sesiones y la lista de favoritos. Vive alli y no aqui porque hay tres caminos que
+      // acaban sin sesion -este, el cierre de cuenta y el refresco que caduca- y el primer
+      // intento solo cubrio este.
       this.sesion.clear();
       this.olvidarLoEscrito();
     },

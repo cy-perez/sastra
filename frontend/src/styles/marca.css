@@ -124,6 +124,7 @@
      que la rejilla no se descoloque y se vea cual falta. */
   --alto-min-toma-ausente: 200px;
 
+
   /* El esqueleto del detalle mientras carga. Un solo bloque y no ocho: la publicacion
      llega entera en una respuesta, asi que no hay estados intermedios que dibujar. */
   --alto-esqueleto-detalle: 320px;
@@ -367,6 +368,17 @@
 .icono-lg {
   width: 24px;
   height: 24px;
+}
+
+/* La unica variante de relleno, y existe por una razon de accesibilidad concreta
+   (HU-011, criterio 17): el control de favorito tiene dos estados y no puede
+   distinguirlos por color. El icono pasa de contorno a lleno, que se ve igual sin
+   percibir color y sin cambiar el trazo ni las terminaciones.
+
+   No abre la puerta a iconos rellenos por gusto: se usa solo donde un mismo icono
+   tiene que decir "puesto" y "no puesto". */
+.icono-relleno {
+  fill: currentColor;
 }
 
 /* ---------- Insignia de vendedor verificado ----------

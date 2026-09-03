@@ -1,0 +1,61 @@
+<!--
+  Un <button> de verdad y no un div con rol: el teclado lo alcanza y lo activa sin que
+  nadie escriba un manejador de tecla (criterio 17).
+
+  **Sin aria-pressed, y a proposito.** El nombre accesible cambia con el estado -«Guardar»
+  cuando no lo esta, «Quitar de favoritos» cuando si-, y la APG de ARIA es explicita: un
+  boton cuyo nombre cambia con el estado no lleva ademas aria-pressed. Con los dos, un
+  lector lee «Quitar de favoritos, boton de alternancia, pulsado», que se entiende como
+  «quitar esta activado», justo lo contrario de lo que pasa.
+
+  **Sin disabled mientras la peticion viaja.** El boton se deshabilitaria en el mismo tick
+  del clic, con el foco dentro, y el navegador manda el foco a <body>: quien pulsa con
+  teclado tendria que tabular desde el principio del documento. El doble pulsado ya lo
+  bloquea el almacen contando peticiones, asi que el atributo no aportaba nada y si hacia
+  dano. aria-busy dice lo mismo sin sacar el elemento del orden de foco.
+-->
+<div class="favorito">
+  @if (seOfrece()) {
+    <button
+      type="button"
+      class="btn btn-secundario favorito__boton"
+      [attr.aria-busy]="enCurso() ? 'true' : null"
+      (click)="pulsar()"
+    >
+      <!--
+        Contorno o relleno. Es la senal visual del estado que no depende del color, junto
+        con el propio texto del boton, que tambien cambia.
+      -->
+      <svg class="icono" [class.icono-relleno]="marcado()" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M4 4h16v16l-8-5-8 5z" />
+      </svg>
+
+      {{ etiqueta() | transloco }}
+    </button>
+  }
+
+  <!--
+    La region viva se pinta siempre y nace vacia. Una region que aparece con texto dentro
+    tiene comportamiento inconsistente entre lectores, y en los que la locutan suelta un
+    anuncio que nadie pidio en cada carga de ficha. Aqui solo se llena como consecuencia
+    de una accion de quien mira.
+
+    role="status" y no "alert": el resultado del gesto es informacion, no interrupcion.
+  -->
+  <p class="solo-lectores" role="status">
+    @if (anuncio(); as clave) {
+      {{ clave | transloco }}
+    }
+  </p>
+
+  <!--
+    **Fuera del @if del control, y esa es la correccion del criterio 10.** Estaba dentro, y
+    en el camino exacto que el criterio describe -vuelvo del ingreso con una intencion
+    pendiente sobre mi propia publicacion- el servidor responde eligible:false, el control
+    deja de pintarse y se llevaba por delante el mensaje que explica por que no se guardo.
+    El criterio pide que no se guarde nada Y que se explique.
+  -->
+  @if (error(); as clave) {
+    <p class="favorito__error tipo-secundario" role="alert">{{ clave | transloco }}</p>
+  }
+</div>

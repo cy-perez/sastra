@@ -226,6 +226,20 @@ public enum ErrorCode {
      */
     CATALOG_SELF_MODERATION_FORBIDDEN,
 
+    /**
+     * RN-072: nadie marca como favorita su propia publicacion.
+     *
+     * <p>Codigo propio y 403, por lo mismo que {@link #CATALOG_SELF_MODERATION_FORBIDDEN}:
+     * un 403 generico le diria "no puedes hacer esto" a quien si puede hacerlo con
+     * cualquier otra publicacion, y lo dejaria buscando un problema de sesion que no
+     * tiene. Lo que hay que decirle es que esa publicacion es suya.
+     *
+     * <p>Es tambien el codigo que ve quien pulso el control sin sesion sobre lo suyo y
+     * volvio del ingreso con la intencion pendiente (HU-011, criterio 10): pasar por el
+     * ingreso no salta la regla, y el mensaje tiene que explicar por que no se guardo.
+     */
+    CATALOG_SELF_FAVORITE_FORBIDDEN,
+
     /** La peticion no cumple el contrato. El detalle por campo va en {@code errors}. */
     COMMON_VALIDATION_FAILED,
 

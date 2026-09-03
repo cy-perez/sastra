@@ -1,6 +1,6 @@
 # HU-011 — Favoritos
 
-**Fase:** 2 | **Estado:** pendiente
+**Fase:** 2 | **Estado:** hecha el 2 de septiembre de 2026
 **Reglas que aplica:** RN-023, RN-061, RN-068, y cuatro reglas nuevas que esta historia
 obliga a escribir (RN-070 a RN-073, al final).
 
@@ -252,3 +252,165 @@ el borrado al cerrar la cuenta.
 - **Si el control llega a las tarjetas del catálogo**, vuelve el problema que esta historia
   esquivó —resolver el estado de veinticuatro publicaciones antes de pintar—, y esa es la
   historia donde hay que resolverlo, no antes.
+
+
+---
+
+## Cómo quedó
+
+**Hecha el 2 de septiembre de 2026.** Los dieciocho criterios están implementados y
+probados. Las cuatro reglas que la historia obligaba a escribir —RN-070 a RN-073— están en
+`reglas-negocio.md`, el glosario estrena **Favorito** / `Favorite` y **Comprador** /
+`BuyerId`, y la vuelta al sitio después de ingresar quedó decidida en **ADR-0029**.
+
+### Las decisiones que se tomaron al implementarla
+
+- **Los favoritos viven en el contexto `catalog`**, aunque la ruta cuelgue de
+  `/api/v1/users/me/favorites`. La lista cruza `favorites` con `listings` y filtra
+  `PUBLISHED`, y RN-072 compara contra el vendedor: los dos son datos del catálogo. Que la
+  ruta diga `/users/me` es transporte, igual que `SellerVerificationController`, que vive
+  en `identity` colgando de la misma base.
+
+- **El criterio 5 se resolvió sin tocar el contrato de la sesión.** La sesión que guarda el
+  navegador no lleva el identificador de la cuenta, así que la ficha no puede comparar
+  contra el vendedor. En vez de agregarlo —que era cambiar HU-001 para que una pantalla
+  haga una comprobación que RN-072 pone en el servidor de todas formas—, la lectura puntual
+  responde `{ favorite, eligible }`. La regla se queda donde debe y la pantalla obedece.
+
+- **Marcar lo que no está `PUBLISHED` responde 404 y no 422.** Es lo que ya hace
+  `ListingNotFoundException`: no existe y no es para ti responden igual. Un 422 diría «este
+  identificador es una publicación real que no está publicada», que es justo lo que RN-068
+  existe para no decir. El orden de las dos comprobaciones —primero el estado, después el
+  dueño— es lo que impide que un 403 confirme la existencia del borrador de otra persona, y
+  tiene prueba propia.
+
+- **La clave primaria de `favorites` es el par**, y esa restricción es la que hace
+  idempotente al criterio 4 con `ON CONFLICT DO NOTHING`. Comprobar antes de escribir no
+  bastaba: entre la lectura y la escritura cabe la petición de la otra pestaña.
+
+- **`identity` le pregunta a `catalog` por un caso de uso público**, con el puerto
+  `UserFavorites` y el adaptador `CatalogUserFavorites`. Es el mismo patrón que el catálogo
+  ya usaba en la dirección contraria para saber si un vendedor está verificado. No es un
+  ciclo: son dos conversaciones distintas, cada una por la puerta pública del otro.
+
+### Lo que apareció al escribirla, y no era de esta historia
+
+- **`GET /api/v1/listings?limit=500` respondía 500 y no 400**, desde HU-009 y en
+  producción. `@Validated` hace que la restricción del parámetro la evalúe el proxy de
+  validación, que lanza `ConstraintViolationException`; el manejador global solo cubría la
+  de los cuerpos. **La prueba de HU-009 no podía verlo y sigue en verde**: el montaje
+  autónomo de MockMvc no crea ese proxy, así que allí la excepción que rompe la respuesta
+  nunca se lanza. Arreglado en commit aparte, con `CatalogLimitTest` en `bootstrap`, que es
+  donde sí se ve.
+
+- **Salir no borraba de la caché lo que el servidor había respondido.** El perfil y las
+  sesiones abiertas se quedaban ahí desde HU-001, y quien entrara después en el mismo
+  navegador —sin recargar— los veía un instante. Con los favoritos era peor: heredaban el
+  minuto de frescura del catálogo, así que ni siquiera se revalidaban enseguida. RN-070 no
+  se sostenía. Ahora al salir se olvida todo lo cacheado y las dos consultas privadas van
+  sin frescura.
+
+- **`/mis-favoritos` faltaba en `app.routes.server.ts`**: la página se pintaba entera y se
+  servía con 404. Lo delató `rutas.spec.ts`, que es el guard que existe para esto y que ya
+  cazó lo mismo en `/ingresar` y en las tres rutas de HU-007.
+
+### Lo que queda fuera, y por qué
+
+- **El control en las tarjetas del catálogo y del perfil del vendedor.** Estaba fuera desde
+  el alcance y sigue fuera. Ahora que el gesto está probado en la ficha, llevarlo a la
+  tarjeta es la historia corta que la historia anticipaba.
+- **La entrada de navegación a `/mis-favoritos`.** No hay enlace desde ninguna parte, igual
+  que las rutas de HU-002, HU-006 y HU-007: `FEATURE_CATALOG` está apagada y HU-004 y HU-005
+  prohíben enlazar a algo que no funciona. El enlace entra cuando la bandera se encienda.
+- **Avisar de que un favorito bajó de precio o se vendió**, compartir la lista, carpetas y
+  el contador público. Los cuatro estaban fuera del alcance y siguen fuera.
+- **La frase de la garantía del fabricante en la ficha** (RN-067) sigue aplazada a la tanda
+  legal, como la dejó HU-009.
+
+### Lo que cambió la revisión
+
+Cuatro subagentes revisaron la rama terminada —arquitectura, pruebas, accesibilidad y
+seguridad— y encontraron cosas que la autorrevisión no vio. Lo que se corrigió:
+
+- **El mensaje del criterio 10 no se podía ver nunca.** Lo encontraron accesibilidad y
+  pruebas por separado, en la misma línea. El bloque del error vivía dentro del `@if` del
+  control, así que en el camino exacto que el criterio describe —vuelvo del ingreso con una
+  intención pendiente sobre mi propia publicación, el servidor responde `eligible: false`—
+  el control dejaba de pintarse y se llevaba el mensaje por delante. La prueba del 403 no lo
+  veía porque montaba con `eligible: true`, que es el único caso en que el estado no
+  contradice al error.
+
+- **Una persona podía quedarse con el favorito que pidió otra.** Lo encontró seguridad. A
+  pulsa «Guardar» sin sesión y no entra; B entra después en esa misma pestaña y abre esa
+  ficha por su cuenta: la intención se disparaba y B acababa con un favorito que nunca
+  pidió, que es dato personal escrito en nombre de otra persona. Ahora la intención lleva un
+  **pase de un solo uso** que viaja en la dirección de vuelta y sin el cual no se consume.
+  El pase no es una credencial y no vale por sí solo —un enlace con un pase inventado y sin
+  intención local no marca nada—, así que ADR-0029 se sostiene: la acción sigue sin viajar
+  en el enlace.
+
+- **Una cuenta ya cerrada podía escribir favoritos durante quince minutos.** El token
+  sobrevive al cierre (ADR-0003) y todas las demás rutas de `/users/me` recargan la cuenta y
+  responden 401; estas no. Quedaba dato personal vivo justo después de ejercer el derecho de
+  supresión, y nada volvía a borrarlo porque el cierre ya había pasado. Lo comprueba ahora
+  el puerto `BuyerAccounts`, y solo en el caso de uso que escribe: los otros tres no crean
+  dato ni revelan nada sobre una cuenta cerrada.
+
+- **`errors[].field` publicaba el nombre del argumento Java, en español.** El cliente manda
+  `?limit=500` y recibía `{"field": "limite"}`. Lo encontraron arquitectura y seguridad. Es
+  un defecto que introduje al arreglar el 500 de HU-009, y mi propia prueba lo consagraba.
+  Los argumentos de esos parámetros pasan a llamarse como el parámetro HTTP, que es lo que
+  hace correcto lo que sale.
+
+- **RN-072 estaba escrita dos veces**, y el argumento con que justifiqué la copia era falso:
+  `Listing.laPublico(ModeratorId)` ya resolvía esa forma para RN-063. Ahora la comparación
+  vive en `Listing.esDe(BuyerId)` y los dos sitios preguntan por ella.
+
+- **`[disabled]` mataba el foco.** El botón se deshabilitaba en el mismo tick del clic, con
+  el foco dentro, y el navegador lo mandaba a `body`: quien pulsa con teclado tenía que
+  tabular desde el principio del documento. El doble pulsado ya lo bloquea el almacén
+  contando peticiones, así que el atributo no aportaba nada.
+
+- **`aria-pressed` con nombre variable se contradecía**: un lector leía «Quitar de
+  favoritos, botón de alternancia, pulsado». Se quitó `aria-pressed` y el estado lo lleva el
+  nombre, como manda la APG de ARIA.
+
+- **Las dos «señales que no son color» eran inertes**: en modo claro `--color-texto` y
+  `--color-primario` son el mismo valor, y `.btn` ya trae el peso fuerte. El comentario que
+  lo afirmaba era falso. El estado se distingue por el relleno del icono y por el texto.
+
+- **Dos cosas ya existían y no las busqué**: `--medida: 70ch` —el ancho de lectura del
+  sistema, que además crece con el texto— y `.vacio`, el estado vacío que ya usan la bandeja
+  y la cola. Sobraban el token nuevo en px y el bloque paralelo.
+
+- **`/mis-favoritos` se quedó fuera de la auditoría de axe**, que advierte en su propio
+  archivo que una página que no está en la lista no se audita y nadie se entera.
+
+- **Salir limpiaba la caché solo por una de las tres puertas.** El cierre de cuenta y el
+  refresco que caduca se quedaban fuera. La limpieza se movió a `SessionStore.clear()`, que
+  es por donde pasan las tres, y solo cuando de verdad había sesión: purgar en cada visita
+  anónima tiraría la caché que llega del renderizado en servidor.
+
+Y en pruebas, los huecos que señaló el revisor: la idempotencia concurrente se afirmaba en
+cinco sitios y se probaba secuencialmente en todos —ahora hay dos hilos con su propia
+conexión—; el adaptador que cruza contextos no tenía ninguna prueba, así que el cierre y la
+descarga estaban probados por mitades que no se tocaban; el cursor nunca daba la vuelta
+completa por HTTP; los umbrales se probaban por un solo lado; el índice de `V16` se podía
+borrar sin que fallara nada; una prueba afirmaba que un UUID es igual a sí mismo; y el
+riesgo que la propia historia declara como principal —que la ficha pública no se vuelva
+dependiente de la sesión— no tenía ningún guardián.
+
+## Cuándo revisar, con lo que se sabe ahora
+
+Además de lo que ya decía la historia:
+
+- **Ningún endpoint fuera de `/api/v1/auth/*` tiene límite de tasa.** No lo introduce esta
+  historia —vale igual para todas las escrituras de HU-007 y HU-002— pero aquí se junta con
+  RN-073, que decide a propósito no poner tope de favoritos: una cuenta autenticada puede
+  hacer crecer la tabla sin techo y sin nada que la frene. Si se decide poner límites de
+  tasa al resto de la API, esta es una de las rutas que los necesita.
+- **La suite `e2e-completo` no es repetible contra una base sucia.** La cola del moderador
+  pagina de veinte en veinte, así que con más de veinte publicaciones pendientes acumuladas
+  de corridas anteriores el ayudante no encuentra la suya y fallan nueve pruebas que no
+  tienen nada roto. No es de esta historia, pero se descubrió aquí: contra una base limpia
+  pasan las treinta y ocho.

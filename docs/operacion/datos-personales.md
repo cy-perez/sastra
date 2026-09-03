@@ -24,7 +24,7 @@ Si alguna no tiene respuesta, el campo no se crea.
 | Nivel | Datos | Trato |
 |---|---|---|
 | Publico | Nombre de vendedor, ciudad, publicaciones | Visible en el sitio |
-| Interno | Correo, telefono, fecha de nacimiento, historial de pedidos | Solo el titular y la operacion |
+| Interno | Correo, telefono, fecha de nacimiento, historial de pedidos, favoritos | Solo el titular y la operacion |
 | Sensible | Documento de identidad, selfie, cuenta bancaria | Cifrado, acceso restringido y auditado |
 | Secreto | Contrasenas, tokens | Nunca legibles, ni por la operacion |
 
@@ -45,6 +45,12 @@ Si alguna no tiene respuesta, el campo no se crea.
   verificacion: basta el estado y la fecha.
 - Los entornos de desarrollo nunca reciben datos reales de personas. Si hace
   falta volumen, se generan datos sinteticos.
+- **Los favoritos son dato personal** y se tratan como tal (HU-011, RN-070). Dicen
+  que le interesa a una persona identificada, asi que son suyos y de nadie mas: no
+  los ve el vendedor de lo marcado, no existen en agregado y no hay contador
+  publico. Van en la descarga de datos y **el cierre de cuenta los borra**, no los
+  anonimiza: a diferencia de la fila de `users`, aqui no queda nada que conservar.
+
 - **Ningun dato personal se pide sin uso concreto.** La ciudad y el telefono del
   perfil son opcionales, nacen vacios y se quitan dejando el campo en blanco: no
   hacen falta para tener cuenta. La foto de perfil tambien es opcional y se quita
@@ -112,6 +118,7 @@ la autorizacion. Operativamente:
 | Dato | Plazo |
 |---|---|
 | Cuenta activa | Mientras exista la cuenta |
+| Favoritos | Mientras exista la cuenta. El cierre los borra en el acto |
 | Documentos de verificacion | Mientras el vendedor este activo y cinco anos mas |
 | Ordenes y facturas | Diez anos, por obligacion contable |
 | Registros tecnicos con IP | Seis meses |

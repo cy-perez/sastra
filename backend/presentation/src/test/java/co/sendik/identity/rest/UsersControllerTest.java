@@ -78,6 +78,10 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 class UsersControllerTest {
 
     private static final Instant AHORA = Instant.parse("2026-08-17T15:00:00Z");
+
+    /** Lo que esta persona guardo, para comprobar que sale en la descarga. */
+    private static final String PUBLICACION_GUARDADA = "01a04385-47b7-79c7-b3f2-62c03a8d4a88";
+
     private static final UserId USUARIO = UserId.nuevo();
     private static final TokenFamilyId LA_DE_AHORA = TokenFamilyId.nueva();
 
@@ -237,7 +241,9 @@ class UsersControllerTest {
                                 List.of("BUYER"),
                                 AHORA),
                         List.of(new UserDataExport.Consentimiento("PRIVACY", "2026-08-01", AHORA)),
-                        List.of()));
+                        List.of(),
+                        // HU-011: los favoritos entran en la descarga.
+                        List.of(new UserDataExport.Favorito(PUBLICACION_GUARDADA, AHORA))));
 
         MvcResult resultado = mvc.perform(get("/api/v1/users/me/export"))
                 .andExpect(status().isOk())
@@ -250,6 +256,11 @@ class UsersControllerTest {
                 .andExpect(jsonPath("$.cuenta.telefono").value("+57 300 000 0000"))
                 // La evidencia con su version: es lo que prueba a que dijo que si.
                 .andExpect(jsonPath("$.consentimientos[0].version").value("2026-08-01"))
+                // Y los favoritos, que son dato personal (HU-011, RN-070). Se afirma el
+                // nombre del campo y su contenido: el simulador los devolvia y nadie
+                // comprobaba nada, asi que si desaparecieran del archivo la prueba seguiria
+                // verde y el derecho a conocer se serviria incompleto.
+                .andExpect(jsonPath("$.favoritos[0].publicacion").value(PUBLICACION_GUARDADA))
                 .andReturn();
 
         // Ni el hash de la contrasena ni el de ningun token: son secretos del

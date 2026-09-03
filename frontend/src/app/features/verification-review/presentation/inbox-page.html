@@ -5,7 +5,10 @@
   <p class="aviso-hecho tipo-cuerpo" role="status">{{ clave | transloco }}</p>
 }
 
-<h1 class="tipo-h1">{{ 'verificationReview.inbox.title' | transloco }}</h1>
+<!-- `tabindex="-1"` no lo mete en el orden de tabulacion: lo hace enfocable por codigo,
+     que es lo que hace falta para poder traer aqui el foco al reintentar, cuando el boton
+     que se pulso deja de existir. -->
+<h1 #titulo tabindex="-1" class="tipo-h1">{{ 'verificationReview.inbox.title' | transloco }}</h1>
 
 @if (consulta.isPending()) {
   <!-- El esqueleto se esconde de la accesibilidad: para quien no ve la pantalla es una

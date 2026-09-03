@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  inject,
+  signal,
+  viewChild,
+} from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
@@ -26,6 +33,8 @@ import { hayDiscrepanciaDeTitular } from '../domain/pending-verification';
 export class InboxPage {
   private readonly store = inject(ReviewStore);
   private readonly idioma = inject(TranslocoService);
+
+  private readonly titulo = viewChild.required<ElementRef<HTMLElement>>('titulo');
 
   protected readonly consulta = this.store.inbox;
   protected readonly pendientes = this.store.pendientes;
@@ -69,7 +78,28 @@ export class InboxPage {
     }).format(new Date(iso));
   }
 
+  /**
+   * Reintenta la carga, y se lleva el foco antes de que el boton desaparezca.
+   *
+   * <p><strong>El boton se destruye al pulsarlo</strong>: el bloque de error deja paso al
+   * esqueleto mientras vuelve a pedirse. Sin mover el foco se queda en `body`, y quien
+   * navega con teclado tiene que tabular desde el principio del documento. Es la misma
+   * leccion que ya pagaron los botones de paginacion, por el otro camino.
+   *
+   * <p>Se mueve <strong>aqui, en el clic</strong>, y no cuando termina el reintento. El
+   * encabezado existe en los cuatro estados de esta pantalla, asi que ya esta en el DOM y
+   * el foco no pasa por `body` en ningun momento. Esperar al desenlace obligaba a
+   * adivinar cuando las señales de la consulta se ponen de acuerdo entre ellas, y ese
+   * hueco -promesa resuelta, señal todavia sin actualizar- reabria el mismo defecto por
+   * otra puerta.
+   *
+   * <p>Queda donde queda pase lo que pase: si sale bien, arriba de la lista que se pidio;
+   * si vuelve a fallar, arriba del aviso, a un tabulador del boton. Lo que no queda es en
+   * `body`.
+   */
   protected reintentar(): void {
+    this.titulo().nativeElement.focus();
+
     void this.consulta.refetch();
   }
 

@@ -125,6 +125,61 @@ describe('InboxPage', () => {
     return fixture;
   };
 
+  /**
+   * <strong>Reintentar no puede tirar el foco al body.</strong> El botón se destruye al
+   * pulsarlo —el bloque de error deja paso al esqueleto— y sin mover el foco quien navega
+   * con teclado tiene que tabular desde el principio del documento. Es la misma lección
+   * que pagaron los botones de paginación, por el otro camino.
+   *
+   * <p>Las tres pruebas cubren los tres desenlaces, porque cada uno quiere el foco en un
+   * sitio distinto.
+   */
+  it('al reintentar lleva el foco al encabezado y no al body', async () => {
+    const fixture = await montar('falla');
+
+    botonDe(fixture, 'Reintentar')?.focus();
+    botonDe(fixture, 'Reintentar')?.click();
+    await new Promise((listo) => setTimeout(listo, 0));
+    fixture.detectChanges();
+
+    expect(document.activeElement?.tagName).toBe('H1');
+  });
+
+  /** Vuelva a fallar o no, lo que no puede pasar es que el foco acabe en el body. */
+  it('sigue en el encabezado si el reintento vuelve a fallar', async () => {
+    const fixture = await montar('falla');
+    const backend = TestBed.inject(HttpTestingController);
+
+    botonDe(fixture, 'Reintentar')?.focus();
+    botonDe(fixture, 'Reintentar')?.click();
+    await new Promise((listo) => setTimeout(listo, 0));
+
+    esperarBandeja(backend).flush(
+      { code: 'COMMON_UNEXPECTED' },
+      { status: 500, statusText: 'Error' },
+    );
+    await asentar(fixture);
+
+    expect(document.activeElement?.tagName).toBe('H1');
+    expect(botonDe(fixture, 'Reintentar')).toBeDefined();
+  });
+
+  /** Si sale bien no hay botón al que volver: el foco se queda arriba, con la lista debajo. */
+  it('deja el foco en el encabezado si el reintento sale bien', async () => {
+    const fixture = await montar('falla');
+    const backend = TestBed.inject(HttpTestingController);
+
+    botonDe(fixture, 'Reintentar')?.focus();
+    botonDe(fixture, 'Reintentar')?.click();
+    await new Promise((listo) => setTimeout(listo, 0));
+
+    esperarBandeja(backend).flush(pagina([solicitud()]));
+    await asentar(fixture);
+
+    expect(document.activeElement?.tagName).toBe('H1');
+    expect(fixture.nativeElement.textContent).toContain('Espera desde');
+  });
+
   /** Criterio 1: la que lleva más tiempo esperando, primero. */
   it('muestra las solicitudes con la más vieja arriba', async () => {
     const fixture = await montar([

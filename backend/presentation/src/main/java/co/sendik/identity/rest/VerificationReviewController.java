@@ -1,6 +1,7 @@
 package co.sendik.identity.rest;
 
 import co.sendik.identity.dto.ApproveVerificationCommand;
+import co.sendik.identity.dto.ListPendingVerificationsQuery;
 import co.sendik.identity.dto.RejectVerificationCommand;
 import co.sendik.identity.dto.RevokeVerificationCommand;
 import co.sendik.identity.dto.VerificationImageContent;
@@ -12,6 +13,7 @@ import co.sendik.identity.model.SellerVerificationId;
 import co.sendik.identity.model.UserId;
 import co.sendik.identity.model.VerificationImage;
 import co.sendik.identity.rest.dto.PendingVerificationResponse;
+import co.sendik.identity.rest.dto.PendingVerificationsPage;
 import co.sendik.identity.rest.dto.RejectVerificationRequest;
 import co.sendik.identity.rest.dto.RevokeVerificationRequest;
 import co.sendik.identity.rest.dto.SellerVerificationResponse;
@@ -25,6 +27,8 @@ import co.sendik.identity.usecase.RejectVerificationUseCase;
 import co.sendik.identity.usecase.RevokeVerificationUseCase;
 import co.sendik.identity.usecase.ViewVerificationImageUseCase;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import java.util.List;
 import java.util.Locale;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -33,6 +37,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -64,6 +69,7 @@ import org.springframework.web.bind.annotation.RestController;
  * quien se verifica.
  */
 @RestController
+@Validated
 @RequestMapping("/api/v1/verifications")
 @ConditionalOnProperty(prefix = "sendik.features", name = "seller-verification", havingValue = "true")
 public class VerificationReviewController {
@@ -90,17 +96,35 @@ public class VerificationReviewController {
         this.casoDeLeer = casoDeLeer;
     }
 
-    /** La bandeja: lo que espera revision, lo mas viejo primero. */
+    /**
+     * La bandeja: lo que espera revision, lo mas viejo primero.
+     *
+     * <p><strong>Los parametros se llaman como el contrato y no como el codigo.</strong>
+     * Antes eran {@code ?limite=}, en espanol, y sin desplazamiento: quien consumia esta
+     * ruta tenia que aprender una excepcion, y no habia forma de pasar de las primeras.
+     * Ahora son {@code page} y {@code size}, como los de la cola de publicaciones
+     * (contrato-api.md).
+     *
+     * <p>El tope lo acota {@link ListPendingVerificationsQuery} y no este metodo: escrito
+     * aqui protegeria esta ruta y ninguna otra que use el mismo caso de uso. Lo de aqui
+     * es que un tamano fuera de rango salga como 400 y no como 500.
+     */
     @GetMapping
     @PreAuthorize("hasRole('MODERATOR')")
-    public List<PendingVerificationResponse> pendientes(
-            @AuthenticationPrincipal Jwt token, @RequestParam(name = "limite", defaultValue = "20") int limite) {
+    public PendingVerificationsPage pendientes(
+            @AuthenticationPrincipal Jwt token,
+            @RequestParam(name = "page", defaultValue = "0") @Min(0) int page,
+            @RequestParam(name = "size", defaultValue = "20") @Min(1)
+                    @Max(ListPendingVerificationsQuery.TAMANO_MAXIMO) int size) {
 
         UserId quienMira = moderadorDe(token);
 
-        return casoDeListar.execute(limite).stream()
-                .map(verificacion -> PendingVerificationResponses.de(verificacion, quienMira))
-                .toList();
+        List<PendingVerificationResponse> bandeja =
+                casoDeListar.execute(new ListPendingVerificationsQuery(page, size)).stream()
+                        .map(verificacion -> PendingVerificationResponses.de(verificacion, quienMira))
+                        .toList();
+
+        return new PendingVerificationsPage(bandeja, page, size);
     }
 
     /**

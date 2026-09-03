@@ -261,6 +261,11 @@ jobs:
 
       # Las mismas ordenes que ejecuta el despliegue, con el mismo contexto de
       # construccion. Lo que aqui no construya, alli tampoco.
+      #
+      # Y con las tres banderas de la Fase 2 encendidas, que es la forma que tiene `dev`.
+      # Con ellas apagadas este ensayo no construia ni un solo bean de verificacion, de
+      # publicacion ni de catalogo: arrancaba un backend mucho mas pequeno que el que se
+      # despliega, y una variable que faltara solo para esos beans no se veia aqui.
       - name: Construir la imagen del backend
         run: docker build -t sendik-backend:ensayo backend
 
@@ -297,6 +302,11 @@ jobs:
             -e JWT_SECRET="$(openssl rand -base64 48)" \
             -e CRYPTO_DATA_KEY_V1="$(openssl rand -base64 32)" \
             -e CRYPTO_LOOKUP_KEY="$(openssl rand -base64 32)" \
+            -e VERIFICATION_REVIEW_DAYS=2 \
+            -e SECURITY_BOOTSTRAP_MODERATORS=ensayo@example.test \
+            -e FEATURE_SELLER_VERIFICATION=true \
+            -e FEATURE_PUBLISHING=true \
+            -e FEATURE_CATALOG=true \
             sendik-backend:ensayo
 
           # La misma sonda que usa el despliegue. Flyway migra al arrancar, asi que

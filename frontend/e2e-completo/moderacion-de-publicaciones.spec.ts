@@ -48,11 +48,25 @@ test.use({ locale: 'es-CO' });
 /** La cola es de esta suite y no de los recorridos: solo la abre quien modera. */
 const RUTA_COLA = '/moderacion/publicaciones';
 
-/** Abre en la cola la fila de un título concreto. La cola es compartida entre pruebas. */
-async function abrirEnLaCola(page: Page, titulo: string): Promise<void> {
-  await page.goto(RUTA_COLA);
-  await expect(page.getByRole('heading', { name: 'Publicaciones pendientes' })).toBeVisible();
-  await page.getByRole('link').filter({ hasText: titulo }).first().click();
+/**
+ * Abre el detalle de una publicación concreta, por su identificador.
+ *
+ * <p><strong>Antes la buscaba en la cola, y por eso esta suite dejaba de pasar.</strong>
+ * La cola es FIFO —lo más viejo primero, veinte por página— así que lo que se acaba de
+ * enviar va al final, y contra una base que arrastra pendientes de corridas anteriores no
+ * aparece en la primera página. Como la pantalla no ofrece forma de pasar de esa primera
+ * página, no había ningún camino: el síntoma era un tiempo de espera agotado buscando una
+ * fila que sí existía.
+ *
+ * <p><strong>Lo que esto deja sin guardián, dicho en voz alta:</strong> que una publicación
+ * recién enviada aparezca en la cola. No es un descuido de esta suite. Mientras la cola no
+ * se pueda paginar desde la interfaz, esa comprobación solo se puede hacer con la base
+ * vacía, y una prueba que solo vale con la base vacía es la que había. Lo que sí sigue
+ * probado aquí es lo contrario —que después de decidir la fila ya no está—, que es lo que
+ * pide el criterio 8.
+ */
+async function abrirElDetalle(page: Page, id: string, titulo: string): Promise<void> {
+  await page.goto(`${RUTA_COLA}/${id}`);
   await expect(page.getByRole('heading', { name: titulo })).toBeVisible();
 }
 
@@ -107,10 +121,10 @@ test.describe('moderación de publicaciones', () => {
     const titulo = `Camisa aprobada ${Date.now()}`;
 
     await dejarUnaVendedoraVerificada(page, 'publica');
-    await publicarYEnviarARevision(page, titulo);
+    const id = await publicarYEnviarARevision(page, titulo);
 
     await entrarComoModeradora(page);
-    await abrirEnLaCola(page, titulo);
+    await abrirElDetalle(page, id, titulo);
 
     // Criterio 7: lo que hace falta para decidir está a la vista.
     await expect(page.getByText('Usada dos veces, sin manchas ni descosidos.')).toBeVisible();
@@ -134,10 +148,10 @@ test.describe('moderación de publicaciones', () => {
     const titulo = `Camisa rechazada ${Date.now()}`;
 
     const vendedora = await dejarUnaVendedoraVerificada(page, 'rechazada');
-    await publicarYEnviarARevision(page, titulo);
+    const id = await publicarYEnviarARevision(page, titulo);
 
     await entrarComoModeradora(page);
-    await abrirEnLaCola(page, titulo);
+    await abrirElDetalle(page, id, titulo);
 
     // Criterio 9: sin motivo no se envía.
     await page.getByRole('button', { name: 'Rechazar' }).click();
@@ -183,13 +197,13 @@ test.describe('moderación de publicaciones', () => {
     const titulo = `Camisa retirada ${Date.now()}`;
 
     const vendedora = await dejarUnaVendedoraVerificada(page, 'retirada');
-    await publicarYEnviarARevision(page, titulo);
+    const id = await publicarYEnviarARevision(page, titulo);
 
     // Quien modera abre el detalle en su propia pestaña y lo deja ahí.
     const otra = await browser.newPage();
     try {
       await entrarComoModeradora(otra);
-      await abrirEnLaCola(otra, titulo);
+      await abrirElDetalle(otra, id, titulo);
 
       // Mientras tanto, el vendedor la retira.
       await page.goto(RUTA_MIS_PUBLICACIONES);

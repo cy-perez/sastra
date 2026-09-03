@@ -216,11 +216,23 @@ public class JdbcSellerVerificationRepository implements SellerVerificationRepos
     /**
      * Usa el indice parcial de V8 sobre {@code updated_at} para las pendientes: sin el,
      * esta consulta recorreria la tabla entera para encontrar las pocas que esperan.
+     *
+     * <p><strong>Desempata por {@code id}, y con desplazamiento no es opcional.</strong>
+     * {@code updated_at} no es un orden total: dos solicitudes enviadas en el mismo
+     * instante pueden salir en cualquier orden, y si ese orden cambia entre la peticion de
+     * una pagina y la de la siguiente, hay filas que aparecen dos veces y filas que no
+     * aparecen nunca. Mientras esto era un tope sin salto el defecto no se podia observar.
      */
     @Override
-    public List<SellerVerification> pendientesDeRevision(int limite) {
-        return jdbc.sql(SELECT_BASE + " WHERE status = 'PENDING_REVIEW' ORDER BY updated_at ASC LIMIT :limite")
-                .param("limite", limite)
+    public List<SellerVerification> pendientesDeRevision(int pagina, int tamano) {
+        return jdbc.sql(SELECT_BASE
+                        + " WHERE status = 'PENDING_REVIEW' ORDER BY updated_at ASC, id ASC"
+                        + " LIMIT :limite OFFSET :salto")
+                .param("limite", tamano)
+                // Como long: con pagina y tamano en su tope, el producto en int desbordaria
+                // mucho antes de que la tabla llegue ahi, pero desbordar da un salto negativo
+                // y PostgreSQL responde a eso con un error, no con una pagina vacia.
+                .param("salto", (long) pagina * tamano)
                 .query(this::mapear)
                 .list();
     }

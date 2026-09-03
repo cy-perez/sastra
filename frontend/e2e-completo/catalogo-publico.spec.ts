@@ -3,8 +3,10 @@ import { expect, test } from '@playwright/test';
 import {
   RUTA_MIS_PUBLICACIONES,
   dejarUnaVendedoraVerificada,
+  ingresar,
   publicarYAprobar,
   publicarYEnviarARevision,
+  retirarDeRevision,
   salirSiHaySesion,
 } from './recorridos';
 
@@ -73,8 +75,8 @@ test.describe('catálogo público', () => {
   test('lo que espera revision no esta en el catalogo, ni para su dueña', async ({ page }) => {
     const titulo = `Camisa sin aprobar ${Date.now()}`;
 
-    await dejarUnaVendedoraVerificada(page, 'sin-aprobar');
-    await publicarYEnviarARevision(page, titulo);
+    const vendedora = await dejarUnaVendedoraVerificada(page, 'sin-aprobar');
+    const id = await publicarYEnviarARevision(page, titulo);
 
     // Con su sesión abierta, que es el caso que más se presta a una excepción.
     await page.goto(RUTA_CATALOGO);
@@ -85,6 +87,11 @@ test.describe('catálogo público', () => {
     await salirSiHaySesion(page);
     await page.goto(RUTA_CATALOGO);
     await expect(page.getByRole('link').filter({ hasText: titulo })).toHaveCount(0);
+
+    // Esta prueba necesita algo esperando revisión, así que lo recoge al terminar: la cola
+    // del moderador es compartida y lo que se deja ahí estorba a la corrida siguiente.
+    await ingresar(page, vendedora);
+    await retirarDeRevision(page, id);
   });
 
   /**
@@ -189,9 +196,12 @@ test.describe('catálogo público', () => {
     const titulo = `Camisa solo mia ${Date.now()}`;
 
     await dejarUnaVendedoraVerificada(page, 'panel');
-    await publicarYEnviarARevision(page, titulo);
+    const id = await publicarYEnviarARevision(page, titulo);
 
     await page.goto(RUTA_MIS_PUBLICACIONES);
     await expect(page.getByText(titulo).first()).toBeVisible();
+
+    // Lo mismo: lo que espera revisión se recoge, o se queda en la cola para siempre.
+    await retirarDeRevision(page, id);
   });
 });

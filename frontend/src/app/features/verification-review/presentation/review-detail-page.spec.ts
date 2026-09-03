@@ -101,7 +101,8 @@ describe('ReviewDetailPage', () => {
     const backend = TestBed.inject(HttpTestingController);
     backend
       .expectOne((p) => p.method === 'GET' && p.url === `${API}/verifications`)
-      .flush(respuesta);
+      // La bandeja responde una página, no una lista pelada: es un listado administrativo.
+      .flush({ items: respuesta, page: 0, size: 20 });
     await asentar(fixture);
 
     return { fixture, backend };
@@ -136,7 +137,9 @@ describe('ReviewDetailPage', () => {
   ) => {
     for (let vuelta = 0; vuelta < 5; vuelta++) {
       await new Promise((listo) => setTimeout(listo, 0));
-      backend.match((p) => p.url === `${API}/verifications`).forEach((p) => p.flush(respuesta));
+      backend
+        .match((p) => p.url === `${API}/verifications`)
+        .forEach((p) => p.flush({ items: respuesta, page: 0, size: 20 }));
       fixture.detectChanges();
     }
   };

@@ -1,9 +1,9 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
 import type { RejectionReason } from '../../../shared/domain/rejection-reason';
-import type { PendingVerification, VerificationImage } from '../domain/pending-verification';
+import type { PendingVerificationsPage, VerificationImage } from '../domain/pending-verification';
 
 /** Lo que se manda al rechazar. Es de esta capa y no sale de ella. */
 interface RejectRequestDto {
@@ -38,10 +38,19 @@ const MOTIVO_DE_LECTURA = 'Revision de solicitud pendiente';
 export class VerificationReviewApi {
   private readonly http = inject(HttpClient);
 
-  /** La bandeja. El servidor acota el límite a 50 y ordena por antigüedad. */
-  async pendientes(limite = 20): Promise<readonly PendingVerification[]> {
+  /**
+   * La bandeja. El servidor acota el tamaño a 50 y ordena por antigüedad.
+   *
+   * <p><strong>`page` y `size`, no `limite`.</strong> El parámetro se llamaba en español
+   * y no había desplazamiento, así que esta ruta era una excepción al contrato y no había
+   * forma de pasar de las primeras veinte. Son los mismos nombres que usa la cola de
+   * publicaciones.
+   */
+  async pendientes(pagina = 0, tamano = 20): Promise<PendingVerificationsPage> {
+    const parametros = new HttpParams().set('page', pagina).set('size', tamano);
+
     return firstValueFrom(
-      this.http.get<PendingVerification[]>('verifications', { params: { limite } }),
+      this.http.get<PendingVerificationsPage>('verifications', { params: parametros }),
     );
   }
 

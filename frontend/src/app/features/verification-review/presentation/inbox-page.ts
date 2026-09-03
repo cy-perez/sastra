@@ -30,6 +30,10 @@ export class InboxPage {
   protected readonly consulta = this.store.inbox;
   protected readonly pendientes = this.store.pendientes;
 
+  protected readonly pagina = this.store.pagina;
+  protected readonly hayMas = this.store.hayMas;
+  protected readonly hayAnterior = this.store.hayAnterior;
+
   /** Constante y no un literal en la plantilla, que se recrearía en cada ciclo. */
   protected readonly filasDelEsqueleto = [1, 2, 3];
 
@@ -66,5 +70,21 @@ export class InboxPage {
 
   protected reintentar(): void {
     void this.consulta.refetch();
+  }
+
+  /**
+   * Las dos siguen siendo llamables en el borde, y no es un descuido.
+   *
+   * <p>Los botones se marcan con `aria-disabled` y no con `disabled`, así que en la última
+   * página «Siguiente» todavía recibe el clic. Quien acota el movimiento es el estado:
+   * pulsar ahí no hace nada. Comprobarlo también aquí sería repetir la misma regla en dos
+   * sitios que pueden dejar de estar de acuerdo.
+   */
+  protected siguiente(): void {
+    this.store.paginaSiguiente();
+  }
+
+  protected anterior(): void {
+    this.store.paginaAnterior();
   }
 }

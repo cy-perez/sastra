@@ -137,6 +137,27 @@ jobs:
       # esta misma imagen con el perfil `dev` y esta misma lista de variables: si aquí
       # falta una obligatoria, allí el contenedor no levanta y el pull request se pone
       # rojo antes de integrar.
+      #
+      # Las tres banderas de la Fase 2 y el moderador de arranque se pasan desde aquí, y
+      # es lo que permite que `dev` y `prod` se decidan por separado: el valor lo pone la
+      # variable del entorno de GitHub, no este archivo. **Van juntas a propósito.**
+      # Encender `publishing` sin `SECURITY_BOOTSTRAP_MODERATORS` deja el entorno en un
+      # callejón sin salida —se puede publicar y nada puede salir de `PENDING_REVIEW`,
+      # porque no hay nadie con el rol para aprobarlo—, que es justo el hueco que HU-008
+      # vino a cerrar.
+      #
+      # Con respaldo explícito y no a secas: una variable que no existe se expande a
+      # cadena vacía, y ahí `${FEATURE_CATALOG:false}` no vale de nada porque el valor
+      # por omisión solo entra cuando la variable no está definida, no cuando está
+      # definida y vacía. Un booleano vacío tumba el arranque al enlazarlo.
+      #
+      # `VERIFICATION_REVIEW_DAYS` se pasaba solo al frontend, y el backend se quedaba con
+      # su valor por omisión: la pantalla lo dice y el correo de «recibimos tu solicitud»
+      # también, así que podían decir números distintos sin que nada fallara.
+      #
+      # `LISTING_REVIEW_DAYS` no está aquí y no es un olvido: hoy solo lo dice la pantalla,
+      # porque enviar a revisión no manda ningún correo. Declararlo en el backend sería
+      # configuración que nadie lee (docs/operacion/configuracion.md).
       - name: Desplegar la revisión
         env:
           IMAGEN: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/sendik/backend
@@ -168,6 +189,11 @@ jobs:
             --set-env-vars "STORAGE_PUBLIC_BASE_URL=${{ vars.STORAGE_PUBLIC_BASE_URL }}" \
             --set-env-vars "STORAGE_PUBLIC_BUCKET=${{ vars.STORAGE_PUBLIC_BUCKET }}" \
             --set-env-vars "STORAGE_RESTRICTED_BUCKET=${{ vars.STORAGE_RESTRICTED_BUCKET }}" \
+            --set-env-vars "VERIFICATION_REVIEW_DAYS=${{ vars.VERIFICATION_REVIEW_DAYS || 2 }}" \
+            --set-env-vars "^;^SECURITY_BOOTSTRAP_MODERATORS=${{ vars.SECURITY_BOOTSTRAP_MODERATORS }}" \
+            --set-env-vars "FEATURE_SELLER_VERIFICATION=${{ vars.FEATURE_SELLER_VERIFICATION || 'false' }}" \
+            --set-env-vars "FEATURE_PUBLISHING=${{ vars.FEATURE_PUBLISHING || 'false' }}" \
+            --set-env-vars "FEATURE_CATALOG=${{ vars.FEATURE_CATALOG || 'false' }}" \
             --set-secrets "DB_URL=sendik-db-url:latest" \
             --set-secrets "DB_USERNAME=sendik-db-username:latest" \
             --set-secrets "DB_PASSWORD=sendik-db-password:latest" \
@@ -264,8 +290,8 @@ jobs:
             --set-env-vars "SUPPORT_EMAIL=${{ vars.SUPPORT_EMAIL }}" \
             --set-env-vars "COMMISSION_RATE=${{ vars.COMMISSION_RATE }}" \
             --set-env-vars "CLAIM_WINDOW_DAYS=${{ vars.CLAIM_WINDOW_DAYS }}" \
-            --set-env-vars "VERIFICATION_REVIEW_DAYS=${{ vars.VERIFICATION_REVIEW_DAYS }}" \
-            --set-env-vars "LISTING_REVIEW_DAYS=${{ vars.LISTING_REVIEW_DAYS }}" \
+            --set-env-vars "VERIFICATION_REVIEW_DAYS=${{ vars.VERIFICATION_REVIEW_DAYS || 2 }}" \
+            --set-env-vars "LISTING_REVIEW_DAYS=${{ vars.LISTING_REVIEW_DAYS || 2 }}" \
             --set-env-vars "LEGAL_TERMS_VERSION=${{ vars.LEGAL_TERMS_VERSION }}" \
             --set-env-vars "LEGAL_PRIVACY_VERSION=${{ vars.LEGAL_PRIVACY_VERSION }}" \
             --set-env-vars "LEGAL_COOKIES_VERSION=${{ vars.LEGAL_COOKIES_VERSION }}"

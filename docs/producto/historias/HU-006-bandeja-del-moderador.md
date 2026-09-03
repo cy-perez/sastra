@@ -294,3 +294,57 @@ Queda abierto, y necesita decisión de producto:
   que conviene decidir antes de la segunda es que van a existir tres bandejas
   distintas —verificaciones, publicaciones y disputas de la Fase 4— y llamarlas
   igual sin distinguirlas es lo que hace que después nadie sepa de cuál se habla.
+
+## Lo que se corrigió después, el 3 de septiembre de 2026
+
+**La bandeja no se podía pasar de la primera página.** Se destapó al arreglar la
+repetibilidad de `e2e-completo`, y no es un defecto de aquella suite sino de aquí.
+
+`SellerVerificationRepository.pendientesDeRevision` recibía un `limite` y nada más:
+`LIMIT` sin `OFFSET`. `ListPendingVerificationsUseCase` decía en su javadoc que «la
+pantalla pagina pidiendo otra vez», y era falso —pedir otra vez devolvía exactamente
+lo mismo—. El puerto, por su parte, defendía la ausencia de paginación con un
+argumento que describe bien la carga y mal el alcance: la cola ordena lo más viejo
+primero y decidir saca la fila, así que **drena sola** y quien revisa siempre tiene
+trabajo en la primera página. Lo que ese argumento no cubre es *buscar*: un moderador
+que quiere llegar a una solicitud concreta —porque le escribieron, porque la
+reclamaron— no podía pasar de las primeras veinte por ningún camino, y nada en la
+pantalla decía que hubiera más.
+
+Lo que cambió:
+
+- La consulta lleva `OFFSET`, y **desempata por `id`**. `updated_at` sola no es un
+  orden total: dos solicitudes enviadas en el mismo instante pueden salir en cualquier
+  orden, y si ese orden cambia entre una página y la siguiente hay filas que aparecen
+  dos veces y filas que no aparecen nunca. Mientras esto fue un tope sin salto, el
+  defecto no se podía observar.
+- El endpoint se alineó al contrato: `?page=&size=` en vez de `?limite=` —el único
+  parámetro de la API que estaba en español— y respuesta `{ items, page, size }` en vez
+  de una lista pelada, que es la forma que ya usaba la cola de publicaciones. El tamaño
+  va acotado a 50 y por encima responde 400, no recorta en silencio.
+- La pantalla tiene «Anterior» y «Siguiente», con el número de página anunciado como
+  región viva: al pulsar, lo único que cambia es la lista.
+- **Los botones se marcan con `aria-disabled` y no con `disabled`.** Es la lección que
+  HU-011 ya pagó: un botón que se deshabilita en el mismo tick del clic con el foco
+  dentro manda el foco a `body`, y quien navega con teclado tiene que tabular desde el
+  principio del documento. Aquí pasaría justo al llegar al extremo.
+- Y por lo mismo, el estado «no disponible» **no** reutiliza la paleta de
+  `.btn:disabled`. Aquella pinta blanco sobre `--color-deshabilitado`, que en modo claro
+  da 1.96:1: un control de verdad deshabilitado está exento del mínimo de contraste,
+  pero éstos siguen habilitados a propósito y para WCAG siguen siendo componentes
+  activos. Se baja el énfasis con `--color-texto-suave` (4.68:1 en claro, 7.33:1 en
+  oscuro) y `--color-borde-control` (3.36:1 y 5.29:1).
+
+Y lo que no tenía guardián: `pendientesDeRevision` **no tenía ninguna prueba de
+persistencia**. Se podía borrar el desplazamiento entero —y de hecho no existía— sin
+que nada se pusiera en rojo. Ahora hay dos, y una de ellas envía tres solicitudes en el
+mismo instante, que es el caso que el desempate existe para ordenar.
+
+## Lo que sigue abierto
+
+**La cola de publicaciones tiene la mitad del mismo problema.** Su backend pagina bien
+y `ListingReviewApi.pendientes(pagina, tamano)` acepta página, pero
+`ListingReviewStore.queue` la llama sin argumentos —siempre la página 0— y
+`queue-page.html` no tiene ningún control para avanzar: la paginación existe entera y
+nadie la usa. No entró aquí porque esta historia es la bandeja de verificaciones. Es
+corto y ya está todo lo difícil hecho.

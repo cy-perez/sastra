@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import co.sendik.identity.dto.ApproveVerificationCommand;
+import co.sendik.identity.dto.ListPendingVerificationsQuery;
 import co.sendik.identity.dto.RejectVerificationCommand;
 import co.sendik.identity.dto.VerificationImageContent;
 import co.sendik.identity.dto.ViewVerificationImageCommand;
@@ -153,14 +154,14 @@ class VerificationReviewControllerTest {
 
     @Test
     void deberia_listar_lo_que_espera_revision() throws Exception {
-        when(listado.execute(20)).thenReturn(List.of(enRevision()));
+        when(listado.execute(any())).thenReturn(List.of(enRevision()));
 
         mvc.perform(get("/api/v1/verifications"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].id").value(SOLICITUD.toString()))
-                .andExpect(jsonPath("$[0].attempts").value(1))
-                .andExpect(jsonPath("$[0].documentNumberLastFour").value("2947"))
-                .andExpect(jsonPath("$[0].bankAccountLastFour").value("3456"));
+                .andExpect(jsonPath("$.items[0].id").value(SOLICITUD.toString()))
+                .andExpect(jsonPath("$.items[0].attempts").value(1))
+                .andExpect(jsonPath("$.items[0].documentNumberLastFour").value("2947"))
+                .andExpect(jsonPath("$.items[0].bankAccountLastFour").value("3456"));
     }
 
     /**
@@ -170,7 +171,7 @@ class VerificationReviewControllerTest {
      */
     @Test
     void deberia_cumplir_el_criterio_11_tambien_para_el_moderador() throws Exception {
-        when(listado.execute(20)).thenReturn(List.of(enRevision()));
+        when(listado.execute(any())).thenReturn(List.of(enRevision()));
 
         MvcResult resultado = mvc.perform(get("/api/v1/verifications")).andReturn();
         String cuerpo = resultado.getResponse().getContentAsString();
@@ -185,12 +186,54 @@ class VerificationReviewControllerTest {
     }
 
     @Test
-    void deberia_respetar_el_limite_que_se_le_pide() throws Exception {
-        when(listado.execute(5)).thenReturn(List.of());
+    void deberia_respetar_la_pagina_y_el_tamano_pedidos() throws Exception {
+        when(listado.execute(any())).thenReturn(List.of());
+
+        mvc.perform(get("/api/v1/verifications").param("page", "3").param("size", "5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.page").value(3))
+                .andExpect(jsonPath("$.size").value(5));
+
+        ArgumentCaptor<ListPendingVerificationsQuery> consulta =
+                ArgumentCaptor.forClass(ListPendingVerificationsQuery.class);
+        verify(listado).execute(consulta.capture());
+        assertThat(consulta.getValue().pagina()).isEqualTo(3);
+        assertThat(consulta.getValue().tamano()).isEqualTo(5);
+    }
+
+    /**
+     * Sin desplazamiento no habia forma de llegar a la segunda pagina, y con {@code limite}
+     * en espanol quien consumia esta ruta tenia que aprender una excepcion al contrato.
+     *
+     * <p>Esta prueba es la que sujeta las dos cosas: que el nombre del parametro es el del
+     * contrato y que la pagina viaja hasta el caso de uso. Sin ella, volver a
+     * {@code ?limite=} o dejar la pagina en el camino no rompe nada visible aqui.
+     */
+    @Test
+    void deberia_ignorar_el_nombre_viejo_del_parametro() throws Exception {
+        when(listado.execute(any())).thenReturn(List.of());
 
         mvc.perform(get("/api/v1/verifications").param("limite", "5")).andExpect(status().isOk());
 
-        verify(listado).execute(5);
+        ArgumentCaptor<ListPendingVerificationsQuery> consulta =
+                ArgumentCaptor.forClass(ListPendingVerificationsQuery.class);
+        verify(listado).execute(consulta.capture());
+        assertThat(consulta.getValue().tamano()).isEqualTo(20);
+    }
+
+    /** El tope lo pone la consulta; aqui se comprueba que llega al borde y no como 500. */
+    @Test
+    void deberia_rechazar_un_tamano_de_pagina_absurdo() throws Exception {
+        mvc.perform(get("/api/v1/verifications").param("size", "500"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COMMON_VALIDATION_FAILED"));
+    }
+
+    @Test
+    void deberia_rechazar_una_pagina_negativa() throws Exception {
+        mvc.perform(get("/api/v1/verifications").param("page", "-1"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("COMMON_VALIDATION_FAILED"));
     }
 
     // --- Las imagenes ---------------------------------------------------------
@@ -252,20 +295,20 @@ class VerificationReviewControllerTest {
      */
     @Test
     void deberia_decir_que_la_solicitud_es_propia_cuando_el_dueno_es_quien_mira() throws Exception {
-        when(listado.execute(20)).thenReturn(List.of(enRevisionDe(MODERADOR)));
+        when(listado.execute(any())).thenReturn(List.of(enRevisionDe(MODERADOR)));
 
         mvc.perform(get("/api/v1/verifications"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].own").value(true));
+                .andExpect(jsonPath("$.items[0].own").value(true));
     }
 
     @Test
     void deberia_decir_que_la_solicitud_es_ajena_cuando_el_dueno_es_otro() throws Exception {
-        when(listado.execute(20)).thenReturn(List.of(enRevisionDe(UserId.nuevo())));
+        when(listado.execute(any())).thenReturn(List.of(enRevisionDe(UserId.nuevo())));
 
         mvc.perform(get("/api/v1/verifications"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].own").value(false));
+                .andExpect(jsonPath("$.items[0].own").value(false));
     }
 
     /**

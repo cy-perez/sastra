@@ -54,15 +54,21 @@ public interface SellerVerificationRepository {
     /**
      * Las que esperan revision, las mas viejas primero. La bandeja del moderador.
      *
-     * <p>Con tope y sin paginacion por cursor. El contrato de la API la pide para los
-     * listados de catalogo (contrato-api.md) y aqui no aplica: esta lista la trabaja una
-     * persona hasta vaciarla, y si llega a necesitar paginacion el problema no es la
-     * consulta, es que nadie esta revisando.
+     * <p>Por pagina y tamano, no por cursor: el contrato reserva el cursor para el
+     * catalogo publico y admite pagina y tamano en los listados administrativos acotados
+     * (contrato-api.md). Es la misma forma que la cola de publicaciones, que es la otra
+     * mitad de la misma pantalla.
+     *
+     * <p><strong>Aqui hubo un tope sin desplazamiento</strong>, con el argumento de que
+     * esta lista la trabaja una persona hasta vaciarla. Eso describe bien la carga y mal
+     * el alcance: la bandeja drena sola -decidir saca la fila- pero sin desplazamiento no
+     * habia forma de llegar a una solicitud concreta que no estuviera entre las primeras,
+     * ni nada que dijera que habia mas.
      *
      * <p>Devuelve el agregado entero, asi que descifra el numero de cada fila. Es
      * trabajo de mas para una lista, y se acepta mientras el volumen sea el que es:
      * partir el tipo en dos —uno para listar y otro para decidir— es lo que se hara
      * cuando la bandeja tenga cientos de filas y no antes.
      */
-    List<SellerVerification> pendientesDeRevision(int limite);
+    List<SellerVerification> pendientesDeRevision(int pagina, int tamano);
 }

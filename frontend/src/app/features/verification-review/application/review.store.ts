@@ -1,4 +1,4 @@
-import { computed, inject, Injectable } from '@angular/core';
+import { computed, inject, Injectable, signal } from '@angular/core';
 import { injectMutation, injectQuery, QueryClient } from '@tanstack/angular-query-experimental';
 
 import { ApiError } from '../../../core/http/api-error';
@@ -42,9 +42,26 @@ export class ReviewStore {
    * se reactivaría nunca. Es el fallo que dejó `/mi-cuenta` sin cargar
    * (frontend/CLAUDE.md).
    */
+  /**
+   * En qué página está quien revisa.
+   *
+   * <p>En el estado y no en la dirección, como el resto de esta pantalla: la bandeja es
+   * una cola que se vacía, así que una página guardada en un enlace apunta a un sitio
+   * distinto cada día y compartirla no significa nada.
+   */
+  private readonly paginaActual = signal(0);
+
+  /** El tamaño de página. Es el mismo que el servidor da por omisión. */
+  private static readonly TAMANO = 20;
+
+  readonly pagina = this.paginaActual.asReadonly();
+
   readonly inbox = injectQuery(() => ({
-    queryKey: queryKeys.inbox,
-    queryFn: () => this.api.pendientes(),
+    // La página se lee **aquí**, en las opciones, que es donde TanStack sí observa las
+    // señales. Dentro de `queryFn` se leería una sola vez y pasar de página no pediría
+    // nada nuevo: es el mismo motivo por el que la sesión se lee aquí y no ahí.
+    queryKey: queryKeys.inboxPagina(this.paginaActual()),
+    queryFn: () => this.api.pendientes(this.paginaActual(), ReviewStore.TAMANO),
     staleTime: 0,
     // Sin reintentos automaticos. La pantalla tiene su boton de reintentar (criterio 4),
     // y con tres reintentos y espera creciente el fallo tarda segundos en aparecer:
@@ -61,8 +78,32 @@ export class ReviewStore {
    * depender de algo que ninguna prueba de esta mitad comprueba.
    */
   readonly pendientes = computed<readonly PendingVerification[]>(() =>
-    porAntiguedad(this.inbox.data() ?? []),
+    porAntiguedad(this.inbox.data()?.items ?? []),
   );
+
+  /**
+   * Si puede haber otra página.
+   *
+   * <p>Se deduce de que la página venga llena, porque el servidor no dice cuántas hay en
+   * total. Contar exige una consulta más sobre la misma tabla en cada carga, y para lo
+   * único que serviría es para saber si el botón va deshabilitado.
+   *
+   * <p>El precio es una página vacía cuando el total es múltiplo exacto del tamaño. Es
+   * un caso raro, y el estado vacío de la pantalla ya lo cuenta bien.
+   */
+  readonly hayMas = computed(() => (this.inbox.data()?.items.length ?? 0) === ReviewStore.TAMANO);
+
+  readonly hayAnterior = computed(() => this.paginaActual() > 0);
+
+  paginaSiguiente(): void {
+    if (this.hayMas()) {
+      this.paginaActual.update((actual) => actual + 1);
+    }
+  }
+
+  paginaAnterior(): void {
+    this.paginaActual.update((actual) => Math.max(0, actual - 1));
+  }
 
   /**
    * Aprobar y rechazar. **Ninguna reintenta**, y esa es la decisión importante.

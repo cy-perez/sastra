@@ -84,6 +84,19 @@ const normalizar = (nombre: string): string =>
   nombre.trim().replace(/\s+/g, ' ').toLocaleLowerCase('es-CO');
 
 /**
+ * Una página de la bandeja.
+ *
+ * <p>Por número de página y no por cursor: el contrato reserva el cursor para el catálogo
+ * público y admite página y tamaño en los listados administrativos acotados. Es la misma
+ * forma que `PendingListingsPage`, que es la otra cola de la misma pantalla.
+ */
+export interface PendingVerificationsPage {
+  readonly items: readonly PendingVerification[];
+  readonly page: number;
+  readonly size: number;
+}
+
+/**
  * La más vieja primero, que es el orden de la bandeja.
  *
  * <p>El servidor ya las manda así. Se ordena igualmente porque el orden es parte del

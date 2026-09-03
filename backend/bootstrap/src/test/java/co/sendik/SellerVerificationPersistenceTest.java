@@ -32,6 +32,7 @@ import co.sendik.shared.file.FileKey;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
@@ -312,6 +313,69 @@ class SellerVerificationPersistenceTest {
 
         assertThat(verificaciones.buscarPorUsuario(segunda).orElseThrow().status())
                 .isEqualTo(VerificationStatus.PENDING_REVIEW);
+    }
+
+    // --- La cola del moderador -----------------------------------------------
+
+    /**
+     * <strong>La cola no tenia ninguna prueba de persistencia.</strong> Se podia quitar el
+     * desplazamiento entero -y de hecho no existia- sin que nada de esta suite se pusiera
+     * en rojo.
+     *
+     * <p>Se comprueba recorriendo, y no pidiendo una pagina concreta: el contenedor es uno
+     * para toda la clase y otras pruebas dejan solicitudes en revision, asi que ni el total
+     * ni la posicion de estas tres se pueden dar por sabidos. Lo que si se puede afirmar es
+     * que recorriendo la cola de una en una aparecen las tres, cada una exactamente una vez.
+     */
+    @Test
+    void deberia_llegar_a_las_pendientes_que_no_caben_en_la_primera_pagina() {
+        Instant ahora = reloj.instant();
+        List<SellerVerificationId> mias = new ArrayList<>();
+
+        for (int cuantas = 0; cuantas < 3; cuantas++) {
+            SellerVerification enviada = completaDe(cuentaNueva(), cedulaNueva()).enviarARevision(ahora);
+            verificaciones.guardar(enviada);
+            mias.add(enviada.id());
+        }
+
+        List<SellerVerificationId> recorrida = new ArrayList<>();
+        for (int pagina = 0; ; pagina++) {
+            List<SellerVerification> hoja = verificaciones.pendientesDeRevision(pagina, 1);
+            if (hoja.isEmpty()) {
+                break;
+            }
+            hoja.forEach(pendiente -> recorrida.add(pendiente.id()));
+        }
+
+        assertThat(recorrida).containsAll(mias).doesNotHaveDuplicates();
+    }
+
+    /**
+     * El desempate por {@code id}, que es lo que hace correcto el desplazamiento.
+     *
+     * <p>Las tres se envian en el <strong>mismo instante</strong>, que es justo el caso que
+     * {@code ORDER BY updated_at} sola no ordena. Sin el desempate, dos peticiones de la
+     * misma pagina pueden devolver filas distintas, y entre paginas eso se traduce en filas
+     * repetidas y filas que no salen nunca.
+     */
+    @Test
+    void deberia_ordenar_igual_dos_veces_aunque_el_instante_coincida() {
+        Instant ahora = reloj.instant();
+
+        for (int cuantas = 0; cuantas < 3; cuantas++) {
+            verificaciones.guardar(completaDe(cuentaNueva(), cedulaNueva()).enviarARevision(ahora));
+        }
+
+        List<SellerVerificationId> primera = idsDeLaCola(0, 20);
+        List<SellerVerificationId> otraVez = idsDeLaCola(0, 20);
+
+        assertThat(primera).isEqualTo(otraVez);
+    }
+
+    private List<SellerVerificationId> idsDeLaCola(int pagina, int tamano) {
+        return verificaciones.pendientesDeRevision(pagina, tamano).stream()
+                .map(SellerVerification::id)
+                .toList();
     }
 
     @Test

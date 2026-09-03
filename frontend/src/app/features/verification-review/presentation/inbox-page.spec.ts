@@ -63,6 +63,26 @@ describe('InboxPage', () => {
   const esperarBandeja = (backend: HttpTestingController) =>
     backend.expectOne((p) => p.method === 'GET' && p.url === `${API}/verifications`);
 
+  /** La bandeja responde una página, no una lista pelada: es un listado administrativo. */
+  const pagina = (filas: unknown[], numero = 0) => ({ items: filas, page: numero, size: 20 });
+
+  /**
+   * Una página **llena**, que es lo que hace pensar que puede haber otra.
+   *
+   * <p>El servidor no dice cuántas hay en total, así que «hay más» se deduce de que la
+   * página venga completa. Con menos filas que el tamaño no habría botón que pulsar.
+   */
+  const paginaLlena = (numero = 0) =>
+    pagina(
+      Array.from({ length: 20 }, (_, cual) => solicitud({ id: `solicitud-${numero}-${cual}` })),
+      numero,
+    );
+
+  const botonDe = (fixture: { nativeElement: HTMLElement }, texto: string) =>
+    [...fixture.nativeElement.querySelectorAll('button')].find(
+      (b) => b.textContent?.trim() === texto,
+    ) as HTMLButtonElement | undefined;
+
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
@@ -91,7 +111,7 @@ describe('InboxPage', () => {
     if (respuesta === 'falla') {
       peticion.flush({ code: 'COMMON_UNEXPECTED' }, { status: 500, statusText: 'Error' });
     } else {
-      peticion.flush(respuesta);
+      peticion.flush(pagina(respuesta));
     }
     await asentar(fixture);
 
@@ -158,7 +178,7 @@ describe('InboxPage', () => {
     reintentar.click();
     await new Promise((listo) => setTimeout(listo, 0));
 
-    esperarBandeja(TestBed.inject(HttpTestingController)).flush([solicitud()]);
+    esperarBandeja(TestBed.inject(HttpTestingController)).flush(pagina([solicitud()]));
     await asentar(fixture);
 
     expect(fixture.nativeElement.textContent).toContain('Ana Maria Garcia');
@@ -204,7 +224,7 @@ describe('InboxPage', () => {
     TestBed.inject(SessionStore).set(SESION);
     await fixture.whenStable();
 
-    esperarBandeja(TestBed.inject(HttpTestingController)).flush([solicitud()]);
+    esperarBandeja(TestBed.inject(HttpTestingController)).flush(pagina([solicitud()]));
     await asentar(fixture);
 
     expect(fixture.nativeElement.textContent).toContain('Ana Maria Garcia');
@@ -219,5 +239,66 @@ describe('InboxPage', () => {
 
     expect(fixture.nativeElement.textContent).not.toContain('1053812947');
     expect(fixture.nativeElement.textContent).not.toContain('91500123456');
+  });
+
+  // --- La paginación --------------------------------------------------------
+
+  /**
+   * <strong>Es lo que le faltaba a esta pantalla.</strong> La bandeja pedía una sola página
+   * y no ofrecía forma de pasar de ella, así que una solicitud que no estuviera entre las
+   * primeras veinte no se podía alcanzar por ningún camino: ni buscándola, ni esperando.
+   */
+  it('pide la página siguiente al pulsar', async () => {
+    const fixture = await montar(paginaLlena().items);
+    const backend = TestBed.inject(HttpTestingController);
+
+    botonDe(fixture, 'Siguiente')?.click();
+    await fixture.whenStable();
+
+    const peticion = esperarBandeja(backend);
+    expect(peticion.request.params.get('page')).toBe('1');
+
+    peticion.flush(pagina([solicitud({ id: 'de-la-segunda' })], 1));
+    await asentar(fixture);
+
+    expect(fixture.nativeElement.textContent).toContain('Página 2');
+  });
+
+  it('vuelve a la página anterior', async () => {
+    const fixture = await montar(paginaLlena().items);
+    const backend = TestBed.inject(HttpTestingController);
+
+    botonDe(fixture, 'Siguiente')?.click();
+    await fixture.whenStable();
+    esperarBandeja(backend).flush(paginaLlena(1));
+    await asentar(fixture);
+
+    botonDe(fixture, 'Anterior')?.click();
+    await fixture.whenStable();
+
+    expect(esperarBandeja(backend).request.params.get('page')).toBe('0');
+  });
+
+  /** Sin página llena no hay a dónde ir, así que la navegación no se pinta. */
+  it('no ofrece paginación cuando todo cabe en una página', async () => {
+    const fixture = await montar([solicitud()]);
+
+    expect(botonDe(fixture, 'Siguiente')).toBeUndefined();
+    expect(botonDe(fixture, 'Anterior')).toBeUndefined();
+  });
+
+  /**
+   * <strong>La lección que esta base ya pagó una vez.</strong> Un botón que se deshabilita
+   * con el atributo `disabled` en el mismo tick del clic, con el foco dentro, manda el foco
+   * a `body`: quien navega con teclado tiene que tabular desde el principio del documento.
+   * Aquí pasaría justo al llegar al extremo, que es cuando alguien está recorriendo.
+   */
+  it('marca el extremo sin quitarle el foco al botón', async () => {
+    const fixture = await montar(paginaLlena().items);
+
+    const anterior = botonDe(fixture, 'Anterior');
+
+    expect(anterior?.getAttribute('aria-disabled')).toBe('true');
+    expect(anterior?.disabled).toBe(false);
   });
 });

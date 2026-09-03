@@ -136,6 +136,57 @@ export async function entrarComoModeradora(page: Page): Promise<void> {
 }
 
 /**
+ * Abre en la bandeja la solicitud de un titular concreto, buscándola por sus páginas.
+ *
+ * <p><strong>Recorre, y no mira solo la primera página.</strong> La bandeja es FIFO —lo
+ * más viejo primero— así que la solicitud que se acaba de enviar está al final, y contra
+ * una base que arrastra pendientes de corridas anteriores no aparece en la primera. Es
+ * lo que dejaba esta suite sin poder pasar dos veces seguidas contra la misma base.
+ *
+ * <p>Se recorre por la interfaz, con el botón que usa quien modera, y no llamando a la
+ * API: una suite que se salta la pantalla para llegar antes deja de probar la pantalla.
+ */
+async function abrirEnLaBandeja(page: Page, titular: string): Promise<void> {
+  await page.goto('/moderacion/verificaciones');
+
+  const fila = page.getByRole('link').filter({ hasText: titular });
+
+  // Acotado a la navegación de páginas: en esta pantalla puede haber más de un
+  // `role="status"` —el aviso de lo que se acaba de decidir, y el de «cargando»— y
+  // preguntar por todos hace fallar el localizador por ambigüedad.
+  const paginacion = page.getByRole('navigation', { name: 'Páginas de la bandeja' });
+  const siguiente = paginacion.getByRole('button', { name: 'Siguiente' });
+
+  // Acotado: sin tope, una bandeja que devolviera siempre la página llena daría una vuelta
+  // infinita, y el fallo sería un tiempo de espera agotado sin ninguna pista de por qué.
+  for (let numeroDePagina = 1; numeroDePagina <= 50; numeroDePagina++) {
+    if (await fila.first().isVisible()) {
+      await fila.first().click();
+      await expect(page.getByRole('button', { name: 'Aprobar' })).toBeVisible();
+      return;
+    }
+
+    // `aria-disabled` y no `disabled`: los botones siguen habilitados a propósito para no
+    // perder el foco al llegar al extremo, así que preguntar por `isDisabled()` diría
+    // siempre que no. Y si no hay paginación, el atributo no existe: tampoco hay a dónde ir.
+    if ((await siguiente.getAttribute('aria-disabled')) !== 'false') {
+      break;
+    }
+
+    await siguiente.click();
+
+    // Se espera al número, y no a que el botón exista: pulsar dispara una petición, y sin
+    // esperar a que aterrice la vuelta siguiente miraría todavía la página anterior.
+    await expect(paginacion.getByRole('status')).toHaveText(`Página ${numeroDePagina + 1}`);
+  }
+
+  throw new Error(
+    `No se encontró en la bandeja ninguna solicitud de «${titular}». ` +
+      'Si la bandeja arrastra muchas pendientes, se recorrieron 50 páginas sin dar con ella.',
+  );
+}
+
+/**
  * Deja una cuenta nueva verificada como vendedora.
  *
  * <p>RN-011: sin el sello no se puede publicar, así que el recorrido de HU-008 empieza
@@ -178,8 +229,7 @@ export async function dejarUnaVendedoraVerificada(page: Page, quien: string): Pr
 
   // La aprueba quien modera, que es el único camino que hay.
   await entrarComoModeradora(page);
-  await page.goto('/moderacion/verificaciones');
-  await page.getByRole('link').filter({ hasText: titular }).first().click();
+  await abrirEnLaBandeja(page, titular);
   await page.getByRole('button', { name: 'Aprobar' }).click();
   await page.getByRole('button', { name: 'Confirmar' }).click();
   await expect(page.getByText('Verificación aprobada')).toBeVisible();
@@ -195,12 +245,17 @@ export async function dejarUnaVendedoraVerificada(page: Page, quien: string): Pr
   return correo;
 }
 
-/** Un borrador completo, con sus ocho tomas, enviado a revisión. */
+/**
+ * Un borrador completo, con sus ocho tomas, enviado a revisión.
+ *
+ * @returns el identificador de la publicación, que es lo que permite volver a ella sin
+ *     tener que encontrarla en una lista compartida entre pruebas
+ */
 export async function publicarYEnviarARevision(
   page: Page,
   titulo: string,
   tomas: OrigenDeLasTomas = 'galeria',
-): Promise<void> {
+): Promise<string> {
   await page.goto(RUTA_PUBLICAR);
 
   // La categoria se elige antes de crear el borrador, y no es un capricho de navegacion:
@@ -217,6 +272,12 @@ export async function publicarYEnviarARevision(
   }
 
   await expect(page.getByLabel('Título')).toBeVisible();
+
+  // El identificador, de donde ya está: crear el borrador navega a `/publicar/:id`. No
+  // hace falta pedírselo a nadie ni buscarlo después en ninguna lista.
+  const id = new URL(page.url()).pathname.split('/').pop() ?? '';
+  expect(id, `No se pudo leer el identificador de ${page.url()}`).not.toBe('');
+
   await page.getByLabel('Título').fill(titulo);
   await page.getByLabel('Descripción').fill('Usada dos veces, sin manchas ni descosidos.');
   await page.getByLabel('Marca').fill('Zara');
@@ -288,6 +349,26 @@ export async function publicarYEnviarARevision(
   // así que la prueba esperaba algo que la pantalla no pinta. Lo que sí se ve es que la
   // publicación pasó a revisión: la acción de enviar deja su sitio a la de retirar.
   await expect(page.getByRole('button', { name: 'Retirar de revisión' })).toBeVisible();
+
+  return id;
+}
+
+/**
+ * Devuelve a borrador una publicación que está esperando revisión.
+ *
+ * <p><strong>Es limpieza, no un recorrido.</strong> Una prueba que necesita algo *en
+ * revisión* lo deja detrás al terminar, y la cola del moderador es compartida y FIFO: lo
+ * que se acumula de corridas anteriores empuja fuera de la primera página lo que envía la
+ * siguiente. Ahí es donde la suite dejaba de pasar dos veces seguidas contra la misma base.
+ *
+ * <p>Retirar es el gesto del propio vendedor y no necesita moderador, así que la prueba
+ * puede recoger lo suyo sin cambiar de cuenta. Quien llama tiene que tener abierta la
+ * sesión de quien publicó.
+ */
+export async function retirarDeRevision(page: Page, id: string): Promise<void> {
+  await page.goto(`/publicar/${id}`);
+  await page.getByRole('button', { name: 'Retirar de revisión' }).click();
+  await expect(page.getByRole('button', { name: 'Enviar a revisión' })).toBeVisible();
 }
 
 /**
@@ -311,12 +392,22 @@ export async function publicarYAprobar(
   tomas: OrigenDeLasTomas = 'galeria',
 ): Promise<string> {
   const correo = await dejarUnaVendedoraVerificada(page, quien);
-  await publicarYEnviarARevision(page, titulo, tomas);
+  const id = await publicarYEnviarARevision(page, titulo, tomas);
 
   await entrarComoModeradora(page);
-  await page.goto('/moderacion/publicaciones');
-  await expect(page.getByRole('heading', { name: 'Publicaciones pendientes' })).toBeVisible();
-  await page.getByRole('link').filter({ hasText: titulo }).first().click();
+
+  // **Al detalle por su identificador, y no buscándolo en la cola.** La cola es FIFO
+  // —lo más viejo primero, veinte por página— así que lo que se acaba de enviar va al
+  // final. Contra una base recién creada eso da igual y contra una que arrastra
+  // pendientes de corridas anteriores no aparece en la primera página, que es lo único
+  // que este recorrido miraba: era la causa de que la suite entera dejara de pasar dos
+  // veces seguidas en local.
+  //
+  // No se pierde nada por el camino: encontrarla en la cola es lo que prueba
+  // `moderacion-de-publicaciones.spec.ts`, que existe para eso. Aquí la cola no es el
+  // objeto de la prueba sino el camino hacia un estado, y el detalle es la misma
+  // pantalla del moderador a la que se llega pulsando la fila.
+  await page.goto(`/moderacion/publicaciones/${id}`);
   await expect(page.getByRole('heading', { name: titulo })).toBeVisible();
 
   await page.getByRole('button', { name: 'Aprobar' }).click();

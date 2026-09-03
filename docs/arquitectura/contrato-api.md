@@ -157,6 +157,20 @@ GET /api/v1/moderation/listings?page=0&size=20
 { "items": [], "page": 0, "size": 20 }
 ```
 
+Las dos colas del moderador van así, con los mismos nombres: la de publicaciones
+en `/moderation/listings` y la de verificaciones de vendedor en `/verifications`.
+
+```
+GET /api/v1/verifications?page=0&size=20
+```
+
+La segunda no siempre fue así. Pedía `?limite=` —en español, que es lo único del
+contrato que no lo estaba— y devolvía una lista pelada, sin desplazamiento: quien
+la consumía tenía que aprender una excepción, y no había forma de llegar a una
+solicitud que no estuviera entre las primeras. Se alineó al arreglar eso. **El
+nombre viejo no se admite**: llega como parámetro desconocido y se ignora, así que
+un cliente que no se haya actualizado recibe la primera página en vez de un error.
+
 El tamaño va acotado a 50 y **por encima se rechaza con 400**, no se recorta en
 silencio: un cliente que pide 500 y recibe 50 sin que nadie se lo diga cree que ya
 tiene todo. Un `page` o un `size` que no sean números también dan 400.

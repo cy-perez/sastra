@@ -20,13 +20,31 @@ describe('VerificationReviewApi', () => {
 
   afterEach(() => http.verify());
 
-  it('pide la bandeja con un límite', () => {
+  it('pide la bandeja con página y tamaño', () => {
     void api.pendientes();
 
     const peticion = http.expectOne((r) => r.url === 'verifications');
     expect(peticion.request.method).toBe('GET');
-    expect(peticion.request.params.get('limite')).toBe('20');
-    peticion.flush([]);
+    expect(peticion.request.params.get('page')).toBe('0');
+    expect(peticion.request.params.get('size')).toBe('20');
+    peticion.flush({ items: [], page: 0, size: 20 });
+  });
+
+  /**
+   * Los nombres son los del contrato y no los del código.
+   *
+   * <p>Esta ruta pedía `?limite=`, en español y sin desplazamiento. Sin esta prueba,
+   * volver a ese nombre no rompe nada de esta mitad: el servidor ignoraría el parámetro
+   * desconocido y devolvería la primera página como si nada.
+   */
+  it('no usa el nombre viejo del parámetro', () => {
+    void api.pendientes(2, 5);
+
+    const peticion = http.expectOne((r) => r.url === 'verifications');
+    expect(peticion.request.params.get('limite')).toBeNull();
+    expect(peticion.request.params.get('page')).toBe('2');
+    expect(peticion.request.params.get('size')).toBe('5');
+    peticion.flush({ items: [], page: 2, size: 5 });
   });
 
   /**

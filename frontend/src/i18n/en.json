@@ -815,7 +815,13 @@
         "title": "We could not load the queue",
         "retry": "Try again"
       },
-      "loading": "Loading pending applications."
+      "loading": "Loading pending applications.",
+      "pagination": {
+        "label": "Queue pages",
+        "previous": "Previous",
+        "next": "Next",
+        "page": "Page {{numero}}"
+      }
     },
     "detail": {
       "documentSection": "Identity document",

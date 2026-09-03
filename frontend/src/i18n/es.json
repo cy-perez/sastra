@@ -815,7 +815,13 @@
         "title": "No pudimos cargar la bandeja",
         "retry": "Reintentar"
       },
-      "loading": "Cargando las solicitudes pendientes."
+      "loading": "Cargando las solicitudes pendientes.",
+      "pagination": {
+        "label": "Páginas de la bandeja",
+        "previous": "Anterior",
+        "next": "Siguiente",
+        "page": "Página {{numero}}"
+      }
     },
     "detail": {
       "documentSection": "Documento de identidad",

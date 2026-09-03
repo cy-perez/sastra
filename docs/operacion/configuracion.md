@@ -207,6 +207,11 @@ a la primera persona que puede aprobar verificaciones.
 
 Vacía —que es lo que hay por omisión— no hace absolutamente nada.
 
+Viaja desde `despliegue.yml` como variable del entorno de GitHub, con el delimitador
+alterno de `gcloud` (`^;^`) porque el valor lleva comas y sin él una lista de dos
+moderadores se partiría en dos variables. **Va junta con `FEATURE_PUBLISHING`**: un
+entorno con la bandera encendida y esta vacía deja publicar y no deja aprobar.
+
 **Lo que no hace, y es la mitad importante:**
 
 - **No crea cuentas.** Si el correo no tiene una, se registra un aviso y se sigue.
@@ -468,9 +473,24 @@ Se manejan como configuración, no como ramas de Git de larga vida:
 | `FEATURE_SEARCH` | Habilita la búsqueda con Typesense |
 | `FEATURE_SPIN_VIEWER` | Habilita el visor 360 |
 
-Las seis siguen apagadas: se enciende cada una cuando su funcionalidad exista y
-no cuando empiece la fase que la contiene. Es lo que permite desplegar código
-incompleto sin exponerlo.
+Se enciende cada una cuando su funcionalidad exista y no cuando empiece la fase
+que la contiene. Es lo que permite desplegar código incompleto sin exponerlo.
+
+**El valor por omisión de las seis es `false`, y se decide por entorno.** Las tres
+de la Fase 2 —`FEATURE_SELLER_VERIFICATION`, `FEATURE_PUBLISHING` y
+`FEATURE_CATALOG`— viajan desde `despliegue.yml` como variables del entorno de
+GitHub, así que `dev` y `prod` se deciden por separado y sin tocar código. Las tres
+restantes ni siquiera se pasan: no hay nada que encender todavía.
+
+Van con respaldo explícito (`${{ vars.X || 'false' }}`) y no a secas. Una variable
+que no está definida se expande a cadena vacía, y ahí el `${FEATURE_CATALOG:false}`
+de `application.yaml` no ayuda: el valor por omisión entra cuando la variable **no
+está**, no cuando está y vale vacío. Un booleano vacío tumba el arranque al enlazarlo.
+
+**`FEATURE_PUBLISHING` no se enciende sola.** Sin `SECURITY_BOOTSTRAP_MODERATORS`
+en el mismo entorno no hay nadie con el rol para aprobar, así que se puede publicar
+y nada sale de `PENDING_REVIEW`. Es el callejón sin salida que HU-008 vino a cerrar,
+y encender una sin la otra lo reabre.
 
 `FEATURE_CATALOG` es distinta de las demás en una cosa: es la única que enciende
 páginas para quien **no tiene cuenta**. Encenderla no es exponer una funcionalidad

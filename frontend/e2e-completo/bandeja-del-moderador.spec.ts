@@ -84,13 +84,17 @@ async function ingresar(page: Page, correo: string): Promise<void> {
  * la anterior en pie y el resto de la prueba corre con la cuenta equivocada, que con las
  * dos llamandose igual no se nota.
  */
-async function entrarComoModeradora(page: Page): Promise<void> {
+async function salirSiHaySesion(page: Page): Promise<void> {
   await page.goto('/');
   const salir = page.getByRole('button', { name: 'Salir' });
   if (await salir.isVisible().catch(() => false)) {
     await salir.click();
     await expect(page.getByRole('link', { name: 'Entrar' })).toBeVisible();
   }
+}
+
+async function entrarComoModeradora(page: Page): Promise<void> {
+  await salirSiHaySesion(page);
 
   await ingresar(page, MODERADORA);
 
@@ -120,9 +124,22 @@ async function entrarComoModeradora(page: Page): Promise<void> {
  * dentro del mismo milisegundo.
  */
 async function dejarUnaSolicitudEnRevision(page: Page, quien: string): Promise<string> {
-  const titular = `Ana Maria Garcia ${Date.now()}-${(cuantasSolicitudes += 1)}`;
+  const cual = (cuantasSolicitudes += 1);
+  const titular = `Ana Maria Garcia ${Date.now()}-${cual}`;
 
-  await registrar(page, correoNuevo(quien));
+  // **Se cierra la sesión anterior y cada cuenta se llama distinto**, y las dos cosas son
+  // por lo mismo. `registrar` no cierra nada, así que encadenando varias la sesión de una
+  // puede sobrevivir a la siguiente; y con todas llamándose igual, la comprobación que
+  // `registrar` hace al terminar -que la cabecera muestre el nombre- pasa aunque la sesión
+  // sea la de otra cuenta. Es la misma trampa que este archivo ya documenta para la
+  // moderadora, y encadenando veintiuna deja de ser teórica: se manifestó en integración
+  // continua como un `Empezar` que no llegaba nunca, porque la pantalla estaba enseñando
+  // la verificación ya enviada de la cuenta anterior.
+  //
+  // Con un nombre propio por cuenta, esa confusión falla en el acto y diciendo cuál es,
+  // en vez de agotar el tiempo de la prueba cinco pasos más allá.
+  await salirSiHaySesion(page);
+  await registrar(page, correoNuevo(quien), `Ana Maria ${cual}`);
   await page.goto(RUTA_VERIFICACION);
   await page.getByRole('button', { name: 'Empezar' }).click();
 
@@ -149,6 +166,52 @@ async function dejarUnaSolicitudEnRevision(page: Page, quien: string): Promise<s
   await expect(page.getByText('Estamos revisando tu solicitud.')).toBeVisible();
 
   return titular;
+}
+
+/**
+ * Cuántas solicitudes esperan revisión, contadas por la interfaz.
+ *
+ * <p>Recorriendo, no preguntando a la API: si esta suite empieza a leer el estado por un
+ * atajo, deja de ser de extremo a extremo. Y es barato -dos o tres clics- comparado con
+ * crear solicitudes de más, que es lo que evita saber esto.
+ */
+async function cuantasEsperanRevision(page: Page): Promise<number> {
+  await entrarComoModeradora(page);
+  await page.goto(RUTA_BANDEJA);
+
+  const paginacion = page.getByRole('navigation', { name: 'Páginas de la bandeja' });
+  const siguiente = paginacion.getByRole('button', { name: 'Siguiente' });
+
+  // **Las filas por su rol y no por su clase.** `.solicitud` es también la clase de las
+  // filas del esqueleto de carga, así que contando por ahí una bandeja vacía devuelve
+  // tres. Costó una corrida entera: creaba dieciocho solicitudes en vez de veintiuna, la
+  // cola cabía en una página y la prueba fallaba diciendo que no había paginación. El
+  // esqueleto está oculto a la accesibilidad, así que ningún localizador por rol lo ve.
+  const filas = page.getByRole('link').filter({ hasText: 'Espera desde' });
+  const vacia = page.getByText('No hay nada por revisar');
+
+  let total = 0;
+
+  for (let pagina = 1; pagina <= 50; pagina++) {
+    // Que la carga haya terminado, sea con filas o sin ellas. Sin esto se cuenta una
+    // pantalla a medio pintar.
+    await expect(filas.first().or(vacia)).toBeVisible();
+    await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+
+    total += await filas.count();
+
+    if (!(await siguiente.isVisible())) {
+      break;
+    }
+    if ((await siguiente.getAttribute('aria-disabled')) !== 'false') {
+      break;
+    }
+
+    await siguiente.click();
+    await expect(paginacion.getByRole('status')).toHaveText(`Página ${pagina + 1}`);
+  }
+
+  return total;
 }
 
 test.describe('bandeja del moderador', () => {
@@ -252,12 +315,19 @@ test.describe('bandeja del moderador', () => {
    * la situación real de una cola que nadie ha vaciado.
    */
   test('se llega a una solicitud que no cabe en la primera pagina', async ({ page }) => {
-    // Veintiuna solicitudes por la interfaz, con su cámara y su formulario. Es lento y no
-    // hay atajo: llamar a la API para sembrarlas sería saltarse justo lo que se prueba.
-    test.setTimeout(300_000);
+    // Cada solicitud se crea por la interfaz, con su cámara y su formulario. Es lento y no
+    // hay atajo: sembrarlas llamando a la API sería saltarse justo lo que se prueba.
+    test.setTimeout(600_000);
+
+    // Solo las que falten. Contra una base recién creada son veintiuna; contra una que
+    // arrastra pendientes de antes -la segunda vuelta de integración continua, o
+    // cualquier ejecución local repetida- basta con una, porque la cola ya es profunda y
+    // lo único que hace falta es una solicitud propia al final de todo.
+    const yaEsperan = await cuantasEsperanRevision(page);
+    const faltan = Math.max(1, TAMANO_DE_PAGINA + 1 - yaEsperan);
 
     let laUltima = '';
-    for (let cuantas = 0; cuantas <= TAMANO_DE_PAGINA; cuantas++) {
+    for (let cuantas = 0; cuantas < faltan; cuantas++) {
       laUltima = await dejarUnaSolicitudEnRevision(page, 'cola-larga');
     }
 

@@ -21,6 +21,9 @@ import java.util.List;
  * pantalla solo puede deducirlo de que la pagina venga llena, y esa deduccion se equivoca
  * cuando el total es multiplo exacto del tamano. Ver {@link PendingVerificationsResult}.
  *
+ * <p>Lo pregunta con {@code hayPendientesDesde} y no trayendo una fila de mas: traerla
+ * obliga a descifrar la cedula y la cuenta de alguien para no enseñarlas nunca.
+ *
  * <p>El tope y el rango los acota {@link ListPendingVerificationsQuery} y no este metodo:
  * escrito aqui protegeria a quien pase por este caso de uso y a nadie mas. Es la misma
  * reparticion que {@code ListPendingListingsUseCase}.
@@ -34,22 +37,20 @@ public class ListPendingVerificationsUseCase {
     }
 
     public PendingVerificationsResult execute(ListPendingVerificationsQuery consulta) {
-        // Se pide una fila mas de las que caben en la pagina. Si vuelve, es que detras hay
-        // algo; y si no, esta era la ultima. Es lo que permite contestar «hay mas» sin
-        // contar la tabla en cada carga, y sin dejar que lo adivine la pantalla.
-        //
-        // El techo de TAMANO_MAXIMO no se rompe por esto: acota lo que un cliente puede
-        // pedir que se le muestre, y la sonda es una fila que nunca sale de aqui.
-        //
-        // El salto se calcula aqui y se pasa aparte del limite. Tiene que ser asi: si el
-        // repositorio lo dedujera de cuantas filas se le piden, la fila de sonda correria
-        // tambien el arranque y se perderia una fila por pagina.
         long salto = (long) consulta.pagina() * consulta.tamano();
 
-        List<SellerVerification> conSonda = verificaciones.pendientesDeRevision(salto, consulta.tamano() + 1);
+        // Se trae la pagina exacta, ni una fila mas. Se probo pidiendo una de mas y usando
+        // su presencia como señal, y funciona, pero `pendientesDeRevision` devuelve el
+        // agregado entero: descifraba la cedula y la cuenta de una persona solo para
+        // comprobar que su fila existia, y las tiraba. Ver `hayPendientesDesde`.
+        List<SellerVerification> pagina = verificaciones.pendientesDeRevision(salto, consulta.tamano());
 
-        boolean hayMas = conSonda.size() > consulta.tamano();
-        List<SellerVerification> pagina = hayMas ? conSonda.subList(0, consulta.tamano()) : conSonda;
+        // Son dos consultas y no una, asi que entre ellas cabe que alguien decida la
+        // ultima pendiente y esto diga que hay otra pagina cuando ya no la hay. La ventana
+        // es de microsegundos dentro de la misma peticion, y lo peor que produce es un
+        // «Siguiente» que lleva a la pantalla de bandeja vacia, que se explica sola. Se
+        // acepta a cambio de no descifrar datos de identidad que nadie va a mirar.
+        boolean hayMas = verificaciones.hayPendientesDesde(salto + consulta.tamano());
 
         return new PendingVerificationsResult(pagina, hayMas);
     }

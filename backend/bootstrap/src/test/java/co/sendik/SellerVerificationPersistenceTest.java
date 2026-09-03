@@ -401,6 +401,34 @@ class SellerVerificationPersistenceTest {
         assertThat(saltandoUna).isEqualTo(desdeElPrincipio.subList(1, 5));
     }
 
+    /**
+     * {@code hayPendientesDesde} contesta lo mismo que contestaba traer una fila de mas,
+     * sin traerla. Es lo que permite no descifrar la cedula y la cuenta de alguien para no
+     * enseñarlas nunca.
+     *
+     * <p>Se mide relativo a lo que ya hay en la cola -el contenedor es uno para toda la
+     * clase y otras pruebas dejan pendientes- asi que se cuenta primero y se pregunta
+     * despues por las dos posiciones que importan: la ultima ocupada y la siguiente.
+     */
+    @Test
+    void deberia_decir_si_queda_alguna_pendiente_a_partir_de_una_posicion() {
+        Instant ahora = reloj.instant();
+        verificaciones.guardar(completaDe(cuentaNueva(), cedulaNueva()).enviarARevision(ahora));
+
+        long cuantasHay = 0;
+        while (!verificaciones.pendientesDeRevision(cuantasHay, 1).isEmpty()) {
+            cuantasHay++;
+        }
+
+        assertThat(verificaciones.hayPendientesDesde(cuantasHay - 1))
+                .as("en la ultima posicion ocupada todavia queda una")
+                .isTrue();
+        assertThat(verificaciones.hayPendientesDesde(cuantasHay))
+                .as("pasada la ultima ya no queda ninguna")
+                .isFalse();
+        assertThat(verificaciones.hayPendientesDesde(0)).isTrue();
+    }
+
     private List<SellerVerificationId> idsDeLaCola(int pagina, int tamano) {
         return idsDesde((long) pagina * tamano, tamano);
     }

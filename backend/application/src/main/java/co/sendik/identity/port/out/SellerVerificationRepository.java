@@ -86,4 +86,24 @@ public interface SellerVerificationRepository {
      * @param cuantas cuantas traer. Quien llama pide una de mas de las que va a mostrar
      */
     List<SellerVerification> pendientesDeRevision(long salto, int cuantas);
+
+    /**
+     * Si queda al menos una pendiente a partir de esa posicion. La respuesta a «¿hay
+     * pagina siguiente?».
+     *
+     * <p><strong>Existe para no tener que traer a nadie para contestarlo.</strong> Antes
+     * se pedia una fila de mas de las que caben y se usaba su presencia como señal. Eso
+     * funciona, pero {@code pendientesDeRevision} devuelve el agregado entero, asi que
+     * descifraba la cedula y la cuenta bancaria de una persona con el unico proposito de
+     * comprobar que su fila existia, y las tiraba. Procesar un dato sensible sin
+     * finalidad es justo lo que la minimizacion de la Ley 1581 desaconseja
+     * (docs/operacion/datos-personales.md).
+     *
+     * <p>Tampoco es contar: no dice cuantas quedan -que exigiria recorrerlas todas- sino
+     * si queda alguna, y para eso basta con llegar hasta la primera.
+     *
+     * @param salto la posicion a partir de la cual se pregunta. Para saber si hay pagina
+     *     siguiente es el final de la actual
+     */
+    boolean hayPendientesDesde(long salto);
 }

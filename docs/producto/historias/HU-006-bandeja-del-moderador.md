@@ -350,17 +350,28 @@ de veinte en veinte no es raro: pasa cada vez que da la vuelta. Quien revisa pul
 «Siguiente», no encontraba nada, y no podía saber si la cola se había acabado o si algo
 se había roto.
 
-Ahora lo contesta el servidor, en `hasMore`. Se resuelve pidiendo al repositorio **una
-fila más de las que caben** y devolviéndola recortada, no contando: un `COUNT` en cada
-carga es caro para responder un sí o un no.
+Ahora lo contesta el servidor, en `hasMore`. Se resuelve preguntando al repositorio si
+**queda alguna después de esta página**, no contando: un `COUNT` obliga a recorrerlas
+todas para responder un sí o un no.
 
-Y esa fila de más destapó, al arreglarlo, un defecto peor en el propio puerto. Su firma
-era `(pagina, tamano)` y el adaptador derivaba el desplazamiento del mismo argumento que
-el límite: `OFFSET = pagina * tamano`. Pedir una fila de más movía también el arranque
-—`(1, 21)` saltaba 21 filas en vez de 20— y **la solicitud número 21 no salía en ninguna
-página**, sin que nada lo dijera. Es exactamente lo que la paginación vino a evitar, y
-en silencio. El puerto pasó a recibir `(salto, cuantas)`: el salto se calcula en el caso
-de uso y viaja aparte, que es lo único que compone con la sonda.
+La primera versión lo resolvía distinto —pidiendo una fila de más y usando su presencia
+como señal— y de ahí salieron dos lecciones que conviene no repetir.
+
+La primera, un defecto peor en el propio puerto. Su firma era `(pagina, tamano)` y el
+adaptador derivaba el desplazamiento del mismo argumento que el límite: `OFFSET = pagina
+* tamano`. Pedir una fila de más movía también el arranque —`(1, 21)` saltaba 21 filas
+en vez de 20— y **la solicitud número 21 no salía en ninguna página**, sin que nada lo
+dijera. Es exactamente lo que la paginación vino a evitar, y en silencio. El puerto pasó
+a recibir `(salto, cuantas)`, que además es lo que impide que la trampa se pueda volver
+a escribir.
+
+La segunda, de datos personales. `pendientesDeRevision` devuelve el agregado entero, así
+que traer una fila de más **descifraba la cédula y la cuenta bancaria de una persona con
+el único propósito de comprobar que su fila existía**, y las tiraba. No era una fuga
+—nada de eso salía de la capa de aplicación— pero es procesar un dato sensible sin
+finalidad, que es lo que la minimización de la Ley 1581 desaconseja. Por eso la pregunta
+tiene ahora su propio método, `hayPendientesDesde`, que resuelve con un `EXISTS` sobre el
+índice parcial y no lee ninguna columna de la fila.
 
 Ninguna de las pruebas que había podía verlo —la del recorrido va de una en una, y con
 tamaño 1 el producto coincide con el salto—, así que hay una nueva que pide dos ventanas

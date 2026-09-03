@@ -237,6 +237,24 @@ public class JdbcSellerVerificationRepository implements SellerVerificationRepos
                 .list();
     }
 
+    /**
+     * Sin {@code ORDER BY} a proposito: la pregunta es cuantas hay, no cuales, y para
+     * «¿queda alguna despues de la posicion N?» el orden es irrelevante. Ordenar aqui
+     * seria pedirle a PostgreSQL un trabajo cuyo resultado no se mira.
+     *
+     * <p>Se apoya en el mismo indice parcial de V8. No descifra nada: no lee ninguna
+     * columna de la fila, solo comprueba que existe.
+     */
+    @Override
+    public boolean hayPendientesDesde(long salto) {
+        return jdbc.sql("""
+                        SELECT EXISTS (
+                            SELECT 1 FROM seller_verifications
+                            WHERE status = 'PENDING_REVIEW'
+                            OFFSET :salto LIMIT 1)
+                        """).param("salto", salto).query(Boolean.class).single();
+    }
+
     private SellerVerification mapear(ResultSet fila, int numero) throws SQLException {
         return SellerVerification.existente(
                 new SellerVerificationId(fila.getObject("id", java.util.UUID.class)),

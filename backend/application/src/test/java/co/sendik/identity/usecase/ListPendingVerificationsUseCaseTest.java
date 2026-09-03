@@ -28,10 +28,10 @@ import org.junit.jupiter.api.Test;
 /**
  * La bandeja paginada, y sobre todo: si detras hay mas. HU-006.
  *
- * <p>Lo que se prueba aqui no es que la pagina venga llena —eso lo hace la base de datos—
- * sino la unica decision que toma este caso de uso: pedir una fila de mas, contestar con
- * ella y no entregarla. El caso que importa es el que antes no se podia distinguir: una
- * pagina llena que ademas es la ultima.
+ * <p>Lo que se prueba aqui no es que la pagina venga llena -eso lo hace la base de datos-
+ * sino las dos decisiones de este caso de uso: donde empieza la ventana, y a quien le
+ * pregunta si queda algo detras. El caso que importa es el que la longitud de la lista no
+ * puede distinguir: una pagina llena que ademas es la ultima.
  */
 class ListPendingVerificationsUseCaseTest {
 
@@ -69,27 +69,40 @@ class ListPendingVerificationsUseCaseTest {
     }
 
     /**
-     * <strong>La fila de sonda no puede mover el arranque.</strong> Es el defecto que casi
-     * se cuela: pidiendo la pagina por numero, el repositorio derivaba el desplazamiento
-     * del mismo argumento que el limite, asi que pedir una de mas saltaba una de mas. La
-     * fila 21 no salia en ninguna pagina y la bandeja la escondia en silencio, que es peor
-     * que el «Siguiente» hacia una pagina vacia que esto vino a arreglar.
-     *
-     * <p>Por eso el salto se calcula aqui y viaja aparte: la pagina 1 de tamano 20 empieza
-     * en la fila 20, pida las filas que pida.
+     * <strong>No se trae ni una fila de mas de las que se van a enseñar.</strong> Es la
+     * unica forma de no descifrar la cedula y la cuenta de alguien para no mirarlas: el
+     * repositorio devuelve el agregado entero, asi que cada fila que se pide de mas es un
+     * dato de identidad procesado sin finalidad.
      */
     @Test
-    void deberia_saltar_por_el_tamano_de_la_pagina_y_no_por_lo_que_pide_de_mas() {
-        when(verificaciones.pendientesDeRevision(20L, 21)).thenReturn(cuantas(21));
+    void deberia_traer_la_pagina_exacta_y_preguntar_aparte_si_hay_mas() {
+        when(verificaciones.pendientesDeRevision(0L, 20)).thenReturn(cuantas(20));
+
+        caso.execute(new ListPendingVerificationsQuery(0, 20));
+
+        verify(verificaciones).pendientesDeRevision(0L, 20);
+        verify(verificaciones).hayPendientesDesde(20L);
+    }
+
+    /**
+     * <strong>El salto es el de la pagina.</strong> Lo fija esta prueba porque el defecto
+     * que casi se cuela fue justo ese: con la firma vieja del puerto el desplazamiento se
+     * derivaba de cuantas filas se pedian, y la fila 21 no salia en ninguna pagina.
+     */
+    @Test
+    void deberia_saltar_por_el_tamano_de_la_pagina() {
+        when(verificaciones.pendientesDeRevision(20L, 20)).thenReturn(cuantas(20));
 
         caso.execute(new ListPendingVerificationsQuery(1, 20));
 
-        verify(verificaciones).pendientesDeRevision(20L, 21);
+        verify(verificaciones).pendientesDeRevision(20L, 20);
+        verify(verificaciones).hayPendientesDesde(40L);
     }
 
     @Test
-    void deberia_decir_que_hay_mas_y_no_entregar_la_fila_de_sonda() {
-        when(verificaciones.pendientesDeRevision(0L, 21)).thenReturn(cuantas(21));
+    void deberia_decir_que_hay_mas_cuando_queda_algo_detras() {
+        when(verificaciones.pendientesDeRevision(0L, 20)).thenReturn(cuantas(20));
+        when(verificaciones.hayPendientesDesde(20L)).thenReturn(true);
 
         PendingVerificationsResult resultado = caso.execute(new ListPendingVerificationsQuery(0, 20));
 
@@ -103,7 +116,8 @@ class ListPendingVerificationsUseCaseTest {
      */
     @Test
     void deberia_decir_que_no_hay_mas_cuando_la_pagina_llena_es_la_ultima() {
-        when(verificaciones.pendientesDeRevision(0L, 21)).thenReturn(cuantas(20));
+        when(verificaciones.pendientesDeRevision(0L, 20)).thenReturn(cuantas(20));
+        when(verificaciones.hayPendientesDesde(20L)).thenReturn(false);
 
         PendingVerificationsResult resultado = caso.execute(new ListPendingVerificationsQuery(0, 20));
 
@@ -113,7 +127,7 @@ class ListPendingVerificationsUseCaseTest {
 
     @Test
     void deberia_decir_que_no_hay_mas_con_la_pagina_a_medias() {
-        when(verificaciones.pendientesDeRevision(0L, 21)).thenReturn(cuantas(3));
+        when(verificaciones.pendientesDeRevision(0L, 20)).thenReturn(cuantas(3));
 
         PendingVerificationsResult resultado = caso.execute(new ListPendingVerificationsQuery(0, 20));
 
@@ -124,7 +138,8 @@ class ListPendingVerificationsUseCaseTest {
     @Test
     void deberia_sostenerlo_tambien_en_el_tamano_maximo() {
         int tope = ListPendingVerificationsQuery.TAMANO_MAXIMO;
-        when(verificaciones.pendientesDeRevision(2L * tope, tope + 1)).thenReturn(cuantas(tope + 1));
+        when(verificaciones.pendientesDeRevision(2L * tope, tope)).thenReturn(cuantas(tope));
+        when(verificaciones.hayPendientesDesde(3L * tope)).thenReturn(true);
 
         PendingVerificationsResult resultado = caso.execute(new ListPendingVerificationsQuery(2, tope));
 
@@ -134,7 +149,7 @@ class ListPendingVerificationsUseCaseTest {
 
     @Test
     void deberia_contestar_con_la_bandeja_vacia_sin_inventarse_una_pagina_siguiente() {
-        when(verificaciones.pendientesDeRevision(0L, 21)).thenReturn(List.of());
+        when(verificaciones.pendientesDeRevision(0L, 20)).thenReturn(List.of());
 
         PendingVerificationsResult resultado = caso.execute(new ListPendingVerificationsQuery(0, 20));
 

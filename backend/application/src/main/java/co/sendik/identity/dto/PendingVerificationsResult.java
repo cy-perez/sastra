@@ -12,12 +12,12 @@ import java.util.List;
  * ofrece un «Siguiente» que lleva a una pagina vacia. Quien revisa pulsa, no encuentra
  * nada, y no puede saber si la cola se acabo o si algo se rompio.
  *
- * <p>Se resuelve pidiendo una fila mas de las que caben y devolviendola recortada, que es
- * lo que hace {@link co.sendik.identity.usecase.ListPendingVerificationsUseCase}. Contar
- * es la otra forma, y cuesta una consulta mas sobre la misma tabla en cada carga para
- * responder un si o un no.
+ * <p>Se resuelve preguntando si queda alguna despues de esta pagina, que es lo que hace
+ * {@link co.sendik.identity.usecase.ListPendingVerificationsUseCase}. Contar es la otra
+ * forma, y cuesta recorrer todas las pendientes en cada carga para responder un si o un
+ * no.
  *
- * @param items las solicitudes de esta pagina, ya recortadas al tamano que se pidio
+ * @param items las solicitudes de esta pagina
  * @param hayMas si detras de esta pagina queda al menos una solicitud
  */
 public record PendingVerificationsResult(List<SellerVerification> items, boolean hayMas) {

@@ -182,8 +182,8 @@ deducción falla justo cuando el total es múltiplo exacto del tamaño: con vein
 pendientes y veinte por página, la última viene llena y la pantalla ofrecía un
 «Siguiente» hacia una página vacía. Quien revisa pulsaba, no encontraba nada, y no
 podía saber si la cola se acabó o si algo se rompió. El servidor lo resuelve
-pidiendo una fila más de las que caben y devolviéndola recortada, así que no cuesta
-una consulta de conteo en cada carga.
+preguntando si queda alguna después de esta página, que no es lo mismo que contar:
+no dice cuántas quedan —eso obligaría a recorrerlas todas— sino si queda alguna.
 
 La cola de publicaciones todavía no lo lleva, y esa asimetría es deliberada: hoy
 ninguna pantalla la pagina, así que no tiene a quién mentirle. Cuando se pagine,

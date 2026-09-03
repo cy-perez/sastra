@@ -357,7 +357,6 @@ export async function publicarYEnviarARevision(
   await envio.getByLabel('Peso en gramos').fill('600');
   await envio.getByLabel('Largo').fill('30');
   await envio.getByLabel('Ancho').fill('20');
-  await envio.getByLabel('Alto').fill('10');
 
   // El guardado es automático y sale 1,5 s después de dejar de escribir. Hay que verlo
   // aterrizar antes de subir nada: una subida y un guardado en vuelo a la vez escriben
@@ -367,15 +366,30 @@ export async function publicarYEnviarARevision(
   //
   // Se espera la respuesta que ya trae el envío —lo último que se escribe— y no el
   // cartel de «Guardado», que puede seguir puesto de un guardado anterior.
-  await page.waitForResponse(async (respuesta) => {
+  //
+  // **Se arma antes de escribir lo último, y eso no es estilo.** `waitForResponse` solo
+  // ve lo que ocurre desde que se registra, así que armándolo después queda un hueco
+  // entre el último `fill` y esta línea; si el guardado aterriza ahí, se espera para
+  // siempre algo que ya pasó. Con 1,5 s de margen casi nunca ocurre, y por eso esta
+  // prueba fallaba una vez de cada muchas en integración continua y nunca en local.
+  //
+  // Y se espera **el alto**, no un envío cualquiera: escribiendo de campo en campo el
+  // guardado puede salir a medias -con peso, largo y ancho ya puestos- y esa respuesta
+  // también traería `shipping`. Darla por buena dejaría el alto sin confirmar, que es
+  // justo el guardado que puede chocar con las subidas.
+  const guardadoConElEnvioCompleto = page.waitForResponse(async (respuesta) => {
     if (respuesta.request().method() !== 'PATCH' || !respuesta.url().includes('/listings/')) {
       return false;
     }
     const cuerpo = (await respuesta.json().catch(() => null)) as {
-      product?: { shipping?: unknown };
+      product?: { shipping?: { heightCm?: unknown } };
     } | null;
-    return cuerpo?.product?.shipping != null;
+    return cuerpo?.product?.shipping?.heightCm != null;
   });
+
+  await envio.getByLabel('Alto').fill('10');
+
+  await guardadoConElEnvioCompleto;
 
   // Las ocho tomas. Por el campo de archivo salvo que se pida lo contrario: la cámara es
   // de HU-003, y para las suites que prueban el ciclo de moderación o el catálogo es un

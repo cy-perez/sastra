@@ -58,6 +58,33 @@ describe('QueuePage', () => {
   const esperarCola = (backend: HttpTestingController) =>
     backend.expectOne((p) => p.method === 'GET' && p.url === `${API}/moderation/listings`);
 
+  /** La cola responde una página, no una lista pelada: es un listado administrativo. */
+  const pagina = (filas: unknown[], numero = 0, hayMas = false) => ({
+    items: filas,
+    page: numero,
+    size: 20,
+    hasMore: hayMas,
+  });
+
+  /**
+   * Una página llena. **Que esté llena no dice nada sobre si hay otra**, y ese es el
+   * punto: quien lo dice es `hasMore`, que llega aparte y por eso se pasa aparte.
+   */
+  const paginaLlena = (numero = 0, hayMas = false) =>
+    pagina(
+      Array.from({ length: 20 }, (_, cual) => fila({ id: `publicacion-${numero}-${cual}` })),
+      numero,
+      hayMas,
+    );
+
+  const botonDe = (fixture: { nativeElement: HTMLElement }, texto: string) =>
+    [...fixture.nativeElement.querySelectorAll('button')].find((b: Element) =>
+      b.textContent?.includes(texto),
+    ) as HTMLButtonElement | undefined;
+
+  const navegacionDe = (fixture: { nativeElement: HTMLElement }) =>
+    fixture.nativeElement.querySelector('nav[aria-label="Páginas de la cola"]');
+
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
@@ -79,7 +106,7 @@ describe('QueuePage', () => {
     TestBed.inject(SessionStore).set(SESION);
   });
 
-  const montar = async (respuesta: unknown[] | 'falla') => {
+  const montar = async (respuesta: unknown[] | 'falla', hayMas = false) => {
     const fixture = TestBed.createComponent(QueuePage);
     await fixture.whenStable();
 
@@ -89,7 +116,7 @@ describe('QueuePage', () => {
     if (respuesta === 'falla') {
       peticion.flush({ code: 'COMMON_UNEXPECTED' }, { status: 500, statusText: 'Error' });
     } else {
-      peticion.flush({ items: respuesta, page: 0, size: 20 });
+      peticion.flush(pagina(respuesta, 0, hayMas));
     }
     await asentar(fixture);
 
@@ -122,7 +149,7 @@ describe('QueuePage', () => {
     });
     harness.detectChanges();
 
-    esperarCola(TestBed.inject(HttpTestingController)).flush({ items: [], page: 0, size: 20 });
+    esperarCola(TestBed.inject(HttpTestingController)).flush(pagina([]));
     harness.detectChanges();
 
     const aviso = harness.routeNativeElement?.querySelector('.aviso-hecho');
@@ -190,6 +217,7 @@ describe('QueuePage', () => {
     await new Promise((listo) => setTimeout(listo, 0));
 
     esperarCola(TestBed.inject(HttpTestingController)).flush({
+      hasMore: false,
       items: [fila()],
       page: 0,
       size: 20,
@@ -271,6 +299,7 @@ describe('QueuePage', () => {
     fixture.detectChanges();
 
     esperarCola(TestBed.inject(HttpTestingController)).flush({
+      hasMore: false,
       items: [fila()],
       page: 0,
       size: 20,
@@ -289,5 +318,113 @@ describe('QueuePage', () => {
 
     expect(fixture.nativeElement.querySelector('.portada--ausente')).not.toBeNull();
     expect(fixture.nativeElement.textContent).toContain('Camisa de lino color hueso');
+  });
+  // --- La paginación --------------------------------------------------------
+
+  /**
+   * <strong>Es lo que le faltaba a esta pantalla.</strong> El backend paginaba desde el
+   * principio y nadie lo usaba: la cola pedía siempre la página 0 y no había control para
+   * avanzar, así que una publicación que no estuviera entre las primeras veinte no se
+   * podía alcanzar por ningún camino.
+   */
+  it('pide la página siguiente al pulsar', async () => {
+    const fixture = await montar(paginaLlena().items, true);
+    const backend = TestBed.inject(HttpTestingController);
+
+    botonDe(fixture, 'Siguiente')?.click();
+    await fixture.whenStable();
+
+    const peticion = esperarCola(backend);
+    expect(peticion.request.params.get('page')).toBe('1');
+
+    peticion.flush(pagina([fila({ id: 'de-la-segunda' })], 1));
+    await asentar(fixture);
+
+    expect(fixture.nativeElement.textContent).toContain('Página 2');
+  });
+
+  it('vuelve a la página anterior', async () => {
+    const fixture = await montar(paginaLlena().items, true);
+    const backend = TestBed.inject(HttpTestingController);
+
+    botonDe(fixture, 'Siguiente')?.click();
+    await fixture.whenStable();
+    esperarCola(backend).flush(paginaLlena(1));
+    await asentar(fixture);
+
+    botonDe(fixture, 'Anterior')?.click();
+    await fixture.whenStable();
+
+    expect(esperarCola(backend).request.params.get('page')).toBe('0');
+  });
+
+  /**
+   * <strong>El defecto que `hasMore` vino a evitar aquí antes de que existiera.</strong>
+   * Cuando el total es múltiplo exacto del tamaño, la última página viene llena. Deducir
+   * de eso que hay otra ofrecería un «Siguiente» hacia una página vacía.
+   */
+  it('no ofrece pasar de página cuando la página llena es la última', async () => {
+    const fixture = await montar(paginaLlena().items, false);
+
+    expect(botonDe(fixture, 'Siguiente')).toBeUndefined();
+  });
+
+  it('no pinta la navegación cuando todo cabe en una página', async () => {
+    const fixture = await montar([fila()]);
+
+    expect(navegacionDe(fixture)).toBeNull();
+  });
+
+  /**
+   * La lección que esta base ya pagó dos veces: un botón que se deshabilita con
+   * `disabled` en el mismo tick del clic, con el foco dentro, manda el foco a `body`.
+   */
+  it('marca el extremo sin quitarle el foco al botón', async () => {
+    const fixture = await montar(paginaLlena().items, true);
+
+    const anterior = botonDe(fixture, 'Anterior');
+
+    expect(anterior?.getAttribute('aria-disabled')).toBe('true');
+    expect(anterior?.disabled).toBe(false);
+  });
+
+  /** Y la otra mitad: al pasar de página el bloque no se desmonta con el foco dentro. */
+  it('no le quita el foco a «Siguiente» mientras carga la página siguiente', async () => {
+    const fixture = await montar(paginaLlena().items, true);
+    const backend = TestBed.inject(HttpTestingController);
+
+    const siguiente = botonDe(fixture, 'Siguiente');
+    siguiente?.focus();
+    siguiente?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(navegacionDe(fixture)).not.toBeNull();
+    expect(document.activeElement).toBe(siguiente);
+
+    esperarCola(backend).flush(paginaLlena(1));
+    await asentar(fixture);
+
+    expect(document.activeElement).toBe(botonDe(fixture, 'Siguiente'));
+  });
+
+  /** En la última página el botón sigue ahí y sigue siendo pulsable: no lleva a ningún sitio. */
+  it('en la última página no lleva a ningún sitio aunque el botón siga ahí', async () => {
+    const fixture = await montar(paginaLlena().items, true);
+    const backend = TestBed.inject(HttpTestingController);
+
+    botonDe(fixture, 'Siguiente')?.click();
+    await fixture.whenStable();
+    esperarCola(backend).flush(paginaLlena(1));
+    await asentar(fixture);
+
+    const siguiente = botonDe(fixture, 'Siguiente');
+    expect(siguiente?.getAttribute('aria-disabled')).toBe('true');
+
+    siguiente?.click();
+    await asentar(fixture);
+
+    backend.expectNone((p) => p.method === 'GET' && p.url === `${API}/moderation/listings`);
+    expect(fixture.nativeElement.textContent).toContain('Página 2');
   });
 });

@@ -99,6 +99,15 @@ final class CatalogoEnMemoria {
             return esperando.subList(desde, Math.min(desde + cuantas, esperando.size()));
         }
 
+        @Override
+        public boolean hayPendientesDesde(long salto) {
+            long esperando = filas.values().stream()
+                    .filter(publicacion -> publicacion.status() == ListingStatus.PENDING_REVIEW)
+                    .count();
+
+            return esperando > salto;
+        }
+
         /**
          * El catalogo publico. Ordena y corta igual que el SQL: por fecha de publicacion
          * descendente, desempatando por identificador, y aplicando el cursor sobre la

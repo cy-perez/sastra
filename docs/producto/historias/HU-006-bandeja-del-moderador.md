@@ -386,12 +386,15 @@ y `ListingReviewApi.pendientes(pagina, tamano)` acepta página, pero
 nadie la usa. No entró aquí porque esta historia es la bandeja de verificaciones. Es
 corto y ya está todo lo difícil hecho.
 
-Lo que sí se hizo ya, para que esa cola no repita lo de aquí: `ListingRepository`
-recibe `(salto, cuantas)` como esta, y su consulta **desempata por `id`**. Le faltaba,
-y no era teórico —la retrollenada de V12 le puso a todas las que ya esperaban turno el
+Se hizo ya, y en dos pasos. Primero el cimiento: `ListingRepository` recibe
+`(salto, cuantas)` como esta, y su consulta **desempata por `id`**. Le faltaba, y no
+era teórico —la retrollenada de V12 le puso a todas las que ya esperaban turno el
 valor de `updated_at`, y ahí los empates son fáciles—: con el instante repetido, dos
 páginas contiguas traían la misma fila dos veces y se dejaban otra sin traer.
 Comprobado quitando el desempate y viendo la prueba en rojo.
 
-Falta solo la mitad de arriba: `ListingReviewStore.queue` sigue pidiendo la página 0 y
-la pantalla no tiene controles. Cuando los tenga, querrá su `hasMore` como esta.
+Y después la mitad de arriba, que es la que se ve: `hasMore` en su respuesta, la
+página en el estado del store y los controles en la pantalla, calcados de aquí
+—`aria-disabled` para no perder el foco, `aria-busy` mientras llega la siguiente—.
+Con eso la asimetría que el contrato anotaba deja de existir: las dos colas del
+moderador responden igual.

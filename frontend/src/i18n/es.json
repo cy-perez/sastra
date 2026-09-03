@@ -1153,6 +1153,12 @@
       "error": {
         "title": "No pudimos cargar la bandeja",
         "retry": "Reintentar"
+      },
+      "pagination": {
+        "label": "Páginas de la cola",
+        "previous": "Anterior",
+        "next": "Siguiente",
+        "page": "Página {{numero}}"
       }
     },
     "detail": {

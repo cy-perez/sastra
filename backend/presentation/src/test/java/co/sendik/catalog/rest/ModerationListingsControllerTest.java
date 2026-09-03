@@ -10,7 +10,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import co.sendik.catalog.dto.ListPendingListingsQuery;
+import co.sendik.catalog.dto.PendingListingsResult;
 import co.sendik.catalog.model.AttentionReason;
+import co.sendik.catalog.model.Listing;
 import co.sendik.catalog.model.ListingStatus;
 import co.sendik.catalog.model.SellerId;
 import co.sendik.catalog.usecase.ListPendingListingsUseCase;
@@ -75,17 +77,56 @@ class ModerationListingsControllerTest {
                 .build();
     }
 
+    /** La cola devuelve una pagina; lo que se prueba aqui no es el «hay mas». */
+    private static PendingListingsResult unaPagina(List<Listing> cola) {
+        return new PendingListingsResult(cola, false);
+    }
+
     @Test
     void deberia_devolver_una_fila_por_publicacion_que_espera() throws Exception {
         when(listar.execute(any()))
-                .thenReturn(List.of(CatalogoDelBorde.con(OTRO, ListingStatus.PENDING_REVIEW, null, null, Set.of())));
+                .thenReturn(unaPagina(
+                        List.of(CatalogoDelBorde.con(OTRO, ListingStatus.PENDING_REVIEW, null, null, Set.of()))));
 
         mvc.perform(get("/api/v1/moderation/listings"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].title").value("Camisa de lino color hueso"))
                 .andExpect(jsonPath("$.items[0].price.currency").value("COP"))
                 .andExpect(jsonPath("$.page").value(0))
-                .andExpect(jsonPath("$.size").value(20));
+                .andExpect(jsonPath("$.size").value(20))
+                .andExpect(jsonPath("$.hasMore").value(false));
+    }
+
+    /**
+     * Que «hay mas» lo diga el servidor, y no la longitud de la pagina.
+     *
+     * <p>Deducirlo de que {@code items} venga lleno se equivoca justo cuando el total es
+     * multiplo exacto del tamano: la ultima pagina viene llena y la pantalla ofrece un
+     * «Siguiente» hacia una pagina vacia. Las dos pruebas sujetan los dos lados, porque
+     * ese caso es indistinguible del otro sin este campo.
+     */
+    @Test
+    void deberia_decir_que_hay_mas_cuando_detras_queda_algo() throws Exception {
+        when(listar.execute(any()))
+                .thenReturn(new PendingListingsResult(
+                        List.of(CatalogoDelBorde.con(OTRO, ListingStatus.PENDING_REVIEW, null, null, Set.of())), true));
+
+        mvc.perform(get("/api/v1/moderation/listings"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.hasMore").value(true));
+    }
+
+    @Test
+    void deberia_decir_que_no_hay_mas_aunque_la_pagina_venga_llena() throws Exception {
+        when(listar.execute(any()))
+                .thenReturn(new PendingListingsResult(
+                        List.of(CatalogoDelBorde.con(OTRO, ListingStatus.PENDING_REVIEW, null, null, Set.of())),
+                        false));
+
+        mvc.perform(get("/api/v1/moderation/listings").param("size", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.hasMore").value(false));
     }
 
     /**
@@ -99,7 +140,8 @@ class ModerationListingsControllerTest {
     @Test
     void deberia_decir_cuando_entro_a_revision_y_no_cuando_se_toco_HU_008() throws Exception {
         when(listar.execute(any()))
-                .thenReturn(List.of(CatalogoDelBorde.con(OTRO, ListingStatus.PENDING_REVIEW, null, null, Set.of())));
+                .thenReturn(unaPagina(
+                        List.of(CatalogoDelBorde.con(OTRO, ListingStatus.PENDING_REVIEW, null, null, Set.of()))));
 
         mvc.perform(get("/api/v1/moderation/listings"))
                 .andExpect(status().isOk())
@@ -110,7 +152,8 @@ class ModerationListingsControllerTest {
     @Test
     void deberia_devolver_la_toma_frontal_como_portada() throws Exception {
         when(listar.execute(any()))
-                .thenReturn(List.of(CatalogoDelBorde.con(OTRO, ListingStatus.PENDING_REVIEW, null, null, Set.of())));
+                .thenReturn(unaPagina(
+                        List.of(CatalogoDelBorde.con(OTRO, ListingStatus.PENDING_REVIEW, null, null, Set.of()))));
 
         mvc.perform(get("/api/v1/moderation/listings"))
                 .andExpect(status().isOk())
@@ -126,9 +169,9 @@ class ModerationListingsControllerTest {
     @Test
     void deberia_decir_si_la_publicacion_es_de_quien_mira_RN_063() throws Exception {
         when(listar.execute(any()))
-                .thenReturn(List.of(
+                .thenReturn(unaPagina(List.of(
                         CatalogoDelBorde.con(MODERADOR, ListingStatus.PENDING_REVIEW, null, null, Set.of()),
-                        CatalogoDelBorde.con(OTRO, ListingStatus.PENDING_REVIEW, null, null, Set.of())));
+                        CatalogoDelBorde.con(OTRO, ListingStatus.PENDING_REVIEW, null, null, Set.of()))));
 
         mvc.perform(get("/api/v1/moderation/listings"))
                 .andExpect(status().isOk())
@@ -141,12 +184,12 @@ class ModerationListingsControllerTest {
     @Test
     void deberia_decir_por_que_una_publicacion_pide_mirarse_con_mas_cuidado_RN_020() throws Exception {
         when(listar.execute(any()))
-                .thenReturn(List.of(CatalogoDelBorde.con(
+                .thenReturn(unaPagina(List.of(CatalogoDelBorde.con(
                         OTRO,
                         ListingStatus.PENDING_REVIEW,
                         null,
                         null,
-                        Set.of(AttentionReason.PRICE_OUT_OF_RANGE, AttentionReason.GALLERY_UPLOAD))));
+                        Set.of(AttentionReason.PRICE_OUT_OF_RANGE, AttentionReason.GALLERY_UPLOAD)))));
 
         mvc.perform(get("/api/v1/moderation/listings"))
                 .andExpect(status().isOk())
@@ -157,7 +200,7 @@ class ModerationListingsControllerTest {
 
     @Test
     void deberia_responder_una_bandeja_vacia_sin_inventar_filas_criterio_4() throws Exception {
-        when(listar.execute(any())).thenReturn(List.of());
+        when(listar.execute(any())).thenReturn(unaPagina(List.of()));
 
         mvc.perform(get("/api/v1/moderation/listings"))
                 .andExpect(status().isOk())
@@ -166,7 +209,7 @@ class ModerationListingsControllerTest {
 
     @Test
     void deberia_respetar_la_pagina_y_el_tamano_pedidos() throws Exception {
-        when(listar.execute(any())).thenReturn(List.of());
+        when(listar.execute(any())).thenReturn(unaPagina(List.of()));
 
         mvc.perform(get("/api/v1/moderation/listings").param("page", "3").param("size", "10"))
                 .andExpect(status().isOk());

@@ -34,7 +34,10 @@
     <p>{{ 'listingReview.inbox.empty.body' | transloco }}</p>
   </div>
 } @else {
-  <ul class="lista">
+  <!-- `aria-busy` mientras llega la página siguiente: la lista que se ve es todavía la
+       anterior, y sin esta señal un lector de pantalla lee filas viejas como si fueran
+       las nuevas. -->
+  <ul class="lista" [attr.aria-busy]="actualizando()">
     @for (publicacion of pendientes(); track publicacion.id) {
       <li class="publicacion">
         <!-- El enlace envuelve toda la fila para que el destino táctil sea la fila
@@ -97,4 +100,44 @@
       </li>
     }
   </ul>
+}
+
+<!-- La paginación. Fuera de los tres estados a propósito: hace falta con la lista y hace
+     falta también cuando la página se queda vacía porque se decidieron todas sus filas,
+     que es justo cuando alguien necesita volver a la anterior.
+
+     `nav` con nombre porque en esta página hay más de una región de navegación.
+
+     **`aria-disabled` y no `disabled`**, que es una lección ya pagada en esta base: un
+     botón que se deshabilita en el mismo tick del clic con el foco dentro manda el foco a
+     `body`, y quien navega con teclado tiene que tabular desde el principio del
+     documento. Con `aria-disabled` el botón sigue siendo enfocable, se anuncia como no
+     disponible, y quien pulsa no consigue nada porque el estado ya acota el movimiento. -->
+@if (!consulta.isPending() && !consulta.isError() && (hayAnterior() || hayMas())) {
+  <nav class="paginacion" [attr.aria-label]="'listingReview.inbox.pagination.label' | transloco">
+    <button
+      type="button"
+      class="btn btn-secundario"
+      [attr.aria-disabled]="!hayAnterior()"
+      (click)="anterior()"
+    >
+      {{ 'listingReview.inbox.pagination.previous' | transloco }}
+    </button>
+
+    <!-- La página se anuncia como región viva: al pulsar, lo único que cambia es la
+         lista, y quien no ve la pantalla no tendría ninguna señal de que pasó algo. Va en
+         base 1 porque es lo que se lee, aunque el servidor cuente desde 0. -->
+    <p class="pagina-actual tipo-secundario" role="status">
+      {{ 'listingReview.inbox.pagination.page' | transloco: { numero: pagina() + 1 } }}
+    </p>
+
+    <button
+      type="button"
+      class="btn btn-secundario"
+      [attr.aria-disabled]="!hayMas()"
+      (click)="siguiente()"
+    >
+      {{ 'listingReview.inbox.pagination.next' | transloco }}
+    </button>
+  </nav>
 }

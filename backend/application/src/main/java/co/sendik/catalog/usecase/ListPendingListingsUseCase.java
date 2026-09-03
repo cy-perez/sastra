@@ -1,6 +1,7 @@
 package co.sendik.catalog.usecase;
 
 import co.sendik.catalog.dto.ListPendingListingsQuery;
+import co.sendik.catalog.dto.PendingListingsResult;
 import co.sendik.catalog.model.Listing;
 import co.sendik.catalog.port.out.ListingRepository;
 import java.util.List;
@@ -31,7 +32,19 @@ public class ListPendingListingsUseCase {
      * {@code ReadListingUseCase}.
      */
     @Transactional
-    public List<Listing> execute(ListPendingListingsQuery consulta) {
-        return publicaciones.pendientesDeRevision((long) consulta.pagina() * consulta.tamano(), consulta.tamano());
+    public PendingListingsResult execute(ListPendingListingsQuery consulta) {
+        long salto = (long) consulta.pagina() * consulta.tamano();
+
+        // La pagina exacta, y la pregunta aparte. Ver `hayPendientesDesde`: traer una fila
+        // de mas para usarla de señal arrastraria tambien su portada.
+        List<Listing> pagina = publicaciones.pendientesDeRevision(salto, consulta.tamano());
+
+        // Son dos consultas, asi que entre ellas cabe que alguien decida la ultima
+        // pendiente y esto diga que hay otra pagina cuando ya no la hay. La ventana es de
+        // microsegundos dentro de la misma peticion y lo peor que produce es un
+        // «Siguiente» hacia el estado vacio, que se explica solo.
+        boolean hayMas = publicaciones.hayPendientesDesde(salto + consulta.tamano());
+
+        return new PendingListingsResult(pagina, hayMas);
     }
 }

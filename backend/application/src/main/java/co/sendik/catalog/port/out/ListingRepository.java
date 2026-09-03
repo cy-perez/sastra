@@ -102,4 +102,21 @@ public interface ListingRepository {
      * @param cuantas cuantas traer
      */
     List<Listing> pendientesDeRevision(long salto, int cuantas);
+
+    /**
+     * Si queda al menos una esperando revision a partir de esa posicion. La respuesta a
+     * «¿hay pagina siguiente?».
+     *
+     * <p>Existe para no tener que traer a nadie para contestarlo. Pedir una fila de mas y
+     * usar su presencia como señal funciona, pero {@link #pendientesDeRevision} devuelve
+     * la publicacion entera y ademas resuelve su portada: seria una consulta de imagenes
+     * mas por cada carga, para una fila que nadie va a ver.
+     *
+     * <p>Tampoco es contar: no dice cuantas quedan -que exigiria recorrerlas todas- sino
+     * si queda alguna, y para eso basta con llegar hasta la primera.
+     *
+     * @param salto la posicion a partir de la cual se pregunta. Para saber si hay pagina
+     *     siguiente es el final de la actual
+     */
+    boolean hayPendientesDesde(long salto);
 }

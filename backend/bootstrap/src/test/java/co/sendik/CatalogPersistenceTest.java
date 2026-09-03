@@ -377,6 +377,32 @@ class CatalogPersistenceTest {
                 .toList();
     }
 
+    /**
+     * {@code hayPendientesDesde} contesta lo mismo que contestaria traer una fila de mas,
+     * sin traerla -ni resolver su portada, que es una consulta aparte.
+     *
+     * <p>Se mide relativo a lo que ya hay en la cola: el contenedor es uno para toda la
+     * clase y otras pruebas dejan publicaciones esperando, asi que se cuenta primero y se
+     * pregunta despues por las dos posiciones que importan.
+     */
+    @Test
+    void deberia_decir_si_queda_alguna_pendiente_a_partir_de_una_posicion_HU_008() {
+        publicaciones.guardar(borradorConTomas().enviarARevision(AHORA));
+
+        long cuantasHay = 0;
+        while (!publicaciones.pendientesDeRevision(cuantasHay, 1).isEmpty()) {
+            cuantasHay++;
+        }
+
+        assertThat(publicaciones.hayPendientesDesde(cuantasHay - 1))
+                .as("en la ultima posicion ocupada todavia queda una")
+                .isTrue();
+        assertThat(publicaciones.hayPendientesDesde(cuantasHay))
+                .as("pasada la ultima ya no queda ninguna")
+                .isFalse();
+        assertThat(publicaciones.hayPendientesDesde(0)).isTrue();
+    }
+
     @Test
     void deberia_ordenar_la_cola_por_lo_que_lleva_mas_tiempo_esperando_HU_008() {
         Instant temprano = AHORA.minus(Duration.ofHours(6));

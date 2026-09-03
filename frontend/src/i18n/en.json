@@ -1153,6 +1153,12 @@
       "error": {
         "title": "We couldn't load the queue",
         "retry": "Try again"
+      },
+      "pagination": {
+        "label": "Queue pages",
+        "previous": "Previous",
+        "next": "Next",
+        "page": "Page {{numero}}"
       }
     },
     "detail": {

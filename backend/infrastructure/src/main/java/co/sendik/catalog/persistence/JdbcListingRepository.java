@@ -259,6 +259,23 @@ public class JdbcListingRepository implements ListingRepository {
     }
 
     /**
+     * Sin {@code ORDER BY} a proposito: la pregunta es cuantas hay, no cuales, y para
+     * «¿queda alguna despues de la posicion N?» el orden es irrelevante.
+     *
+     * <p>Se apoya en el mismo indice parcial de V12. No lee ninguna columna de la fila ni
+     * resuelve portadas: solo comprueba que existe.
+     */
+    @Override
+    public boolean hayPendientesDesde(long salto) {
+        return jdbc.sql("""
+                        SELECT EXISTS (
+                            SELECT 1 FROM listings
+                            WHERE status = 'PENDING_REVIEW'
+                            OFFSET :salto LIMIT 1)
+                        """).param("salto", salto).query(Boolean.class).single();
+    }
+
+    /**
      * Las tomas frontales de toda la pagina, en una sola consulta.
      *
      * <p>Lo natural aqui era {@code .map(this::conImagenes)}, y es lo que hacia: una

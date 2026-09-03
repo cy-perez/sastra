@@ -1,6 +1,7 @@
 package co.sendik.catalog.rest;
 
 import co.sendik.catalog.dto.ListPendingListingsQuery;
+import co.sendik.catalog.dto.PendingListingsResult;
 import co.sendik.catalog.model.ModeratorId;
 import co.sendik.catalog.rest.dto.PendingListingResponse;
 import co.sendik.catalog.rest.dto.PendingListingsPage;
@@ -74,10 +75,12 @@ public class ModerationListingsController {
 
         ModeratorId quienModera = ModeratorId.de(token.getSubject());
 
-        List<PendingListingResponse> cola = casoDeListar.execute(new ListPendingListingsQuery(page, size)).stream()
+        PendingListingsResult resultado = casoDeListar.execute(new ListPendingListingsQuery(page, size));
+
+        List<PendingListingResponse> cola = resultado.items().stream()
                 .map(publicacion -> PendingListingResponses.de(publicacion, quienModera, almacen))
                 .toList();
 
-        return new PendingListingsPage(cola, page, size);
+        return new PendingListingsPage(cola, page, size, resultado.hayMas());
     }
 }

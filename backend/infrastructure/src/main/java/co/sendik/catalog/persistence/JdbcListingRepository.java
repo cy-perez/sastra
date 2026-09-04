@@ -35,6 +35,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -273,6 +274,41 @@ public class JdbcListingRepository implements ListingRepository {
                             WHERE status = 'PENDING_REVIEW'
                             OFFSET :salto LIMIT 1)
                         """).param("salto", salto).query(Boolean.class).single();
+    }
+
+    /**
+     * Cuantas hay en cada estado, en una sola pasada. HU-012.
+     *
+     * <p>El vendedor vive en {@code products} y no en {@code listings}, asi que hace falta
+     * la misma union que {@link #buscarDelVendedor}. No se reutiliza {@link #DESDE_BASE}
+     * porque esto no proyecta la publicacion: cuenta filas, y traer las treinta columnas
+     * para descartarlas seria pagar el mapeo entero por un numero.
+     *
+     * <p><strong>Devuelve solo los estados que tienen filas.</strong> Los siete de RN-061
+     * los completa {@code SummarizeSellerListingsUseCase}, que es donde esa decision se
+     * puede leer y probar; aqui inventarlos exigiria una union con siete literales y
+     * meteria la enumeracion del dominio dentro del SQL.
+     */
+    @Override
+    public Map<ListingStatus, Long> contarPorEstadoDelVendedor(SellerId vendedor) {
+        return jdbc
+                .sql("""
+                        SELECT l.status, COUNT(*) AS cuantas
+                        FROM listings l
+                        JOIN products p ON p.id = l.product_id
+                        WHERE p.seller_id = :vendedor
+                        GROUP BY l.status
+                        """)
+                .param("vendedor", vendedor.value())
+                .query((fila, numero) ->
+                        Map.entry(ListingStatus.valueOf(fila.getString("status")), fila.getLong("cuantas")))
+                .list()
+                .stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (una, otra) -> una,
+                        () -> new EnumMap<>(ListingStatus.class)));
     }
 
     /**

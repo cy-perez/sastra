@@ -175,6 +175,35 @@ describe('interceptores HTTP', () => {
       expect(await respuesta).toEqual({ ok: true });
     });
 
+    /**
+     * <strong>La carrera no es una sesion muerta.</strong> Significa que otra peticion del
+     * mismo cliente acaba de rotar el token. No hay nada roto, asi que la peticion falla
+     * pero **la sesion se queda**: la siguiente volvera a renovar, ya con la cookie
+     * asentada. Cerrar aqui echaba a alguien que no tenia ningun problema, y era lo que
+     * pasaba con dos pestañas abiertas.
+     *
+     * <p>No se reintenta a proposito: en la carrera el servidor no manda `Set-Cookie`, asi
+     * que reenviar seria mandar otra vez el token ya consumido y arriesgar que el servidor
+     * lo lea como reutilizacion (ADR-0030).
+     */
+    it('no cierra la sesion ante una carrera del refresco', async () => {
+      sesion.set(UNA_SESION);
+      renovar.mockReturnValue(throwError(() => new ApiError(401, 'AUTH_SESSION_RACE', null, [])));
+
+      const fallo = new Promise<unknown>((resolve) => {
+        http.get('listings').subscribe({ error: resolve });
+      });
+
+      responder401(backend.expectOne(`${API}/listings`));
+
+      const error = await fallo;
+      expect((error as ApiError).status).toBe(401);
+      // Lo que importa: sigue dentro.
+      expect(sesion.isAuthenticated()).toBe(true);
+      // Y no se reenvio el token consumido.
+      expect(renovar).toHaveBeenCalledTimes(1);
+    });
+
     it('cierra la sesion y propaga el error si la renovacion falla', async () => {
       sesion.set(UNA_SESION);
       renovar.mockReturnValue(throwError(() => new Error('sin cookie')));

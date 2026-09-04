@@ -83,6 +83,12 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
 };
 
 /**
+ * El codigo con el que el servidor nombra la carrera del refresco (ADR-0030). Dice que
+ * paso, no que hacer: la reaccion -no cerrar la sesion- es de aqui.
+ */
+const CARRERA = 'AUTH_SESSION_RACE';
+
+/**
  * Renueva la sesion y reintenta cuando el servidor responde 401.
  *
  * <p>El token de acceso dura 15 minutos y el de refresco 30 dias: entre los dos
@@ -131,11 +137,34 @@ export const refreshInterceptor: HttpInterceptorFn = (request, next) => {
       }
 
       return recuperacion.recuperar().pipe(
-        // Este catchError va antes del switchMap a proposito: asi solo atrapa el
-        // fallo del refresco. Detras del switchMap atraparia tambien el del
+        // Un solo catchError, y va antes del switchMap a proposito: asi solo atrapa
+        // el fallo del refresco. Detras del switchMap atraparia tambien el del
         // reintento, y un 500 del servidor cerraria una sesion que estaba bien.
-        catchError(() => {
-          sesion.clear();
+        catchError((falloDelRefresco: unknown) => {
+          const esCarrera =
+            falloDelRefresco instanceof ApiError && falloDelRefresco.code === CARRERA;
+
+          // **La carrera no cierra la sesion, y tampoco se reintenta.**
+          //
+          // Que no la cierre es todo el arreglo: otra peticion del mismo cliente
+          // acaba de rotar el token, no hay nada roto, y echar a la persona por eso
+          // era el defecto. Esta peticion falla y la siguiente volvera a renovar, ya
+          // con la cookie asentada.
+          //
+          // Reintentar aqui parecia mejor y es peor. En la rama de la carrera el
+          // servidor **no manda `Set-Cookie`**: lanza antes de emitir nada, asi que
+          // la cookie del navegador sigue siendo la que ya se consumio y el reintento
+          // la reenviaria. Si cae dentro de la ventana de gracia no pasa nada; si el
+          // primer refresco llego tarde en la ventana y el reintento tarda un poco
+          // -una red mala, un viaje largo- cae fuera, y el servidor lo lee como
+          // reutilizacion: revoca la familia entera y le manda al titular el aviso de
+          // que le copiaron la sesion. Es el falso incidente que RN-007 existe para
+          // evitar, y la cookie es HttpOnly, asi que el cliente no puede comprobar si
+          // la de ahora sirve. Reintentar seria apostar (ADR-0030).
+          if (!esCarrera) {
+            sesion.clear();
+          }
+
           // Se propaga el 401 original y no el del refresco: la pantalla tiene
           // que explicar que fallo la peticion que la persona pidio.
           return throwError(() => fallo);

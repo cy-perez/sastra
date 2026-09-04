@@ -213,6 +213,7 @@
       "AUTH_INVALID_CREDENTIALS": "That email and password do not match.",
       "AUTH_ACCOUNT_LOCKED": "Too many failed attempts. We locked access for a moment as a precaution and sent you an email. Please try again later.",
       "AUTH_SESSION_INVALID": "Your session has ended. Please sign in again.",
+      "AUTH_SESSION_RACE": "Your session was being renewed. Try again.",
       "COMMON_VALIDATION_FAILED": "Please check the form.",
       "COMMON_FORBIDDEN": "You don't have permission to do that.",
       "COMMON_TOO_MANY_REQUESTS": "Too many attempts in a row. Wait a moment and try again.",

@@ -69,6 +69,21 @@ public enum ErrorCode {
     AUTH_SESSION_INVALID,
 
     /**
+     * RN-007: el refresco llego con un token que otra peticion del mismo cliente acaba de
+     * rotar. **No es que la sesion no valga**: la cookie que el navegador tiene ahora es
+     * buena, y quien reciba esto debe reintentar la peticion original en vez de cerrar.
+     *
+     * <p>Existe porque el servidor ya sabe cual de los dos casos es -lo calcula para
+     * decidir si revoca la familia- y hasta ADR-0030 tiraba ese dato justo antes de
+     * responder. El cliente, con un solo codigo, no tenia con que distinguir una carrera
+     * entre dos pestanas de una sesion muerta, y cerraba la sesion en las dos.
+     *
+     * <p>Dice que paso, no que hacer: reintentar es la reaccion, y la reaccion es del
+     * cliente.
+     */
+    AUTH_SESSION_RACE,
+
+    /**
      * El enlace de restablecimiento no sirve: no existe o ya se uso.
      *
      * <p>Codigo propio y no el de la verificacion de correo, aunque el mecanismo

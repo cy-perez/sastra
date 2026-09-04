@@ -3,6 +3,7 @@ package co.sendik.identity.usecase;
 import co.sendik.identity.dto.RefreshSessionCommand;
 import co.sendik.identity.dto.SessionResult;
 import co.sendik.identity.exception.RefreshTokenInvalidException;
+import co.sendik.identity.exception.RefreshTokenRaceException;
 import co.sendik.identity.model.RefreshToken;
 import co.sendik.identity.model.RefreshTokenId;
 import co.sendik.identity.model.User;
@@ -41,8 +42,11 @@ import java.util.Optional;
  * poco y que el token que salio de ella siga sin usarse. Lo segundo es lo que la
  * mantiene estrecha, porque en cuanto la cadena avanza un paso mas ya hay alguien
  * usando la sesion y cualquier token viejo que aparezca vuelve a ser un incidente.
- * Dentro de la ventana no se emite nada: se rechaza igual, sin revocar, y el cliente
- * reintenta con la cookie que el navegador ya tiene, que es la buena.
+ * Dentro de la ventana no se emite nada: se rechaza igual, sin revocar, **y con codigo
+ * propio** —{@link RefreshTokenRaceException}— para que el cliente sepa que su cookie sirve
+ * y reintente en vez de cerrar la sesion. Con el mismo codigo que una sesion muerta, el
+ * cliente no tenia con que distinguirlas y cerraba en las dos: la ventana evitaba el correo
+ * y la revocacion, pero la persona acababa fuera igual (ADR-0030).
  *
  * <p><strong>Este caso de uso no abre transaccion, y es a proposito.</strong> Su
  * escritura mas importante ocurre justo antes de lanzar una excepcion: la
@@ -96,9 +100,16 @@ public class RefreshSessionUseCase {
         RefreshToken presentado = refrescos.buscarPorHash(hash).orElseThrow(RefreshTokenInvalidException::new);
 
         if (presentado.fueReemplazado()) {
-            if (!esUnaCarreraDelPropioCliente(presentado, ahora)) {
-                revocarLaFamiliaYAvisar(presentado, ahora);
+            // **La distincion sale, no se queda dentro.** Se calcula igual que antes, pero
+            // ahora tambien se dice: quien recibe la carrera tiene una cookie buena y debe
+            // reintentar, y quien recibe la otra tiene una sesion muerta y debe pedir
+            // credenciales. Con un solo codigo el cliente cerraba la sesion en los dos
+            // casos, y una carrera entre dos pestanas echaba a la persona (ADR-0030).
+            if (esUnaCarreraDelPropioCliente(presentado, ahora)) {
+                throw new RefreshTokenRaceException();
             }
+
+            revocarLaFamiliaYAvisar(presentado, ahora);
             throw new RefreshTokenInvalidException();
         }
 

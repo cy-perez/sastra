@@ -190,6 +190,31 @@ de consulta. El nombre tampoco puede colgar de `/listings/{algo}`: ahí un segme
 literal —`/queue`, `/pending`— compite con la regla que hace pública la lectura de
 una publicación por identificador.
 
+## La carrera del refresco
+
+`POST /api/v1/auth/refresh` responde **401 con dos códigos distintos**, y la diferencia
+importa:
+
+- `AUTH_SESSION_INVALID` — la sesión no vale. Hay que pedir credenciales otra vez.
+- `AUTH_SESSION_RACE` — otra petición del mismo cliente acaba de rotar el token. No hay
+  nada roto: **quien reciba esto no debe cerrar la sesión**. La petición falla y la
+  siguiente vuelve a renovar.
+
+  **No conviene reintentar al recibirlo.** En esta rama el servidor no manda `Set-Cookie`,
+  así que la cookie sigue siendo la que ya se consumió; reenviarla puede caer fuera de la
+  ventana y disparar la revocación de la familia y el aviso de seguridad. ADR-0030.
+
+El estado es 401 en los dos casos porque en los dos la petición no fue autorizada, que es
+lo que 401 significa. Lo que cambia es qué hacer después.
+
+Sin esa distinción, dos pestañas abiertas a la vez cerraban la sesión de quien no tenía
+ningún problema: el servidor ya sabía que era una carrera —por eso no revocaba la familia
+ni mandaba el aviso de seguridad— pero respondía lo mismo que ante una sesión muerta.
+ADR-0030 lo explica entero.
+
+**El código no dice «reintenta», dice qué pasó.** Reintentar es la reacción, y la reacción
+es del cliente.
+
 ## Filtros y orden
 
 - Filtros como parámetros planos: `?category=camisas&condition=NEW&minPrice=50000`

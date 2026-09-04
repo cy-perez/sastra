@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import co.sendik.identity.dto.RefreshSessionCommand;
 import co.sendik.identity.dto.SessionResult;
 import co.sendik.identity.exception.RefreshTokenInvalidException;
+import co.sendik.identity.exception.RefreshTokenRaceException;
 import co.sendik.identity.model.BirthDate;
 import co.sendik.identity.model.DisplayName;
 import co.sendik.identity.model.Email;
@@ -25,6 +26,7 @@ import co.sendik.identity.port.out.MailSender;
 import co.sendik.identity.port.out.RefreshTokenRepository;
 import co.sendik.identity.port.out.TokenGenerator;
 import co.sendik.identity.port.out.UserRepository;
+import co.sendik.shared.error.ErrorCode;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -221,10 +223,33 @@ class RefreshSessionUseCaseTest {
         // El que salio de la rotacion sigue sin usarse: nadie ha seguido la cadena.
         when(refrescos.buscarPorId(rotacion.emitido().id())).thenReturn(Optional.of(rotacion.emitido()));
 
-        assertThatThrownBy(() -> caso.execute(comando())).isInstanceOf(RefreshTokenInvalidException.class);
+        // **Con su propia excepcion, y esa es la mitad que faltaba.** No revocar evita el
+        // correo y la perdida de la familia; lo que no evitaba era que el cliente, viendo
+        // el mismo codigo que una sesion muerta, cerrara la sesion igual. Ver ADR-0030.
+        assertThatThrownBy(() -> caso.execute(comando())).isInstanceOf(RefreshTokenRaceException.class);
 
         verify(refrescos, never()).revocarFamilia(any(), any());
         verifyNoInteractions(correo, accesos);
+    }
+
+    /**
+     * <strong>La carrera y la sesion muerta no pueden responder lo mismo.</strong> Es la
+     * prueba que faltaba: el caso de uso ya distinguia los dos casos -por eso uno revoca y
+     * el otro no- pero tiraba la distincion al lanzar, y hacia afuera eran identicos. El
+     * cliente no tenia con que decidir y cerraba la sesion en los dos, asi que una carrera
+     * entre dos pestanas echaba a la persona sin que nada estuviera mal.
+     */
+    @Test
+    void deberia_responder_distinto_a_la_carrera_que_a_la_sesion_muerta_ADR_0030() {
+        RefreshToken.Rotacion carrera =
+                vigente.rotar("hash-siguiente", AHORA.minus(Duration.ofSeconds(2)), RefreshToken.VIGENCIA, null, null);
+        conTokenEncontrado(carrera.consumido());
+        when(refrescos.buscarPorId(carrera.emitido().id())).thenReturn(Optional.of(carrera.emitido()));
+
+        assertThatThrownBy(() -> caso.execute(comando()))
+                .isInstanceOf(RefreshTokenRaceException.class)
+                .extracting(fallo -> ((RefreshTokenRaceException) fallo).code())
+                .isEqualTo(ErrorCode.AUTH_SESSION_RACE);
     }
 
     // Pasada la ventana ya no hay carrera que valer: vuelve a ser el criterio 15.

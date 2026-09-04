@@ -117,6 +117,19 @@ export class ListingStore {
     enabled: this.abierta() !== null && this.sesion.isAuthenticated(),
   }));
 
+  /** Hay sesion abierta. */
+  readonly haySesion = computed(() => this.sesion.status() === 'abierta');
+
+  /**
+   * Ya se sabe si hay sesion o no, sea cual sea la respuesta.
+   *
+   * <p>La distincion importa: el token de acceso vive en memoria y se pierde al recargar,
+   * así que al arrancar la sesión es `desconocida` hasta que la cookie de refresco
+   * responde. Una pantalla que trate `desconocida` como «no hay sesión» le enseña
+   * «entra» a quien ya entró, que es el parpadeo que `SessionStore` documenta.
+   */
+  readonly sesionResuelta = computed(() => this.sesion.status() !== 'desconocida');
+
   /**
    * Si hay una pantalla mirando las cifras.
    *

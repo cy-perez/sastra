@@ -221,4 +221,18 @@ test.describe('catálogo público', () => {
     // Lo mismo: lo que espera revisión se recoge, o se queda en la cola para siempre.
     await retirarDeRevision(page, id);
   });
+
+  /** Criterio 7 de HU-012: sin sesión el panel no existe. Se explica y se ofrece entrar. */
+  test('sin sesion el panel no existe y se ofrece entrar, criterio 7', async ({ page }) => {
+    await salirSiHaySesion(page);
+
+    await page.goto(RUTA_MIS_PUBLICACIONES);
+
+    await expect(page.getByRole('heading', { name: 'Mis publicaciones' })).toBeVisible();
+    await expect(page.getByText('Entra para verlas')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Entrar' }).first()).toBeVisible();
+
+    // Y ninguna cifra: no hay de quien contarlas.
+    await expect(page.getByRole('term')).toHaveCount(0);
+  });
 });

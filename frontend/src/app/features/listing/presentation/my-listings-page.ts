@@ -99,6 +99,26 @@ export class MyListingsPage {
     () => this.consulta.isSuccess() && this.publicaciones().length === 0,
   );
 
+  /**
+   * Todavía no se sabe si hay sesión. Criterio 7.
+   *
+   * <p>Mientras dure se pinta el esqueleto y **no** se ofrece entrar: el token de acceso se
+   * pierde al recargar y la sesión llega después por la cookie de refresco, así que tratar
+   * este momento como «no hay sesión» le enseñaría «entra» a quien ya entró.
+   */
+  protected readonly resolviendoSesion = computed(() => !this.store.sesionResuelta());
+
+  /**
+   * Se sabe que no hay sesión. Criterio 7.
+   *
+   * <p><strong>Se explica y se ofrece entrar; no se redirige.</strong> Es la decisión que
+   * tomó HU-011 para su lista, y por el mismo motivo: una redirección desde una dirección
+   * que alguien escribió a propósito le hace pensar que se equivocó.
+   */
+  protected readonly sinSesion = computed(
+    () => this.store.sesionResuelta() && !this.store.haySesion(),
+  );
+
   private readonly idiomas = inject(TranslocoService);
 
   /**

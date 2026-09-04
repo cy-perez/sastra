@@ -1069,6 +1069,8 @@
       "new": "Publicar",
       "attention": "Necesita atención",
       "untitled": "Publicación sin título",
+      "signedOut": "Tus publicaciones son tuyas y no las ve nadie más. Entra para verlas.",
+      "signIn": "Entrar",
       "summary": {
         "loading": "Cargando las cifras",
         "ready": "Cifras al día",

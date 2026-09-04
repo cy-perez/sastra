@@ -172,6 +172,53 @@ describe('MyListingsPage', () => {
     });
   });
 
+  // --- Criterio 7: sin sesión ---------------------------------------------
+
+  /**
+   * Sin sesión se explica y se ofrece entrar, y **no se pide nada**.
+   *
+   * <p>Antes esta pantalla no tenía tercer camino: sin sesión las dos consultas nacen
+   * deshabilitadas y se quedan pendientes para siempre, así que se veían los esqueletos de
+   * la lista y de las cifras eternamente, sin que nada explicara por qué. La región viva
+   * llegó a anunciar «Cargando las cifras» indefinidamente a quien no había entrado.
+   */
+  it('sin sesión explica y ofrece entrar, sin pedir nada, criterio 7', async () => {
+    const fixture = TestBed.createComponent(MyListingsPage);
+    await fixture.whenStable();
+
+    // La sesión se resuelve en anónima: es lo que hace el inicializador cuando no hay
+    // cookie de refresco que recuperar.
+    TestBed.inject(SessionStore).clear();
+    await asentar(fixture);
+
+    const texto = fixture.nativeElement.textContent ?? '';
+    expect(texto).toContain('Entra para verlas');
+    expect(fixture.nativeElement.querySelector('a[href="/ingresar"]')).not.toBeNull();
+
+    // Ni esqueletos eternos ni cifras: no hay nada que cargar.
+    expect(fixture.nativeElement.querySelectorAll('.esqueleto')).toHaveLength(0);
+    expect(cifrasEnPantalla(fixture)).toHaveLength(0);
+
+    TestBed.inject(HttpTestingController).verify();
+  });
+
+  /**
+   * Mientras la sesión no se sabe **no se ofrece entrar**.
+   *
+   * <p>El token de acceso vive en memoria y se pierde al recargar; la sesión llega después
+   * por la cookie de refresco. Tratar ese momento como «no hay sesión» le enseña «entra» a
+   * quien ya entró, que es el parpadeo que `SessionStore` documenta.
+   */
+  it('no ofrece entrar mientras la sesión todavía no se sabe, criterio 7', async () => {
+    const fixture = TestBed.createComponent(MyListingsPage);
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const texto = fixture.nativeElement.textContent ?? '';
+    expect(texto).not.toContain('Entra para verlas');
+    expect(fixture.nativeElement.querySelectorAll('.esqueleto')).not.toHaveLength(0);
+  });
+
   // --- Las cifras del panel. HU-012 --------------------------------------
 
   /** Criterios 1 y 2: los siete estados, y el cero se dice en vez de esconderse. */

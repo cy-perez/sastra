@@ -55,6 +55,20 @@ No entra:
 7. Dado que entro sin sesión a `/mis-publicaciones`, cuando la ruta resuelve, entonces se
    me lleva a entrar, igual que hoy.
 
+   **Resuelto el 4 de septiembre de 2026, y el «igual que hoy» necesitaba nombre.** No hay
+   guard de sesión en ninguna ruta del proyecto: los únicos son de rol. Lo que sí hay es la
+   forma que fijó HU-011 en su criterio 16 —se explica y se ofrece entrar, **no se
+   redirige**, porque una redirección desde una dirección que alguien escribió a propósito
+   le hace pensar que se equivocó— y es la que se aplica aquí.
+
+   La distinción que lo hace correcto es entre «no hay sesión» y «todavía no se sabe»: el
+   token de acceso vive en memoria y se pierde al recargar, así que tratar el segundo como
+   el primero le enseña «entra» a quien ya entró. Mientras no se sabe, esqueleto.
+
+   Antes de esto la pantalla no tenía tercer camino: sin sesión las dos consultas nacían
+   deshabilitadas y se quedaban pendientes para siempre, así que se veían los esqueletos
+   eternamente sin que nada explicara por qué.
+
 ## Casos borde
 
 - **Cero absoluto**: cuenta nueva, sin ninguna publicación. Criterio 3.

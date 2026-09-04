@@ -1,6 +1,7 @@
 import { AxeBuilder } from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
 
+import { ETIQUETAS_WCAG, informe, MODOS } from '../e2e-comun/axe';
 import { PAGINAS_DE_CONTENIDO, RUTAS_CONTENIDO } from '../src/app/core/routes/content-routes';
 import { DOCUMENTOS_LEGALES, RUTAS_LEGALES } from '../src/app/core/routes/legal-routes';
 import { THEME_COOKIE } from '../src/app/core/theme/theme';
@@ -30,15 +31,6 @@ import { THEME_COOKIE } from '../src/app/core/theme/theme';
 test.use({ locale: 'es-CO' });
 
 /**
- * WCAG 2.2 nivel AA, que es el objetivo del proyecto, con los niveles anteriores
- * incluidos porque cada version se apoya en la anterior.
- *
- * <p>Sin `best-practice`: son recomendaciones de Deque, no criterios de la norma,
- * y mezclarlas obligaria a discutir cual se acata cada vez que falle una.
- */
-const ETIQUETAS_WCAG = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
-
-/**
  * Todas las paginas que alguien puede abrir sin haber entrado.
  *
  * <p>Las direcciones de las informativas y de las legales salen de sus constantes
@@ -66,6 +58,11 @@ const RUTAS_PUBLICAS: readonly { readonly ruta: string; readonly nombre: string 
   // persona ve de verdad, y hasta que FEATURE_PUBLISHING se encienda no hay forma de
   // llegar al formulario en una suite sin backend.
   { ruta: '/publicar', nombre: 'publicar' },
+  // Desde el criterio 7 de HU-012 lo que se audita de `/mis-publicaciones` aqui es su
+  // invitacion a entrar, igual que en `/mis-favoritos`. **El panel cargado -las cifras, su
+  // fila de error y su boton de reintentar- no cabe en esta suite**, porque necesita sesion
+  // y datos: se audita en `e2e-completo/accesibilidad-del-panel.spec.ts`. Sin aquello, esta
+  // linea daba una cobertura que no era: axe recorria siete esqueletos con aria-hidden.
   { ruta: '/mis-publicaciones', nombre: 'mis publicaciones' },
   // HU-011. Sin sesion la lista no existe, asi que lo que axe recorre es su cuarta rama:
   // el encabezado y la invitacion a entrar del criterio 16. Es una pantalla que ve
@@ -75,12 +72,6 @@ const RUTAS_PUBLICAS: readonly { readonly ruta: string; readonly nombre: string 
   // que es justo cuando conviene que no este rota.
   { ruta: '/esta-ruta-no-existe', nombre: 'no encontrada' },
 ];
-
-/** Los dos modos, con el valor que espera la cookie que lee el servidor. */
-const MODOS = [
-  { modo: 'claro', cookie: 'light', atributo: 'claro' },
-  { modo: 'oscuro', cookie: 'dark', atributo: 'oscuro' },
-] as const;
 
 /**
  * Deja la pagina lista para auditar: fija el tema antes de navegar, para que el
@@ -100,20 +91,6 @@ async function abrirEn(page: Page, ruta: string, modo: (typeof MODOS)[number]): 
 
   await expect(page.locator('html')).toHaveAttribute('data-tema', modo.atributo);
   await expect(page.locator('h1')).toBeVisible();
-}
-
-/**
- * El informe que se lee cuando falla. Playwright imprime el mensaje de la
- * asercion, y una lista de objetos serializados no dice donde esta el problema:
- * lo que sirve es la regla y el selector del nodo que la incumple.
- */
-function informe(violaciones: Awaited<ReturnType<AxeBuilder['analyze']>>['violations']): string {
-  return violaciones
-    .map((violacion) => {
-      const nodos = violacion.nodes.map((nodo) => `      ${nodo.target.join(' ')}`).join('\n');
-      return `  ${violacion.id} [${violacion.impact ?? 'sin impacto'}]: ${violacion.help}\n${nodos}`;
-    })
-    .join('\n');
 }
 
 for (const modo of MODOS) {

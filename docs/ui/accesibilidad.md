@@ -51,6 +51,19 @@ páginas públicas y en los dos modos. Lo decidió ADR-0016. Un fallo de contras
 de foco rompe la construcción igual que un error de compilación, y ninguna regla
 de axe se desactiva para que la suite pase.
 
+**Las pantallas con sesión se auditan en la otra suite**, y esto no es un detalle
+de organización. Aquella corre sin backend, así que de una pantalla que necesita
+sesión solo puede recorrer su rama anónima: incluirla en su lista da una cobertura
+que parece real y no lo es. El primer caso fue el panel del vendedor —lo que se
+auditaba eran siete esqueletos con `aria-hidden`, no las cifras—, y desde HU-012 se
+audita lleno, y también con su fila de cifras rota, en
+`frontend/e2e-completo/accesibilidad-del-panel.spec.ts`.
+
+El nivel que se audita y el formato del informe viven en `frontend/e2e-comun/axe.ts`,
+compartidos por las dos: las suites no se mezclan, pero **el objetivo no puede ser
+dos cosas**. Con la lista de etiquetas escrita en cada sitio, subirlo en una y
+olvidarlo en la otra deja media auditoría en la versión vieja y las dos en verde.
+
 Dos límites que conviene no olvidar:
 
 1. **Un motor automático encuentra una parte de los problemas, no todos.** La

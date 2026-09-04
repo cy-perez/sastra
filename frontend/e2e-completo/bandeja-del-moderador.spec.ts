@@ -67,6 +67,24 @@ async function registrar(page: Page, correo: string, nombre = 'Ana María'): Pro
   await expect(page.getByRole('heading', { name: 'Revisa tu correo' })).toBeVisible();
 
   await page.goto(rutaRelativa(await esperarEnlace('/verificar-correo', yaVistos)));
+
+  // **Se espera a que la verificacion termine, no a su efecto en la cabecera.**
+  //
+  // Verificar no ocurre al servir la pagina: corre en `afterNextRender`, asi que la cadena
+  // es servir, hidratar, mandar el POST, recibir la sesion y repintar. Esperar el nombre de
+  // la cabecera le daba a todo eso los cinco segundos que Playwright pone por omision, y en
+  // integracion continua -con el backend cargado y veintidos registros seguidos- no siempre
+  // caben. El sintoma era «no se encontro el enlace Ana Maria N», que no distingue «tardo»
+  // de «fallo».
+  //
+  // Y se afirma el texto del titular en vez de su presencia: si la verificacion falla, la
+  // pagina lo dice con su propio h1 y el mensaje del fallo lo trae -«se esperaba Tu cuenta
+  // quedo activa, se recibio No pudimos confirmar tu correo»- en vez de callarselo.
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Tu cuenta quedó activa', {
+    timeout: 20_000,
+  });
+
+  // Ya con la sesion puesta, esto es inmediato.
   await expect(page.getByRole('link', { name: nombre })).toBeVisible();
 }
 

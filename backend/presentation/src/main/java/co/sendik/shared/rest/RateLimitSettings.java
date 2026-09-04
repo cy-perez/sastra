@@ -12,6 +12,7 @@ import java.time.Duration;
  * @param maxDeCredenciales peticiones por minuto en las rutas donde se escriben o
  *     se piden credenciales
  * @param maxDeSesion peticiones en las rutas que el navegador dispara solo
+ * @param maxDeCuenta peticiones en las rutas de cuenta que exigen sesion
  * @param maxDeOrigenes techo de origenes vivos en memoria
  */
 public record RateLimitSettings(
@@ -19,4 +20,6 @@ public record RateLimitSettings(
         Duration ventanaDeCredenciales,
         int maxDeSesion,
         Duration ventanaDeSesion,
+        int maxDeCuenta,
+        Duration ventanaDeCuenta,
         int maxDeOrigenes) {}

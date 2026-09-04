@@ -63,6 +63,8 @@ panel que los usa llega en Fase 4 (`docs/producto/alcance.md`).
 | Secuencia 360 | `SpinSequence` | Conjunto ordenado de tomas que alimenta el visor giratorio. |
 | Visor 360 | `SpinViewer` | Componente que simula el giro de la prenda. |
 | Favorito | `Favorite` | Publicación que alguien con cuenta guarda para volver a ella. Es **privado** y de quien lo marca: no lo ve el vendedor ni existe como cifra pública (RN-070). Se dice «favorito» y no «guardado» ni «lista de deseos», y el verbo en pantalla es guardar. |
+| Cifras del panel | `SellerListingsSummary` | Cuántas publicaciones tiene un vendedor en cada uno de los siete estados de RN-061 (HU-012). Están **los siete siempre**, y los que no tienen ninguna valen cero: omitir «0 en revisión» obliga a deducir por ausencia. Se dice «cifras» y no «estadísticas» ni «métricas», que prometen un análisis que esto no hace. Son de quien vende y de nadie más: no hay cifras de otro vendedor ni agregadas para Sendik. |
+| Cifra por estado | `StatusCount` | Una de esas siete: el estado y cuántas hay en él. Es el par que viaja en la respuesta, y viaja como lista de pares y no como un objeto con una clave por estado, para que un estado nuevo de RN-061 no cambie la forma del contrato. |
 
 Un producto es único: si el vendedor tiene dos iguales, son dos publicaciones.
 Esto simplifica todo el modelo y es fiel al negocio de segunda mano.

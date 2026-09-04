@@ -21,8 +21,8 @@ import { ListingStore } from '../application/listing.store';
 import {
   precioFormateado,
   tomasDelVendedor,
-  type CifraPorEstado,
   type Listing,
+  type StatusCount,
 } from '../../../shared/domain/listing';
 
 /**
@@ -128,9 +128,7 @@ export class MyListingsPage {
    * completa nada ni esconde lo que vale cero. Si algún día llegaran menos, se pintan los
    * que lleguen; inventar aquí los que faltan taparía que la respuesta viene incompleta.
    */
-  protected readonly porEstado = computed<readonly CifraPorEstado[]>(
-    () => this.cifras.data() ?? [],
-  );
+  protected readonly porEstado = computed<readonly StatusCount[]>(() => this.cifras.data() ?? []);
 
   /**
    * Lo que se anuncia sobre las cifras. Criterio 5.

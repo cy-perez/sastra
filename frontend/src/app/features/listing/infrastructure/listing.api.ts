@@ -4,7 +4,6 @@ import { filter, firstValueFrom, map, type Observable } from 'rxjs';
 
 import type {
   Category,
-  CifraPorEstado,
   Color,
   Condition,
   Listing,
@@ -12,6 +11,7 @@ import type {
   Money,
   Shipping,
   Size,
+  StatusCount,
 } from '../../../shared/domain/listing';
 import { esEstadoConocido } from '../../../shared/domain/listing';
 
@@ -245,7 +245,7 @@ export class ListingApi {
    * <p>Se descarta y no se traduce a «otros»: una cifra sin nombre no se puede explicar,
    * y sumarla a otra mentiría sobre las que sí se entienden.
    */
-  async resumen(): Promise<readonly CifraPorEstado[]> {
+  async resumen(): Promise<readonly StatusCount[]> {
     const respuesta = await firstValueFrom(
       this.http.get<SellerListingsSummaryDto>('users/me/listings/summary'),
     );

@@ -108,8 +108,25 @@ la autorizacion. Operativamente:
   quien lo pidio se le responde exactamente igual que si estuviera libre: lo
   contrario convertiria el formulario en un detector de cuentas.
 - El token de acceso ya emitido sigue siendo valido hasta quince minutos despues
-  del cierre: es un JWT y ADR-0003 acepta esa ventana. Las rutas que devuelven o
-  tocan datos responden 401 en cuanto la cuenta deja de existir.
+  del cierre: es un JWT y ADR-0003 acepta esa ventana. **Lo que la hace aceptable
+  no es su duracion sino lo que hay al otro lado.** El cierre anonimiza en la misma
+  transaccion, asi que cuando la ventana se abre ya no queda dato personal que ese
+  token pueda alcanzar; y revoca la familia de refresco entera, asi que la ventana
+  no se puede prolongar: se agota sola y no hay forma de renovarla. Quien la tiene,
+  ademas, es quien acaba de cerrar su propia cuenta.
+
+  Este archivo afirmo hasta el 4 de septiembre de 2026 que «las rutas que devuelven
+  o tocan datos responden 401 en cuanto la cuenta deja de existir», y **no es
+  cierto**: el decodificador valida firma, caducidad y emisor
+  -`JwtValidators.createDefaultWithIssuer`- y no consulta si la cuenta sigue viva.
+  Contradecia ademas la frase anterior, que dice lo correcto.
+
+  Se corrige el texto en vez de implementar lo que prometia, y el motivo importa:
+  cumplirlo costaria una consulta por cada peticion autenticada, de forma
+  permanente, para cerrar una ventana acotada que ya no expone ningun dato
+  personal; y acortarla es cambiar la duracion del token de acceso, que es ADR-0003
+  y pide su propia decision. **Ante una autoridad, describir el control que existe
+  es mas fuerte que prometer uno que no.**
 - La politica de tratamiento de datos es un enlace visible en el pie de pagina.
   Es obligatorio y es lo primero que revisa una autoridad.
 

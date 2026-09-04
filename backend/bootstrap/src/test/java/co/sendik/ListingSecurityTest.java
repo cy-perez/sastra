@@ -193,6 +193,7 @@ class ListingSecurityTest {
         mvc.perform(post("/api/v1/listings/" + CUALQUIERA + "/archival")).andExpect(status().isUnauthorized());
         mvc.perform(post("/api/v1/listings/" + CUALQUIERA + "/images")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/v1/users/me/listings")).andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/v1/users/me/listings/summary")).andExpect(status().isUnauthorized());
     }
 
     /**

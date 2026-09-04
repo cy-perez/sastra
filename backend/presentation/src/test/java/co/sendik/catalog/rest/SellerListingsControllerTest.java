@@ -10,13 +10,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import co.sendik.catalog.dto.ListSellerListingsQuery;
+import co.sendik.catalog.dto.SellerListingsSummary;
+import co.sendik.catalog.dto.SummarizeSellerListingsQuery;
+import co.sendik.catalog.model.ListingStatus;
 import co.sendik.catalog.model.SellerId;
 import co.sendik.catalog.usecase.ListSellerListingsUseCase;
+import co.sendik.catalog.usecase.SummarizeSellerListingsUseCase;
 import co.sendik.shared.file.FileKey;
 import co.sendik.shared.port.out.PublicFileStore;
 import co.sendik.shared.rest.ApiExceptionHandler;
 import java.net.URI;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,6 +42,7 @@ class SellerListingsControllerTest {
     private static final SellerId VENDEDOR = new SellerId(UUID.randomUUID());
 
     private final ListSellerListingsUseCase listar = mock(ListSellerListingsUseCase.class);
+    private final SummarizeSellerListingsUseCase resumir = mock(SummarizeSellerListingsUseCase.class);
     private final PublicFileStore almacen = mock(PublicFileStore.class);
 
     private MockMvc mvc;
@@ -63,7 +70,7 @@ class SellerListingsControllerTest {
     void montarElBorde() {
         when(almacen.direccionDe(any(FileKey.class))).thenReturn(URI.create("https://cdn.sendik.co/x.jpg"));
 
-        mvc = MockMvcBuilders.standaloneSetup(new SellerListingsController(listar, almacen))
+        mvc = MockMvcBuilders.standaloneSetup(new SellerListingsController(listar, resumir, almacen))
                 .setControllerAdvice(new ApiExceptionHandler())
                 .setCustomArgumentResolvers(new TokenDePrueba())
                 .build();
@@ -107,5 +114,50 @@ class SellerListingsControllerTest {
         mvc.perform(get("/api/v1/users/me/listings").param("size", "500"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("COMMON_VALIDATION_FAILED"));
+    }
+
+    // --- Las cifras del panel. HU-012 -------------------------------------
+
+    /**
+     * Los siete estados salen, en el orden de RN-061 y con sus ceros.
+     *
+     * <p>Se comprueba la posicion y no solo la presencia: la pantalla los pinta en ese
+     * orden y una respuesta que los barajara moveria las cifras de sitio entre dos cargas.
+     */
+    @Test
+    void deberia_devolver_los_siete_estados_en_orden_con_sus_ceros_HU_012() throws Exception {
+        when(resumir.execute(any())).thenReturn(new SellerListingsSummary(cifras(3, 0, 1, 0, 0, 0, 2)));
+
+        mvc.perform(get("/api/v1/users/me/listings/summary"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.counts.length()").value(7))
+                .andExpect(jsonPath("$.counts[0].status").value("DRAFT"))
+                .andExpect(jsonPath("$.counts[0].count").value(3))
+                .andExpect(jsonPath("$.counts[1].status").value("PENDING_REVIEW"))
+                .andExpect(jsonPath("$.counts[1].count").value(0))
+                .andExpect(jsonPath("$.counts[6].status").value("ARCHIVED"))
+                .andExpect(jsonPath("$.counts[6].count").value(2));
+    }
+
+    /** El vendedor sale del token y nunca de la peticion. */
+    @Test
+    void deberia_resumir_lo_del_vendedor_del_token_HU_012() throws Exception {
+        when(resumir.execute(any())).thenReturn(new SellerListingsSummary(cifras(0, 0, 0, 0, 0, 0, 0)));
+
+        mvc.perform(get("/api/v1/users/me/listings/summary")).andExpect(status().isOk());
+
+        ArgumentCaptor<SummarizeSellerListingsQuery> consulta =
+                ArgumentCaptor.forClass(SummarizeSellerListingsQuery.class);
+        verify(resumir).execute(consulta.capture());
+        assertThat(consulta.getValue().vendedor()).isEqualTo(VENDEDOR);
+    }
+
+    /** Los siete en el orden de la enumeracion, que es el que el caso de uso garantiza. */
+    private static Map<ListingStatus, Long> cifras(long... cuantas) {
+        Map<ListingStatus, Long> porEstado = new EnumMap<>(ListingStatus.class);
+        for (int posicion = 0; posicion < ListingStatus.values().length; posicion++) {
+            porEstado.put(ListingStatus.values()[posicion], cuantas[posicion]);
+        }
+        return porEstado;
     }
 }

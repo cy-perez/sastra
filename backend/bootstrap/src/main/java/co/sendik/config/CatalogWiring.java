@@ -32,6 +32,7 @@ import co.sendik.catalog.usecase.RemoveListingImageUseCase;
 import co.sendik.catalog.usecase.ReopenListingUseCase;
 import co.sendik.catalog.usecase.ResumeListingUseCase;
 import co.sendik.catalog.usecase.SubmitListingForReviewUseCase;
+import co.sendik.catalog.usecase.SummarizeSellerListingsUseCase;
 import co.sendik.catalog.usecase.TakeDownListingUseCase;
 import co.sendik.catalog.usecase.UpdateListingContentUseCase;
 import co.sendik.catalog.usecase.UploadListingImageUseCase;
@@ -209,6 +210,12 @@ public class CatalogWiring {
     @Bean
     ListSellerListingsUseCase listSellerListingsUseCase(ListingRepository publicaciones) {
         return new ListSellerListingsUseCase(publicaciones);
+    }
+
+    /** Las cifras del panel del vendedor. HU-012. */
+    @Bean
+    SummarizeSellerListingsUseCase summarizeSellerListingsUseCase(ListingRepository publicaciones) {
+        return new SummarizeSellerListingsUseCase(publicaciones);
     }
 
     /** La cola del moderador. HU-008. */

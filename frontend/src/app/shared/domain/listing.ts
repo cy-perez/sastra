@@ -41,8 +41,14 @@ export const ESTADOS = [
 /** Los siete estados del glosario. */
 export type ListingStatus = (typeof ESTADOS)[number];
 
-/** Cuántas publicaciones hay en un estado. HU-012. */
-export interface CifraPorEstado {
+/**
+ * Cuántas publicaciones hay en un estado. HU-012.
+ *
+ * <p>Mismo nombre que el tipo de la API, y en inglés como todos los de este archivo: los
+ * tipos del dominio se nombran en inglés y las funciones en español, que es la convención
+ * de aquí. Nació como `CifraPorEstado` y era el único que se salía.
+ */
+export interface StatusCount {
   readonly status: ListingStatus;
   readonly count: number;
 }

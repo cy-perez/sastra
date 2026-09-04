@@ -244,9 +244,36 @@ original en lugar de ejecutar de nuevo.
 
 ## Límites de tasa
 
-Se aplican por dirección IP y por usuario. Respuesta 429 con cabecera
-`Retry-After`. Los endpoints de autenticación tienen límites más estrictos que
-el resto.
+Respuesta **429 con cabecera `Retry-After`**, en segundos y nunca cero: un
+`Retry-After: 0` invita a reintentar de inmediato.
+
+No hay un límite general. Hay **tres grupos, y cada uno cuenta con una clave
+distinta**, porque quien pide no se identifica igual en unos y otros:
+
+| Rutas | Se cuenta por | Qué son |
+|---|---|---|
+| Credenciales de `/api/v1/auth`: ingreso, registro, verificación y recuperación | IP hasheada | Actos humanos y poco frecuentes |
+| El resto de `/api/v1/auth`: refresco y cierre | IP hasheada | Los dispara el navegador solo |
+| `/api/v1/users/**` | **Sujeto del token** | Lecturas y escrituras de una cuenta |
+
+En `auth` se cuenta por origen porque **en el registro todavía no hay cuenta** a
+la que atribuir la petición. En `users` sí la hay, y contar por IP ahí dejaría sin
+servicio a una oficina o a un operador móvil entero por lo que hiciera una sola
+persona; el sujeto viene de un token firmado y no se puede elegir.
+
+**Dentro de cada grupo, cada ruta lleva su propia cuenta.** Agotar el límite
+entrando mal no puede dejar sin registrarse a quien comparte salida.
+
+**Todo lo demás no tiene tope.** Un cliente no debe esperar un 429 fuera de esas
+tres familias.
+
+Y conviene decir qué incluye ese «lo demás», porque no es solo lectura pública:
+`/api/v1/listings` tiene rutas **de escritura y con sesión** —crear, editar, subir
+tomas, decidir— que hoy quedan fuera del interceptor. Cubrirlas es una decisión
+pendiente, no una que ya se haya tomado en contra.
+
+Los números son configuración y no contrato: viven en
+`docs/operacion/configuracion.md`, bajo `RATE_LIMIT_*`.
 
 ## Documentación
 

@@ -540,7 +540,18 @@ describe('PublishPage', () => {
     campo.dispatchEvent(new Event('change'));
     await bombear(fixture);
 
-    // La respuesta de la subida trae el producto del servidor, sin título todavía.
+    // **La subida espera su turno.** Subir reescribe el agregado igual que el guardado, y
+    // las dos peticiones a la vez leen la misma versión: el bloqueo optimista del criterio
+    // 34 tumba a una. Antes salían juntas y por ahí se colaba el 409.
+    backend.expectNone(
+      (llamada) => llamada.method === 'POST' && llamada.url === `${API}/listings/${ID}/images`,
+    );
+
+    // El guardado vuelve con lo que el servidor tenía, que todavía no es el título.
+    guardado.flush(borrador(sinTitulo));
+    await bombear(fixture);
+
+    // Y ahora sí sale la subida, con el producto del servidor otra vez sin título.
     backend
       .expectOne(
         (llamada) => llamada.method === 'POST' && llamada.url === `${API}/listings/${ID}/images`,
@@ -567,6 +578,150 @@ describe('PublishPage', () => {
     await asentar(fixture);
 
     expect(fixture.nativeElement.querySelector('[role="alert"]')).not.toBeNull();
+  });
+
+  // --- Que dos escrituras no se pisen (criterio 34) -----------------------
+
+  /**
+   * Escribe en una medida del producto, que no es un control del formulario.
+   *
+   * <p>Sin bombear después: las pruebas de aquí abajo necesitan escribir varias seguidas
+   * dentro de la misma ventana del debounce, que es justo la tanda que antes se partía en
+   * una petición por tecla.
+   */
+  const escribirMedida = (
+    fixture: { nativeElement: HTMLElement },
+    indice: number,
+    valor: string,
+  ) => {
+    const grupo = [...fixture.nativeElement.querySelectorAll('fieldset')].find((candidato) =>
+      candidato.querySelector('legend')?.textContent?.includes('Medidas'),
+    );
+    const campo = [...(grupo?.querySelectorAll('input') ?? [])][indice];
+    if (campo === undefined) {
+      throw new Error(`La categoría de la prueba no declara la medida ${indice}`);
+    }
+    campo.value = valor;
+    campo.dispatchEvent(new Event('input'));
+  };
+
+  /**
+   * Las medidas viven en una señal y no en el formulario, así que no pasaban por
+   * `valueChanges`: llamaban al guardado en el acto, **una petición por tecla**. Llenar
+   * las cuatro medidas que declara una categoría eran cuatro guardados pegados sobre el
+   * mismo borrador, y el bloqueo optimista del criterio 34 tumbaba a alguno.
+   */
+  it('manda un solo guardado aunque se escriban varias medidas seguidas', async () => {
+    const { fixture, backend } = await montar(borrador());
+
+    // Las dos seguidas y **sin bombear entre medio**: es la tanda que antes salía partida
+    // en dos peticiones.
+    escribirMedida(fixture, 0, '52');
+    escribirMedida(fixture, 1, '41');
+    await bombear(fixture);
+
+    const peticion = backend.expectOne(
+      (llamada) => llamada.method === 'PATCH' && llamada.url === `${API}/listings/${ID}`,
+    );
+
+    // Una sola, y llevándose las dos: coalescen, no se pierde ninguna.
+    expect(Object.values(peticion.request.body.measurements)).toEqual(
+      expect.arrayContaining([52, 41]),
+    );
+
+    peticion.flush(borrador());
+    await asentar(fixture);
+  });
+
+  /**
+   * Los controles solo vuelven a limpio cuando aterriza la respuesta, así que seguir
+   * escribiendo mientras un guardado va en camino disparaba el siguiente encima. Los dos
+   * leían la misma versión y el servidor tumbaba al segundo con un 409.
+   */
+  it('no manda un guardado encima de otro que sigue en vuelo', async () => {
+    const { fixture, backend } = await montar(borrador());
+
+    await escribir(fixture, '#titulo', 'Camisa de lino');
+    const primero = backend.expectOne(
+      (llamada) => llamada.method === 'PATCH' && llamada.url === `${API}/listings/${ID}`,
+    );
+
+    await escribir(fixture, '#descripcion', 'Usada dos veces, sin manchas.');
+    backend.expectNone(
+      (llamada) => llamada.method === 'PATCH' && llamada.url === `${API}/listings/${ID}`,
+    );
+
+    primero.flush(borrador());
+    await bombear(fixture);
+
+    // Al volver el primero sale el segundo, con lo que se escribió después.
+    const segundo = backend.expectOne(
+      (llamada) => llamada.method === 'PATCH' && llamada.url === `${API}/listings/${ID}`,
+    );
+    expect(segundo.request.body.description).toBe('Usada dos veces, sin manchas.');
+    segundo.flush(borrador());
+    await asentar(fixture);
+  });
+
+  /**
+   * El precio y el envío tienen cada uno su ruta desde el criterio 28, y cuando se tocan
+   * los dos en la misma tanda salían **a la vez**. Las dos reescriben la misma
+   * publicación: era un 409 asegurado, y el que caía se perdía sin decir nada.
+   */
+  it('manda el precio y el envío uno después del otro, no a la vez', async () => {
+    const publicada = borrador({ status: 'PUBLISHED', images: conOchoTomas() });
+    const { fixture, backend } = await montar(publicada);
+
+    const precio = fixture.nativeElement.querySelector('#precio') as HTMLInputElement;
+    precio.value = '120000';
+    precio.dispatchEvent(new Event('input'));
+    const peso = fixture.nativeElement.querySelector(
+      '[formcontrolname="weightGrams"]',
+    ) as HTMLInputElement;
+    peso.value = '900';
+    peso.dispatchEvent(new Event('input'));
+    await bombear(fixture);
+
+    const primera = backend.expectOne(
+      (llamada) => llamada.method === 'PATCH' && llamada.url === `${API}/listings/${ID}/price`,
+    );
+    backend.expectNone(
+      (llamada) => llamada.method === 'PATCH' && llamada.url === `${API}/listings/${ID}/shipping`,
+    );
+
+    primera.flush(borrador({ status: 'PUBLISHED', images: conOchoTomas() }));
+    await bombear(fixture);
+
+    backend
+      .expectOne(
+        (llamada) => llamada.method === 'PATCH' && llamada.url === `${API}/listings/${ID}/shipping`,
+      )
+      .flush(borrador({ status: 'PUBLISHED', images: conOchoTomas() }));
+    await asentar(fixture);
+  });
+
+  /**
+   * La pantalla solo miraba el PATCH general, y el precio y el envío tienen la suya. Sobre
+   * una publicación viva —que es justo cuando se usan esas dos rutas— un guardado perdido
+   * no dejaba ni un mensaje: ni error, ni «Guardando», ni «Guardado».
+   */
+  it('avisa cuando falla el guardado del envío por su ruta propia', async () => {
+    const { fixture, backend } = await montar(
+      borrador({ status: 'PUBLISHED', images: conOchoTomas() }),
+    );
+
+    await escribir(fixture, '[formcontrolname="weightGrams"]', '900');
+
+    backend
+      .expectOne(
+        (llamada) => llamada.method === 'PATCH' && llamada.url === `${API}/listings/${ID}/shipping`,
+      )
+      .flush({ code: 'CATALOG_LISTING_INVALID_STATE' }, { status: 409, statusText: 'Conflict' });
+    await asentar(fixture);
+
+    expect(
+      fixture.nativeElement.querySelector('.publicar__acciones [role="alert"]'),
+    ).not.toBeNull();
   });
 
   // --- Criterio 28: el precio y el envío no pasan por moderación ----------

@@ -35,6 +35,48 @@ export class ListingStore {
   private readonly sesion = inject(SessionStore);
 
   /**
+   * Las escrituras sobre una publicación salen **de una en una**.
+   *
+   * <p>Toda escritura del agregado guarda con `WHERE version = :version` (criterio 34),
+   * así que dos peticiones que se solapen leen la misma versión y el servidor tumba a la
+   * segunda con un 409. Eso es lo correcto entre dos personas —el vendedor edita mientras
+   * el moderador decide— pero **entre dos peticiones de la misma pantalla no hay conflicto
+   * que resolver**: las dos son de quien está escribiendo, y una debería esperar a la otra
+   * en vez de perderse.
+   *
+   * <p>Se solapaban por cuatro caminos: el guardado automático saliendo otra vez antes de
+   * que volviera el anterior, el precio y el envío mandándose a la vez por sus rutas
+   * propias, una toma subiendo encima de un guardado —subir también reescribe el
+   * agregado— y las medidas, que mandaban una petición por tecla.
+   *
+   * <p>La cola no se rompe con un fallo: si una escritura falla, la siguiente sale igual.
+   * Encadenar sobre la promesa rechazada dejaría la pantalla muda desde el primer error.
+   *
+   * <p>Es una sola cola para todo el store y no una por publicación, que sería lo exacto.
+   * No hace falta: se edita una publicación a la vez —la página abre la de la ruta— y una
+   * cola por identificador habría que ir vaciándola para que no creciera sola. Lo que no
+   * cubre, y no debe cubrir, es la escritura de **otra persona**: las decisiones del
+   * moderador van por su propio store y ahí el 409 sí es un conflicto de verdad.
+   */
+  private cola: Promise<void> = Promise.resolve();
+
+  /**
+   * Pone una escritura a la cola y devuelve su resultado.
+   *
+   * <p>Se envuelve **solo la llamada de red**, no lo que la prepara: normalizar una foto
+   * y guardarla en el borrador no tocan la publicación, y meterlos aquí retrasaría la
+   * barra de avance sin ganar nada.
+   */
+  private enCola<T>(escritura: () => Promise<T>): Promise<T> {
+    const turno = this.cola.then(escritura);
+    this.cola = turno.then(
+      () => undefined,
+      () => undefined,
+    );
+    return turno;
+  }
+
+  /**
    * Cuál publicación está abierta.
    *
    * Una señal y no un parámetro de la consulta: la página la fija al resolver la ruta, y
@@ -88,21 +130,21 @@ export class ListingStore {
 
   readonly update = injectMutation(() => ({
     mutationFn: (cambio: { id: string; datos: DatosDelProducto }) =>
-      this.api.editar(cambio.id, cambio.datos),
+      this.enCola(() => this.api.editar(cambio.id, cambio.datos)),
     retry: false,
     onSuccess: (publicacion: Listing) => this.refrescar(publicacion),
   }));
 
   readonly changePrice = injectMutation(() => ({
     mutationFn: (cambio: { id: string; precio: Money }) =>
-      this.api.cambiarPrecio(cambio.id, cambio.precio),
+      this.enCola(() => this.api.cambiarPrecio(cambio.id, cambio.precio)),
     retry: false,
     onSuccess: (publicacion: Listing) => this.refrescar(publicacion),
   }));
 
   readonly changeShipping = injectMutation(() => ({
     mutationFn: (cambio: { id: string; envio: Shipping }) =>
-      this.api.cambiarEnvio(cambio.id, cambio.envio),
+      this.enCola(() => this.api.cambiarEnvio(cambio.id, cambio.envio)),
     retry: false,
     onSuccess: (publicacion: Listing) => this.refrescar(publicacion),
   }));
@@ -151,11 +193,8 @@ export class ListingStore {
       this.avance.set({ posicion: toma.posicion, fraccion: 0 });
 
       try {
-        const publicacion = await this.subirConAvance(
-          toma.id,
-          toma.posicion,
-          normalizada,
-          toma.desdeGaleria,
+        const publicacion = await this.enCola(() =>
+          this.subirConAvance(toma.id, toma.posicion, normalizada, toma.desdeGaleria),
         );
 
         // Subió: desde aquí la fuente es el servidor y la copia local sobra.
@@ -196,44 +235,44 @@ export class ListingStore {
 
   readonly removeImage = injectMutation(() => ({
     mutationFn: (imagen: { id: string; imagenId: string }) =>
-      this.api.borrarImagen(imagen.id, imagen.imagenId),
+      this.enCola(() => this.api.borrarImagen(imagen.id, imagen.imagenId)),
     retry: false,
     onSuccess: (publicacion: Listing) => this.refrescar(publicacion),
   }));
 
   readonly submit = injectMutation(() => ({
-    mutationFn: (id: string) => this.api.enviarARevision(id),
+    mutationFn: (id: string) => this.enCola(() => this.api.enviarARevision(id)),
     retry: false,
     onSuccess: (publicacion: Listing) => this.refrescar(publicacion),
   }));
 
   readonly withdraw = injectMutation(() => ({
-    mutationFn: (id: string) => this.api.retirarDeRevision(id),
+    mutationFn: (id: string) => this.enCola(() => this.api.retirarDeRevision(id)),
     retry: false,
     onSuccess: (publicacion: Listing) => this.refrescar(publicacion),
   }));
 
   readonly reopen = injectMutation(() => ({
-    mutationFn: (id: string) => this.api.retomar(id),
+    mutationFn: (id: string) => this.enCola(() => this.api.retomar(id)),
     retry: false,
     onSuccess: (publicacion: Listing) => this.refrescar(publicacion),
   }));
 
   readonly pause = injectMutation(() => ({
-    mutationFn: (id: string) => this.api.pausar(id),
+    mutationFn: (id: string) => this.enCola(() => this.api.pausar(id)),
     retry: false,
     onSuccess: (publicacion: Listing) => this.refrescar(publicacion),
   }));
 
   readonly resume = injectMutation(() => ({
-    mutationFn: (id: string) => this.api.reanudar(id),
+    mutationFn: (id: string) => this.enCola(() => this.api.reanudar(id)),
     retry: false,
     onSuccess: (publicacion: Listing) => this.refrescar(publicacion),
   }));
 
   /** Irreversible: la publicación no vuelve y sus fotos se borran. */
   readonly archive = injectMutation(() => ({
-    mutationFn: (id: string) => this.api.archivar(id),
+    mutationFn: (id: string) => this.enCola(() => this.api.archivar(id)),
     retry: false,
     onSuccess: (publicacion: Listing) => this.refrescar(publicacion),
   }));

@@ -368,16 +368,20 @@
       <!--
         El guardado fallaba en silencio: la pantalla promete que no se pierde nada, así
         que el error tiene que verse.
+
+        Y se miran **las tres rutas**, no solo el PATCH general: el precio y el envío
+        tienen la suya desde el criterio 28 y no estaban aquí, así que sobre una
+        publicación viva —que es cuando se usan— un guardado perdido no dejaba rastro.
       -->
-      @if (guardado.isError()) {
+      @if (falloDelGuardado() !== null) {
         <p class="publicar__error tipo-cuerpo" role="alert">
-          {{ claveDeError(guardado.error()) | transloco }}
+          {{ claveDeError(falloDelGuardado()) | transloco }}
         </p>
       } @else {
         <p class="tipo-secundario" aria-hidden="true">
-          @if (guardado.isPending()) {
+          @if (guardando()) {
             {{ 'listing.form.saving' | transloco }}
-          } @else if (guardado.isSuccess()) {
+          } @else if (guardadoAlDia()) {
             {{ 'listing.form.saved' | transloco }}
           }
         </p>

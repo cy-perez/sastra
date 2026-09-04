@@ -382,11 +382,17 @@ export async function publicarYEnviarARevision(
   await envio.getByLabel('Largo').fill('30');
   await envio.getByLabel('Ancho').fill('20');
 
-  // El guardado es automático y sale 1,5 s después de dejar de escribir. Hay que verlo
-  // aterrizar antes de subir nada: una subida y un guardado en vuelo a la vez escriben
-  // sobre la misma publicación, y el bloqueo optimista del criterio 34 tumba a uno de
-  // los dos. Cuando el que cae es el guardado, el envío a revisión se rechaza después
-  // con `CATALOG_LISTING_INCOMPLETE` y el motivo real queda tres pantallas atrás.
+  // El guardado es automático y sale 1,5 s después de dejar de escribir, y hay que verlo
+  // aterrizar antes de seguir: con el guardado todavía sin salir, «Enviar a revisión»
+  // manda la publicación sin el envío y el servidor la rechaza con
+  // `CATALOG_LISTING_INCOMPLETE`, tres pantallas más allá del motivo real.
+  //
+  // **Ya no se espera por lo que decía antes.** Este comentario sostenía que una subida y
+  // un guardado en vuelo a la vez se tumbaban entre sí por el bloqueo optimista del
+  // criterio 34, y era cierto: la pantalla mandaba escrituras solapadas y alguna volvía
+  // con un 409. Eso se arregló donde estaba —las escrituras sobre una publicación salen
+  // de una en una desde `ListingStore`—, así que lo que queda aquí es solo la
+  // sincronización con el debounce, no un rodeo para esquivar un defecto.
   //
   // Se espera la respuesta que ya trae el envío —lo último que se escribe— y no el
   // cartel de «Guardado», que puede seguir puesto de un guardado anterior.
@@ -399,8 +405,8 @@ export async function publicarYEnviarARevision(
   //
   // Y se espera **el alto**, no un envío cualquiera: escribiendo de campo en campo el
   // guardado puede salir a medias -con peso, largo y ancho ya puestos- y esa respuesta
-  // también traería `shipping`. Darla por buena dejaría el alto sin confirmar, que es
-  // justo el guardado que puede chocar con las subidas.
+  // también traería `shipping`. Darla por buena dejaría el alto sin confirmar, y el alto
+  // es lo que hace que la caja esté completa.
   // **Un guardado que falla también cierra la espera.** Esperando solo el exito, un
   // guardado rechazado -por el bloqueo optimista, por un 401, por lo que sea- no produce
   // ninguna respuesta que casar y esto se queda aguardando algo que ya no va a pasar: se

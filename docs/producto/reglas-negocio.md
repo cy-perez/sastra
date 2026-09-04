@@ -24,7 +24,11 @@ Cada regla tiene identificador. Úsalo en el código y en las pruebas:
   cuenta como reutilización que un token vuelva a llegar dentro de los segundos
   siguientes a su rotación mientras el que salió de ella siga sin usarse: eso es
   una carrera entre dos pestañas del mismo navegador, que comparten la cookie. En
-  ese caso se rechaza la petición pero no se revoca ni se avisa (ADR-0014).
+  ese caso se rechaza la petición pero no se revoca ni se avisa (ADR-0014), **y se
+  responde con un código propio** para que el cliente sepa que su sesión sigue
+  viva y no la cierre (ADR-0030). Sin ese código las dos situaciones eran
+  indistinguibles desde fuera y una carrera echaba a la persona: la regla evitaba
+  el aviso falso y la revocación, no el cierre de sesión.
 - **RN-008** Solo mayores de 18 años. Se declara en el registro y se confirma en
   la verificación de identidad.
 - **RN-009** El usuario puede cerrar su cuenta en cualquier momento. Si tiene

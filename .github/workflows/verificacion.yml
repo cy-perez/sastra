@@ -216,8 +216,18 @@ jobs:
 
       # El registro del backend incluido: cuando una de estas pruebas falla, casi
       # siempre la causa esta ahi y no en la captura del navegador.
-      - name: Publicar informes si algo falla
-        if: failure()
+      #
+      # **Siempre, y no solo cuando el trabajo falla.** Una prueba intermitente falla y
+      # pasa al reintentar, asi que el trabajo termina en verde y con `if: failure()` sus
+      # trazas no se subian: quedaba constancia de que hubo un intermitente y ninguna
+      # forma de saber por que. Paso con el guardado del envio y costo una corrida entera
+      # descubrir que no habia nada que mirar.
+      #
+      # Playwright ya graba la traza del primer reintento -`trace: 'on-first-retry'`- asi
+      # que el material existe; lo unico que faltaba era subirlo. En una corrida limpia el
+      # artefacto es el registro del backend y poco mas.
+      - name: Publicar informes
+        if: always()
         uses: actions/upload-artifact@v7
         with:
           name: informes-extremo-a-extremo

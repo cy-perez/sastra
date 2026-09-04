@@ -115,6 +115,16 @@ sendik:
       # dispara mas veces sin que nadie haga nada raro. Por eso es mas holgado.
       max-requests: ${RATE_LIMIT_SESSION_MAX:60}
       window: ${RATE_LIMIT_SESSION_WINDOW:PT1M}
+    account:
+      # Las rutas de cuenta que exigen sesion, contadas por sujeto del token y no
+      # por origen: ahi si hay a quien atribuir la peticion, y contar por IP
+      # castigaria a una oficina entera por lo que haga uno.
+      #
+      # Holgado a proposito. Son lecturas normales de la aplicacion -el panel del
+      # vendedor pide dos por cada guardado- y una persona trabajando no se acerca
+      # a esto. Lo que corta es el guion que repite una lectura sin freno.
+      max-requests: ${RATE_LIMIT_ACCOUNT_MAX:120}
+      window: ${RATE_LIMIT_ACCOUNT_WINDOW:PT1M}
     # Techo de origenes en memoria: sin el, variar la IP a voluntad haria crecer
     # el mapa hasta agotarla y la defensa seria la via de ataque.
     max-tracked-keys: ${RATE_LIMIT_MAX_KEYS:50000}

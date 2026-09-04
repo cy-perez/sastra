@@ -38,6 +38,8 @@ correo, ningún NIT, ningún porcentaje de comisión.
 | `RATE_LIMIT_CREDENTIALS_WINDOW` | `PT1M` | no, `PT1M` por omisión |
 | `RATE_LIMIT_SESSION_MAX` | `60` | no, `60` por omisión |
 | `RATE_LIMIT_SESSION_WINDOW` | `PT1M` | no, `PT1M` por omisión |
+| `RATE_LIMIT_ACCOUNT_MAX` | `120` | no, `120` por omisión |
+| `RATE_LIMIT_ACCOUNT_WINDOW` | `PT1M` | no, `PT1M` por omisión |
 | `RATE_LIMIT_MAX_KEYS` | `50000` | no, `50000` por omisión |
 | `APP_BASE_URL` | `https://sendik.co` | sí |
 | `APP_API_BASE_URL` | `https://api.sendik.co/api/v1` | sí |
@@ -119,18 +121,32 @@ sesión. Subirla a minutos le regala ese mismo tiempo a un token robado para
 reproducirse sin levantar la alarma; ponerla en `PT0S` devuelve el comportamiento
 anterior a ADR-0014, con sus falsos avisos de incidente.
 
-Las variables `RATE_LIMIT_*` limitan cuántas peticiones acepta cada origen en las
-rutas de cuenta. RN-006 protege una cuenta; esto protege el endpoint, que es otra
+Las variables `RATE_LIMIT_*` limitan cuántas peticiones se aceptan en las rutas de
+cuenta. RN-006 protege una cuenta; esto protege el endpoint, que es otra
 cosa: sin ello, cinco intentos por cuenta no impiden probar una contraseña común
 contra todas las cuentas que se quiera, ni usar el registro como emisor de correo
 gratuito contra la cuota de Resend, ni mantener bloqueada indefinidamente la
 cuenta de alguien cuyo correo se conozca.
 
-Son dos grupos porque las rutas no se parecen. `CREDENTIALS` cubre ingreso,
+Son **tres** grupos porque las rutas no se parecen. `CREDENTIALS` cubre ingreso,
 registro, verificación y recuperación, que son actos humanos y poco frecuentes.
 `SESSION` cubre refresco y cierre, que los dispara el navegador solo y con varias
 pestañas abiertas se repiten sin que nadie haga nada raro. Un límite único
 tendría que ser el más flojo de los dos.
+
+`ACCOUNT` es el tercero y llegó después: cubre `/api/v1/users`, las rutas que
+exigen sesión. Hasta entonces **ninguna ruta autenticada tenía tope**, así que
+cualquier cuenta registrada podía repetir sin freno una lectura que ejecuta un
+agregado. Va holgado —120 por minuto— porque son lecturas normales de la
+aplicación: el panel del vendedor pide dos por cada guardado y una persona
+trabajando no se acerca a esa cifra. Lo que corta es el guion que repite.
+
+**Y se cuenta por sujeto del token, no por origen.** En `auth` se cuenta por IP
+porque en el registro todavía no hay cuenta a la que atribuir la petición; aquí sí
+la hay. Contar por IP en estas rutas dejaría sin servicio a una oficina o a un
+operador móvil entero por lo que hiciera una sola persona —la misma razón por la
+que cada ruta lleva su cuenta aparte— y además le regalaría cupo nuevo a quien
+cambie de salida.
 
 **La cuenta es de cada instancia.** Con dos réplicas detrás de un balanceador,
 cada una permite el máximo por separado y el límite real se duplica. Es aceptable

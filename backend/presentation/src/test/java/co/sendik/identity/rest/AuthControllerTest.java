@@ -114,6 +114,7 @@ class AuthControllerTest {
                         // El limite tiene sus propias pruebas en RateLimiterTest.
                         new RateLimiter(1000, Duration.ofMinutes(1), 1000),
                         new RateLimiter(1000, Duration.ofMinutes(1), 1000),
+                        new RateLimiter(1000, Duration.ofMinutes(1), 1000),
                         new ClientIpHasher(),
                         RELOJ))
                 .build();
@@ -539,6 +540,7 @@ class AuthControllerTest {
                         new ClientIpHasher()))
                 .setControllerAdvice(new ApiExceptionHandler())
                 .addInterceptors(new RateLimitInterceptor(
+                        new RateLimiter(1, Duration.ofMinutes(1), 100),
                         new RateLimiter(1, Duration.ofMinutes(1), 100),
                         new RateLimiter(1, Duration.ofMinutes(1), 100),
                         new ClientIpHasher(),

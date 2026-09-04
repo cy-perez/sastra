@@ -26,6 +26,8 @@ public class RateLimitWiring {
                 limites.credentials().window(),
                 limites.session().maxRequests(),
                 limites.session().window(),
+                limites.account().maxRequests(),
+                limites.account().window(),
                 limites.maxTrackedKeys());
     }
 }

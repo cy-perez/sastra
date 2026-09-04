@@ -19,6 +19,9 @@ import org.springframework.validation.annotation.Validated;
  * @param credentials rutas donde se escriben o se piden credenciales: ingreso,
  *     registro, verificacion y recuperacion
  * @param session el resto de {@code /api/v1/auth}: refresco y cierre
+ * @param account las rutas de {@code /api/v1/users} que exigen sesion. Se cuentan
+ *     por sujeto del token y no por origen: ahi si hay cuenta a la que atribuir la
+ *     peticion, y contar por IP castigaria a una oficina entera por lo que haga uno
  * @param maxTrackedKeys techo de origenes vivos en memoria, comun a los dos
  *     grupos. Sin techo, quien varie su IP a voluntad haria crecer el mapa hasta
  *     agotar la memoria y la defensa seria la via de ataque
@@ -28,6 +31,7 @@ import org.springframework.validation.annotation.Validated;
 public record RateLimitProperties(
         @NotNull @Valid Grupo credentials,
         @NotNull @Valid Grupo session,
+        @NotNull @Valid Grupo account,
         @Min(1) int maxTrackedKeys) {
 
     /**

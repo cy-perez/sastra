@@ -3,10 +3,13 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   ElementRef,
   inject,
   Injector,
   signal,
+  untracked,
+  viewChild,
   viewChildren,
 } from '@angular/core';
 import { NgOptimizedImage } from '@angular/common';
@@ -68,6 +71,26 @@ export class MyListingsPage {
 
   private readonly botonDeConfirmar = viewChildren<ElementRef<HTMLButtonElement>>('confirmarBoton');
 
+  /**
+   * La zona de las cifras, que es adonde vuelve el foco tras un reintento.
+   *
+   * <p>Es el contenedor de los cuatro estados y no el {@code <dl>}: **existe siempre**. Un
+   * destino que cambia de rama con el estado a veces todavía no está en el DOM cuando se le
+   * pide el foco, y entonces el foco no va a ninguna parte.
+   */
+  private readonly zonaDeCifras = viewChild<ElementRef<HTMLElement>>('zonaDeCifras');
+
+  /**
+   * Se pulsó «Reintentar» y el foco quedó sin dueño.
+   *
+   * <p>Lo recoge el efecto del constructor cuando la petición termina. Por señal y efecto y
+   * no encadenando al {@code refetch()}: la promesa se resuelve fuera del ciclo de
+   * detección, y un {@code afterNextRender} pedido desde ahí no llega a ejecutarse. El
+   * efecto corre dentro del ciclo, que es donde esta pantalla ya pide el foco para la
+   * confirmación de archivar.
+   */
+  private readonly focoHuerfano = signal(false);
+
   protected readonly publicaciones = computed<readonly Listing[]>(() => this.consulta.data() ?? []);
 
   protected readonly vacio = computed(
@@ -88,16 +111,37 @@ export class MyListingsPage {
   );
 
   /**
-   * Lo que se anuncia mientras las cifras cargan. Criterio 5.
+   * Lo que se anuncia sobre las cifras. Criterio 5.
    *
    * <p>Por una región viva permanente y no por un {@code role="status"} que aparece con el
    * texto ya dentro: esa forma no se anuncia de manera fiable, porque la región tiene que
    * existir antes de que su contenido cambie. Es la misma lección de la pantalla de
    * publicar.
+   *
+   * <p><strong>Cubre los tres desenlaces y no solo la carga inicial.</strong> Con solo
+   * {@code isPending()}, pulsar «Reintentar» no producía una sola palabra: tras un error el
+   * estado sigue siendo `error` mientras se reintenta, terminar bien vaciaba la región -y
+   * vaciar no anuncia- y volver a fallar reusaba el mismo nodo con el mismo texto, que
+   * tampoco se re-anuncia. El error viaja por aquí y no por un {@code role="alert"} aparte
+   * para no decirlo dos veces.
+   *
+   * <p>Se mira {@code isFetching()} y no {@code isPending()}, y esa diferencia importa:
+   * sin sesión la consulta se queda pendiente para siempre -nace deshabilitada- y con
+   * {@code isPending()} la región anunciaba «Cargando las cifras» indefinidamente a quien
+   * no ha entrado. Un dato falso permanente es justo lo que el criterio 5 quiere evitar.
    */
-  protected readonly anuncio = computed<string | null>(() =>
-    this.cifras.isPending() ? 'listing.mine.summary.loading' : null,
-  );
+  protected readonly anuncio = computed<string | null>(() => {
+    if (this.cifras.isFetching()) {
+      return 'listing.mine.summary.loading';
+    }
+    if (this.cifras.isError()) {
+      return ListingStore.claveDeError(this.cifras.error());
+    }
+    if (this.cifras.isSuccess()) {
+      return 'listing.mine.summary.ready';
+    }
+    return null;
+  });
 
   /**
    * La cifra con el separador de miles del idioma activo.
@@ -112,11 +156,35 @@ export class MyListingsPage {
   /**
    * Vuelve a pedir las cifras.
    *
-   * <p>No encadena dos peticiones si se pulsa dos veces: el botón se deshabilita mientras
-   * hay una en vuelo, que es el caso borde que pide la historia.
+   * <p><strong>No lleva guardia contra la doble pulsación, y conviene decir por qué.</strong>
+   * La consulta falló sin llegar a tener datos, así que al reintentar TanStack la devuelve a
+   * {@code pending} —limpia el error— y la pantalla pinta el esqueleto: **el botón deja de
+   * existir en cuanto se pulsa** y no hay segunda pulsación que evitar. Deshabilitarlo sería
+   * describir en el marcado algo que el marcado ya resuelve quitándolo de en medio, y
+   * {@code disabled} sobre el elemento enfocado tiene además su propio problema.
+   *
+   * <p>Lo que sí hace falta es <strong>recoger el foco</strong>. Al destruirse el botón, el
+   * foco cae al {@code body} y quien navega con teclado se queda al principio del documento.
+   * Cuando la petición termina se lleva a lo que haya quedado: las cifras si llegaron, y el
+   * botón otra vez si volvió a fallar. Mientras tanto la región viva dice que está cargando.
    */
   protected reintentarCifras(): void {
+    this.focoHuerfano.set(true);
     void this.cifras.refetch();
+  }
+
+  constructor() {
+    // Sincroniza el foco -que es del navegador, no del marco- con el final del reintento.
+    // Es el único uso de `effect` que frontend/CLAUDE.md admite.
+    effect(() => {
+      if (!this.focoHuerfano() || this.cifras.isFetching()) {
+        return;
+      }
+      untracked(() => {
+        this.focoHuerfano.set(false);
+        this.enfocar(() => this.zonaDeCifras());
+      });
+    });
   }
 
   /** El precio ya formateado, en la configuración regional activa. */
@@ -173,7 +241,7 @@ export class MyListingsPage {
    * <p>Se resuelve tras pintar porque antes el elemento no existe: los dos casos cambian
    * de rama del {@code @if} justo al pulsarlos.
    */
-  private enfocar(donde: () => ElementRef<HTMLButtonElement> | undefined): void {
+  private enfocar(donde: () => ElementRef<HTMLElement> | undefined): void {
     afterNextRender(() => donde()?.nativeElement.focus(), { injector: this.inyector });
   }
 

@@ -1071,6 +1071,8 @@
       "untitled": "Publicación sin título",
       "summary": {
         "loading": "Cargando las cifras",
+        "ready": "Cifras al día",
+        "empty": "No hay cifras que mostrar.",
         "retry": "Reintentar"
       }
     },

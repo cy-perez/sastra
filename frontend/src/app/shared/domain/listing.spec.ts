@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import {
   categoriaPorId,
+  ESTADOS,
+  esEstadoConocido,
   posicionesAPintar,
   precioFormateado,
   tomaEn,
@@ -100,6 +102,40 @@ describe('el vocabulario de la publicación', () => {
     /** Una familia no es publicable: no puede salir de la búsqueda por identificador. */
     it('no devuelve una familia', () => {
       expect(categoriaPorId(arbol, 'familia-tops')).toBeNull();
+    });
+  });
+
+  /**
+   * Los siete estados de RN-061, y el guardia que decide si un texto es uno de ellos.
+   *
+   * <p>Se prueba aquí, sin TestBed, porque es dominio puro. Lo usa el adaptador para
+   * descartar en la frontera un estado que el servidor añada antes de que esta pantalla lo
+   * conozca (HU-012), y probarlo solo de rebote desde una prueba de componente con HTTP
+   * simulado lo dejaba en el nivel equivocado.
+   */
+  describe('los estados de la publicación', () => {
+    it('son los siete del glosario, en el orden del ciclo de vida', () => {
+      expect(ESTADOS).toEqual([
+        'DRAFT',
+        'PENDING_REVIEW',
+        'PUBLISHED',
+        'REJECTED',
+        'PAUSED',
+        'SOLD',
+        'ARCHIVED',
+      ]);
+    });
+
+    it('reconoce cada uno de los siete', () => {
+      expect(ESTADOS.every((estado) => esEstadoConocido(estado))).toBe(true);
+    });
+
+    it('no reconoce lo que no está en RN-061', () => {
+      expect(esEstadoConocido('EN_LA_LUNA')).toBe(false);
+      // Ni una variante de uno que sí existe: se compara entero, no por prefijo.
+      expect(esEstadoConocido('draft')).toBe(false);
+      expect(esEstadoConocido('DRAFT_2')).toBe(false);
+      expect(esEstadoConocido('')).toBe(false);
     });
   });
 });

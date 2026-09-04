@@ -1071,6 +1071,8 @@
       "untitled": "Untitled listing",
       "summary": {
         "loading": "Loading the figures",
+        "ready": "Figures up to date",
+        "empty": "No figures to show.",
         "retry": "Try again"
       }
     },

@@ -146,6 +146,10 @@ describe('MyListingsPage', () => {
       numero: cifra.querySelector('dd')?.textContent?.trim() ?? '',
     }));
 
+  /** La cifra de un estado, por su nombre visible. */
+  const cifraDe = (fixture: { nativeElement: HTMLElement }, estado: string) =>
+    cifrasEnPantalla(fixture).find((cifra) => cifra.estado === estado)?.numero;
+
   const boton = (fixture: { nativeElement: HTMLElement }, texto: string) =>
     [...fixture.nativeElement.querySelectorAll('button')].find((candidato) =>
       candidato.textContent?.includes(texto),
@@ -197,7 +201,13 @@ describe('MyListingsPage', () => {
 
     expect(cifrasEnPantalla(fixture)).toHaveLength(7);
     expect(cifrasEnPantalla(fixture).every((cifra) => cifra.numero === '0')).toBe(true);
-    expect(fixture.nativeElement.textContent).toContain('Todavía no has publicado nada');
+
+    // Y **debajo** el vacio que la lista ya tenia, que es el unico: el criterio subraya que
+    // no se pinten dos mensajes de vacio distintos.
+    const texto = fixture.nativeElement.textContent ?? '';
+    expect(texto).toContain('Todavía no has publicado nada');
+    expect(texto).not.toContain('No hay cifras que mostrar');
+    expect(texto.indexOf('Borrador')).toBeLessThan(texto.indexOf('Todavía no has publicado'));
   });
 
   /**
@@ -229,15 +239,27 @@ describe('MyListingsPage', () => {
     );
     await bombear(fixture);
 
-    expect(
-      fixture.nativeElement.querySelector('.mias__cifras-error [role="alert"]'),
-    ).not.toBeNull();
+    // El mensaje se lee, no se cuenta un nodo: con una clave inexistente Transloco pinta la
+    // clave cruda y una asercion sobre el elemento pasaria igual.
+    expect(fixture.nativeElement.querySelector('[role="status"]')?.textContent?.trim()).not.toBe(
+      '',
+    );
+    expect(fixture.nativeElement.textContent).not.toContain('errors.');
     expect(fixture.nativeElement.textContent).toContain('Camisa de lino');
     expect(boton(fixture, 'Reintentar')).toBeDefined();
   });
 
-  /** Doble pulsación en reintentar: una petición, no dos encadenadas. */
-  it('no encadena dos peticiones si se pulsa reintentar dos veces', async () => {
+  /**
+   * Doble pulsación en reintentar: no puede haberla.
+   *
+   * <p>Se afirma <strong>lo que la pantalla hace</strong> y no cuántas peticiones salen.
+   * Contarlas daba una prueba que no podía fallar: TanStack engancha un segundo
+   * {@code refetch()} al que está en vuelo, así que la cifra era la misma con y sin defensa
+   * en la pantalla. Lo que de verdad impide la segunda pulsación es que el botón deja de
+   * existir: la consulta falló sin datos, y al reintentar vuelve a `pending` y se pinta el
+   * esqueleto.
+   */
+  it('quita el botón de reintentar mientras la petición está en vuelo', async () => {
     const { fixture, backend, peticionDeCifras } = await montar([publicacion()], null);
 
     peticionDeCifras.flush(
@@ -245,11 +267,15 @@ describe('MyListingsPage', () => {
       { status: 500, statusText: 'Server Error' },
     );
     await bombear(fixture);
+    expect(boton(fixture, 'Reintentar')).toBeDefined();
 
     boton(fixture, 'Reintentar')?.click();
     await bombear(fixture);
-    boton(fixture, 'Reintentar')?.click();
-    await bombear(fixture);
+
+    expect(boton(fixture, 'Reintentar')).toBeUndefined();
+    expect(fixture.nativeElement.querySelector('[role="status"]')?.textContent).toContain(
+      'Cargando las cifras',
+    );
 
     backend
       .expectOne(
@@ -263,14 +289,138 @@ describe('MyListingsPage', () => {
   });
 
   /**
+   * El foco no se pierde al reintentar.
+   *
+   * <p>El botón se destruye al pulsarlo, así que el foco cae al {@code body}: sin recogerlo,
+   * quien navega con teclado se queda al principio del documento. Es la misma lección que
+   * esta pantalla ya tenía escrita para la confirmación de archivar.
+   */
+  it('lleva el foco a las cifras cuando el reintento sale bien', async () => {
+    const { fixture, backend, peticionDeCifras } = await montar([publicacion()], null);
+
+    peticionDeCifras.flush(
+      { code: 'COMMON_UNEXPECTED' },
+      { status: 500, statusText: 'Server Error' },
+    );
+    await bombear(fixture);
+
+    boton(fixture, 'Reintentar')?.click();
+    await bombear(fixture);
+
+    backend
+      .expectOne(
+        (peticion) =>
+          peticion.method === 'GET' && peticion.url === `${API}/users/me/listings/summary`,
+      )
+      .flush(resumen({ DRAFT: 1 }));
+    await asentar(fixture);
+    await asentar(fixture);
+
+    expect(document.activeElement).toBe(fixture.nativeElement.querySelector('.mias__cifras-zona'));
+  });
+
+  it('devuelve el foco al botón si el reintento vuelve a fallar', async () => {
+    const { fixture, backend, peticionDeCifras } = await montar([publicacion()], null);
+
+    peticionDeCifras.flush(
+      { code: 'COMMON_UNEXPECTED' },
+      { status: 500, statusText: 'Server Error' },
+    );
+    await bombear(fixture);
+
+    boton(fixture, 'Reintentar')?.click();
+    await bombear(fixture);
+
+    backend
+      .expectOne(
+        (peticion) =>
+          peticion.method === 'GET' && peticion.url === `${API}/users/me/listings/summary`,
+      )
+      .flush({ code: 'COMMON_UNEXPECTED' }, { status: 500, statusText: 'Server Error' });
+    await asentar(fixture);
+    await asentar(fixture);
+
+    // Vuelve a la zona, que sigue conteniendo el error y su boton: el foco queda donde la
+    // persona estaba trabajando, no al principio del documento.
+    expect(document.activeElement).toBe(fixture.nativeElement.querySelector('.mias__cifras-zona'));
+  });
+
+  /**
+   * Las cifras grandes llevan el separador del idioma activo.
+   *
+   * <p>Sin esta prueba, cambiar `cifraFormateada()` por `{{ cifra.count }}` en la plantilla
+   * dejaba toda la suite en verde: la cifra mas grande que se usaba era 12, que se formatea
+   * igual de las dos maneras.
+   */
+  it('formatea las cifras grandes con el separador del idioma', async () => {
+    // Cinco digitos y no cuatro: en espanol CLDR no agrupa hasta 10.000, asi que con 1240
+    // `Intl` y `String` dan lo mismo y la prueba no distinguiria nada.
+    const { fixture } = await montar([publicacion()], resumen({ ARCHIVED: 12400 }));
+
+    const archivadas = cifrasEnPantalla(fixture).find((cifra) => cifra.estado === 'Archivada');
+    expect(archivadas?.numero).toBe('12.400');
+    expect(archivadas?.numero).not.toBe('12400');
+  });
+
+  /**
+   * La cifra y la lista pueden discrepar: son dos lecturas y entre medias cabe una decisión
+   * del moderador. Se acepta y se resuelve sola en la siguiente carga.
+   *
+   * <p>La prueba existe para que nadie añada mañana una reconciliación o un aviso de
+   * inconsistencia: la pantalla pinta las dos cosas y no bloquea nada.
+   */
+  it('pinta la lista y las cifras aunque no cuadren entre sí', async () => {
+    const { fixture } = await montar(
+      [publicacion({ status: 'PUBLISHED' })],
+      resumen({ PUBLISHED: 0 }),
+    );
+
+    expect(fixture.nativeElement.textContent).toContain('Camisa de lino');
+    expect(cifrasEnPantalla(fixture).find((cifra) => cifra.estado === 'Publicada')?.numero).toBe(
+      '0',
+    );
+    expect(fixture.nativeElement.textContent).not.toContain('no cuadra');
+  });
+
+  /** El tercer estado de la fila, que faltaba: ni carga, ni error, ni una fila muda. */
+  it('dice que no hay cifras cuando el resumen viene sin ninguna', async () => {
+    const { fixture } = await montar([publicacion()], { counts: [] });
+
+    expect(cifrasEnPantalla(fixture)).toHaveLength(0);
+    expect(fixture.nativeElement.textContent).toContain('No hay cifras que mostrar');
+  });
+
+  /**
+   * Dos entradas del mismo estado no pueden romper la fila.
+   *
+   * <p>La plantilla recorre las cifras con `track cifra.status`, asi que dos `DRAFT` le dan
+   * dos claves iguales y Angular tumba el bloque entero. El filtro de estados desconocidos
+   * no protege de esto: un repetido es un estado conocido.
+   */
+  it('se queda con la primera cuando el servidor repite un estado', async () => {
+    const { fixture } = await montar([publicacion()], {
+      counts: [
+        { status: 'DRAFT', count: 2 },
+        { status: 'DRAFT', count: 9 },
+      ],
+    });
+
+    expect(cifrasEnPantalla(fixture)).toEqual([{ estado: 'Borrador', numero: '2' }]);
+  });
+
+  /**
    * Criterio 4: archivar actualiza las cifras sin recargar.
    *
    * <p>Sale gratis y no por casualidad: la clave del resumen cuelga de la de la lista, así
    * que la invalidación que ya hacía cada mutación arrastra las dos. Esta prueba es lo que
    * impide que alguien las separe sin darse cuenta.
    */
-  it('vuelve a pedir las cifras después de archivar', async () => {
-    const { fixture, backend } = await montar([publicacion({ status: 'PUBLISHED' })]);
+  it('actualiza las cifras después de archivar, sin recargar', async () => {
+    const { fixture, backend } = await montar(
+      [publicacion({ status: 'PUBLISHED' })],
+      resumen({ PUBLISHED: 1 }),
+    );
+    expect(cifraDe(fixture, 'Publicada')).toBe('1');
 
     boton(fixture, 'Archivar')?.click();
     await bombear(fixture);
@@ -282,10 +432,20 @@ describe('MyListingsPage', () => {
       .flush(publicacion({ status: 'ARCHIVED' }));
     await bombear(fixture);
 
-    backend.expectOne(
-      (peticion) =>
-        peticion.method === 'GET' && peticion.url === `${API}/users/me/listings/summary`,
-    );
+    // Lo que el criterio 4 promete es el numero nuevo, no que salga una peticion: con
+    // `staleTime: 0` la peticion es condicion necesaria y no suficiente.
+    backend
+      .match((peticion) => peticion.url === `${API}/users/me/listings/summary`)
+      .forEach((peticion) => peticion.flush(resumen({ PUBLISHED: 0, ARCHIVED: 1 })));
+    backend
+      .match((peticion) => peticion.url === `${API}/users/me/listings`)
+      .forEach((peticion) =>
+        peticion.flush({ items: [publicacion({ status: 'ARCHIVED' })], page: 0, size: 20 }),
+      );
+    await asentar(fixture);
+
+    expect(cifraDe(fixture, 'Publicada')).toBe('0');
+    expect(cifraDe(fixture, 'Archivada')).toBe('1');
   });
 
   /**
@@ -348,9 +508,15 @@ describe('MyListingsPage', () => {
       .forEach((peticion) =>
         peticion.flush({ items: [publicacion({ status: 'PAUSED' })], page: 0, size: 20 }),
       );
-    await bombear(fixture);
+    // Las cifras se refrescan con la lista, que es lo que el criterio 4 pide de las tres
+    // mutaciones y no solo de archivar.
+    backend
+      .match((llamada) => llamada.url === `${API}/users/me/listings/summary`)
+      .forEach((peticion) => peticion.flush(resumen({ PAUSED: 1 })));
+    await asentar(fixture);
 
     expect(fixture.nativeElement.textContent).toContain('Pausada');
+    expect(cifraDe(fixture, 'Pausada')).toBe('1');
   });
 
   it('reactiva una pausada por su ruta', async () => {

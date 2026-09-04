@@ -222,6 +222,17 @@
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.02em;
 }
+/* La cifra de un panel: un numero que se lee de un vistazo y no es dinero.
+   Va aqui y no en la pantalla que la usa porque tipografia.css es la unica fuente de
+   verdad del tipo: con `font-variant-numeric` suelto en un componente acaban siendo dos
+   los sitios donde se decide como se dibujan las cifras. */
+.tipo-cifra {
+  font-family: var(--fuente-texto);
+  font-size: var(--texto-lg);
+  font-weight: var(--peso-fuerte);
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
 /* Cifras alineadas a la derecha en tablas, con ancho fijo por columna */
 .celda-cifra {
   font-family: var(--fuente-texto);

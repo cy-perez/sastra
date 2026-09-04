@@ -458,6 +458,9 @@ class CasosDeUsoDelCatalogoTest {
         void deberia_rechazar_un_resumen_al_que_le_falte_un_estado() {
             assertThatThrownBy(() -> new SellerListingsSummary(Map.of(ListingStatus.DRAFT, 1L)))
                     .isInstanceOf(IllegalArgumentException.class);
+            // Y lo dice igual ante un nulo, en vez de dejar salir un NPE: el resto del
+            // codigo usa IllegalArgumentException para «no puedes existir asi».
+            assertThatThrownBy(() -> new SellerListingsSummary(null)).isInstanceOf(IllegalArgumentException.class);
         }
 
         @Test

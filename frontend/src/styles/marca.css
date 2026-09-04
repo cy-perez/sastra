@@ -72,6 +72,12 @@
      de LECTURA y es mas largo. */
   --medida-formulario: 480px;
 
+  /* Ancho minimo de una cifra del panel del vendedor (HU-012).
+     En `ch` y no en pixeles a proposito: la caja tiene que crecer con el texto. Con una
+     medida fija, «revision» -la palabra mas larga de los siete estados- se sale de su caja
+     a 360px con el texto al 200%, que es lo que WCAG 1.4.4 y 1.4.10 prohiben. */
+  --medida-cifra: 8ch;
+
   /* La silueta y la cuadricula del asistente de captura (HU-003, criterio 2).
 
      Dos tonos y NO los del tema, porque no se dibujan sobre el tema: se dibujan

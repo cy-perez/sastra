@@ -205,10 +205,18 @@ test.describe('catálogo público', () => {
     // cuentan: acaba de enviar una y no tiene ninguna de lo demas. Los siete estados estan,
     // y **el cero se dice** en vez de desaparecer, que es el criterio 2 visto de punta a
     // punta: la cifra la calcula el servidor y la pinta la pantalla.
-    const cifras = page.locator('.mias__cifra');
-    await expect(cifras).toHaveCount(7);
-    await expect(cifras.filter({ hasText: 'En revisión' }).locator('dd')).toHaveText('1');
-    await expect(cifras.filter({ hasText: 'Vendida' }).locator('dd')).toHaveText('0');
+    // Por rol y no por clase de CSS: esta suite existe para ver el contrato entre las dos
+    // mitades, y amarrarla a un nombre BEM la rompe con un cambio que no toca ese contrato.
+    // `dt` y `dd` son `term` y `definition`, y van emparejados por posicion.
+    const nombres = page.getByRole('term');
+    const numeros = page.getByRole('definition');
+    await expect(nombres).toHaveCount(7);
+
+    const cifraDe = async (estado: string) =>
+      numeros.nth((await nombres.allInnerTexts()).indexOf(estado)).innerText();
+
+    expect(await cifraDe('En revisión')).toBe('1');
+    expect(await cifraDe('Vendida')).toBe('0');
 
     // Lo mismo: lo que espera revisión se recoge, o se queda en la cola para siempre.
     await retirarDeRevision(page, id);

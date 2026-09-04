@@ -250,9 +250,19 @@ export class ListingApi {
       this.http.get<SellerListingsSummaryDto>('users/me/listings/summary'),
     );
 
-    return respuesta.counts
-      .filter((cifra) => esEstadoConocido(cifra.status))
-      .map((cifra) => ({ status: cifra.status as ListingStatus, count: cifra.count }));
+    // Por `Map` y no por `filter` y `map`: ademas de descartar lo que no se conoce, quita
+    // los repetidos. La pantalla recorre esto con `track cifra.status`, y dos entradas del
+    // mismo estado -un `GROUP BY` mal escrito, una union futura- le dan dos claves iguales
+    // y rompen el bloque entero. El filtro de estados no protege de eso: un repetido es un
+    // estado conocido. Gana el primero, que es el orden en que el servidor los mando.
+    const porEstado = new Map<ListingStatus, number>();
+    for (const cifra of respuesta.counts ?? []) {
+      if (esEstadoConocido(cifra.status) && !porEstado.has(cifra.status)) {
+        porEstado.set(cifra.status, cifra.count);
+      }
+    }
+
+    return [...porEstado].map(([status, count]) => ({ status, count }));
   }
 }
 

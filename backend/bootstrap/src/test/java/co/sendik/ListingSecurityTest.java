@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -61,11 +62,14 @@ class ListingSecurityTest {
 
     private final AccessTokenIssuer emisor;
 
+    private final JdbcClient jdbc;
+
     private MockMvc mvc;
 
-    ListingSecurityTest(WebApplicationContext contexto, AccessTokenIssuer emisor) {
+    ListingSecurityTest(WebApplicationContext contexto, AccessTokenIssuer emisor, JdbcClient jdbc) {
         this.contexto = contexto;
         this.emisor = emisor;
+        this.jdbc = jdbc;
     }
 
     @BeforeEach
@@ -246,6 +250,91 @@ class ListingSecurityTest {
     @Test
     void deberia_responder_404_y_no_401_al_leer_sin_token_criterio_33() throws Exception {
         mvc.perform(get("/api/v1/listings/" + CUALQUIERA)).andExpect(status().isNotFound());
+    }
+
+    // --- HU-012: las cifras son de quien pregunta -----------------------------
+
+    /**
+     * El resumen de una cuenta no puede traer nada de otra, con la cadena entera montada.
+     *
+     * <p>Esto solo se puede comprobar aqui. El repositorio contra PostgreSQL demuestra que el
+     * SQL filtra por vendedor, y la prueba de borde demuestra que el sujeto del token llega a
+     * la consulta, pero **nunca se tocan**: entre las dos queda el hueco de que el borde pida
+     * un vendedor y la base responda de otro. Con token real, filtros reales y dos cuentas
+     * con filas de verdad, el mismo endpoint tiene que dar dos respuestas distintas.
+     */
+    @Test
+    void deberia_resumir_solo_lo_de_la_cuenta_del_token_HU_012() throws Exception {
+        UUID conPublicaciones = nuevaCuenta();
+        UUID sinNinguna = nuevaCuenta();
+        dejarUnBorradorDe(conPublicaciones);
+        dejarUnBorradorDe(conPublicaciones);
+
+        mvc.perform(get("/api/v1/users/me/listings/summary")
+                        .header("Authorization", "Bearer " + tokenDe(conPublicaciones)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.counts[0].status").value("DRAFT"))
+                .andExpect(jsonPath("$.counts[0].count").value(2));
+
+        // La misma ruta, otra cuenta: los siete en cero y ni rastro de las dos de arriba.
+        mvc.perform(get("/api/v1/users/me/listings/summary").header("Authorization", "Bearer " + tokenDe(sinNinguna)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.counts.length()").value(7))
+                .andExpect(jsonPath("$.counts[0].count").value(0));
+    }
+
+    private UUID nuevaCuenta() {
+        UUID id = UUID.randomUUID();
+        jdbc.sql("""
+                        INSERT INTO users (id, email, display_name, birth_date, status)
+                        VALUES (:id, :correo, 'Vendedora de prueba', DATE '1990-01-01', 'ACTIVE')
+                        """).param("id", id).param("correo", id + "@ejemplo.co").update();
+        return id;
+    }
+
+    /**
+     * Un borrador de esa persona, insertado directo.
+     *
+     * <p>Por SQL y no por el agregado: lo que esta prueba mira es la cadena -token, filtros,
+     * consulta- y no la validez del dominio, que ya cubren las suyas. Construir el agregado
+     * aqui traeria quince importaciones de {@code catalog.model} a una prueba de seguridad.
+     */
+    private void dejarUnBorradorDe(UUID vendedor) {
+        UUID producto = UUID.randomUUID();
+
+        jdbc.sql("""
+                        INSERT INTO products (id, seller_id, category_id, title, description,
+                                              condition, size_system, size_value, measurements,
+                                              color, price, weight_grams, length_cm, width_cm,
+                                              height_cm)
+                        SELECT :producto, :vendedor, c.id, 'Camisa de lino', 'Usada dos veces.',
+                               'LIKE_NEW', 'ALPHA', 'M', '{}'::jsonb, 'BEIGE', 185000, 600, 30, 20, 10
+                        FROM categories c LIMIT 1
+                        """).param("producto", producto).param("vendedor", vendedor).update();
+
+        jdbc.sql("INSERT INTO listings (id, product_id, status) VALUES (:id, :producto, 'DRAFT')")
+                .param("id", UUID.randomUUID())
+                .param("producto", producto)
+                .update();
+    }
+
+    /** Un token real de una cuenta concreta, para que el sujeto sea el de sus publicaciones. */
+    private String tokenDe(UUID cuenta) {
+        User titular = User.rehidratar(
+                new UserId(cuenta),
+                new Email(cuenta + "@ejemplo.co"),
+                new DisplayName("Vendedora de prueba"),
+                new BirthDate(LocalDate.of(1990, 1, 1)),
+                null,
+                null,
+                null,
+                UserLocale.ES,
+                UserStatus.ACTIVE,
+                Instant.now(),
+                java.util.Set.of(),
+                Instant.now());
+
+        return emisor.emitir(titular, TokenFamilyId.nueva(), Instant.now()).value();
     }
 
     /** Un token real con los roles que se le digan, firmado con la clave del entorno. */

@@ -24,6 +24,9 @@ import java.util.Map;
 public record SellerListingsSummary(Map<ListingStatus, Long> porEstado) {
 
     public SellerListingsSummary {
+        if (porEstado == null) {
+            throw new IllegalArgumentException("El resumen necesita el conteo por estado");
+        }
         if (porEstado.size() != ListingStatus.values().length) {
             throw new IllegalArgumentException(
                     "El resumen lleva los " + ListingStatus.values().length + " estados: " + porEstado.keySet());

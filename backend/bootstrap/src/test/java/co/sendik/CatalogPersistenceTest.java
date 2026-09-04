@@ -314,11 +314,49 @@ class CatalogPersistenceTest {
 
         var suyas = publicaciones.contarPorEstadoDelVendedor(una);
 
-        assertThat(suyas).containsEntry(ListingStatus.DRAFT, 2L).containsEntry(ListingStatus.PUBLISHED, 1L);
+        assertThat(suyas).hasSize(2).containsEntry(ListingStatus.DRAFT, 2L).containsEntry(ListingStatus.PUBLISHED, 1L);
         assertThat(publicaciones.contarPorEstadoDelVendedor(otra))
                 .as("las de una no pueden contarse en el panel de la otra")
                 .hasSize(1)
                 .containsEntry(ListingStatus.DRAFT, 1L);
+    }
+
+    /**
+     * Los seis estados alcanzables hacen el viaje de ida y vuelta por la columna de texto.
+     *
+     * <p><strong>Es el unico sitio donde se puede comprobar.</strong>
+     * {@code ListingStatus.valueOf(fila.getString("status"))} convierte texto a enumeracion, y
+     * eso depende de que los literales de la restriccion {@code listings_status_valid} sean
+     * exactamente los de {@link ListingStatus}. Son dos archivos que nadie ata, y con solo
+     * {@code DRAFT} y {@code PUBLISHED} recorridos, cinco de los siete nunca hacian ese viaje:
+     * una migracion que escribiera otro literal reventaria en produccion con todo en verde.
+     *
+     * <p>{@code SOLD} queda fuera porque no hay forma de llegar: lo provoca el pago aprobado
+     * (RN-035) y eso es Fase 3. El dia que exista, esta prueba lo pide.
+     */
+    @Test
+    void deberia_contar_los_seis_estados_alcanzables_HU_012() {
+        SellerId vendedora = new SellerId(nuevoUsuario());
+        ModeratorId moderadora = new ModeratorId(nuevoUsuario());
+
+        publicaciones.guardar(borradorDeVendedor(vendedora));
+        publicaciones.guardar(conTomas(borradorDeVendedor(vendedora), 8).enviarARevision(AHORA));
+        publicadaDe(vendedora, AHORA);
+        publicaciones.guardar(conTomas(borradorDeVendedor(vendedora), 8)
+                .enviarARevision(AHORA)
+                .rechazar(moderadora, ListingRejectionReason.PHOTOS_UNUSABLE, "Las tomas salen movidas.", AHORA));
+        publicaciones.guardar(publicadaDe(vendedora, AHORA).pausar(AHORA));
+        publicaciones.guardar(borradorDeVendedor(vendedora).archivar(AHORA));
+
+        assertThat(publicaciones.contarPorEstadoDelVendedor(vendedora))
+                .containsEntry(ListingStatus.DRAFT, 1L)
+                .containsEntry(ListingStatus.PENDING_REVIEW, 1L)
+                .containsEntry(ListingStatus.PUBLISHED, 1L)
+                .containsEntry(ListingStatus.REJECTED, 1L)
+                .containsEntry(ListingStatus.PAUSED, 1L)
+                .containsEntry(ListingStatus.ARCHIVED, 1L)
+                .as("SOLD no es alcanzable hasta que haya pagos")
+                .doesNotContainKey(ListingStatus.SOLD);
     }
 
     /**

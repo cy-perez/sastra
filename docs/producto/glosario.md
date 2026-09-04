@@ -56,6 +56,7 @@ panel que los usa llega en Fase 4 (`docs/producto/alcance.md`).
 | Grupo de medida | `MeasurementGroup` | Qué medidas son obligatorias para una categoría. Una camisa, un zapato y un bolso no se miden igual, y sin agrupar habría que pedirlas todas o ninguna. Lista cerrada en HU-007. |
 | Color | `Color` | Color declarado, de lista cerrada. Es filtro de catálogo, y en texto libre un filtro no filtra. |
 | Motivo de rechazo de publicación | `ListingRejectionReason` | Lista cerrada con la que el moderador rechaza una publicación (RN-022). **No es** el `RejectionReason` de la verificación de vendedor: son dos listas distintas para dos decisiones distintas. |
+| Acción de moderación | `ModerationAction` | Lista cerrada de lo que un moderador le hace a una publicación: aprobar, rechazar y retirar. Es lo que se anota en la bitácora, y RN-045 dice que ninguna se pierde. **No es** el estado de la publicación: el estado dice cómo quedó, la acción dice qué se hizo y por quién. |
 | Toma | `Shot` | Una fotografía individual del conjunto de captura. |
 | Tomas canónicas | `CanonicalShots` | Frontal, lateral derecha, lateral izquierda y posterior. |
 | Asistente de captura | `CaptureWizard` | Pantalla que guía al vendedor por las ocho tomas de la secuencia, con silueta, cuadrícula y nivel, y recorta cada una a 3:4 antes de subirla. No aplica a tecnología sellada, que son cuatro tomas del empaque (RN-065). |

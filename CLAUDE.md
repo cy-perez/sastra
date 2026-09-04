@@ -57,7 +57,7 @@ Baseline del proyecto (agosto de 2026):
 | Componente | Versión |
 |---|---|
 | Java | 25 (Temurin) |
-| Spring Boot | 4.1.0 |
+| Spring Boot | 4.1.1 |
 | Gradle | 9.x |
 | PostgreSQL | 17 |
 | Node | 22 LTS |

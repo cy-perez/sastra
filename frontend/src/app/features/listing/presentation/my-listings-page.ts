@@ -3,6 +3,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   effect,
   ElementRef,
   inject,
@@ -45,6 +46,7 @@ import {
 export class MyListingsPage {
   private readonly store = inject(ListingStore);
   private readonly inyector = inject(Injector);
+  private readonly destruccion = inject(DestroyRef);
 
   protected readonly consulta = this.store.mine;
   protected readonly cifras = this.store.summary;
@@ -174,6 +176,12 @@ export class MyListingsPage {
   }
 
   constructor() {
+    // Las cifras solo se piden mientras esta pantalla esta a la vista. El store es de raíz,
+    // así que sin esto la consulta vivía en todas: `/publicar` pedía un resumen que no usa,
+    // y cada guardado suyo lo volvía a pedir por la invalidación de prefijo.
+    this.store.mirarLasCifras(true);
+    this.destruccion.onDestroy(() => this.store.mirarLasCifras(false));
+
     // Sincroniza el foco -que es del navegador, no del marco- con el final del reintento.
     // Es el único uso de `effect` que frontend/CLAUDE.md admite.
     effect(() => {

@@ -118,6 +118,27 @@ export class ListingStore {
   }));
 
   /**
+   * Si hay una pantalla mirando las cifras.
+   *
+   * <p>Este store es de raíz, así que sus consultas nacen en cuanto alguien lo inyecta —y lo
+   * inyectan todas las pantallas de publicación—. Sin esta señal, `/publicar` pedía el
+   * resumen que no usa, y **cada guardado suyo lo volvía a pedir**, porque la invalidación de
+   * la lista casa por prefijo y arrastra al resumen con ella. Una petición por guardado que
+   * nadie mira, en la pantalla que más guarda.
+   */
+  private readonly panelALaVista = signal(false);
+
+  /**
+   * La pantalla del panel dice cuándo está a la vista y cuándo deja de estarlo.
+   *
+   * <p>Mismo trato que {@link abrir} le da a la publicación abierta: la pantalla es quien
+   * sabe, y el store no adivina.
+   */
+  mirarLasCifras(mirando: boolean): void {
+    this.panelALaVista.set(mirando);
+  }
+
+  /**
    * Las cifras del panel del vendedor. HU-012.
    *
    * Consulta aparte de {@link mine} y no un conteo sobre ella: la lista viene paginada y
@@ -125,13 +146,17 @@ export class ListingStore {
    *
    * Se refresca sola con cada mutación, porque su clave cuelga de la de la lista y
    * TanStack invalida por prefijo. Ver `queryKeys.summary`.
+   *
+   * Las dos señales se leen **aquí y no dentro de la función**, por lo mismo que la de
+   * sesión: TanStack invoca las opciones fuera del ámbito reactivo, y leerlas dentro dejaría
+   * la consulta deshabilitada para siempre.
    */
   readonly summary = injectQuery(() => ({
     queryKey: queryKeys.summary,
     queryFn: () => this.api.resumen(),
     staleTime: 0,
     retry: false,
-    enabled: this.sesion.isAuthenticated(),
+    enabled: this.panelALaVista() && this.sesion.isAuthenticated(),
   }));
 
   /** La página fija cuál se está viendo al resolver la ruta. */

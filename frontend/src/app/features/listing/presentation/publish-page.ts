@@ -16,7 +16,7 @@ import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslocoPipe } from '@jsverse/transloco';
-import { debounceTime } from 'rxjs';
+import { debounceTime, merge, Subject } from 'rxjs';
 
 import { APP_CONFIG } from '../../../core/config/app-config';
 import { CategoriesStore } from '../application/categories.store';
@@ -184,6 +184,16 @@ export class PublishPage {
    */
   private readonly medidasTocadas = signal(false);
 
+  /**
+   * Lo que anuncia que se escribió una medida.
+   *
+   * <p>Las medidas viven en una señal y no en el formulario, así que no pasan por
+   * {@code valueChanges}: sin esto no tenían debounce y **mandaban una petición por
+   * tecla**. Escribir «52» eran dos guardados pegados sobre la misma publicación, y el
+   * bloqueo optimista del criterio 34 tumbaba a uno de los dos.
+   */
+  private readonly medidasEscritas = new Subject<void>();
+
   protected readonly hojas = computed<readonly Category[]>(() =>
     categoriasHoja(this.arbol.data() ?? []),
   );
@@ -243,10 +253,10 @@ export class PublishPage {
     if (this.subiendo() !== null) {
       return 'listing.a11y.uploading';
     }
-    if (this.guardado.isPending()) {
+    if (this.guardando()) {
       return 'listing.form.saving';
     }
-    if (this.guardado.isSuccess()) {
+    if (this.guardadoAlDia()) {
       return 'listing.a11y.saved';
     }
     // Nada que anunciar. La region se queda vacia pero sigue en el DOM, que es lo que
@@ -263,6 +273,36 @@ export class PublishPage {
   /** Los campos que el servidor dijo que faltan, para marcarlos uno a uno. */
   protected readonly camposQueFaltan = computed<readonly string[]>(() =>
     ListingStore.camposQueFaltan(this.envio.error()),
+  );
+
+  /**
+   * El fallo del guardado automático, venga por la ruta que venga.
+   *
+   * <p>El guardado sale por tres —el {@code PATCH} general, el precio y el envío— y la
+   * pantalla solo miraba la primera. Sobre una publicación viva, que es justo cuando se
+   * usan las otras dos, un cambio de precio perdido no decía absolutamente nada: ni error,
+   * ni «Guardando», ni «Guardado». La pantalla promete que no se pierde nada, así que el
+   * estado que muestra tiene que ser el de las tres.
+   */
+  protected readonly falloDelGuardado = computed<unknown>(
+    () => this.guardado.error() ?? this.cambioDePrecio.error() ?? this.cambioDeEnvio.error(),
+  );
+
+  /** Hay un guardado en vuelo por alguna de las tres rutas. */
+  protected readonly guardando = computed<boolean>(
+    () =>
+      this.guardado.isPending() ||
+      this.cambioDePrecio.isPending() ||
+      this.cambioDeEnvio.isPending(),
+  );
+
+  /** El último guardado que salió llegó bien. */
+  protected readonly guardadoAlDia = computed<boolean>(
+    () =>
+      this.falloDelGuardado() === null &&
+      (this.guardado.isSuccess() ||
+        this.cambioDePrecio.isSuccess() ||
+        this.cambioDeEnvio.isSuccess()),
   );
 
   constructor() {
@@ -283,7 +323,12 @@ export class PublishPage {
 
     // Guardado automático: el criterio 5 promete que nada se pierde al salir. Se espera
     // a que la persona deje de escribir para no mandar una petición por tecla.
-    this.formulario.valueChanges
+    //
+    // **Las medidas entran por el mismo debounce y no por su lado.** Antes llamaban al
+    // guardado en el acto desde `alEscribirMedida`, así que cada tecla era una petición:
+    // escribir cuatro medidas seguidas mandaba cuatro guardados encima del mismo
+    // borrador. Un solo `debounceTime` sobre las dos fuentes es lo que hace que sea uno.
+    merge(this.formulario.valueChanges, this.medidasEscritas)
       .pipe(debounceTime(this.esperaDeGuardado), takeUntilDestroyed())
       .subscribe(() => this.guardarSiProcede());
   }
@@ -375,7 +420,7 @@ export class PublishPage {
     const valor = (evento.target as HTMLInputElement).value;
     this.medidas.update((actuales) => ({ ...actuales, [clase]: valor }));
     this.medidasTocadas.set(true);
-    this.guardarSiProcede();
+    this.medidasEscritas.next();
   }
 
   protected claveDeError(fallo: unknown): string {
@@ -468,8 +513,12 @@ export class PublishPage {
    * Manda el precio y el envío por sus rutas propias.
    *
    * <p>Pueden salir las dos peticiones: son dos cambios distintos y cada uno tiene su
-   * ruta. Si el precio quedó vacío, o el envío a medias, no se manda: media caja no es
-   * una caja, y esas dos rutas no admiten quitar el dato.
+   * ruta. **Salen una detrás de otra**, no a la vez: las dos reescriben la misma
+   * publicación y la cola del store las separa, que antes era un 409 asegurado cada vez
+   * que se tocaban el precio y una medida de la caja en la misma tanda.
+   *
+   * <p>Si el precio quedó vacío, o el envío a medias, no se manda: media caja no es una
+   * caja, y esas dos rutas no admiten quitar el dato.
    */
   private guardarSinModeracion(id: string): void {
     const tocados = this.camposTocados();

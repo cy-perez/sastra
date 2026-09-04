@@ -10,6 +10,7 @@ import co.sendik.identity.dto.SessionResult;
 import co.sendik.identity.exception.AccountLockedException;
 import co.sendik.identity.exception.InvalidCredentialsException;
 import co.sendik.identity.exception.RefreshTokenInvalidException;
+import co.sendik.identity.exception.RefreshTokenRaceException;
 import co.sendik.identity.model.BirthDate;
 import co.sendik.identity.model.DisplayName;
 import co.sendik.identity.model.Email;
@@ -241,8 +242,11 @@ class SessionLifecycleTest {
         SessionResult primera = entrar();
         SessionResult segunda = refresco.execute(new RefreshSessionCommand(primera.refreshToken(), "Chrome", null));
 
+        // **Con su codigo propio.** Que no se cierre la sesion aqui dentro no bastaba: el
+        // cliente recibia el mismo codigo que ante una sesion muerta y la cerraba el, asi
+        // que la pestana que perdia la carrera echaba a la persona igual (ADR-0030).
         assertThatThrownBy(() -> refresco.execute(new RefreshSessionCommand(primera.refreshToken(), "Chrome", null)))
-                .isInstanceOf(RefreshTokenInvalidException.class);
+                .isInstanceOf(RefreshTokenRaceException.class);
 
         assertThat(buscar(segunda.refreshToken()).esUtilizable(reloj.instant())).isTrue();
         assertThat(vivosEnLaFamiliaDe(segunda.refreshToken())).isEqualTo(1);

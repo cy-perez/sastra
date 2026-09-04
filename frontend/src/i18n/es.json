@@ -213,6 +213,7 @@
       "AUTH_INVALID_CREDENTIALS": "El correo o la contraseña no coinciden.",
       "AUTH_ACCOUNT_LOCKED": "Demasiados intentos fallidos. Por seguridad bloqueamos el acceso un momento; te escribimos al correo. Vuelve a intentarlo más tarde.",
       "AUTH_SESSION_INVALID": "Tu sesión terminó. Vuelve a entrar.",
+      "AUTH_SESSION_RACE": "Tu sesión se estaba renovando. Vuelve a intentarlo.",
       "COMMON_VALIDATION_FAILED": "Revisa los datos del formulario.",
       "COMMON_FORBIDDEN": "No tienes permiso para hacer eso.",
       "COMMON_TOO_MANY_REQUESTS": "Demasiados intentos seguidos. Espera un momento y vuelve a intentarlo.",

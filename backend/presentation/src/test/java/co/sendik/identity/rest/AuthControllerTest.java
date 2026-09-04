@@ -26,6 +26,7 @@ import co.sendik.identity.exception.AccountLockedException;
 import co.sendik.identity.exception.InvalidCredentialsException;
 import co.sendik.identity.exception.PasswordTooShortException;
 import co.sendik.identity.exception.RefreshTokenInvalidException;
+import co.sendik.identity.exception.RefreshTokenRaceException;
 import co.sendik.identity.exception.ResendLimitReachedException;
 import co.sendik.identity.exception.ResetTokenExpiredException;
 import co.sendik.identity.model.Role;
@@ -253,6 +254,26 @@ class AuthControllerTest {
         mvc.perform(post("/api/v1/auth/refresh"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("AUTH_SESSION_INVALID"));
+    }
+
+    /**
+     * <strong>El codigo de la carrera, en el borde, que es donde el cliente lo lee.</strong>
+     *
+     * <p>El cliente decide con la cadena exacta: ante {@code AUTH_SESSION_RACE} reintenta y
+     * ante {@code AUTH_SESSION_INVALID} cierra la sesion. Sin esta prueba, renombrar el
+     * codigo o cambiar su estado deja todo en verde de este lado y el cliente vuelve a
+     * cerrar sesiones en cada carrera, sin que nada relacione una cosa con la otra.
+     *
+     * <p>El estado es 401 igual que el otro, a proposito: en los dos casos la peticion no
+     * fue autorizada. Lo que cambia es el codigo (ADR-0030).
+     */
+    @Test
+    void deberia_responder_401_con_codigo_propio_ante_la_carrera_del_refresco_ADR_0030() throws Exception {
+        when(refresco.execute(any(RefreshSessionCommand.class))).thenThrow(new RefreshTokenRaceException());
+
+        mvc.perform(post("/api/v1/auth/refresh"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("AUTH_SESSION_RACE"));
     }
 
     /**

@@ -281,6 +281,13 @@ public class ApiExceptionHandler {
             // cliente no sabria que lo que toca es volver a pedir la contrasena
             // (docs/arquitectura/contrato-api.md).
             case AUTH_INVALID_CREDENTIALS, AUTH_SESSION_INVALID -> HttpStatus.UNAUTHORIZED;
+
+            // 401 tambien, y no un 409: para el cliente la peticion no fue autorizada,
+            // que es lo que 401 significa. Lo que cambia es el codigo, y con el la
+            // reaccion -reintentar en vez de cerrar la sesion (ADR-0030)-. Darle un
+            // estado propio obligaria a que cada consumidor aprendiera un estado nuevo
+            // para el mismo hecho.
+            case AUTH_SESSION_RACE -> HttpStatus.UNAUTHORIZED;
             // 403: tiene credencial valida y hasta el rol correcto, y aun asi no puede
             // hacer esto. RN-060 es el unico caso hoy: el moderador es moderador, pero
             // la solicitud es suya.

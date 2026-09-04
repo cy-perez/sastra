@@ -1068,7 +1068,11 @@
       "emptyAction": "Publicar mi primer producto",
       "new": "Publicar",
       "attention": "Necesita atención",
-      "untitled": "Publicación sin título"
+      "untitled": "Publicación sin título",
+      "summary": {
+        "loading": "Cargando las cifras",
+        "retry": "Reintentar"
+      }
     },
     "a11y": {
       "loading": "Cargando la publicación",

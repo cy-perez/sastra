@@ -61,6 +61,21 @@ describe('MyListingsPage', () => {
     ...cambios,
   });
 
+  /** Los siete de RN-061, en el orden del ciclo de vida. Lo que no se diga va en cero. */
+  const ESTADOS = [
+    'DRAFT',
+    'PENDING_REVIEW',
+    'PUBLISHED',
+    'REJECTED',
+    'PAUSED',
+    'SOLD',
+    'ARCHIVED',
+  ] as const;
+
+  const resumen = (cuantas: Partial<Record<(typeof ESTADOS)[number], number>> = {}) => ({
+    counts: ESTADOS.map((status) => ({ status, count: cuantas[status] ?? 0 })),
+  });
+
   const asentar = async (fixture: {
     whenStable: () => Promise<unknown>;
     detectChanges: () => void;
@@ -85,7 +100,16 @@ describe('MyListingsPage', () => {
     }
   };
 
-  const montar = async (items: object[]) => {
+  /**
+   * Monta la pantalla y responde sus **dos** consultas: la lista y las cifras.
+   *
+   * <p>Son dos a propósito -el criterio 6 dice que el fallo de una no puede tapar la
+   * otra-, así que aquí se responden por separado. Con `cifras` en nulo la del resumen se
+   * deja en vuelo, que es lo que necesitan las pruebas del esqueleto y del error; en ese
+   * caso no se puede usar `asentar`, porque `whenStable` no vuelve mientras quede una
+   * petición sin responder.
+   */
+  const montar = async (items: object[], cifras: object | null = resumen()) => {
     // La sesión se pone aquí y no en el beforeEach: allí instancia el módulo de pruebas
     // y ninguna prueba puede ya sustituir un proveedor ni montar sin sesión.
     TestBed.inject(SessionStore).set(SESION);
@@ -100,9 +124,27 @@ describe('MyListingsPage', () => {
       )
       .flush({ items, page: 0, size: 20 });
 
+    const peticionDeCifras = backend.expectOne(
+      (peticion) =>
+        peticion.method === 'GET' && peticion.url === `${API}/users/me/listings/summary`,
+    );
+
+    if (cifras === null) {
+      await bombear(fixture);
+      return { fixture, backend, peticionDeCifras };
+    }
+
+    peticionDeCifras.flush(cifras);
     await asentar(fixture);
-    return { fixture, backend };
+    return { fixture, backend, peticionDeCifras };
   };
+
+  /** Las cifras pintadas, cada una con su nombre y su número. */
+  const cifrasEnPantalla = (fixture: { nativeElement: HTMLElement }) =>
+    [...fixture.nativeElement.querySelectorAll('.mias__cifra')].map((cifra) => ({
+      estado: cifra.querySelector('dt')?.textContent?.trim() ?? '',
+      numero: cifra.querySelector('dd')?.textContent?.trim() ?? '',
+    }));
 
   const boton = (fixture: { nativeElement: HTMLElement }, texto: string) =>
     [...fixture.nativeElement.querySelectorAll('button')].find((candidato) =>
@@ -124,6 +166,144 @@ describe('MyListingsPage', () => {
         provideHttpClientTesting(),
       ],
     });
+  });
+
+  // --- Las cifras del panel. HU-012 --------------------------------------
+
+  /** Criterios 1 y 2: los siete estados, y el cero se dice en vez de esconderse. */
+  it('pinta una cifra por estado, incluidas las que valen cero', async () => {
+    const { fixture } = await montar(
+      [publicacion()],
+      resumen({ DRAFT: 3, PUBLISHED: 1, ARCHIVED: 12 }),
+    );
+
+    expect(cifrasEnPantalla(fixture)).toEqual([
+      { estado: 'Borrador', numero: '3' },
+      { estado: 'En revisión', numero: '0' },
+      { estado: 'Publicada', numero: '1' },
+      { estado: 'Rechazada', numero: '0' },
+      { estado: 'Pausada', numero: '0' },
+      { estado: 'Vendida', numero: '0' },
+      { estado: 'Archivada', numero: '12' },
+    ]);
+  });
+
+  /**
+   * Criterio 3: cuenta nueva. Las siete cifras en cero **y** el vacío de la lista debajo,
+   * que es el que ya existía. No dos mensajes de vacío distintos.
+   */
+  it('deja los siete en cero y el vacío de la lista debajo en una cuenta nueva', async () => {
+    const { fixture } = await montar([]);
+
+    expect(cifrasEnPantalla(fixture)).toHaveLength(7);
+    expect(cifrasEnPantalla(fixture).every((cifra) => cifra.numero === '0')).toBe(true);
+    expect(fixture.nativeElement.textContent).toContain('Todavía no has publicado nada');
+  });
+
+  /**
+   * Criterio 5: esqueleto, no ceros provisionales.
+   *
+   * <p>Un cero se lee como un dato: quien lo vea de paso creerá que no tiene nada. Y quien
+   * usa lector de pantalla tiene que oír que están cargando.
+   */
+  it('pinta el esqueleto mientras las cifras cargan, sin ceros provisionales', async () => {
+    const { fixture } = await montar([publicacion()], null);
+
+    expect(fixture.nativeElement.querySelectorAll('.mias__cifra-esqueleto')).toHaveLength(7);
+    expect(cifrasEnPantalla(fixture)).toHaveLength(0);
+    expect(fixture.nativeElement.querySelector('[role="status"]')?.textContent).toContain(
+      'Cargando las cifras',
+    );
+  });
+
+  /**
+   * Criterio 6, y es el que de verdad importa: **una cifra que no llega no puede tapar las
+   * publicaciones.** El error se acota a su fila y la lista sigue ahí.
+   */
+  it('deja ver la lista aunque las cifras fallen, y ofrece reintentar', async () => {
+    const { fixture, peticionDeCifras } = await montar([publicacion()], null);
+
+    peticionDeCifras.flush(
+      { code: 'COMMON_UNEXPECTED' },
+      { status: 500, statusText: 'Server Error' },
+    );
+    await bombear(fixture);
+
+    expect(
+      fixture.nativeElement.querySelector('.mias__cifras-error [role="alert"]'),
+    ).not.toBeNull();
+    expect(fixture.nativeElement.textContent).toContain('Camisa de lino');
+    expect(boton(fixture, 'Reintentar')).toBeDefined();
+  });
+
+  /** Doble pulsación en reintentar: una petición, no dos encadenadas. */
+  it('no encadena dos peticiones si se pulsa reintentar dos veces', async () => {
+    const { fixture, backend, peticionDeCifras } = await montar([publicacion()], null);
+
+    peticionDeCifras.flush(
+      { code: 'COMMON_UNEXPECTED' },
+      { status: 500, statusText: 'Server Error' },
+    );
+    await bombear(fixture);
+
+    boton(fixture, 'Reintentar')?.click();
+    await bombear(fixture);
+    boton(fixture, 'Reintentar')?.click();
+    await bombear(fixture);
+
+    backend
+      .expectOne(
+        (peticion) =>
+          peticion.method === 'GET' && peticion.url === `${API}/users/me/listings/summary`,
+      )
+      .flush(resumen({ DRAFT: 1 }));
+    await asentar(fixture);
+
+    expect(cifrasEnPantalla(fixture)[0]).toEqual({ estado: 'Borrador', numero: '1' });
+  });
+
+  /**
+   * Criterio 4: archivar actualiza las cifras sin recargar.
+   *
+   * <p>Sale gratis y no por casualidad: la clave del resumen cuelga de la de la lista, así
+   * que la invalidación que ya hacía cada mutación arrastra las dos. Esta prueba es lo que
+   * impide que alguien las separe sin darse cuenta.
+   */
+  it('vuelve a pedir las cifras después de archivar', async () => {
+    const { fixture, backend } = await montar([publicacion({ status: 'PUBLISHED' })]);
+
+    boton(fixture, 'Archivar')?.click();
+    await bombear(fixture);
+    boton(fixture, 'Sí, archivar')?.click();
+    await bombear(fixture);
+
+    backend
+      .expectOne((peticion) => peticion.method === 'POST' && peticion.url.endsWith('/archival'))
+      .flush(publicacion({ status: 'ARCHIVED' }));
+    await bombear(fixture);
+
+    backend.expectOne(
+      (peticion) =>
+        peticion.method === 'GET' && peticion.url === `${API}/users/me/listings/summary`,
+    );
+  });
+
+  /**
+   * Un estado que no existe en RN-061 llegando del servidor: se ignora.
+   *
+   * <p>Ni se pinta una cifra sin nombre -no habría cómo traducirla- ni se rompe la fila.
+   * Es lo que permite que el servidor añada un estado antes de que esta pantalla lo sepa.
+   */
+  it('ignora un estado que no conoce sin romper la fila', async () => {
+    const { fixture } = await montar([publicacion()], {
+      counts: [
+        { status: 'DRAFT', count: 2 },
+        { status: 'EN_LA_LUNA', count: 9 },
+      ],
+    });
+
+    expect(cifrasEnPantalla(fixture)).toEqual([{ estado: 'Borrador', numero: '2' }]);
+    expect(fixture.nativeElement.textContent).not.toContain('EN_LA_LUNA');
   });
 
   /** El estado vacío es un estado de pantalla, no un error. */
@@ -234,14 +414,24 @@ describe('MyListingsPage', () => {
     TestBed.inject(SessionStore).set(SESION);
     await fixture.whenStable();
 
-    TestBed.inject(HttpTestingController)
+    const backend = TestBed.inject(HttpTestingController);
+    backend
       .expectOne(
         (llamada) => llamada.method === 'GET' && llamada.url === `${API}/users/me/listings`,
       )
       .flush({ items: [publicacion()], page: 0, size: 20 });
+
+    // Las cifras esperan a la sesión por lo mismo que la lista, y son otra consulta: sin
+    // responderla, `asentar` no vuelve nunca.
+    backend
+      .expectOne(
+        (llamada) => llamada.method === 'GET' && llamada.url === `${API}/users/me/listings/summary`,
+      )
+      .flush(resumen({ DRAFT: 1 }));
     await asentar(fixture);
 
     expect(fixture.nativeElement.textContent).toContain('Camisa de lino');
+    expect(cifrasEnPantalla(fixture)[0]).toEqual({ estado: 'Borrador', numero: '1' });
   });
 
   it('no ofrece pausar ni archivar una vendida', async () => {

@@ -1068,7 +1068,11 @@
       "emptyAction": "List my first product",
       "new": "List a product",
       "attention": "Needs attention",
-      "untitled": "Untitled listing"
+      "untitled": "Untitled listing",
+      "summary": {
+        "loading": "Loading the figures",
+        "retry": "Try again"
+      }
     },
     "a11y": {
       "loading": "Loading the listing",

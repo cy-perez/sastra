@@ -14,7 +14,12 @@ import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
 import { ListingStore } from '../application/listing.store';
-import { precioFormateado, tomasDelVendedor, type Listing } from '../../../shared/domain/listing';
+import {
+  precioFormateado,
+  tomasDelVendedor,
+  type CifraPorEstado,
+  type Listing,
+} from '../../../shared/domain/listing';
 
 /**
  * Las publicaciones propias del vendedor. HU-007.
@@ -39,6 +44,7 @@ export class MyListingsPage {
   private readonly inyector = inject(Injector);
 
   protected readonly consulta = this.store.mine;
+  protected readonly cifras = this.store.summary;
   protected readonly pausa = this.store.pause;
   protected readonly reanudacion = this.store.resume;
   protected readonly archivo = this.store.archive;
@@ -69,6 +75,49 @@ export class MyListingsPage {
   );
 
   private readonly idiomas = inject(TranslocoService);
+
+  /**
+   * Las cifras por estado, en el orden que manda el servidor.
+   *
+   * <p>Vienen los siete de RN-061 y el cero viene dicho, no omitido: la pantalla no
+   * completa nada ni esconde lo que vale cero. Si algún día llegaran menos, se pintan los
+   * que lleguen; inventar aquí los que faltan taparía que la respuesta viene incompleta.
+   */
+  protected readonly porEstado = computed<readonly CifraPorEstado[]>(
+    () => this.cifras.data() ?? [],
+  );
+
+  /**
+   * Lo que se anuncia mientras las cifras cargan. Criterio 5.
+   *
+   * <p>Por una región viva permanente y no por un {@code role="status"} que aparece con el
+   * texto ya dentro: esa forma no se anuncia de manera fiable, porque la región tiene que
+   * existir antes de que su contenido cambie. Es la misma lección de la pantalla de
+   * publicar.
+   */
+  protected readonly anuncio = computed<string | null>(() =>
+    this.cifras.isPending() ? 'listing.mine.summary.loading' : null,
+  );
+
+  /**
+   * La cifra con el separador de miles del idioma activo.
+   *
+   * <p>Por {@code Intl} y no concatenando: «1.240» y «1,240» no son la misma cifra en los
+   * dos idiomas que sirve el sitio.
+   */
+  protected cifraFormateada(cuantas: number): string {
+    return new Intl.NumberFormat(this.idiomas.getActiveLang()).format(cuantas);
+  }
+
+  /**
+   * Vuelve a pedir las cifras.
+   *
+   * <p>No encadena dos peticiones si se pulsa dos veces: el botón se deshabilita mientras
+   * hay una en vuelo, que es el caso borde que pide la historia.
+   */
+  protected reintentarCifras(): void {
+    void this.cifras.refetch();
+  }
 
   /** El precio ya formateado, en la configuración regional activa. */
   protected precioDe(publicacion: Listing): string | null {

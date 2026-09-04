@@ -201,6 +201,15 @@ test.describe('catálogo público', () => {
     await page.goto(RUTA_MIS_PUBLICACIONES);
     await expect(page.getByText(titulo).first()).toBeVisible();
 
+    // Las cifras del panel, HU-012. La vendedora nace nueva en cada corrida, asi que estas
+    // cuentan: acaba de enviar una y no tiene ninguna de lo demas. Los siete estados estan,
+    // y **el cero se dice** en vez de desaparecer, que es el criterio 2 visto de punta a
+    // punta: la cifra la calcula el servidor y la pinta la pantalla.
+    const cifras = page.locator('.mias__cifra');
+    await expect(cifras).toHaveCount(7);
+    await expect(cifras.filter({ hasText: 'En revisión' }).locator('dd')).toHaveText('1');
+    await expect(cifras.filter({ hasText: 'Vendida' }).locator('dd')).toHaveText('0');
+
     // Lo mismo: lo que espera revisión se recoge, o se queda en la cola para siempre.
     await retirarDeRevision(page, id);
   });

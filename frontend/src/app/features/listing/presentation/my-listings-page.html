@@ -4,6 +4,59 @@
     <a class="btn btn-primario" routerLink="/publicar">{{ 'listing.mine.new' | transloco }}</a>
   </header>
 
+  <!--
+    Región viva permanente para el estado de las cifras (criterio 5). Va antes que ellas y
+    siempre en el DOM: un role="status" que se inserta con el texto ya dentro no se anuncia
+    de forma fiable.
+  -->
+  <p class="solo-lectores" role="status">
+    @if (anuncio(); as clave) {
+      {{ clave | transloco }}
+    }
+  </p>
+
+  <!--
+    Las cifras van **fuera** del bloque de la lista, y eso es el criterio 6: son dos
+    lecturas distintas y el fallo de una no puede tapar la otra. Con esto dentro, un
+    resumen que no llega dejaba al vendedor sin ver sus publicaciones.
+  -->
+  @if (cifras.isPending()) {
+    <div class="mias__cifras" aria-hidden="true">
+      <!--
+        Esqueletos y no ceros provisionales: un cero se lee como un dato, y quien lo vea de
+        paso creera que no tiene nada. Siete, los que van a aparecer.
+      -->
+      @for (hueco of [0, 1, 2, 3, 4, 5, 6]; track hueco) {
+        <p class="esqueleto mias__cifra-esqueleto"></p>
+      }
+    </div>
+  } @else if (cifras.isError()) {
+    <div class="mias__cifras-error">
+      <p class="tipo-cuerpo" role="alert">{{ claveDeError(cifras.error()) | transloco }}</p>
+      <button
+        type="button"
+        class="btn"
+        (click)="reintentarCifras()"
+        [disabled]="cifras.isFetching()"
+      >
+        {{ 'listing.mine.summary.retry' | transloco }}
+      </button>
+    </div>
+  } @else {
+    <!--
+      Una lista de descripcion y no una region con nombre: cada cifra se lee sola -«Borrador,
+      3»- y el grupo es disposicion, no informacion, asi que no se anuncia como region propia.
+    -->
+    <dl class="mias__cifras">
+      @for (cifra of porEstado(); track cifra.status) {
+        <div class="mias__cifra">
+          <dt class="tipo-secundario">{{ 'listing.status.' + cifra.status | transloco }}</dt>
+          <dd class="mias__numero tipo-titulo-tarjeta">{{ cifraFormateada(cifra.count) }}</dd>
+        </div>
+      }
+    </dl>
+  }
+
   @if (consulta.isPending()) {
     <div class="mias__cargando" aria-hidden="true">
       <p class="esqueleto mias__esqueleto"></p>

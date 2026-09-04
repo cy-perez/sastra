@@ -119,3 +119,53 @@
   height: var(--esp-96);
   margin: 0;
 }
+
+/* --- Las cifras del panel. HU-012 ------------------------------------- */
+
+/* Envuelve en movil: con siete cifras no caben en una linea, que es la misma leccion
+   de .paginacion. El destino tactil no aplica -no son interactivas- pero el tamano
+   minimo si, para que la cifra y su nombre no se peguen. */
+.mias__cifras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-12);
+  margin: 0 0 var(--esp-24);
+  padding: 0;
+}
+
+/* Cada par, con la cifra encima de su nombre. El orden del DOM es el otro -nombre y
+   luego cifra- porque asi se lee «Borrador, 3»; aqui solo se invierte lo que se ve. */
+.mias__cifra {
+  display: flex;
+  flex: 1 1 var(--esp-96);
+  flex-direction: column-reverse;
+  gap: var(--esp-4);
+  min-width: var(--esp-96);
+  padding: var(--esp-12);
+  border: 1px solid var(--color-borde-control);
+  border-radius: var(--radio-md);
+}
+
+/* Sin acento: el bronce es de la insignia de vendedor verificado y aparece una vez por
+   pantalla. Una cifra en bronce lo gastaria siete veces. */
+.mias__numero {
+  margin: 0;
+  color: var(--color-texto);
+  font-variant-numeric: tabular-nums;
+}
+
+.mias__cifra-esqueleto {
+  flex: 1 1 var(--esp-96);
+  height: var(--esp-64);
+  min-width: var(--esp-96);
+  margin: 0;
+}
+
+/* El error se acota a la fila y deja la lista debajo intacta (criterio 6). */
+.mias__cifras-error {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-12);
+  align-items: center;
+  margin-bottom: var(--esp-24);
+}

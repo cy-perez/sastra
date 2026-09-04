@@ -117,6 +117,23 @@ export class ListingStore {
     enabled: this.abierta() !== null && this.sesion.isAuthenticated(),
   }));
 
+  /**
+   * Las cifras del panel del vendedor. HU-012.
+   *
+   * Consulta aparte de {@link mine} y no un conteo sobre ella: la lista viene paginada y
+   * contar sus filas daría una cifra que solo habla de la página que se cargó.
+   *
+   * Se refresca sola con cada mutación, porque su clave cuelga de la de la lista y
+   * TanStack invalida por prefijo. Ver `queryKeys.summary`.
+   */
+  readonly summary = injectQuery(() => ({
+    queryKey: queryKeys.summary,
+    queryFn: () => this.api.resumen(),
+    staleTime: 0,
+    retry: false,
+    enabled: this.sesion.isAuthenticated(),
+  }));
+
   /** La página fija cuál se está viendo al resolver la ruta. */
   abrir(id: string | null): void {
     this.abierta.set(id);

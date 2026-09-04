@@ -4,13 +4,16 @@ import { filter, firstValueFrom, map, type Observable } from 'rxjs';
 
 import type {
   Category,
+  CifraPorEstado,
   Color,
   Condition,
   Listing,
+  ListingStatus,
   Money,
   Shipping,
   Size,
 } from '../../../shared/domain/listing';
+import { esEstadoConocido } from '../../../shared/domain/listing';
 
 /**
  * Lo que se manda al crear o editar. Es de esta capa y no sale de ella: la plantilla ve
@@ -54,6 +57,17 @@ interface SellerListingsPageDto {
   readonly items: readonly Listing[];
   readonly page: number;
   readonly size: number;
+}
+
+/**
+ * Lo que responde el resumen del panel. HU-012.
+ *
+ * <p>Lista de pares y no un objeto con una clave por estado: así un estado nuevo del
+ * servidor no cambia la forma de la respuesta y esta pantalla lo ignora sin enterarse.
+ * Por eso `status` es `string` y no `ListingStatus`, que es justo lo que obliga a filtrar.
+ */
+interface SellerListingsSummaryDto {
+  readonly counts: readonly { readonly status: string; readonly count: number }[];
 }
 
 /**
@@ -218,6 +232,27 @@ export class ListingApi {
       }),
     );
     return respuesta.items;
+  }
+
+  /**
+   * Cuántas tiene en cada estado. HU-012.
+   *
+   * <p><strong>Aquí sí hay mapeo, y no es de nombres.</strong> El estado llega como texto
+   * y el dominio promete uno de los siete de RN-061, así que un valor que no conozca se
+   * descarta en la frontera. Es el caso borde que pide la historia: un estado nuevo del
+   * servidor no puede pintar una cifra sin nombre ni tumbar la fila entera.
+   *
+   * <p>Se descarta y no se traduce a «otros»: una cifra sin nombre no se puede explicar,
+   * y sumarla a otra mentiría sobre las que sí se entienden.
+   */
+  async resumen(): Promise<readonly CifraPorEstado[]> {
+    const respuesta = await firstValueFrom(
+      this.http.get<SellerListingsSummaryDto>('users/me/listings/summary'),
+    );
+
+    return respuesta.counts
+      .filter((cifra) => esEstadoConocido(cifra.status))
+      .map((cifra) => ({ status: cifra.status as ListingStatus, count: cifra.count }));
   }
 }
 

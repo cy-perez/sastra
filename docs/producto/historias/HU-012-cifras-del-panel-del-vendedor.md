@@ -1,6 +1,6 @@
 # HU-012 — Cifras del panel del vendedor
 
-**Fase:** 2 | **Estado:** pendiente
+**Fase:** 2 | **Estado:** hecha el 4 de septiembre de 2026
 **Reglas que aplica:** RN-061, RN-024
 
 > **Es la mitad que falta de un punto que `alcance.md` marca «hecho a medias».**
@@ -85,7 +85,16 @@ línea, que es la misma lección de `.paginacion`.
 - **Las cifras las cuenta el servidor**, no la pantalla. Contarlas sobre la lista ya
   cargada funcionaría hoy —`api.mias()` trae todo— pero ata la cifra al tamaño de la
   página el día que esa lista se pagine, que es una deuda ya anotada. Endpoint nuevo:
-  `GET /api/v1/listings/mine/summary`, que responde el conteo por estado.
+  ~~`GET /api/v1/listings/mine/summary`~~ **`GET /api/v1/users/me/listings/summary`**,
+  que responde el conteo por estado.
+
+  **La ruta cambió al implementarla, el 4 de septiembre de 2026.** El prefijo
+  `/api/v1/listings/mine` no existe: las publicaciones propias viven bajo
+  `/api/v1/users/me/listings` desde HU-007, por lo que argumenta el javadoc de
+  `SellerListingsController` —el recurso no es el catálogo sino lo que tiene esta cuenta—
+  y de paso heredan la regla de seguridad de `users/**`, que exige token. Colgar la cifra
+  de otro sitio habría partido en dos el mismo recurso y la habría dejado fuera de esa
+  regla.
 - La forma de la respuesta se decide al implementar, pero **no un objeto con una clave por
   estado**: un estado nuevo obligaría a tocar el contrato. Una lista de pares
   `{ status, count }` deja que la pantalla pinte lo que conoce e ignore lo que no.

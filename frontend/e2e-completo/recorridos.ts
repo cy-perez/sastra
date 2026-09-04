@@ -401,9 +401,21 @@ export async function publicarYEnviarARevision(
   // guardado puede salir a medias -con peso, largo y ancho ya puestos- y esa respuesta
   // también traería `shipping`. Darla por buena dejaría el alto sin confirmar, que es
   // justo el guardado que puede chocar con las subidas.
-  const guardadoConElEnvioCompleto = page.waitForResponse(async (respuesta) => {
+  // **Un guardado que falla también cierra la espera.** Esperando solo el exito, un
+  // guardado rechazado -por el bloqueo optimista, por un 401, por lo que sea- no produce
+  // ninguna respuesta que casar y esto se queda aguardando algo que ya no va a pasar: se
+  // agota el tiempo de la prueba y el fallo culpa a la espera, que es lo unico que se ve.
+  // Paso en integracion continua con sesenta segundos de presupuesto, asi que no era el
+  // presupuesto: el guardado no llegaba.
+  //
+  // Cerrando la espera tambien con el fallo, el motivo real -el estado que devolvio- sale
+  // en la asercion de abajo en vez de perderse.
+  const guardadoDelEnvio = page.waitForResponse(async (respuesta) => {
     if (respuesta.request().method() !== 'PATCH' || !respuesta.url().includes('/listings/')) {
       return false;
+    }
+    if (!respuesta.ok()) {
+      return true;
     }
     const cuerpo = (await respuesta.json().catch(() => null)) as {
       product?: { shipping?: { heightCm?: unknown } };
@@ -413,7 +425,13 @@ export async function publicarYEnviarARevision(
 
   await envio.getByLabel('Alto').fill('10');
 
-  await guardadoConElEnvioCompleto;
+  const respuestaDelGuardado = await guardadoDelEnvio;
+  expect(
+    respuestaDelGuardado.ok(),
+    `El guardado automatico del envio respondio ${respuestaDelGuardado.status()}. ` +
+      'Sin ese guardado la publicacion queda sin envio y el envio a revision se rechaza ' +
+      'despues con CATALOG_LISTING_INCOMPLETE, tres pantallas mas alla.',
+  ).toBeTruthy();
 
   // Las ocho tomas. Por el campo de archivo salvo que se pida lo contrario: la cámara es
   // de HU-003, y para las suites que prueban el ciclo de moderación o el catálogo es un

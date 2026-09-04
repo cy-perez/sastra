@@ -432,6 +432,7 @@ pase por moderación.
   | `POST /api/v1/listings/{id}/archival` | Dueño | Archiva lo suyo, sin motivo |
   | `POST /api/v1/listings/{id}/removal` | Moderador | Retira lo de otra persona, con motivo (RN-024) |
   | `GET /api/v1/users/me/listings` | Dueño | Sus publicaciones, paginado |
+  | `GET /api/v1/users/me/listings/summary` | Dueño | Cuántas tiene en cada estado (HU-012) |
 
   **Cuatro rutas más de las que esta tabla traía**, decididas al implementarla el
   25 de agosto de 2026:

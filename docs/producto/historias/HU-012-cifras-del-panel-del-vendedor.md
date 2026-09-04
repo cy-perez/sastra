@@ -1,6 +1,6 @@
 # HU-012 — Cifras del panel del vendedor
 
-**Fase:** 2 | **Estado:** pendiente
+**Fase:** 2 | **Estado:** hecha el 4 de septiembre de 2026
 **Reglas que aplica:** RN-061, RN-024
 
 > **Es la mitad que falta de un punto que `alcance.md` marca «hecho a medias».**
@@ -55,6 +55,20 @@ No entra:
 7. Dado que entro sin sesión a `/mis-publicaciones`, cuando la ruta resuelve, entonces se
    me lleva a entrar, igual que hoy.
 
+   **Resuelto el 4 de septiembre de 2026, y el «igual que hoy» necesitaba nombre.** No hay
+   guard de sesión en ninguna ruta del proyecto: los únicos son de rol. Lo que sí hay es la
+   forma que fijó HU-011 en su criterio 16 —se explica y se ofrece entrar, **no se
+   redirige**, porque una redirección desde una dirección que alguien escribió a propósito
+   le hace pensar que se equivocó— y es la que se aplica aquí.
+
+   La distinción que lo hace correcto es entre «no hay sesión» y «todavía no se sabe»: el
+   token de acceso vive en memoria y se pierde al recargar, así que tratar el segundo como
+   el primero le enseña «entra» a quien ya entró. Mientras no se sabe, esqueleto.
+
+   Antes de esto la pantalla no tenía tercer camino: sin sesión las dos consultas nacían
+   deshabilitadas y se quedaban pendientes para siempre, así que se veían los esqueletos
+   eternamente sin que nada explicara por qué.
+
 ## Casos borde
 
 - **Cero absoluto**: cuenta nueva, sin ninguna publicación. Criterio 3.
@@ -85,7 +99,16 @@ línea, que es la misma lección de `.paginacion`.
 - **Las cifras las cuenta el servidor**, no la pantalla. Contarlas sobre la lista ya
   cargada funcionaría hoy —`api.mias()` trae todo— pero ata la cifra al tamaño de la
   página el día que esa lista se pagine, que es una deuda ya anotada. Endpoint nuevo:
-  `GET /api/v1/listings/mine/summary`, que responde el conteo por estado.
+  ~~`GET /api/v1/listings/mine/summary`~~ **`GET /api/v1/users/me/listings/summary`**,
+  que responde el conteo por estado.
+
+  **La ruta cambió al implementarla, el 4 de septiembre de 2026.** El prefijo
+  `/api/v1/listings/mine` no existe: las publicaciones propias viven bajo
+  `/api/v1/users/me/listings` desde HU-007, por lo que argumenta el javadoc de
+  `SellerListingsController` —el recurso no es el catálogo sino lo que tiene esta cuenta—
+  y de paso heredan la regla de seguridad de `users/**`, que exige token. Colgar la cifra
+  de otro sitio habría partido en dos el mismo recurso y la habría dejado fuera de esa
+  regla.
 - La forma de la respuesta se decide al implementar, pero **no un objeto con una clave por
   estado**: un estado nuevo obligaría a tocar el contrato. Una lista de pares
   `{ status, count }` deja que la pantalla pinte lo que conoce e ignore lo que no.

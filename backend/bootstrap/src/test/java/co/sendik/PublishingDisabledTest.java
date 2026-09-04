@@ -101,6 +101,7 @@ class PublishingDisabledTest {
         mvc.perform(post("/api/v1/listings/" + CUALQUIERA + "/archival").with(jwt()))
                 .andExpect(status().isNotFound());
         mvc.perform(get("/api/v1/users/me/listings").with(jwt())).andExpect(status().isNotFound());
+        mvc.perform(get("/api/v1/users/me/listings/summary").with(jwt())).andExpect(status().isNotFound());
         // La bandeja del moderador (HU-008, criterio 3). Tenia el mismo hueco que todo lo
         // demas: su regla de rol se evalua en el filtro, asi que sin declararla solo con
         // la bandera encendida habria respondido 403 aunque el controlador no exista.

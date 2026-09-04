@@ -580,6 +580,36 @@ describe('PublishPage', () => {
     expect(fixture.nativeElement.querySelector('[role="alert"]')).not.toBeNull();
   });
 
+  /**
+   * Esta pantalla no pide las cifras del panel, y conviene que una prueba lo sostenga.
+   *
+   * <p>`ListingStore` es de raiz, asi que sus consultas nacen en cuanto alguien lo inyecta.
+   * El resumen de HU-012 lo usa solo `/mis-publicaciones`; sin acotarlo, esta pantalla lo
+   * pedia sin usarlo y **cada guardado suyo lo volvia a pedir**, porque la invalidacion de
+   * la lista casa por prefijo y arrastra al resumen. Una peticion por guardado que nadie
+   * mira, en la pantalla que mas guarda.
+   */
+  it('no pide las cifras del panel, que son de otra pantalla', async () => {
+    const { fixture, backend } = await montar(borrador());
+
+    backend.expectNone(
+      (llamada) => llamada.url === `${API}/users/me/listings/summary`,
+      'el resumen es de /mis-publicaciones',
+    );
+
+    // Y tampoco despues de guardar, que es cuando la invalidacion por prefijo lo arrastraria.
+    await escribir(fixture, '#titulo', 'Camisa de lino');
+    backend
+      .expectOne((llamada) => llamada.method === 'PATCH' && llamada.url === `${API}/listings/${ID}`)
+      .flush(borrador());
+    await asentar(fixture);
+
+    backend.expectNone(
+      (llamada) => llamada.url === `${API}/users/me/listings/summary`,
+      'guardar aqui no puede despertar una consulta de otra pantalla',
+    );
+  });
+
   // --- Que dos escrituras no se pisen (criterio 34) -----------------------
 
   /**

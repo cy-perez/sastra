@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test';
+import { expect, type Page, type Response } from '@playwright/test';
 
 import { MODERADORA } from '../playwright.completo.config';
 import { capturarLasOchoTomas, tomarUnaFoto } from './camara';
@@ -416,22 +416,75 @@ export async function publicarYEnviarARevision(
   //
   // Cerrando la espera tambien con el fallo, el motivo real -el estado que devolvio- sale
   // en la asercion de abajo en vez de perderse.
-  const guardadoDelEnvio = page.waitForResponse(async (respuesta) => {
-    if (respuesta.request().method() !== 'PATCH' || !respuesta.url().includes('/listings/')) {
-      return false;
+  //
+  // **Se apunta todo lo que pasa por la red mientras se espera.** Cuando esto falla en
+  // integracion continua -y falla- el sintoma es siempre el mismo: se agoto el tiempo. Eso
+  // no distingue las tres causas posibles, que piden arreglos distintos: que el guardado
+  // saliera y su cuerpo no trajera el alto, que saliera y fallara, o que **no llegara a
+  // salir**. Sin esta libreta las tres se ven igual y no hay por donde empezar.
+  const patchesVistos: string[] = [];
+  const anotar = (respuesta: Response) => {
+    if (respuesta.request().method() === 'PATCH') {
+      patchesVistos.push(`${respuesta.status()} ${new URL(respuesta.url()).pathname}`);
     }
-    if (!respuesta.ok()) {
-      return true;
-    }
-    const cuerpo = (await respuesta.json().catch(() => null)) as {
-      product?: { shipping?: { heightCm?: unknown } };
-    } | null;
-    return cuerpo?.product?.shipping?.heightCm != null;
-  });
+  };
+  page.on('response', anotar);
+
+  // Tiempo propio y menor que el de la prueba: si se agota el de la prueba, esta muere
+  // aqui mismo y el diagnostico de abajo no llega a escribirse.
+  //
+  // **El predicado mira lo que se envio, no lo que se respondio, y es sincrono.** Antes leia
+  // el cuerpo de la respuesta con `respuesta.json()`, y eso es una trampa: `body()` espera a
+  // que el cuerpo llegue entero, asi que una respuesta que se queda a medias deja ese
+  // predicado sin resolver y **bloquea la evaluacion de las siguientes**, incluida la del
+  // guardado bueno. El sintoma es este mismo -respuestas que llegan y una espera que no casa
+  // ninguna- y no se distingue de que el guardado no saliera.
+  //
+  // Mirando `postDataJSON()` no hace falta ningun cuerpo: la peticion ya esta en memoria, y
+  // lo que identifica al guardado que interesa es que lleve el alto, que es justo lo que se
+  // acaba de escribir.
+  const guardadoDelEnvio = page
+    .waitForResponse(
+      (respuesta) => {
+        const peticion = respuesta.request();
+        if (peticion.method() !== 'PATCH' || !respuesta.url().includes('/listings/')) {
+          return false;
+        }
+        if (!respuesta.ok()) {
+          return true;
+        }
+        const enviado = peticion.postDataJSON() as { shipping?: { heightCm?: unknown } } | null;
+        return enviado?.shipping?.heightCm != null;
+      },
+      { timeout: 25_000 },
+    )
+    .catch(() => null);
 
   await envio.getByLabel('Alto').fill('10');
 
   const respuestaDelGuardado = await guardadoDelEnvio;
+  page.off('response', anotar);
+
+  if (respuestaDelGuardado === null) {
+    const enPantalla = await page
+      .locator('.publicar__error')
+      .allInnerTexts()
+      .catch(() => []);
+    const alto = await envio
+      .getByLabel('Alto')
+      .inputValue()
+      .catch(() => '?');
+
+    throw new Error(
+      'El guardado automatico del envio no llego. ' +
+        `PATCH vistos durante la espera: ${JSON.stringify(patchesVistos)}. ` +
+        `Valor del alto en el formulario: "${alto}". ` +
+        `Errores en pantalla: ${JSON.stringify(enPantalla)}. ` +
+        'Lista vacia de PATCH significa que el guardado no llego a salir, que es otro ' +
+        'defecto -y otro arreglo- que uno que sale y responde mal.',
+    );
+  }
+
   expect(
     respuestaDelGuardado.ok(),
     `El guardado automatico del envio respondio ${respuestaDelGuardado.status()}. ` +

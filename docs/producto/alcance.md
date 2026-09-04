@@ -165,11 +165,29 @@ Es la fase en curso desde el 21 de agosto de 2026.
 
   Queda fuera todavía la frase de la garantía del fabricante en la ficha (RN-067),
   aplazada a la tanda legal por decisión del 26 de agosto.
-- Panel del vendedor con sus publicaciones y su estado. **Hecho a medias** y sin
-  historia propia: `/mis-publicaciones` llegó con HU-007 y da la lista con el
+- Panel del vendedor con sus publicaciones y su estado. **Sigue a medias, pero por
+  una sola cosa.** `/mis-publicaciones` llegó con HU-007 y da la lista con el
   estado de cada una, que es lo que hacía falta para retomar un borrador. Lo que
-  no hay es panel: ni cifras, ni ventas, ni el rastro de lo que pasó con cada
-  publicación.
+  faltaba era el panel: «ni cifras, ni ventas, ni el rastro de lo que pasó con cada
+  publicación», y de esas tres ya solo falta una.
+
+  **Las cifras las cerró HU-012 el 4 de septiembre de 2026**: una por cada estado de
+  RN-061 encima de la lista, contadas por el servidor —`GET
+  /api/v1/users/me/listings/summary`— y no sobre la página ya cargada, que habría
+  atado la cifra al tamaño de esa página el día que la lista crezca. El cero se dice
+  en vez de esconderse, porque omitir «0 en revisión» obliga a deducir por ausencia y
+  quien deduce por ausencia no distingue «no tengo ninguna» de «esto no cargó». La
+  fila es una lectura aparte de la lista, así que una cifra que no llega no puede
+  tapar las publicaciones.
+
+  La ruta no es la que la historia proponía. Decía `/api/v1/listings/mine/summary` y
+  ese prefijo no existe: las publicaciones propias viven bajo `/api/v1/users/me`
+  desde HU-007, y de ahí heredan la regla de seguridad que exige token.
+
+  **Las ventas son Fase 3** y quedan fuera por alcance, no por olvido. **El rastro es
+  HU-013**, escrita y todavía pendiente: necesita abrir para lectura el puerto
+  `ModerationLog`, que hoy solo escribe, y obliga a escribir una regla nueva. Con
+  ella este punto se cierra entero.
 
 ## Fase 3 — transacción
 

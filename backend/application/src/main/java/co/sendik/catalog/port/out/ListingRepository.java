@@ -4,8 +4,10 @@ import co.sendik.catalog.dto.CatalogCursor;
 import co.sendik.catalog.model.CategoryId;
 import co.sendik.catalog.model.Listing;
 import co.sendik.catalog.model.ListingId;
+import co.sendik.catalog.model.ListingStatus;
 import co.sendik.catalog.model.SellerId;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 
@@ -119,4 +121,20 @@ public interface ListingRepository {
      *     siguiente es el final de la actual
      */
     boolean hayPendientesDesde(long salto);
+
+    /**
+     * Cuantas publicaciones tiene el vendedor en cada estado. HU-012.
+     *
+     * <p><strong>Cuenta el servidor y no la pantalla.</strong> Contarlas sobre la lista ya
+     * cargada funcionaria hoy, porque {@link #buscarDelVendedor} trae todo lo que cabe en
+     * una pagina, pero ata la cifra al tamano de esa pagina el dia que la lista crezca por
+     * encima. Una cifra que dice «3 publicadas» porque solo miro veinte filas es peor que
+     * no tenerla.
+     *
+     * <p>Devuelve <strong>solo los estados que tienen filas</strong>. Rellenar los siete de
+     * RN-061 con cero es decision de la aplicacion y no de SQL: un {@code GROUP BY} no
+     * inventa grupos vacios, y hacer que los invente -con una union sobre los siete
+     * literales- meteria la enumeracion del dominio dentro de una consulta.
+     */
+    Map<ListingStatus, Long> contarPorEstadoDelVendedor(SellerId vendedor);
 }

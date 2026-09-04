@@ -119,3 +119,73 @@
   height: var(--esp-96);
   margin: 0;
 }
+
+/* --- Las cifras del panel. HU-012 ------------------------------------- */
+
+/* Envuelve en movil: con siete cifras no caben en una linea, que es la misma leccion
+   de .paginacion. Sin margen propio: `.mias` ya separa a sus hijos con su `gap`, y
+   sumarle uno aqui dejaba 48px donde el resto de la pantalla usa 24. */
+.mias__cifras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-12);
+  margin: 0;
+  padding: 0;
+}
+
+/* El nombre encima y la cifra debajo, **en el mismo orden en que se leen**. Se probo al
+   reves -cifra arriba, con `column-reverse`- y eso deja la pantalla diciendo «3,
+   Borrador» mientras el DOM dice «Borrador, 3»: quien combina lupa con lector, o quien
+   copia la fila, obtiene un orden distinto del que ve (WCAG 1.3.2).
+
+   El alto minimo es el mismo que el del esqueleto: si se separan, la lista salta cuando
+   llegan los datos. */
+.mias__cifra {
+  display: flex;
+  flex: 1 1 var(--medida-cifra);
+  flex-direction: column;
+  gap: var(--esp-4);
+  min-width: var(--medida-cifra);
+  min-height: var(--esp-96);
+  padding: var(--esp-12);
+  border: 1px solid var(--color-borde-control);
+  border-radius: var(--radio-md);
+  overflow-wrap: break-word;
+}
+
+/* Sin acento: el bronce es de la insignia de vendedor verificado y aparece una vez por
+   pantalla. Una cifra en bronce lo gastaria siete veces. El tipo lo pone `.tipo-cifra`,
+   que vive en tipografia.css. */
+.mias__numero {
+  margin: 0;
+  color: var(--color-texto);
+}
+
+/* El mismo alto y la misma medida que la caja real, para que no salte nada al llegar. */
+.mias__cifra-esqueleto {
+  flex: 1 1 var(--medida-cifra);
+  height: var(--esp-96);
+  min-width: var(--medida-cifra);
+  margin: 0;
+}
+
+/* El error se acota a la fila y deja la lista debajo intacta (criterio 6). */
+.mias__cifras-error {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-12);
+  align-items: center;
+}
+
+/* La fila tiene sus tres estados como cualquier otra lectura: cargando, vacio y error. */
+.mias__cifras-vacio {
+  margin: 0;
+  color: var(--color-texto-suave);
+}
+
+/* Recibe el foco tras un reintento, porque el boton que lo pidio ya no existe. Sin anillo
+   propio: el de :focus-visible del sistema no aplica a un destino programatico, y marcar
+   visualmente algo que nadie pulso confunde mas que ayuda. */
+.mias__cifras-zona:focus {
+  outline: none;
+}

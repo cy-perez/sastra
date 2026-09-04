@@ -1,11 +1,15 @@
 package co.sendik.catalog.rest;
 
 import co.sendik.catalog.dto.ListSellerListingsQuery;
+import co.sendik.catalog.dto.SummarizeSellerListingsQuery;
 import co.sendik.catalog.model.SellerId;
 import co.sendik.catalog.rest.dto.ListingResponse;
 import co.sendik.catalog.rest.dto.SellerListingsPage;
+import co.sendik.catalog.rest.dto.SellerListingsSummaryResponse;
 import co.sendik.catalog.rest.mapper.ListingResponses;
+import co.sendik.catalog.rest.mapper.SellerListingsSummaries;
 import co.sendik.catalog.usecase.ListSellerListingsUseCase;
+import co.sendik.catalog.usecase.SummarizeSellerListingsUseCase;
 import co.sendik.shared.port.out.PublicFileStore;
 import java.util.List;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -34,10 +38,15 @@ import org.springframework.web.bind.annotation.RestController;
 public class SellerListingsController {
 
     private final ListSellerListingsUseCase casoDeListar;
+    private final SummarizeSellerListingsUseCase casoDeResumir;
     private final PublicFileStore almacen;
 
-    public SellerListingsController(ListSellerListingsUseCase casoDeListar, PublicFileStore almacen) {
+    public SellerListingsController(
+            ListSellerListingsUseCase casoDeListar,
+            SummarizeSellerListingsUseCase casoDeResumir,
+            PublicFileStore almacen) {
         this.casoDeListar = casoDeListar;
+        this.casoDeResumir = casoDeResumir;
         this.almacen = almacen;
     }
 
@@ -61,5 +70,23 @@ public class SellerListingsController {
                         .toList();
 
         return new SellerListingsPage(suyas, pagina, tamano);
+    }
+
+    /**
+     * Cuantas tiene en cada estado. HU-012.
+     *
+     * <p>Ruta hermana del listado y no {@code /listings/mine/summary}, que es lo que
+     * proponia la historia: las publicaciones propias ya viven bajo {@code users/me} por lo
+     * que dice el javadoc de arriba -el recurso es lo que tiene esta cuenta, no el
+     * catalogo- y colgarla de otro sitio partiria en dos el mismo recurso y dejaria la
+     * cifra fuera de la regla de seguridad que protege al listado.
+     *
+     * <p>No recibe ningun parametro: no se pagina ni se filtra, y el vendedor sale del
+     * token y nunca de la peticion.
+     */
+    @GetMapping("/summary")
+    public SellerListingsSummaryResponse resumen(@AuthenticationPrincipal Jwt token) {
+        return SellerListingsSummaries.de(
+                casoDeResumir.execute(new SummarizeSellerListingsQuery(SellerId.de(token.getSubject()))));
     }
 }

@@ -201,7 +201,38 @@ test.describe('catálogo público', () => {
     await page.goto(RUTA_MIS_PUBLICACIONES);
     await expect(page.getByText(titulo).first()).toBeVisible();
 
+    // Las cifras del panel, HU-012. La vendedora nace nueva en cada corrida, asi que estas
+    // cuentan: acaba de enviar una y no tiene ninguna de lo demas. Los siete estados estan,
+    // y **el cero se dice** en vez de desaparecer, que es el criterio 2 visto de punta a
+    // punta: la cifra la calcula el servidor y la pinta la pantalla.
+    // Por rol y no por clase de CSS: esta suite existe para ver el contrato entre las dos
+    // mitades, y amarrarla a un nombre BEM la rompe con un cambio que no toca ese contrato.
+    // `dt` y `dd` son `term` y `definition`, y van emparejados por posicion.
+    const nombres = page.getByRole('term');
+    const numeros = page.getByRole('definition');
+    await expect(nombres).toHaveCount(7);
+
+    const cifraDe = async (estado: string) =>
+      numeros.nth((await nombres.allInnerTexts()).indexOf(estado)).innerText();
+
+    expect(await cifraDe('En revisión')).toBe('1');
+    expect(await cifraDe('Vendida')).toBe('0');
+
     // Lo mismo: lo que espera revisión se recoge, o se queda en la cola para siempre.
     await retirarDeRevision(page, id);
+  });
+
+  /** Criterio 7 de HU-012: sin sesión el panel no existe. Se explica y se ofrece entrar. */
+  test('sin sesion el panel no existe y se ofrece entrar, criterio 7', async ({ page }) => {
+    await salirSiHaySesion(page);
+
+    await page.goto(RUTA_MIS_PUBLICACIONES);
+
+    await expect(page.getByRole('heading', { name: 'Mis publicaciones' })).toBeVisible();
+    await expect(page.getByText('Entra para verlas')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Entrar' }).first()).toBeVisible();
+
+    // Y ninguna cifra: no hay de quien contarlas.
+    await expect(page.getByRole('term')).toHaveCount(0);
   });
 });

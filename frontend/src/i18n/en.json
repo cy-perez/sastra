@@ -1068,7 +1068,15 @@
       "emptyAction": "List my first product",
       "new": "List a product",
       "attention": "Needs attention",
-      "untitled": "Untitled listing"
+      "untitled": "Untitled listing",
+      "signedOut": "Your listings are yours and nobody else sees them. Sign in to view them.",
+      "signIn": "Sign in",
+      "summary": {
+        "loading": "Loading the figures",
+        "ready": "Figures up to date",
+        "empty": "No figures to show.",
+        "retry": "Try again"
+      }
     },
     "a11y": {
       "loading": "Loading the listing",

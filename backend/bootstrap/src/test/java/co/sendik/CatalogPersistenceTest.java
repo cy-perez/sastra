@@ -299,6 +299,81 @@ class CatalogPersistenceTest {
                 .containsExactlyInAnyOrder(AttentionReason.PRICE_OUT_OF_RANGE, AttentionReason.GALLERY_UPLOAD);
     }
 
+    // HU-012: las cifras del panel. Contra PostgreSQL porque el vendedor vive en
+    // `products` y el estado en `listings`: la union es justo lo que una prueba en memoria
+    // no puede equivocarse en comprobar.
+    @Test
+    void deberia_contar_por_estado_solo_lo_del_vendedor_que_pregunta_HU_012() {
+        SellerId una = new SellerId(nuevoUsuario());
+        SellerId otra = new SellerId(nuevoUsuario());
+
+        publicaciones.guardar(borradorDeVendedor(una));
+        publicaciones.guardar(borradorDeVendedor(una));
+        publicadaDe(una, AHORA);
+        publicaciones.guardar(borradorDeVendedor(otra));
+
+        var suyas = publicaciones.contarPorEstadoDelVendedor(una);
+
+        assertThat(suyas).hasSize(2).containsEntry(ListingStatus.DRAFT, 2L).containsEntry(ListingStatus.PUBLISHED, 1L);
+        assertThat(publicaciones.contarPorEstadoDelVendedor(otra))
+                .as("las de una no pueden contarse en el panel de la otra")
+                .hasSize(1)
+                .containsEntry(ListingStatus.DRAFT, 1L);
+    }
+
+    /**
+     * Los seis estados alcanzables hacen el viaje de ida y vuelta por la columna de texto.
+     *
+     * <p><strong>Es el unico sitio donde se puede comprobar.</strong>
+     * {@code ListingStatus.valueOf(fila.getString("status"))} convierte texto a enumeracion, y
+     * eso depende de que los literales de la restriccion {@code listings_status_valid} sean
+     * exactamente los de {@link ListingStatus}. Son dos archivos que nadie ata, y con solo
+     * {@code DRAFT} y {@code PUBLISHED} recorridos, cinco de los siete nunca hacian ese viaje:
+     * una migracion que escribiera otro literal reventaria en produccion con todo en verde.
+     *
+     * <p>{@code SOLD} queda fuera porque no hay forma de llegar: lo provoca el pago aprobado
+     * (RN-035) y eso es Fase 3. El dia que exista, esta prueba lo pide.
+     */
+    @Test
+    void deberia_contar_los_seis_estados_alcanzables_HU_012() {
+        SellerId vendedora = new SellerId(nuevoUsuario());
+        ModeratorId moderadora = new ModeratorId(nuevoUsuario());
+
+        publicaciones.guardar(borradorDeVendedor(vendedora));
+        publicaciones.guardar(conTomas(borradorDeVendedor(vendedora), 8).enviarARevision(AHORA));
+        publicadaDe(vendedora, AHORA);
+        publicaciones.guardar(conTomas(borradorDeVendedor(vendedora), 8)
+                .enviarARevision(AHORA)
+                .rechazar(moderadora, ListingRejectionReason.PHOTOS_UNUSABLE, "Las tomas salen movidas.", AHORA));
+        publicaciones.guardar(publicadaDe(vendedora, AHORA).pausar(AHORA));
+        publicaciones.guardar(borradorDeVendedor(vendedora).archivar(AHORA));
+
+        assertThat(publicaciones.contarPorEstadoDelVendedor(vendedora))
+                .containsEntry(ListingStatus.DRAFT, 1L)
+                .containsEntry(ListingStatus.PENDING_REVIEW, 1L)
+                .containsEntry(ListingStatus.PUBLISHED, 1L)
+                .containsEntry(ListingStatus.REJECTED, 1L)
+                .containsEntry(ListingStatus.PAUSED, 1L)
+                .containsEntry(ListingStatus.ARCHIVED, 1L)
+                .as("SOLD no es alcanzable hasta que haya pagos")
+                .doesNotContainKey(ListingStatus.SOLD);
+    }
+
+    /**
+     * El {@code GROUP BY} <strong>no inventa los estados vacios</strong>, y eso se fija
+     * aqui a proposito.
+     *
+     * <p>Completar los siete de RN-061 con cero es de {@code SummarizeSellerListingsUseCase}.
+     * Si algun dia esta consulta empezara a devolverlos, la prueba del caso de uso seguiria
+     * pasando sin que el caso de uso hiciera nada y nadie se enteraria de que la decision
+     * se mudo de capa.
+     */
+    @Test
+    void deberia_devolver_el_conteo_vacio_de_quien_no_tiene_ninguna_HU_012() {
+        assertThat(publicaciones.contarPorEstadoDelVendedor(new SellerId(nuevoUsuario())))
+                .isEmpty();
+    }
+
     // V12: la cola del moderador, contra el indice parcial y la base de verdad.
     @Test
     void deberia_devolver_en_la_cola_solo_lo_que_espera_revision_HU_008() {
@@ -780,6 +855,11 @@ class CatalogPersistenceTest {
 
     private Listing borradorConTomas() {
         return conTomas(borradorDe(medidasDe(MeasurementGroup.TOP)), 8);
+    }
+
+    /** Un borrador de un vendedor concreto, para las cifras del panel. */
+    private Listing borradorDeVendedor(SellerId vendedor) {
+        return Listing.crearBorrador(ListingId.nuevo(), productoDe(vendedor, medidasDe(MeasurementGroup.TOP)), AHORA);
     }
 
     private Listing publicada() {

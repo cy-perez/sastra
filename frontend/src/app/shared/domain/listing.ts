@@ -21,9 +21,36 @@
  * decide el servidor, y si dice que no, lo dice con un 422 y su lista de campos.
  */
 
+/**
+ * Los siete estados del glosario, en el orden del ciclo de vida (RN-061).
+ *
+ * <p>Como arreglo y no solo como tipo, porque hace falta **en ejecución**: el resumen del
+ * panel llega del servidor con el estado en texto y hay que poder descartar uno que no
+ * exista sin romper la fila (HU-012). Un tipo se borra al compilar y no sirve para eso.
+ */
+export const ESTADOS = [
+  'DRAFT',
+  'PENDING_REVIEW',
+  'PUBLISHED',
+  'REJECTED',
+  'PAUSED',
+  'SOLD',
+  'ARCHIVED',
+] as const;
+
 /** Los siete estados del glosario. */
-export type ListingStatus =
-  'DRAFT' | 'PENDING_REVIEW' | 'PUBLISHED' | 'REJECTED' | 'PAUSED' | 'SOLD' | 'ARCHIVED';
+export type ListingStatus = (typeof ESTADOS)[number];
+
+/** Cuántas publicaciones hay en un estado. HU-012. */
+export interface CifraPorEstado {
+  readonly status: ListingStatus;
+  readonly count: number;
+}
+
+/** Si el texto que llegó del servidor es uno de los siete. */
+export function esEstadoConocido(candidato: string): candidato is ListingStatus {
+  return (ESTADOS as readonly string[]).includes(candidato);
+}
 
 /** Las cuatro del glosario. No hay una quinta. */
 export type Condition = 'NEW' | 'LIKE_NEW' | 'GOOD' | 'WITH_FLAWS';

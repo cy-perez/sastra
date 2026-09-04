@@ -13,6 +13,8 @@ import co.sendik.catalog.dto.ProductData;
 import co.sendik.catalog.dto.ReadListingQuery;
 import co.sendik.catalog.dto.RejectListingCommand;
 import co.sendik.catalog.dto.SellerListingCommand;
+import co.sendik.catalog.dto.SellerListingsSummary;
+import co.sendik.catalog.dto.SummarizeSellerListingsQuery;
 import co.sendik.catalog.dto.TakeDownListingCommand;
 import co.sendik.catalog.dto.UpdateListingContentCommand;
 import co.sendik.catalog.exception.ConditionNotAllowedException;
@@ -382,6 +384,93 @@ class CasosDeUsoDelCatalogoTest {
                     .isInstanceOf(IllegalArgumentException.class);
             assertThatThrownBy(() -> new ListSellerListingsQuery(vendedor, 0, 0))
                     .isInstanceOf(IllegalArgumentException.class);
+        }
+    }
+
+    /** Las cifras del panel del vendedor. HU-012, RN-061. */
+    @Nested
+    class Cifras {
+
+        @Test
+        void deberia_contar_por_estado_y_decir_cero_en_los_demas_criterios_1_y_2() {
+            Category camisas = arbol.camisas();
+            crear().execute(new CreateListingCommand(vendedor, datosDeCamisa(camisas)));
+            publicada();
+            rechazada();
+
+            SellerListingsSummary cifras = resumir().execute(new SummarizeSellerListingsQuery(vendedor));
+
+            assertThat(cifras.en(ListingStatus.DRAFT)).isEqualTo(1);
+            assertThat(cifras.en(ListingStatus.PUBLISHED)).isEqualTo(1);
+            assertThat(cifras.en(ListingStatus.REJECTED)).isEqualTo(1);
+
+            // Los que no tiene siguen estando, y dicen cero. Es el criterio 2, y es lo que
+            // distingue «no tengo ninguna en revision» de «la cifra no cargo».
+            assertThat(cifras.en(ListingStatus.PENDING_REVIEW)).isZero();
+            assertThat(cifras.en(ListingStatus.PAUSED)).isZero();
+            assertThat(cifras.en(ListingStatus.SOLD)).isZero();
+            assertThat(cifras.en(ListingStatus.ARCHIVED)).isZero();
+        }
+
+        @Test
+        void deberia_contar_solo_las_del_vendedor_que_pregunta() {
+            Category camisas = arbol.camisas();
+            SellerId otra = new SellerId(UUID.randomUUID());
+            crear().execute(new CreateListingCommand(vendedor, datosDeCamisa(camisas)));
+            crear().execute(new CreateListingCommand(otra, datosDeCamisa(camisas)));
+            crear().execute(new CreateListingCommand(otra, datosDeCamisa(camisas)));
+
+            assertThat(resumir()
+                            .execute(new SummarizeSellerListingsQuery(vendedor))
+                            .en(ListingStatus.DRAFT))
+                    .isEqualTo(1);
+            assertThat(resumir().execute(new SummarizeSellerListingsQuery(otra)).en(ListingStatus.DRAFT))
+                    .isEqualTo(2);
+        }
+
+        /** Cuenta nueva, sin nada publicado. Criterio 3. */
+        @Test
+        void deberia_devolver_los_siete_en_cero_sin_ninguna_publicacion_criterio_3() {
+            SellerListingsSummary cifras = resumir().execute(new SummarizeSellerListingsQuery(vendedor));
+
+            assertThat(cifras.porEstado()).containsOnlyKeys(ListingStatus.values());
+            assertThat(cifras.porEstado().values())
+                    .allSatisfy(cuantas -> assertThat(cuantas).isZero());
+        }
+
+        /**
+         * El orden es el de la enumeracion, que es el del ciclo de vida de una publicacion.
+         *
+         * <p>Se comprueba porque la pantalla lo pinta en ese orden y lo da por hecho: con un
+         * mapa sin orden definido las cifras cambiarian de sitio entre dos cargas.
+         */
+        @Test
+        void deberia_conservar_el_orden_de_los_estados() {
+            assertThat(resumir()
+                            .execute(new SummarizeSellerListingsQuery(vendedor))
+                            .porEstado()
+                            .keySet())
+                    .containsExactly(ListingStatus.values());
+        }
+
+        /** La invariante del resumen: o estan los siete, o no es un resumen. */
+        @Test
+        void deberia_rechazar_un_resumen_al_que_le_falte_un_estado() {
+            assertThatThrownBy(() -> new SellerListingsSummary(Map.of(ListingStatus.DRAFT, 1L)))
+                    .isInstanceOf(IllegalArgumentException.class);
+            // Y lo dice igual ante un nulo, en vez de dejar salir un NPE: el resto del
+            // codigo usa IllegalArgumentException para «no puedes existir asi».
+            assertThatThrownBy(() -> new SellerListingsSummary(null)).isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        void deberia_exigir_el_vendedor() {
+            assertThatThrownBy(() -> new SummarizeSellerListingsQuery(null))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        private SummarizeSellerListingsUseCase resumir() {
+            return new SummarizeSellerListingsUseCase(publicaciones);
         }
     }
 

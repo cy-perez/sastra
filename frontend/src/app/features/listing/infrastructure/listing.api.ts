@@ -4,13 +4,16 @@ import { filter, firstValueFrom, map, type Observable } from 'rxjs';
 
 import type {
   Category,
+  CifraPorEstado,
   Color,
   Condition,
   Listing,
+  ListingStatus,
   Money,
   Shipping,
   Size,
 } from '../../../shared/domain/listing';
+import { esEstadoConocido } from '../../../shared/domain/listing';
 
 /**
  * Lo que se manda al crear o editar. Es de esta capa y no sale de ella: la plantilla ve
@@ -54,6 +57,17 @@ interface SellerListingsPageDto {
   readonly items: readonly Listing[];
   readonly page: number;
   readonly size: number;
+}
+
+/**
+ * Lo que responde el resumen del panel. HU-012.
+ *
+ * <p>Lista de pares y no un objeto con una clave por estado: así un estado nuevo del
+ * servidor no cambia la forma de la respuesta y esta pantalla lo ignora sin enterarse.
+ * Por eso `status` es `string` y no `ListingStatus`, que es justo lo que obliga a filtrar.
+ */
+interface SellerListingsSummaryDto {
+  readonly counts: readonly { readonly status: string; readonly count: number }[];
 }
 
 /**
@@ -218,6 +232,37 @@ export class ListingApi {
       }),
     );
     return respuesta.items;
+  }
+
+  /**
+   * Cuántas tiene en cada estado. HU-012.
+   *
+   * <p><strong>Aquí sí hay mapeo, y no es de nombres.</strong> El estado llega como texto
+   * y el dominio promete uno de los siete de RN-061, así que un valor que no conozca se
+   * descarta en la frontera. Es el caso borde que pide la historia: un estado nuevo del
+   * servidor no puede pintar una cifra sin nombre ni tumbar la fila entera.
+   *
+   * <p>Se descarta y no se traduce a «otros»: una cifra sin nombre no se puede explicar,
+   * y sumarla a otra mentiría sobre las que sí se entienden.
+   */
+  async resumen(): Promise<readonly CifraPorEstado[]> {
+    const respuesta = await firstValueFrom(
+      this.http.get<SellerListingsSummaryDto>('users/me/listings/summary'),
+    );
+
+    // Por `Map` y no por `filter` y `map`: ademas de descartar lo que no se conoce, quita
+    // los repetidos. La pantalla recorre esto con `track cifra.status`, y dos entradas del
+    // mismo estado -un `GROUP BY` mal escrito, una union futura- le dan dos claves iguales
+    // y rompen el bloque entero. El filtro de estados no protege de eso: un repetido es un
+    // estado conocido. Gana el primero, que es el orden en que el servidor los mando.
+    const porEstado = new Map<ListingStatus, number>();
+    for (const cifra of respuesta.counts ?? []) {
+      if (esEstadoConocido(cifra.status) && !porEstado.has(cifra.status)) {
+        porEstado.set(cifra.status, cifra.count);
+      }
+    }
+
+    return [...porEstado].map(([status, count]) => ({ status, count }));
   }
 }
 

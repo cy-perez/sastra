@@ -31,6 +31,7 @@ import co.sendik.shared.file.NormalizedImage;
 import co.sendik.shared.port.out.PublicFileStore;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -97,6 +98,23 @@ final class CatalogoEnMemoria {
             // Corta igual que el SQL: el salto llega dado y el limite no lo mueve.
             int desde = (int) Math.min(salto, esperando.size());
             return esperando.subList(desde, Math.min(desde + cuantas, esperando.size()));
+        }
+
+        /**
+         * Cuenta igual que el SQL: agrupa por estado y <strong>no inventa los vacios</strong>.
+         *
+         * <p>Que aqui salieran los siete con cero haria pasar la prueba del caso de uso sin
+         * que el caso de uso hiciera nada, y romperia contra PostgreSQL, que es donde un
+         * {@code GROUP BY} de verdad solo devuelve los grupos que existen.
+         */
+        @Override
+        public Map<ListingStatus, Long> contarPorEstadoDelVendedor(SellerId vendedor) {
+            Map<ListingStatus, Long> porEstado = new EnumMap<>(ListingStatus.class);
+            filas.values().stream()
+                    .filter(publicacion -> publicacion.sellerId().equals(vendedor))
+                    .forEach(publicacion -> porEstado.merge(publicacion.status(), 1L, Long::sum));
+
+            return porEstado;
         }
 
         @Override

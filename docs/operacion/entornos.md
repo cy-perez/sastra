@@ -23,6 +23,35 @@ nadie lo use. Nada de eso hace falta para tener `dev` en pie.
 **Y `dev` sigue costando cero.** No es una concesión: es consecuencia de que todo
 lo que lo compone escala a cero o entra en capa gratuita.
 
+### El correo transaccional no sale, y es un bloqueo de lanzamiento
+
+**Anotado el 5 de septiembre de 2026**, al encender las tres banderas de la Fase 2
+en `dev` y registrarse por primera vez contra ese entorno.
+
+`dev` y `prod` mandan con `MAIL_PROVIDER=resend` y
+`MAIL_FROM=no-responder@sendik.co`. El dominio se contrató el 26 de agosto y **nunca
+se le añadieron los registros que Resend exige** para verificar un remitente, así
+que cada envío moría con un 403 del proveedor:
+
+```
+ERROR c.s.identity.client.ResendMailSender : El proveedor rechazo un correo transaccional con estado 403
+```
+
+Ese mismo día se añadieron DKIM (`resend._domainkey.sendik.co`) y SPF
+(`send.sendik.co`), y Resend dejó de rechazar. **El correo sigue sin llegar al
+buzón**, ni a la bandeja ni a no deseados; falta revisar el panel de Resend, que es
+donde se ve el estado de cada envío.
+
+**Nadie lo había visto porque nadie se había registrado nunca en `dev`.** El perfil
+`local` usa `MAIL_PROVIDER=console` y las suites leen el enlace del registro de la
+aplicación, así que las dos mitades de HU-001 estaban probadas sin que ningún correo
+saliera de verdad ni una sola vez.
+
+Lo que queda inservible mientras siga así: verificar un correo, recuperar una
+contraseña, y todos los avisos de moderación de HU-002 y HU-007. Es decir, **no se
+puede lanzar**. Va con los textos legales en la lista de lo que bloquea producción,
+y a diferencia de aquellos esto sí es trabajo técnico.
+
 | Pieza | Dónde | Costo en `dev` |
 |---|---|---|
 | Dominio `sendik.co` | GoDaddy, registrador y DNS | Ya pagado |

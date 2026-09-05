@@ -142,10 +142,16 @@ Un commit por unidad lógica. No mezcles refactor con funcionalidad.
 
 ## Estado del proyecto
 
-Fase actual: **Fase 2, publicación y catálogo**. La Fase 1 quedó cerrada el 21 de
-agosto de 2026: cimientos, cuentas y sitio informativo, con las dos salvedades que
-anota `docs/producto/alcance.md`.
+**La Fase 2 quedó cerrada el 5 de septiembre de 2026**: publicación, moderación,
+catálogo, favoritos y panel del vendedor. Sus tres banderas están encendidas en
+`dev` y apagadas en `prod`. La Fase 1 se cerró el 21 de agosto.
 
-El alcance por fase está en `docs/producto/alcance.md`. No implementes
-funcionalidad de fases posteriores aunque el diseño ya la contemple: hoy eso
-significa que la Fase 3 —búsqueda, carrito, pagos, envíos— sigue fuera.
+**La Fase 3 no ha empezado.** Cerrar una fase no abre la siguiente: eso es una
+decisión, y hasta que se tome no se implementa nada de búsqueda, carrito, pagos ni
+envíos, aunque el diseño ya lo contemple. El alcance por fase está en
+`docs/producto/alcance.md`.
+
+Dos cosas bloquean el lanzamiento y ninguna es de Fase 3: los **textos legales**,
+que siguen siendo relleno sin valor legal, y el **correo transaccional**, que no
+sale —`docs/operacion/entornos.md`—. La segunda se descubrió al encender las
+banderas en `dev`.

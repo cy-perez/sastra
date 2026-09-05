@@ -168,13 +168,18 @@ declaradas tiene el mapa vacío y se guarda como `{}`.
 
 **listings**: `id`, `product_id`, `status`, `submitted_at`, `published_at`,
 `sold_at`, `moderated_by`, `moderated_at`, `rejection_reason`, `rejection_note`,
-`requires_attention`, `attention_reason`, `version`.
+`requires_attention`, `attention_reasons`, `version`.
 La publicación se separa del producto para que el ciclo de moderación no
 contamine los datos de la prenda.
-`requires_attention` y `attention_reason` son la marca de revisión más atenta:
+`requires_attention` y `attention_reasons` son la marca de revisión más atenta:
 la pone un precio fuera del rango de RN-020 o una toma cargada desde galería en
 vez de capturada (HU-003 criterio 8). No cambia el estado ni bloquea nada; solo
 hace que el moderador la vea destacada.
+**Es un arreglo (`text[]`) y no una columna de un valor**, porque las dos marcas
+conviven: una misma publicación puede tener el precio fuera de rango **y** una toma
+de galería, y con una sola columna la segunda borraba a la primera. Nació singular
+y `V10__catalog_fixes.sql` la sustituyó por el arreglo, migrando lo que hubiera y
+retirando el `CHECK` de la vieja.
 `submitted_at` es cuándo entró a revisión, y existe porque `updated_at` no sirve
 para ordenar la cola del moderador: una publicación que espera turno **puede
 cambiar de precio** —RN-062 y RN-030 lo permiten a propósito, el precio no pasa

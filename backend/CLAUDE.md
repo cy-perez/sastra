@@ -1,6 +1,6 @@
 # Backend — convenciones
 
-Java 25 · Spring Boot 4.1.0 · Gradle 9 multi-módulo · PostgreSQL 17 ·
+Java 25 · Spring Boot 4.1.1 · Gradle 9 multi-módulo · PostgreSQL 17 ·
 Spring Data JDBC · Flyway.
 
 Lee primero `../CLAUDE.md`. Aquí solo está lo específico del backend.
@@ -163,7 +163,7 @@ incorrecto:
 Ante la duda sobre una API, revisa cómo está resuelto en el código existente
 antes de escribir desde cero.
 
-Los starters en uso, ya verificados contra el BOM 4.1.0:
+Los starters en uso, ya verificados contra el BOM 4.1.1:
 `spring-boot-starter-webmvc`, `-validation`, `-data-jdbc`, `-flyway`,
 `-actuator`, `-security`, `-oauth2-resource-server`, `-json`, `-test` y
 `spring-boot-starter` a secas en `bootstrap`.

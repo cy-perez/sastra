@@ -61,6 +61,15 @@ que por selector CSS. Nunca se prueban métodos privados.
   datos y darle acceso a esta suite significaría agregarle al frontend un cliente de
   PostgreSQL.
 
+  **Arranca un jar ya construido, no compila.** `arrancar-backend.mjs` busca el
+  ejecutable en `backend/bootstrap/build/libs`, así que antes de correr esta suite
+  hay que hacer `cd backend && ./gradlew :bootstrap:bootJar`. Sin eso se prueba
+  contra el backend de la última vez que alguien lo empaquetó, y el síntoma engaña:
+  un endpoint recién escrito responde 404 y la prueba parece decir que el código
+  está mal. Pasó al cerrar HU-013. Si no hay ningún jar, el script lo dice y no
+  arranca; lo que no puede detectar es que el que hay esté viejo. En la integración
+  continua no ocurre porque el flujo construye antes de probar.
+
 La segunda existe porque la primera no puede ver un contrato roto entre las dos
 mitades (ADR-0017). Los caminos de cuentas estaban probados por mitades —MockMvc en
 `presentation`, Testcontainers en `bootstrap`, componentes con HTTP simulado en el

@@ -1,0 +1,85 @@
+<div class="rastro">
+  <!--
+    Un desplegable, y el botón es la etiqueta de lo que despliega: la región apunta a él con
+    aria-labelledby en vez de llevar un encabezado propio. Un encabezado obligaría a acertar
+    el nivel, y este componente vive en dos pantallas con jerarquías distintas -bajo un h2 en
+    /mis-publicaciones y dentro del bloque de rechazo en /publicar/:id-, así que cualquier
+    nivel fijo se equivoca en una de las dos.
+  -->
+  <button
+    type="button"
+    class="btn btn-secundario rastro__interruptor"
+    [id]="idDeLaRegion() + '-boton'"
+    [attr.aria-expanded]="abierto()"
+    [attr.aria-controls]="idDeLaRegion()"
+    (click)="alternar()"
+  >
+    {{ (abierto() ? 'listing.trail.hide' : 'listing.trail.show') | transloco }}
+  </button>
+
+  @if (abierto()) {
+    <div
+      class="rastro__cuerpo"
+      [id]="idDeLaRegion()"
+      role="region"
+      [attr.aria-labelledby]="idDeLaRegion() + '-boton'"
+    >
+      @if (consulta.isPending()) {
+        <!--
+          Región viva para que quien no ve la pantalla se entere de que se está cargando: al
+          contrario que en las cifras, aquí el bloque nace al pulsar, así que el propio texto
+          entrando en el DOM es el anuncio.
+        -->
+        <p class="tipo-secundario rastro__cargando" role="status">
+          {{ 'listing.trail.loading' | transloco }}
+        </p>
+      } @else if (consulta.isError()) {
+        <div class="rastro__error">
+          <p class="tipo-cuerpo" role="alert">{{ claveDeError(consulta.error()) | transloco }}</p>
+          <!--
+            Sin `disabled`: al pulsarlo la consulta vuelve a `pending` y esta rama se destruye,
+            así que el botón desaparece solo. Es la misma decisión que en las cifras de HU-012.
+          -->
+          <button type="button" class="btn btn-secundario" (click)="reintentar()">
+            {{ 'listing.trail.retry' | transloco }}
+          </button>
+        </div>
+      } @else if (pasos().length === 0) {
+        <!--
+          Criterio 6. Se dice que todavía no ha pasado nada; no se pinta una lista vacía, que
+          se lee como «esto no cargó».
+        -->
+        <p class="tipo-cuerpo rastro__vacio">{{ 'listing.trail.empty' | transloco }}</p>
+      } @else {
+        <!--
+          Una lista ordenada porque el orden es la información: lo más reciente arriba. Cada
+          paso dice **con palabras** qué pasó, que es RN-012 en otra pantalla: un rechazo no se
+          distingue de una aprobación por el color.
+        -->
+        <ol class="rastro__linea">
+          @for (paso of pasos(); track paso.clave) {
+            <li class="rastro__paso">
+              <p class="rastro__que tipo-cuerpo">{{ paso.etiqueta | transloco }}</p>
+
+              @if (paso.motivo; as motivo) {
+                <p class="rastro__motivo tipo-secundario">
+                  <strong>{{ 'listing.trail.reasonLabel' | transloco }}:</strong>
+                  {{ motivo | transloco }}
+                </p>
+              }
+
+              <!--
+                `datetime` lleva el instante en UTC tal como llegó y el texto va en la zona y el
+                formato de quien mira (criterio 9). Así lo que se lee es local y lo que una
+                máquina interpreta sigue siendo inequívoco.
+              -->
+              <p class="rastro__cuando tipo-secundario">
+                <time [attr.datetime]="paso.iso">{{ paso.cuando }}</time>
+              </p>
+            </li>
+          }
+        </ol>
+      }
+    </div>
+  }
+</div>

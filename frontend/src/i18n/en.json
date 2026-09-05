@@ -1147,6 +1147,22 @@
       "notFound": "We could not open this listing. It may no longer exist, or it may not be yours.",
       "backToListings": "Back to my listings",
       "notForSealed": "This product does not use the capture assistant."
+    },
+    "trail": {
+      "show": "See what happened",
+      "hide": "Hide what happened",
+      "loading": "Loading the history",
+      "empty": "Nothing has happened with this listing yet.",
+      "error": "We could not load the history.",
+      "retry": "Try again",
+      "reasonLabel": "Reason",
+      "action": {
+        "SUBMITTED": "You sent it for review",
+        "APPROVED": "It was approved and published",
+        "REJECTED": "It was rejected",
+        "ARCHIVED": "It was taken down",
+        "unknown": "Something changed on this listing"
+      }
     }
   },
   "listingReview": {

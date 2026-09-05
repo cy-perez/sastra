@@ -1,0 +1,71 @@
+/* El rastro de moderacion. HU-013.
+
+   Sin margen propio en el bloque: quien lo coloca -la fila del panel, el bloque de rechazo-
+   ya separa a sus hijos con su `gap`, y sumarle uno aqui deja separaciones distintas en cada
+   una de las dos pantallas donde vive. */
+.rastro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-12);
+}
+
+/* Se alinea al principio para que no se estire al ancho de la fila: es una accion
+   secundaria y un boton a todo lo ancho compite con las que si importan -pausar, archivar-. */
+.rastro__interruptor {
+  align-self: flex-start;
+}
+
+.rastro__cuerpo {
+  padding: var(--esp-12);
+  border: 1px solid var(--color-borde-control);
+  border-radius: var(--radio-md);
+}
+
+.rastro__cargando,
+.rastro__vacio {
+  margin: 0;
+  color: var(--color-texto-suave);
+}
+
+/* El error se acota a este bloque y deja intacta la publicacion de la que cuelga. */
+.rastro__error {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--esp-12);
+  align-items: center;
+}
+
+/* Sin vinetas: la lista es ordenada porque el orden es la informacion -lo mas reciente
+   arriba- y no porque haga falta numerarla a la vista. */
+.rastro__linea {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-16);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* La linea de la izquierda es el unico adorno, y es un borde y no la `.regla-corte`: esa es
+   la firma grafica y va una sola vez por pieza, no una por fila. Tampoco lleva acento: el
+   bronce es de la insignia de vendedor verificado y aqui habria uno por paso.
+
+   No distingue una accion de otra por color, y eso es RN-012: lo que separa un rechazo de
+   una aprobacion es el texto de `.rastro__que`. */
+.rastro__paso {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-4);
+  padding-inline-start: var(--esp-12);
+  border-inline-start: 2px solid var(--color-borde);
+}
+
+.rastro__que {
+  margin: 0;
+}
+
+.rastro__motivo,
+.rastro__cuando {
+  margin: 0;
+  color: var(--color-texto-suave);
+}

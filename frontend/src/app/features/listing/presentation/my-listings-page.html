@@ -173,6 +173,12 @@
                   {{ 'listing.mine.attention' | transloco }}
                 </p>
               }
+
+              <!--
+                El rastro, plegado. HU-013. Va dentro de los datos de la fila y no entre las
+                acciones: no es algo que se le haga a la publicacion, es lo que le paso.
+              -->
+              <sendik-moderation-trail [publicacion]="publicacion.id" />
             </div>
 
             <div class="mias__acciones">

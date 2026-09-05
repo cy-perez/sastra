@@ -177,6 +177,58 @@ export class ListingStore {
     this.abierta.set(id);
   }
 
+  /**
+   * De qué publicación se está mirando el rastro, o de ninguna. HU-013.
+   *
+   * <p>Una sola: el rastro se abre plegado y solo uno a la vez, así que no hace falta una
+   * consulta por fila. Es además lo que evita que abrir `/mis-publicaciones` con veinte
+   * filas dispare veinte peticiones que nadie pidió.
+   */
+  private readonly conRastroAbierto = signal<string | null>(null);
+
+  /**
+   * De cuál está abierto el rastro, para que el componente lo lea.
+   *
+   * <p>El estado de abierto vive aquí y no en cada componente **a propósito**: la consulta
+   * es una sola, así que abrir el rastro de una fila mientras otra lo tiene abierto dejaría
+   * a la segunda enseñando datos que no son suyos. Derivándolo de esta señal, abrir uno
+   * cierra el otro sin que ninguno de los dos sepa que el otro existe.
+   */
+  readonly rastroAbierto = this.conRastroAbierto.asReadonly();
+
+  /**
+   * El rastro de la publicación abierta. HU-013.
+   *
+   * <p>Consulta aparte de {@link current} y no un campo suyo: son dos lecturas del servidor
+   * y el fallo de una no puede tapar la otra. Es lo mismo que decidió HU-012 para las
+   * cifras, y aquí importa más: una publicación que no se ve porque su rastro falló es una
+   * publicación que el vendedor no puede retomar.
+   *
+   * <p>Sin reintentos, como las demás: el 404 es una respuesta normal —«no es tuya o no
+   * existe», que el criterio 7 hace indistinguibles— y reintentarlo tres veces solo retrasa
+   * lo que la pantalla va a decir igual.
+   *
+   * <p>Las dos señales se leen aquí y no dentro de la función, por lo mismo que en las
+   * demás: TanStack invoca las opciones fuera del ámbito reactivo.
+   */
+  readonly history = injectQuery(() => ({
+    queryKey: queryKeys.history(this.conRastroAbierto() ?? 'ninguna'),
+    queryFn: () => this.api.rastro(this.conRastroAbierto() ?? ''),
+    staleTime: 0,
+    retry: false,
+    enabled: this.conRastroAbierto() !== null && this.sesion.isAuthenticated(),
+  }));
+
+  /**
+   * La pantalla dice de cuál quiere el rastro, y `null` cuando lo cierra.
+   *
+   * <p>Mismo trato que {@link abrir} y {@link mirarLasCifras}: la pantalla es quien sabe, y
+   * el store no adivina.
+   */
+  mirarElRastro(id: string | null): void {
+    this.conRastroAbierto.set(id);
+  }
+
   readonly create = injectMutation(() => ({
     mutationFn: (datos: DatosDelProducto) => this.api.crear(datos),
     retry: false,
@@ -362,6 +414,12 @@ export class ListingStore {
   private refrescar(publicacion: Listing): void {
     this.consultas.setQueryData(queryKeys.one(publicacion.id), publicacion);
     void this.consultas.invalidateQueries({ queryKey: queryKeys.mine });
+
+    // Y el rastro, aparte. `setQueryData` escribe una clave exacta y no invalida por
+    // prefijo, así que la línea de arriba no lo alcanza aunque su clave cuelgue de la de
+    // la publicación. Sin esto, enviar a revisión con el rastro abierto deja a la vista el
+    // de antes, sin la vuelta que se acaba de dar.
+    void this.consultas.invalidateQueries({ queryKey: queryKeys.history(publicacion.id) });
   }
 
   /**

@@ -177,8 +177,54 @@ test.describe('moderación de publicaciones', () => {
     await expect(page.getByText('Las fotos no se pueden usar')).toBeVisible();
     await expect(page.getByText('La frontal está borrosa.')).toBeVisible();
 
+    // El rastro, desde el propio bloque de rechazo, con la primera vuelta ya dentro
+    // (HU-013). Todavía es una sola: envió y se la rechazaron.
+    await page.getByRole('button', { name: 'Ver qué ha pasado' }).click();
+    await expect(page.getByText('Se rechazó')).toBeVisible();
+    await expect(page.getByText('La enviaste a revisión')).toBeVisible();
+
     await page.getByRole('button', { name: 'Corregir y volver a enviar' }).click();
     await expect(page.getByRole('button', { name: 'Enviar a revisión' })).toBeVisible();
+
+    // --- Y el final que le faltaba a este recorrido: la segunda vuelta -------
+    //
+    // Criterio 4 de HU-013, que es la razón de que el envío se anote como evento. Hasta
+    // aquí el recorrido dejaba al vendedor con el botón de reenviar delante y no
+    // comprobaba nunca que reenviar dejara rastro de las dos idas.
+
+    await page.getByRole('button', { name: 'Enviar a revisión' }).click();
+    await expect(page.getByText('En revisión')).toBeVisible();
+
+    await salirSiHaySesion(page);
+    await entrarComoModeradora(page);
+    await abrirElDetalle(page, id, titulo);
+    await page.getByRole('button', { name: 'Aprobar' }).click();
+    await page.getByRole('button', { name: 'Confirmar' }).click();
+    await expect(page.getByText('Publicación aprobada')).toBeVisible();
+
+    // El vendedor abre el rastro desde el panel -la publicación ya está viva, así que el
+    // bloque de rechazo no existe- y ve **las dos vueltas**, no solo la última.
+    await salirSiHaySesion(page);
+    await ingresar(page, vendedora);
+    await page.goto(RUTA_MIS_PUBLICACIONES);
+
+    const fila = page.locator('.mias__fila').filter({ hasText: titulo });
+    await fila.getByRole('button', { name: 'Ver qué ha pasado' }).click();
+
+    const pasos = fila.locator('.rastro__paso');
+    await expect(pasos).toHaveCount(4);
+    await expect(pasos.nth(0)).toContainText('Se aprobó y quedó publicada');
+    await expect(pasos.nth(1)).toContainText('La enviaste a revisión');
+    await expect(pasos.nth(2)).toContainText('Se rechazó');
+    await expect(pasos.nth(2)).toContainText('Las fotos no se pueden usar');
+    await expect(pasos.nth(3)).toContainText('La enviaste a revisión');
+
+    // Criterio 5: en ningún sitio dice quién decidió, ni sale la nota que se escribió para
+    // Sendik. Se comprueba sobre el bloque entero y no sobre un campo, porque lo que se
+    // afirma es una ausencia.
+    const rastro = await fila.locator('.rastro__cuerpo').innerText();
+    expect(rastro).not.toContain('La frontal está borrosa');
+    expect(rastro.toLowerCase()).not.toContain('moderador');
   });
 
   /**

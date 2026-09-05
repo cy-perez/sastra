@@ -1147,6 +1147,22 @@
       "notFound": "No pudimos abrir esta publicación. Puede que ya no exista o que no sea tuya.",
       "backToListings": "Volver a mis publicaciones",
       "notForSealed": "Este producto no usa el asistente de captura."
+    },
+    "trail": {
+      "show": "Ver qué ha pasado",
+      "hide": "Ocultar lo que ha pasado",
+      "loading": "Cargando el historial",
+      "empty": "Todavía no ha pasado nada con esta publicación.",
+      "error": "No pudimos cargar el historial.",
+      "retry": "Reintentar",
+      "reasonLabel": "Motivo",
+      "action": {
+        "SUBMITTED": "La enviaste a revisión",
+        "APPROVED": "Se aprobó y quedó publicada",
+        "REJECTED": "Se rechazó",
+        "ARCHIVED": "Se retiró del catálogo",
+        "unknown": "Hubo un cambio en esta publicación"
+      }
     }
   },
   "listingReview": {

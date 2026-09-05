@@ -18,6 +18,7 @@ import { RouterLink } from '@angular/router';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
 import { ListingStore } from '../application/listing.store';
+import { ModerationTrail } from './moderation-trail';
 import {
   precioFormateado,
   tomasDelVendedor,
@@ -38,7 +39,7 @@ import {
  */
 @Component({
   selector: 'sendik-my-listings-page',
-  imports: [NgOptimizedImage, RouterLink, TranslocoPipe],
+  imports: [ModerationTrail, NgOptimizedImage, RouterLink, TranslocoPipe],
   templateUrl: './my-listings-page.html',
   styleUrl: './my-listings-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

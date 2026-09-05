@@ -126,6 +126,55 @@ export const MOTIVOS_DE_RECHAZO_DE_PUBLICACION: readonly ListingRejectionReason[
 
 export type AttentionReason = 'PRICE_OUT_OF_RANGE' | 'GALLERY_UPLOAD';
 
+/**
+ * Lo que le puede pasar a una publicación y queda anotado. HU-013.
+ *
+ * <p>`SUBMITTED` es del vendedor y no de un moderador: la bitácora cuenta lo que le pasó a
+ * la publicación y no solo lo que hizo Sendik. Sin ella, el rastro de una rechazada y
+ * reenviada no deja ver las dos vueltas.
+ *
+ * <p>`ARCHIVED` aquí es siempre el retiro de un moderador por RN-024. Archivar es del
+ * vendedor y no deja rastro, aunque los dos terminen en el mismo estado.
+ */
+export const ACCIONES_DE_MODERACION = ['SUBMITTED', 'APPROVED', 'REJECTED', 'ARCHIVED'] as const;
+
+export type ModerationAction = (typeof ACCIONES_DE_MODERACION)[number];
+
+/**
+ * Un paso del rastro de moderación. HU-013.
+ *
+ * <p><strong>`action` es `string` y no `ModerationAction`, y esa es la decisión.</strong>
+ * El resumen del panel descarta un estado que no conoce, porque una cifra sin nombre no se
+ * puede explicar; aquí ocurre lo contrario. Una acción desconocida —una que el servidor
+ * agregue después— se pinta igual, con su fecha y una descripción genérica: omitir la fila
+ * escondería que algo pasó, que es lo único que este rastro existe para no hacer. Tiparlo
+ * obligaría a descartarla o a mentir sobre ella.
+ *
+ * <p>`reason` sí se descarta cuando no se reconoce, y por el motivo contrario: se pinta
+ * traducido, y un valor sin traducción saldría como el nombre crudo de la enumeración. Se
+ * trata igual que la ausencia de motivo, que la fila ya sabe pintar sin inventar texto.
+ *
+ * <p>No hay campo para quién decidió ni para la nota interna. No es que se oculten aquí:
+ * no vienen del servidor (RN-074).
+ */
+export interface ModerationEvent {
+  /** Tal como llegó. Puede no ser una de {@link ACCIONES_DE_MODERACION}. */
+  readonly action: string;
+  readonly reason: ListingRejectionReason | null;
+  /** ISO 8601 en UTC, como todo lo que manda la API. La pantalla lo formatea. */
+  readonly occurredAt: string;
+}
+
+/** Si la acción que llegó del servidor es una de las cuatro que esta versión conoce. */
+export function esAccionDeModeracionConocida(candidato: string): candidato is ModerationAction {
+  return (ACCIONES_DE_MODERACION as readonly string[]).includes(candidato);
+}
+
+/** Si el motivo que llegó del servidor es uno de los siete de RN-022. */
+export function esMotivoDeRechazoConocido(candidato: string): candidato is ListingRejectionReason {
+  return (MOTIVOS_DE_RECHAZO_DE_PUBLICACION as readonly string[]).includes(candidato);
+}
+
 /** Siempre objeto explícito, nunca un número suelto (contrato-api.md). */
 export interface Money {
   readonly amount: number;

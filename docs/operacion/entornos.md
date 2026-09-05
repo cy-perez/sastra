@@ -23,48 +23,58 @@ nadie lo use. Nada de eso hace falta para tener `dev` en pie.
 **Y `dev` sigue costando cero.** No es una concesión: es consecuencia de que todo
 lo que lo compone escala a cero o entra en capa gratuita.
 
-### El correo transaccional no sale, y es un bloqueo de lanzamiento
+### El correo transaccional: dos fallos, uno resuelto y otro abierto
 
-**Anotado el 5 de septiembre de 2026**, al encender las tres banderas de la Fase 2
-en `dev` y registrarse por primera vez contra ese entorno.
+**Anotado el 5 de septiembre de 2026**, al encender las tres banderas de la Fase 2 en
+`dev` y registrarse por primera vez contra ese entorno.
 
-`dev` y `prod` mandan con `MAIL_PROVIDER=resend` y
-`MAIL_FROM=no-responder@sendik.co`. El dominio se contrató el 26 de agosto y **nunca
-se le añadieron los registros que Resend exige** para verificar un remitente, así
-que cada envío moría con un 403 del proveedor:
+**Resuelto: el dominio no estaba verificado en Resend.** `dev` y `prod` mandan con
+`MAIL_FROM=no-responder@sendik.co`, y al dominio —contratado el 26 de agosto— nunca se
+le añadieron los registros que Resend exige. Cada envío moría con un 403 del proveedor.
+Se añadieron ese mismo día —MX y SPF en `send.sendik.co`, DKIM en
+`resend._domainkey.sendik.co`— y con «Domain verification» y «Enable Sending» en
+*Verified*, el correo sale. «Enable Receiving» queda en *Pending* y así se deja: es el
+MX de entrada del dominio raíz y Sendik no recibe correo.
 
-```
-ERROR c.s.identity.client.ResendMailSender : El proveedor rechazo un correo transaccional con estado 403
-```
-
-Ese mismo día se añadieron los tres —MX y SPF en `send.sendik.co`, DKIM en
-`resend._domainkey.sendik.co`— y los tres resuelven bien: el `include` de GoDaddy
-lleva a `amazonses.com`, que es lo que Resend usa por debajo. **Aun así el envío
-sigue muriendo con 403** y Resend da el dominio por *parcialmente verificado*.
-
-La sospecha es el SPF: lo publicado es `include:dc-fd741b8612._spfm.send.sendik.co`,
-la macro de aplanado de GoDaddy, y un verificador que compara cadenas no sigue esa
-indirección aunque resuelva al valor correcto. Sustituirlo por el literal
-`v=spf1 include:amazonses.com ~all` y volver a pulsar *Verify* es lo siguiente que
-hay que probar. La pantalla *Domains* de Resend lo dice registro a registro.
-
-**Nadie lo había visto porque nadie se había registrado nunca en `dev`.** El perfil
+**Nadie lo había visto porque nadie se había registrado nunca contra `dev`.** El perfil
 `local` usa `MAIL_PROVIDER=console` y las suites leen el enlace del registro de la
-aplicación, así que las dos mitades de HU-001 estaban probadas sin que ningún correo
-saliera de verdad ni una sola vez.
+aplicación, así que las dos mitades de HU-001 estaban probadas sin que saliera un solo
+correo de verdad ni una sola vez.
 
-Lo que queda inservible mientras siga así: verificar un correo, recuperar una
-contraseña, y todos los avisos de moderación de HU-002 y HU-007. Es decir, **no se
-puede lanzar**. Va con los textos legales en la lista de lo que bloquea producción,
-y a diferencia de aquellos esto sí es trabajo técnico.
+**Abierto, y bloquea el lanzamiento: Cloud Run congela el envío.**
 
-**Un fallo transitorio ya no pierde el correo.** Ese mismo día se perdió uno por un
-corte de red de un segundo: `enviar()` registraba el fallo y seguía, sin reintentar,
-y quien esperaba el enlace no tenía salida porque el reenvío exige el token caducado
-que viajaba en ese correo. Desde entonces se reintenta tres veces lo transitorio
-—cortes de red y 5xx— y **nunca un 4xx**, que es configuración. Lo que sigue sin
-haber es un buzón de reintentos: si los tres fallan, el correo se pierde y el
-registro lo dice.
+`AsyncMailSender` difiere el envío a un ejecutor de dos hilos, de modo que el correo
+sale **después** de que la petición haya respondido. El servicio corre con
+`run.googleapis.com/cpu-throttling` sin fijar —o sea, activa— y sin `minScale`, así que
+Cloud Run **solo asigna CPU mientras procesa una petición**. Devuelto el 202, el
+contenedor se congela, y la llamada saliente a Resend que estaba a medias expira:
+
+```
+ERROR c.s.identity.client.ResendMailSender : No se pudo enviar un correo transaccional: ...ResourceAccessException
+```
+
+**Está demostrado, no deducido.** El mismo envío aislado que a las 16:01 murió por red
+salió a las 16:03 sin más cambio que mantener el contenedor atendiendo peticiones a
+`/actuator/health` durante quince segundos. El patrón era nítido: las ráfagas de tres
+peticiones llegaban a Resend, las peticiones sueltas morían.
+
+**Y la petición suelta es el caso normal**: alguien que se registra solo. Los reintentos
+de `ResendMailSender` no lo salvan, porque los tres ocurren en el mismo hilo congelado.
+
+Tres salidas, ninguna gratis:
+
+| Opción | Lo que cuesta |
+|---|---|
+| `--no-cpu-throttling` | Se paga CPU mientras el contenedor viva, no solo mientras atiende. Rompe el «`dev` cuesta cero» de más abajo |
+| Enviar de forma síncrona | La respuesta tarda lo que tarde el proveedor, y desaparece `AsyncMailSender` |
+| Cola real (Cloud Tasks o Pub/Sub) | Lo correcto a plazo. Es una ADR |
+
+**Un fallo transitorio ya no pierde el correo**, que es otra cosa. `enviar()` registraba
+el fallo y seguía, sin reintentar, y quien esperaba el enlace no tenía salida porque el
+reenvío exige el token caducado que viajaba en ese correo. Desde el 5 de septiembre se
+reintenta tres veces lo transitorio —cortes de red y 5xx— y **nunca un 4xx**, que es
+configuración. Lo que sigue sin haber es un buzón de reintentos: si los tres fallan, el
+correo se pierde y el registro lo dice.
 
 | Pieza | Dónde | Costo en `dev` |
 |---|---|---|

@@ -230,41 +230,63 @@ funcionó y lo que no:
   regla autenticada— responde 401 contra el Tomcat real de Cloud Run, que es la
   única forma de comprobarlo: MockMvc no decodifica la URI.
 
-**No funciona: `dev` no entrega correo transaccional**
+**El ciclo completo, recorrido de punta a punta**
 
-Registrar una cuenta deja tres líneas en el registro de Cloud Run:
+Con las tres cuentas verificadas por correo real: la vendedora entregó cédula, selfie
+y cuenta bancaria, la moderadora le dio el sello, publicó con las ocho tomas, se la
+rechazaron, la corrigió, la reenvió y se la aprobaron. La publicación aparece en el
+catálogo público sin sesión y su ficha llega **renderizada desde el servidor** con el
+título real en `<title>`, en el `<h1>` y en `og:image` (ADR-0025).
+
+Dos cosas que solo se pueden comprobar así:
+
+- **RN-046 sobre datos reales.** Ni la respuesta de la verificación ni la bandeja del
+  moderador devuelven la cédula ni la cuenta completas: solo los cuatro últimos
+  dígitos. La cédula y la selfie viajaron al bucket reservado y no salen por ninguna
+  lectura.
+- **El rastro de HU-013 con sus dos vueltas.** Envío, rechazo con motivo, reenvío y
+  aprobación, en orden, sin quién decidió y sin la nota interna. 401 sin sesión y
+  **404 —no 403—** con la cuenta de otra persona.
+
+Y salieron los ocho correos que el ciclo debe generar: tres verificaciones, el acuse
+de la solicitud, el sello concedido, el rechazo con su motivo y su nota, y la
+publicación aprobada.
+
+**Lo que costó llegar hasta ahí: el correo transaccional no salía**
+
+Registrar una cuenta dejaba esto en el registro de Cloud Run:
 
 ```
 ERROR c.s.identity.client.ResendMailSender : El proveedor rechazo un correo transaccional con estado 403
 ```
 
 El dominio `sendik.co` se contrató el 26 de agosto y **nunca se le añadieron los
-registros que Resend exige** para verificar un remitente. Se añadieron ese mismo 5
-de septiembre —MX y SPF en `send.sendik.co`, DKIM en `resend._domainkey.sendik.co`—
-y todos resuelven bien; el `include` de GoDaddy lleva a `amazonses.com`, que es lo
-que Resend usa por debajo. **Aun así el envío sigue muriendo con 403** y el dominio
-figura en Resend como *parcialmente verificado*.
+registros que Resend exige** para verificar un remitente. Se añadieron ese mismo 5 de
+septiembre y con eso el 403 desapareció. **Nadie lo había visto porque nadie se había
+registrado nunca contra `dev`**: el perfil `local` usa `MAIL_PROVIDER=console` y las
+suites leen el enlace del registro de la aplicación, así que las dos mitades de HU-001
+estaban probadas sin que saliera un solo correo de verdad.
 
-La sospecha, para quien lo retome: el SPF publicado es
-`include:dc-fd741b8612._spfm.send.sendik.co`, la macro de aplanado de GoDaddy, y un
-verificador que compara cadenas no sigue esa indirección aunque resuelva al valor
-correcto. La pantalla *Domains* de Resend lo dice registro a registro.
+**Y debajo había otro, que sigue abierto: Cloud Run congela el envío**
 
-Sin correo, el ciclo se corta en el primer paso: las cuentas se crean y hasta
-inician sesión, pero con `emailVerified` en falso y sin rol. El moderador no recibe
-el suyo, porque el arranque lo concede «cuando abra su enlace».
+`AsyncMailSender` difiere el envío a un ejecutor, así que el correo sale **después** de
+que la petición haya respondido. El servicio corre con la asignación de CPU por
+omisión —`cpu-throttling` sin fijar, o sea activa— y con `minScale` sin fijar, de modo
+que Cloud Run **solo asigna CPU mientras procesa una petición**. Devuelto el 202, el
+contenedor se congela y la llamada saliente a Resend muere a medias con
+`ResourceAccessException`.
 
-**Por qué esto importa más allá de `dev`.** `prod` usa el mismo
-`MAIL_FROM=no-responder@sendik.co` y el mismo dominio. Es un **bloqueo de
-lanzamiento** que estaba oculto porque nadie se había registrado nunca en `dev`: la
-verificación de correo, la recuperación de contraseña y los avisos de moderación
-son todo el mecanismo de HU-001 y HU-007, y ninguno sale. Se suma a los textos
-legales en la lista de lo que impide producción, y no estaba anotado en ninguna
-parte.
+Se demostró, no se dedujo: el mismo envío aislado que a las 16:01 murió por red salió
+a las 16:03 sin más cambio que mantener el contenedor atendiendo peticiones de salud
+durante quince segundos. El recorrido entero de arriba se hizo con ese truco.
 
-Lo que queda pendiente de recorrer en `dev` cuando el correo salga: verificación de
-vendedor, publicar con las ocho tomas, aprobar desde la bandeja y ver el rastro. Son
-los cuatro pasos que exigen una cuenta verificada.
+**Una petición aislada es el caso normal**: alguien que se registra solo. Los
+reintentos que se añadieron ese día no lo salvan, porque los tres ocurren en el mismo
+hilo congelado. Las opciones —`--no-cpu-throttling`, enviar de forma síncrona, o una
+cola real con ADR— tienen coste y son una decisión pendiente. Está en
+`docs/operacion/entornos.md`.
+
+**Esto bloquea el lanzamiento**, porque `prod` tiene la misma configuración.
 
 ### Lo que no entra en el cierre
 

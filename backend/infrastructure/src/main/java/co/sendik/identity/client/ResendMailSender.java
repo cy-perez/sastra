@@ -23,6 +23,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
@@ -44,6 +45,26 @@ public class ResendMailSender implements MailSender, MailTransport {
 
     private static final Logger LOG = LoggerFactory.getLogger(ResendMailSender.class);
     private static final Duration TIEMPO_DE_ESPERA = Duration.ofSeconds(10);
+
+    /**
+     * Cuantas veces se intenta un envio, contando el primero.
+     *
+     * <p><strong>Solo se reintenta lo transitorio</strong>: un corte de red o un 5xx del
+     * proveedor. Un 4xx no se reintenta nunca, porque significa que el proveedor entendio
+     * la peticion y la rechaza -remitente sin verificar, clave sin permiso-, y mandar tres
+     * veces lo mismo solo sirve para recibir tres veces el mismo no.
+     *
+     * <p>Esto llego despues de perder un correo de verificacion en `dev` por un
+     * {@code ResourceAccessException} de un segundo. Quien lo esperaba no tenia salida: el
+     * reenvio exige el token caducado, y ese token viajaba en el correo que no salio.
+     *
+     * <p>Tres y no mas: el envio es asincrono pero ocupa un hilo del ejecutor de correo, y
+     * un proveedor caido de verdad no se arregla insistiendo.
+     */
+    private static final int INTENTOS = 3;
+
+    /** Se multiplica por el numero de intento: 300 ms, luego 600 ms. */
+    private static final Duration ESPERA_ENTRE_INTENTOS = Duration.ofMillis(300);
 
     /**
      * Solo horas y minutos, sin nombre de zona ni formato regional: "15:42" se
@@ -343,26 +364,77 @@ public class ResendMailSender implements MailSender, MailTransport {
         Map<String, Object> peticion =
                 Map.of("from", propiedades.from(), "to", List.of(destinatario), "subject", asunto, "html", html);
 
-        try {
-            cliente.post()
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(peticion)
-                    .retrieve()
-                    .toBodilessEntity();
-        } catch (RestClientResponseException e) {
-            // Solo el codigo de estado. El mensaje de esta excepcion incluye parte
-            // del cuerpo que devolvio el proveedor, y ese cuerpo puede repetir la
-            // direccion de destino (docs/operacion/datos-personales.md).
-            LOG.error(
-                    "El proveedor rechazo un correo transaccional con estado {}",
-                    e.getStatusCode().value());
-        } catch (RuntimeException e) {
-            // Sin el asunto, sin el cuerpo y sin el mensaje: el registro no debe
-            // llevar el enlace de verificacion, que es una credencial, ni la
-            // direccion de nadie.
-            LOG.error(
-                    "No se pudo enviar un correo transaccional: {}",
-                    e.getClass().getName());
+        for (int intento = 1; intento <= INTENTOS; intento++) {
+            try {
+                cliente.post()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body(peticion)
+                        .retrieve()
+                        .toBodilessEntity();
+                return;
+            } catch (RestClientResponseException e) {
+                // Solo el codigo de estado. El mensaje de esta excepcion incluye parte
+                // del cuerpo que devolvio el proveedor, y ese cuerpo puede repetir la
+                // direccion de destino (docs/operacion/datos-personales.md).
+                int estado = e.getStatusCode().value();
+
+                if (!e.getStatusCode().is5xxServerError()) {
+                    // 4xx: el proveedor entendio la peticion y la rechaza. Reintentar
+                    // manda tres veces lo mismo para recibir tres veces el mismo no.
+                    LOG.error(
+                            "El proveedor rechazo un correo transaccional con estado {}."
+                                    + " Es configuracion, no una caida: revisa el remitente,"
+                                    + " la clave y la verificacion del dominio"
+                                    + " (docs/operacion/entornos.md)",
+                            estado);
+                    return;
+                }
+                if (!esperarAntesDeReintentar(intento, "estado " + estado)) {
+                    return;
+                }
+            } catch (ResourceAccessException e) {
+                // Ni siquiera hubo respuesta: se agoto la espera, o la conexion no se
+                // pudo abrir. Es justo lo que un reintento arregla.
+                if (!esperarAntesDeReintentar(intento, e.getClass().getSimpleName())) {
+                    return;
+                }
+            } catch (RuntimeException e) {
+                // Sin el asunto, sin el cuerpo y sin el mensaje: el registro no debe
+                // llevar el enlace de verificacion, que es una credencial, ni la
+                // direccion de nadie.
+                LOG.error(
+                        "No se pudo enviar un correo transaccional: {}",
+                        e.getClass().getName());
+                return;
+            }
         }
+    }
+
+    /**
+     * Espera antes del siguiente intento, o se rinde si ya no quedan.
+     *
+     * @return {@code true} si hay que volver a intentarlo
+     */
+    private static boolean esperarAntesDeReintentar(int intento, String causa) {
+        if (intento == INTENTOS) {
+            LOG.error(
+                    "No se pudo enviar un correo transaccional tras {} intentos. Ultima causa: {}."
+                            + " El correo se perdio: no hay buzon de reintentos",
+                    INTENTOS,
+                    causa);
+            return false;
+        }
+
+        LOG.warn("Fallo transitorio al enviar un correo ({}). Reintento {} de {}", causa, intento + 1, INTENTOS);
+
+        try {
+            Thread.sleep(ESPERA_ENTRE_INTENTOS.multipliedBy(intento));
+        } catch (InterruptedException e) {
+            // Alguien esta apagando el servicio. Se restaura la marca y se deja de
+            // insistir: un correo no vale retrasar un apagado.
+            Thread.currentThread().interrupt();
+            return false;
+        }
+        return true;
     }
 }

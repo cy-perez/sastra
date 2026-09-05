@@ -27,6 +27,7 @@ import java.time.ZoneId;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,6 +56,24 @@ class ResendMailSenderEnvioTest {
 
     private int codigo = 200;
 
+    /**
+     * Cuantas respuestas mas deben fallar con {@link #codigo} antes de volver a 200.
+     *
+     * <p>Es lo que permite probar que un fallo transitorio se reintenta y acaba saliendo,
+     * sin lo cual solo se puede probar "siempre bien" o "siempre mal", y el reintento no se
+     * distingue de no tenerlo.
+     */
+    private final AtomicInteger respuestasFallidas = new AtomicInteger();
+
+    /**
+     * Cuantas conexiones mas se cortan a media respuesta.
+     *
+     * <p>Simula el {@code ResourceAccessException} que se llevo un correo en `dev`: no hay
+     * respuesta HTTP que interpretar, se corta el hilo. Se hace cortando la conexion y no
+     * apagando el servidor, porque apagandolo no habria adonde reintentar.
+     */
+    private final AtomicInteger cortesPendientes = new AtomicInteger();
+
     @BeforeEach
     void levantarServidor() throws IOException {
         servidor = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
@@ -63,8 +82,18 @@ class ResendMailSenderEnvioTest {
             String autorizacion = intercambio.getRequestHeaders().getFirst("Authorization");
             autorizaciones.add(autorizacion == null ? "" : autorizacion);
 
+            if (cortesPendientes.getAndUpdate(quedan -> quedan > 0 ? quedan - 1 : 0) > 0) {
+                // Se anuncia un cuerpo y no se manda: el cliente se queda esperando bytes
+                // que no llegan y falla con un error de entrada/salida.
+                intercambio.sendResponseHeaders(200, 100);
+                intercambio.close();
+                return;
+            }
+
+            int estado = respuestasFallidas.getAndUpdate(quedan -> quedan > 0 ? quedan - 1 : 0) > 0 ? codigo : 200;
+
             byte[] respuesta = "{\"id\":\"1\"}".getBytes(StandardCharsets.UTF_8);
-            intercambio.sendResponseHeaders(codigo, respuesta.length);
+            intercambio.sendResponseHeaders(estado, respuesta.length);
             try (OutputStream salida = intercambio.getResponseBody()) {
                 salida.write(respuesta);
             }
@@ -223,6 +252,7 @@ class ResendMailSenderEnvioTest {
     @Test
     void no_deberia_propagar_un_error_del_proveedor() {
         codigo = 422;
+        respuestasFallidas.set(Integer.MAX_VALUE);
 
         assertThatCode(() -> transporte().enviarVerificacionDeCorreo(cuenta(UserLocale.ES), "token"))
                 .doesNotThrowAnyException();
@@ -236,5 +266,79 @@ class ResendMailSenderEnvioTest {
 
         assertThatCode(() -> transporte.enviarVerificacionDeCorreo(cuenta(UserLocale.ES), "token"))
                 .doesNotThrowAnyException();
+    }
+
+    // --- Reintentos. Solo lo transitorio -------------------------------------
+
+    /**
+     * <strong>Un 4xx no se reintenta.</strong> El proveedor entendio la peticion y la
+     * rechaza -remitente sin verificar, clave sin permiso-, asi que insistir manda tres
+     * veces lo mismo para recibir tres veces el mismo no, y ocupa tres veces el hilo.
+     *
+     * <p>Es el caso que de verdad ocurrio: `dev` estuvo devolviendo 403 durante horas
+     * porque el dominio no estaba verificado en Resend.
+     */
+    @Test
+    void no_deberia_reintentar_cuando_el_proveedor_rechaza_con_4xx() {
+        codigo = 403;
+        respuestasFallidas.set(Integer.MAX_VALUE);
+
+        transporte().enviarVerificacionDeCorreo(cuenta(UserLocale.ES), "token");
+
+        assertThat(cuerposRecibidos).hasSize(1);
+    }
+
+    /**
+     * <strong>Un 5xx si.</strong> Es el proveedor caido un momento, no una peticion mal
+     * hecha, y el segundo intento sale bien.
+     *
+     * <p>Se afirma sobre los cuerpos recibidos y no sobre el registro: lo que importa es
+     * que el correo <em>sale</em>, no que alguien escriba una linea.
+     */
+    @Test
+    void deberia_reintentar_y_salir_cuando_el_proveedor_devuelve_5xx() {
+        codigo = 503;
+        respuestasFallidas.set(1);
+
+        transporte().enviarVerificacionDeCorreo(cuenta(UserLocale.ES), "token");
+
+        assertThat(cuerposRecibidos).hasSize(2);
+    }
+
+    /**
+     * Y se rinde tras los tres, sin propagar.
+     *
+     * <p>El correo se pierde: no hay buzon de reintentos, y decirlo es la mitad de esta
+     * prueba. La otra mitad es que no insiste indefinidamente ocupando un hilo del
+     * ejecutor de correo.
+     */
+    @Test
+    void deberia_rendirse_tras_tres_intentos_sin_propagar() {
+        codigo = 503;
+        respuestasFallidas.set(Integer.MAX_VALUE);
+
+        assertThatCode(() -> transporte().enviarVerificacionDeCorreo(cuenta(UserLocale.ES), "token"))
+                .doesNotThrowAnyException();
+
+        assertThat(cuerposRecibidos).hasSize(3);
+    }
+
+    /**
+     * Un corte de red tambien se reintenta, que es el fallo que provoco todo esto: en `dev`
+     * se perdio un correo de verificacion por un {@code ResourceAccessException} de un
+     * segundo, y quien lo esperaba no tenia salida porque el reenvio exige el token
+     * caducado que viajaba en ese correo.
+     *
+     * <p>Se simula con una espera de lectura mas larga que la del cliente en el primer
+     * intento. No se puede hacer apagando el servidor, porque entonces no habria a donde
+     * volver a intentarlo.
+     */
+    @Test
+    void deberia_reintentar_cuando_la_conexion_se_corta() {
+        cortesPendientes.set(1);
+
+        transporte().enviarVerificacionDeCorreo(cuenta(UserLocale.ES), "token");
+
+        assertThat(cuerposRecibidos).hasSize(2);
     }
 }

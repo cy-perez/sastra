@@ -4,6 +4,7 @@ import co.sendik.catalog.dto.ChangeListingPriceCommand;
 import co.sendik.catalog.dto.ChangeListingShippingCommand;
 import co.sendik.catalog.dto.CreateListingCommand;
 import co.sendik.catalog.dto.ReadListingQuery;
+import co.sendik.catalog.dto.ReadModerationHistoryQuery;
 import co.sendik.catalog.dto.RemoveListingImageCommand;
 import co.sendik.catalog.dto.SellerListingCommand;
 import co.sendik.catalog.dto.UpdateListingContentCommand;
@@ -16,9 +17,11 @@ import co.sendik.catalog.model.ProductImageId;
 import co.sendik.catalog.model.SellerId;
 import co.sendik.catalog.rest.dto.ChangePriceRequest;
 import co.sendik.catalog.rest.dto.ListingResponse;
+import co.sendik.catalog.rest.dto.ModerationHistoryResponse;
 import co.sendik.catalog.rest.dto.ProductRequest;
 import co.sendik.catalog.rest.dto.ShippingPayload;
 import co.sendik.catalog.rest.mapper.ListingResponses;
+import co.sendik.catalog.rest.mapper.ModerationHistories;
 import co.sendik.catalog.rest.mapper.ProductRequests;
 import co.sendik.catalog.usecase.ArchiveListingUseCase;
 import co.sendik.catalog.usecase.ChangeListingPriceUseCase;
@@ -26,6 +29,7 @@ import co.sendik.catalog.usecase.ChangeListingShippingUseCase;
 import co.sendik.catalog.usecase.CreateListingUseCase;
 import co.sendik.catalog.usecase.PauseListingUseCase;
 import co.sendik.catalog.usecase.ReadListingUseCase;
+import co.sendik.catalog.usecase.ReadModerationHistoryUseCase;
 import co.sendik.catalog.usecase.RemoveListingImageUseCase;
 import co.sendik.catalog.usecase.ReopenListingUseCase;
 import co.sendik.catalog.usecase.ResumeListingUseCase;
@@ -99,6 +103,7 @@ public class ListingsController {
     private final PauseListingUseCase casoDePausar;
     private final ResumeListingUseCase casoDeReanudar;
     private final ArchiveListingUseCase casoDeArchivar;
+    private final ReadModerationHistoryUseCase casoDeLeerElRastro;
     private final PublicFileStore almacen;
 
     public ListingsController(
@@ -115,6 +120,7 @@ public class ListingsController {
             PauseListingUseCase casoDePausar,
             ResumeListingUseCase casoDeReanudar,
             ArchiveListingUseCase casoDeArchivar,
+            ReadModerationHistoryUseCase casoDeLeerElRastro,
             PublicFileStore almacen) {
         this.casoDeCrear = casoDeCrear;
         this.casoDeLeer = casoDeLeer;
@@ -129,6 +135,7 @@ public class ListingsController {
         this.casoDePausar = casoDePausar;
         this.casoDeReanudar = casoDeReanudar;
         this.casoDeArchivar = casoDeArchivar;
+        this.casoDeLeerElRastro = casoDeLeerElRastro;
         this.almacen = almacen;
     }
 
@@ -181,6 +188,31 @@ public class ListingsController {
                                 ? ListingResponses.de(publicacion, almacen, quienModera)
                                 : ListingResponses.publica(publicacion, almacen)))
                 .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    /**
+     * El rastro de moderacion de una publicacion propia. HU-013.
+     *
+     * <p>Quien vende entiende que le paso a lo suyo y por que, sin buscar el correo que se
+     * lo aviso. <strong>Lo que no sale es quien lo decidio</strong> (criterio 5, RN-074), y
+     * no se filtra aqui: ni el caso de uso ni la consulta SQL lo traen.
+     *
+     * <p><strong>Exige token, y ahi acaba lo que decide este metodo.</strong> Lo demas lo
+     * decide el caso de uso, que responde igual -404- si la publicacion no existe y si no
+     * es de quien pregunta: un 403 confirmaria que existe (criterio 7). El vendedor sale
+     * del token y jamas del parametro, que es lo que impide pedir el rastro de otro
+     * cambiando un identificador.
+     *
+     * <p>El 401 sin sesion del criterio 8 lo pone la cadena de filtros: esta ruta cae en la
+     * regla generica de {@code /api/v1/listings/**}, porque el {@code permitAll} de la
+     * lectura publica esta anclado a un identificador y nada mas -su expresion regular
+     * termina ahi o en la cadena de consulta-. Es la misma razon por la que la bandeja del
+     * moderador vive en su propio prefijo.
+     */
+    @GetMapping("/{id}/moderation-history")
+    public ModerationHistoryResponse rastro(@AuthenticationPrincipal Jwt token, @PathVariable String id) {
+        return ModerationHistories.de(
+                casoDeLeerElRastro.execute(new ReadModerationHistoryQuery(vendedorDe(token), ListingId.de(id))));
     }
 
     /**

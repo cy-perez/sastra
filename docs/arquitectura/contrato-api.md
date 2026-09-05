@@ -190,6 +190,43 @@ de consulta. El nombre tampoco puede colgar de `/listings/{algo}`: ahí un segme
 literal —`/queue`, `/pending`— compite con la regla que hace pública la lectura de
 una publicación por identificador.
 
+## El rastro de moderación
+
+`GET /api/v1/listings/{id}/moderation-history` devuelve lo que le pasó a una
+publicación **propia**: qué, cuándo y con qué motivo. HU-013.
+
+```json
+{ "events": [
+  { "action": "APPROVED",  "reason": null,              "occurredAt": "2026-09-04T18:12:03Z" },
+  { "action": "SUBMITTED", "reason": null,              "occurredAt": "2026-09-04T17:40:11Z" },
+  { "action": "REJECTED",  "reason": "PHOTOS_UNUSABLE", "occurredAt": "2026-09-03T09:05:22Z" },
+  { "action": "SUBMITTED", "reason": null,              "occurredAt": "2026-09-02T21:33:47Z" }
+] }
+```
+
+Lo más reciente primero, con desempate por identificador cuando dos eventos caen en
+el mismo instante. Sin paginar: se decidió a propósito al escribir la historia, y si
+algún día hace falta, el objeto que envuelve la lista admite un cursor sin romper a
+nadie.
+
+Cuatro acciones: `SUBMITTED`, `APPROVED`, `REJECTED` y `ARCHIVED`. **`SUBMITTED` es
+del vendedor y no de un moderador**, y está porque sin ella el rastro de una
+publicación rechazada y reenviada no deja ver las dos vueltas. Un cliente que
+encuentre una acción que no conoce pinta la fila igual, con la fecha y una
+descripción genérica: omitirla escondería que algo pasó. `reason` es nulo donde no
+lo hay —aprobar y enviar no llevan motivo— y también donde debería haberlo y no
+está; no se inventa texto.
+
+**La respuesta no lleva quién decidió ni la nota interna, y eso es RN-074.** No es
+un campo que se filtre en el borde: no está en el tipo de dominio y la consulta SQL
+no nombra esas dos columnas. La bitácora sí las guarda, porque auditar exige saber
+quién decidió.
+
+**404 y nunca 403 sobre una publicación ajena**, con el mismo `COMMON_NOT_FOUND` que
+una que no existe: un 403 confirmaría que existe. Sin sesión es 401, porque la ruta
+cae en la regla genérica de `/api/v1/listings/**` —el `permitAll` de la lectura
+pública está anclado a un identificador y termina ahí.
+
 ## La carrera del refresco
 
 `POST /api/v1/auth/refresh` responde **401 con dos códigos distintos**, y la diferencia

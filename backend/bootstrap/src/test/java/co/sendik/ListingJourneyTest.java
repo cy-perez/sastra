@@ -197,6 +197,28 @@ class ListingJourneyTest {
         // entra todo el mundo: envio, rechazo, reenvio y aprobacion. Sin las dos entradas de
         // envio, el rastro contaria dos decisiones sin decir nunca como llego a ellas.
         assertThat(bitacoraDe(id)).containsExactly("SUBMITTED", "REJECTED", "SUBMITTED", "APPROVED");
+
+        // Y el vendedor las ve, por la ruta y con la forma que va a leer la pantalla: lo mas
+        // reciente arriba, el motivo del rechazo traducible, y sin rastro de quien decidio
+        // (HU-013, criterios 4 y 5).
+        mvc.perform(get("/api/v1/listings/" + id + "/moderation-history").header("Authorization", "Bearer " + suToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.events.length()").value(4))
+                .andExpect(jsonPath("$.events[0].action").value("APPROVED"))
+                .andExpect(jsonPath("$.events[1].action").value("SUBMITTED"))
+                .andExpect(jsonPath("$.events[2].action").value("REJECTED"))
+                .andExpect(jsonPath("$.events[2].reason").value("PHOTOS_UNUSABLE"))
+                .andExpect(jsonPath("$.events[3].action").value("SUBMITTED"));
+
+        // La nota del rechazo se la llevo el correo, no el rastro: se escribio para Sendik.
+        String rastro = mvc.perform(get("/api/v1/listings/" + id + "/moderation-history")
+                        .header("Authorization", "Bearer " + suToken))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        assertThat(rastro)
+                .doesNotContain("Se ven movidas.")
+                .doesNotContain(vendedor.id().value().toString());
     }
 
     /**

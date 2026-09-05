@@ -220,6 +220,30 @@ el servidor por `Accept-Language`, que es lo que `contrato-api.md` ya decía.
 **moderation_events**: `id`, `listing_id`, `actor_id`, `action`, `reason`,
 `notes`, `created_at`.
 
+`action` admite cuatro valores desde `V17`: `SUBMITTED`, `APPROVED`, `REJECTED` y
+`ARCHIVED`. **`SUBMITTED` lo escribe el vendedor**, no un moderador, y con él la
+tabla deja de contar «lo que hizo Sendik» para contar «lo que le pasó a esta
+publicación» (HU-013). Sin él, el rastro de una publicación rechazada y reenviada
+no deja ver las dos vueltas: `listings.submitted_at` guarda un solo envío, el
+último, porque se sobrescribe en cada entrada a `PENDING_REVIEW`. Se anota por los
+**dos** caminos que llevan ahí: enviar el borrador, y editar una publicación viva,
+que RN-062 devuelve a la cola. `V17` reconstruye desde `submitted_at` los envíos
+anteriores a ella, uno por publicación, que es todo lo que esa columna sabe.
+
+`actor_id` es quien hizo eso: el moderador que decidió, o el vendedor que envió.
+**Nunca sale en una respuesta de la API** (RN-074), ni tampoco `notes`, que se
+escribió para Sendik. La lectura del rastro no las selecciona.
+
+`created_at` lo escribe siempre la aplicación y ya no el `now()` del motor. Era
+inofensivo mientras la tabla solo se auditaba por consulta directa; al leerla en
+orden dejó de serlo, porque el envío se fechaba con el reloj de la aplicación y las
+decisiones con el de la base, y dos relojes en un mismo registro ordenado se cruzan.
+Es el mismo instante con el que el caso de uso sella `listings.moderated_at`.
+
+`ARCHIVED` aquí significa siempre **retiro del moderador** por RN-024. Archivar es
+del vendedor, termina en el mismo estado de `listings` y no escribe en esta tabla:
+es lo que permite que el rastro distinga las dos manos sin una columna más.
+
 **favorites** (`V16`, HU-011)
 
 | Columna | Tipo | Notas |

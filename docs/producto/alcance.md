@@ -79,7 +79,14 @@ fechas ni deja enlaces a rutas que no existen.
 
 ## Fase 2 — publicación y catálogo
 
-Es la fase en curso desde el 21 de agosto de 2026.
+**Cerrada el 5 de septiembre de 2026.** Empezó el 21 de agosto. Las trece historias
+están implementadas, probadas y desplegadas, y **las tres banderas están encendidas
+en `dev`** desde ese día: `FEATURE_SELLER_VERIFICATION`, `FEATURE_PUBLISHING` y
+`FEATURE_CATALOG`. En `prod` siguen apagadas, que es otra decisión.
+
+Encenderlas destapó una cosa que ninguna suite podía ver, y queda anotada abajo en
+«lo que el encendido en `dev` destapó». No cambia el cierre de la fase —el código
+de Fase 2 está completo— pero sí la lista de lo que bloquea el lanzamiento.
 
 - **Hecho.** Verificación de vendedor: identidad, selfie y cuenta bancaria
   (HU-002). Incluye los cinco endpoints de revisión del moderador; la bandeja
@@ -202,9 +209,73 @@ Es la fase en curso desde el 21 de agosto de 2026.
   relojes escribiendo en un mismo registro ordenado se cruzan. Arreglado, con la prueba de
   recorrido que sí puede verlo.
 
-**Con esto la Fase 2 queda cerrada en cuanto a código.** Las tres banderas
-—`seller-verification`, `publishing` y `catalog`— siguen apagadas por omisión, y
-encenderlas es una decisión aparte.
+**Con esto la Fase 2 queda cerrada en cuanto a código.**
+
+### Lo que el encendido en `dev` destapó
+
+Las tres banderas se encendieron en `dev` el 5 de septiembre de 2026, junto con
+`SECURITY_BOOTSTRAP_MODERATORS`, y se recorrió el entorno con datos reales. Lo que
+funcionó y lo que no:
+
+**Funciona, comprobado contra `dev` y no contra una suite**
+
+- El catálogo público responde sin sesión, pagina por cursor y rechaza con 400 un
+  cursor inválido o un `limit` fuera de rango.
+- El árbol de categorías llega sembrado, con sus seis familias.
+- La ficha de una publicación que no existe **llega renderizada desde el servidor**
+  diciendo «Esta publicación ya no está disponible» (ADR-0025, RN-068). No es un
+  esqueleto que se rellena después: el texto viene en el HTML.
+- `ModeratorBootstrap` anota en el arranque lo que hizo y lo que no pudo hacer.
+- El rodeo de seguridad que HU-013 cerró —un identificador con `%3F` para saltar la
+  regla autenticada— responde 401 contra el Tomcat real de Cloud Run, que es la
+  única forma de comprobarlo: MockMvc no decodifica la URI.
+
+**No funciona: `dev` no entrega correo transaccional**
+
+Registrar una cuenta deja tres líneas en el registro de Cloud Run:
+
+```
+ERROR c.s.identity.client.ResendMailSender : El proveedor rechazo un correo transaccional con estado 403
+```
+
+El dominio `sendik.co` se contrató el 26 de agosto y **nunca se le añadieron los
+registros que Resend exige** para verificar un remitente. Se añadieron ese mismo 5
+de septiembre —MX y SPF en `send.sendik.co`, DKIM en `resend._domainkey.sendik.co`—
+y todos resuelven bien; el `include` de GoDaddy lleva a `amazonses.com`, que es lo
+que Resend usa por debajo. **Aun así el envío sigue muriendo con 403** y el dominio
+figura en Resend como *parcialmente verificado*.
+
+La sospecha, para quien lo retome: el SPF publicado es
+`include:dc-fd741b8612._spfm.send.sendik.co`, la macro de aplanado de GoDaddy, y un
+verificador que compara cadenas no sigue esa indirección aunque resuelva al valor
+correcto. La pantalla *Domains* de Resend lo dice registro a registro.
+
+Sin correo, el ciclo se corta en el primer paso: las cuentas se crean y hasta
+inician sesión, pero con `emailVerified` en falso y sin rol. El moderador no recibe
+el suyo, porque el arranque lo concede «cuando abra su enlace».
+
+**Por qué esto importa más allá de `dev`.** `prod` usa el mismo
+`MAIL_FROM=no-responder@sendik.co` y el mismo dominio. Es un **bloqueo de
+lanzamiento** que estaba oculto porque nadie se había registrado nunca en `dev`: la
+verificación de correo, la recuperación de contraseña y los avisos de moderación
+son todo el mecanismo de HU-001 y HU-007, y ninguno sale. Se suma a los textos
+legales en la lista de lo que impide producción, y no estaba anotado en ninguna
+parte.
+
+Lo que queda pendiente de recorrer en `dev` cuando el correo salga: verificación de
+vendedor, publicar con las ocho tomas, aprobar desde la bandeja y ver el rastro. Son
+los cuatro pasos que exigen una cuenta verificada.
+
+### Lo que no entra en el cierre
+
+- **Las tres banderas en `prod`.** Siguen apagadas y encenderlas es una decisión
+  aparte, después de los textos legales.
+- **La frase de la garantía del fabricante en la ficha (RN-067)**, aplazada a la
+  tanda legal el 26 de agosto y que arrastran HU-009 y esta línea.
+- **Límite de tasa sobre `/api/v1/listings/**`.** HU-013 dejó a la vista que el
+  bucle enviar → retirar → enviar deja a un vendedor engordar su propio rastro sin
+  cota, y ese prefijo no está cubierto por el interceptor. Es disponibilidad y
+  coste, no fuga.
 
 ## Fase 3 — transacción
 

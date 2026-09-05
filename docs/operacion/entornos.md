@@ -23,6 +23,49 @@ nadie lo use. Nada de eso hace falta para tener `dev` en pie.
 **Y `dev` sigue costando cero.** No es una concesión: es consecuencia de que todo
 lo que lo compone escala a cero o entra en capa gratuita.
 
+### El correo transaccional no sale, y es un bloqueo de lanzamiento
+
+**Anotado el 5 de septiembre de 2026**, al encender las tres banderas de la Fase 2
+en `dev` y registrarse por primera vez contra ese entorno.
+
+`dev` y `prod` mandan con `MAIL_PROVIDER=resend` y
+`MAIL_FROM=no-responder@sendik.co`. El dominio se contrató el 26 de agosto y **nunca
+se le añadieron los registros que Resend exige** para verificar un remitente, así
+que cada envío moría con un 403 del proveedor:
+
+```
+ERROR c.s.identity.client.ResendMailSender : El proveedor rechazo un correo transaccional con estado 403
+```
+
+Ese mismo día se añadieron los tres —MX y SPF en `send.sendik.co`, DKIM en
+`resend._domainkey.sendik.co`— y los tres resuelven bien: el `include` de GoDaddy
+lleva a `amazonses.com`, que es lo que Resend usa por debajo. **Aun así el envío
+sigue muriendo con 403** y Resend da el dominio por *parcialmente verificado*.
+
+La sospecha es el SPF: lo publicado es `include:dc-fd741b8612._spfm.send.sendik.co`,
+la macro de aplanado de GoDaddy, y un verificador que compara cadenas no sigue esa
+indirección aunque resuelva al valor correcto. Sustituirlo por el literal
+`v=spf1 include:amazonses.com ~all` y volver a pulsar *Verify* es lo siguiente que
+hay que probar. La pantalla *Domains* de Resend lo dice registro a registro.
+
+**Nadie lo había visto porque nadie se había registrado nunca en `dev`.** El perfil
+`local` usa `MAIL_PROVIDER=console` y las suites leen el enlace del registro de la
+aplicación, así que las dos mitades de HU-001 estaban probadas sin que ningún correo
+saliera de verdad ni una sola vez.
+
+Lo que queda inservible mientras siga así: verificar un correo, recuperar una
+contraseña, y todos los avisos de moderación de HU-002 y HU-007. Es decir, **no se
+puede lanzar**. Va con los textos legales en la lista de lo que bloquea producción,
+y a diferencia de aquellos esto sí es trabajo técnico.
+
+**Un fallo transitorio ya no pierde el correo.** Ese mismo día se perdió uno por un
+corte de red de un segundo: `enviar()` registraba el fallo y seguía, sin reintentar,
+y quien esperaba el enlace no tenía salida porque el reenvío exige el token caducado
+que viajaba en ese correo. Desde entonces se reintenta tres veces lo transitorio
+—cortes de red y 5xx— y **nunca un 4xx**, que es configuración. Lo que sigue sin
+haber es un buzón de reintentos: si los tres fallan, el correo se pierde y el
+registro lo dice.
+
 | Pieza | Dónde | Costo en `dev` |
 |---|---|---|
 | Dominio `sendik.co` | GoDaddy, registrador y DNS | Ya pagado |

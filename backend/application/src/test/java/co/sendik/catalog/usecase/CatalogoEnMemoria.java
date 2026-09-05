@@ -507,10 +507,16 @@ final class CatalogoEnMemoria {
         /**
          * Lo mas reciente primero, como el adaptador de verdad.
          *
-         * <p>Se ordena aqui y no se devuelve el orden de insercion, que seria lo comodo: es
-         * la promesa del puerto, y una prueba que la de por buena sobre un doble que inserta
-         * al final no estaria probando nada. El desempate por posicion imita al del
-         * identificador, que en la tabla es creciente (Uuid7).
+         * <p><strong>Ordena por fecha y no por orden de insercion.</strong> Invertir la
+         * insercion era lo comodo y era mentira: el adaptador ordena por
+         * {@code created_at DESC, id DESC}, asi que un caso de uso que pasara un instante
+         * anterior al de un evento ya escrito -que es exactamente la clase del defecto de los
+         * dos relojes- daba aqui un orden correcto y en PostgreSQL uno distinto. Con la
+         * insercion como unico criterio, la prueba de las dos vueltas no probaba el orden:
+         * pasaba igual con los cuatro eventos fechados al reves.
+         *
+         * <p>El desempate por posicion de insercion, descendente, imita al del identificador,
+         * que en la tabla es creciente (Uuid7).
          */
         @Override
         public List<ModerationEvent> historial(ListingId publicacion) {
@@ -522,6 +528,10 @@ final class CatalogoEnMemoria {
                     suyas.add(entrada);
                 }
             }
+
+            // Estable, asi que a igual fecha conserva el orden de insercion; invertir despues
+            // lo deja descendente en las dos claves, como el ORDER BY del adaptador.
+            suyas.sort(Comparator.comparing(Entrada::cuando));
             Collections.reverse(suyas);
 
             List<ModerationEvent> rastro = new ArrayList<>();

@@ -45,6 +45,7 @@ import java.util.Locale;
 import org.jspecify.annotations.Nullable;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -205,10 +206,17 @@ public class ListingsController {
      *
      * <p>El 401 sin sesion del criterio 8 lo pone la cadena de filtros: esta ruta cae en la
      * regla generica de {@code /api/v1/listings/**}, porque el {@code permitAll} de la
-     * lectura publica esta anclado a un identificador y nada mas -su expresion regular
-     * termina ahi o en la cadena de consulta-. Es la misma razon por la que la bandeja del
-     * moderador vive en su propio prefijo.
+     * lectura publica casa un identificador y nada mas. Es la misma razon por la que la
+     * bandeja del moderador vive en su propio prefijo.
+     *
+     * <p><strong>Y ademas lo declara aqui, que es redundante a proposito</strong>, igual
+     * que las rutas de decision del moderador: mover un endpoint de sitio no puede llevarse
+     * su autorizacion por delante. No es teorico —esa regla de ruta se pudo esquivar con un
+     * {@code %3F} hasta HU-013, y esto habria contenido el fallo—: sin token, el
+     * {@code Jwt} llega nulo y {@code vendedorDe} revienta con un 500 y su traza en vez de
+     * responder que hace falta una sesion.
      */
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}/moderation-history")
     public ModerationHistoryResponse rastro(@AuthenticationPrincipal Jwt token, @PathVariable String id) {
         return ModerationHistories.de(

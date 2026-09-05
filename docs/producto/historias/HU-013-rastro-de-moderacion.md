@@ -83,8 +83,9 @@ Dentro de la publicación, no como pantalla aparte: se llega desde `/mis-publica
 desde el borrador rechazado, que es donde hoy ya se ve el motivo del último rechazo.
 
 Una línea de tiempo, lo más reciente arriba. Cada entrada: qué pasó, cuándo, y el motivo
-cuando lo hay. **Con texto y no solo con color**, que es RN-012 aplicado a otra pantalla:
-un rechazo no puede distinguirse de una aprobación únicamente por el tono.
+cuando lo hay. **Con texto y no solo con color** (WCAG 1.4.1): un rechazo no puede
+distinguirse de una aprobación únicamente por el tono. No hay regla de negocio detrás; la
+historia citaba RN-012, que es la de la cuenta bancaria, y era un error.
 
 Estados de carga, vacío y error propios, acotados al bloque del rastro. Como en la
 bandeja: el error no puede tumbar la publicación entera.

@@ -42,6 +42,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.EnumMap;
 import java.util.List;
@@ -291,6 +292,105 @@ class RastroDeModeracionTest {
 
             assertThat(rastro().execute(new ReadModerationHistoryQuery(vendedor, borrador.id())))
                     .isEmpty();
+        }
+    }
+
+    @Nested
+    class LosDosRelojes {
+
+        /**
+         * La regresion del defecto que destapo implementar esto, y la unica prueba que puede
+         * verlo: con un reloj que <strong>avanza</strong>.
+         *
+         * <p>El envio sellaba la hora con el reloj de la aplicacion y las decisiones con el
+         * {@code now()} de la tabla, y dos relojes escribiendo en un mismo registro ordenado
+         * se cruzan: {@code ListingJourneyTest} se encontro una aprobacion fechada antes del
+         * envio que la habia provocado.
+         *
+         * <p><strong>Con un {@code Clock.fixed} esto no se puede probar</strong>, y por eso
+         * hace falta este: llamar al reloj una vez o dos es indistinguible cuando siempre
+         * devuelve lo mismo, asi que se podria revertir el {@code Instant ahora} de los cinco
+         * casos de uso y toda la suite seguiria verde. Aqui cada consulta da un instante
+         * distinto, asi que la unica forma de que el evento y el sello de la publicacion
+         * coincidan es que el caso de uso mire el reloj una sola vez.
+         */
+        @Test
+        void deberia_fechar_el_envio_con_el_mismo_instante_que_sella_la_publicacion() {
+            RelojQueAvanza reloj = new RelojQueAvanza(AHORA);
+            Listing borrador = borradorConTomas();
+
+            Listing enviada = new SubmitListingForReviewUseCase(publicaciones, arbol, elegibilidad, bitacora, reloj)
+                    .execute(new SellerListingCommand(vendedor, borrador.id()));
+
+            List<ModerationEvent> eventos = rastro().execute(new ReadModerationHistoryQuery(vendedor, enviada.id()));
+
+            assertThat(eventos)
+                    .singleElement()
+                    .satisfies(evento -> assertThat(evento.occurredAt()).isEqualTo(enviada.submittedAt()));
+        }
+
+        /** Lo mismo por el lado del moderador: el evento y {@code moderated_at} son el mismo momento. */
+        @Test
+        void deberia_fechar_la_decision_con_el_mismo_instante_que_sella_la_publicacion() {
+            RelojQueAvanza reloj = new RelojQueAvanza(AHORA);
+            Listing enRevision = enRevision();
+
+            Listing aprobada = new ApproveListingUseCase(publicaciones, bitacora, avisos, reloj)
+                    .execute(new ApproveListingCommand(unModerador(), enRevision.id()));
+
+            List<ModerationEvent> eventos = rastro().execute(new ReadModerationHistoryQuery(vendedor, aprobada.id()));
+
+            assertThat(eventos.getFirst().action()).isEqualTo(ModerationAction.APPROVED);
+            assertThat(eventos.getFirst().occurredAt()).isEqualTo(aprobada.moderatedAt());
+        }
+
+        /** Y el orden que el defecto rompia: el envio antes que la decision que provoco. */
+        @Test
+        void deberia_dejar_el_envio_antes_que_la_decision_que_provoco() {
+            RelojQueAvanza reloj = new RelojQueAvanza(AHORA);
+            Listing borrador = borradorConTomas();
+
+            Listing enviada = new SubmitListingForReviewUseCase(publicaciones, arbol, elegibilidad, bitacora, reloj)
+                    .execute(new SellerListingCommand(vendedor, borrador.id()));
+            new ApproveListingUseCase(publicaciones, bitacora, avisos, reloj)
+                    .execute(new ApproveListingCommand(unModerador(), enviada.id()));
+
+            List<ModerationEvent> eventos = rastro().execute(new ReadModerationHistoryQuery(vendedor, enviada.id()));
+
+            assertThat(eventos.getFirst().occurredAt())
+                    .isAfter(eventos.getLast().occurredAt());
+        }
+    }
+
+    /**
+     * Un reloj que devuelve un instante distinto en cada consulta.
+     *
+     * <p>Existe porque {@code Clock.fixed} esconde exactamente el defecto que hay que fijar:
+     * con el, mirar el reloj una vez o dos da lo mismo.
+     */
+    private static final class RelojQueAvanza extends Clock {
+
+        private Instant siguiente;
+
+        private RelojQueAvanza(Instant desde) {
+            this.siguiente = desde;
+        }
+
+        @Override
+        public Instant instant() {
+            Instant ahora = siguiente;
+            siguiente = siguiente.plus(Duration.ofMinutes(1));
+            return ahora;
+        }
+
+        @Override
+        public ZoneId getZone() {
+            return ZoneOffset.UTC;
+        }
+
+        @Override
+        public Clock withZone(ZoneId zona) {
+            return this;
         }
     }
 

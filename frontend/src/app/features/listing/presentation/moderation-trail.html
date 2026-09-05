@@ -1,44 +1,66 @@
 <div class="rastro">
   <!--
-    Un desplegable, y el botón es la etiqueta de lo que despliega: la región apunta a él con
-    aria-labelledby en vez de llevar un encabezado propio. Un encabezado obligaría a acertar
-    el nivel, y este componente vive en dos pantallas con jerarquías distintas -bajo un h2 en
-    /mis-publicaciones y dentro del bloque de rechazo en /publicar/:id-, así que cualquier
-    nivel fijo se equivoca en una de las dos.
+    Región viva **permanente**, fuera del @if: un role="status" que se inserta con el texto
+    ya dentro no se anuncia de forma fiable, que es la regla que ya está escrita en las dos
+    pantallas donde se monta esto. Lleva los cuatro desenlaces -carga, error, vacío y listo-
+    porque un reintento que no dice nada en ninguno es un reintento mudo.
+  -->
+  <p class="solo-lectores" role="status">
+    @if (anuncio(); as clave) {
+      {{ clave | transloco }}
+    }
+  </p>
+
+  <!--
+    Un desplegable. El contenido va justo detrás del botón en orden de lectura, que es lo que
+    el patrón pide, y **sin role="region"**: la región solo existe desplegada, así que su
+    nombre saldría del botón, que en ese momento dice «Ocultar lo que ha pasado». Un landmark
+    llamado como la acción de cerrarlo no describe nada.
+
+    `aria-describedby` distingue los hasta veinte botones idénticos de /mis-publicaciones,
+    apuntando al título de la fila. En /publicar/:id llega nulo y no hace falta: allí solo
+    hay un rastro.
   -->
   <button
     type="button"
     class="btn btn-secundario rastro__interruptor"
-    [id]="idDeLaRegion() + '-boton'"
     [attr.aria-expanded]="abierto()"
-    [attr.aria-controls]="idDeLaRegion()"
+    [attr.aria-controls]="abierto() ? idDeLaRegion() : null"
+    [attr.aria-describedby]="etiquetadoPor()"
     (click)="alternar()"
   >
     {{ (abierto() ? 'listing.trail.hide' : 'listing.trail.show') | transloco }}
   </button>
 
   @if (abierto()) {
-    <div
-      class="rastro__cuerpo"
-      [id]="idDeLaRegion()"
-      role="region"
-      [attr.aria-labelledby]="idDeLaRegion() + '-boton'"
-    >
+    <!--
+      Recibe el foco tras un reintento, porque el botón que lo pidió ya no existe. Sin anillo
+      propio: el de :focus-visible no aplica a un destino programático, y marcar algo que
+      nadie pulsó confunde más que ayuda.
+    -->
+    <div class="rastro__cuerpo" [id]="idDeLaRegion()" #zonaDelRastro tabindex="-1">
       @if (consulta.isPending()) {
         <!--
-          Región viva para que quien no ve la pantalla se entere de que se está cargando: al
-          contrario que en las cifras, aquí el bloque nace al pulsar, así que el propio texto
-          entrando en el DOM es el anuncio.
+          El esqueleto del sistema, no un párrafo de texto: es lo que pide frontend/CLAUDE.md
+          y lo que ya hace la lista de esta misma pantalla. Lo que se anuncia va por la región
+          viva de arriba, así que esto es puramente visual.
         -->
-        <p class="tipo-secundario rastro__cargando" role="status">
-          {{ 'listing.trail.loading' | transloco }}
-        </p>
+        <div class="rastro__cargando" aria-hidden="true">
+          @for (hueco of [0, 1]; track hueco) {
+            <p class="esqueleto rastro__esqueleto"></p>
+          }
+        </div>
       } @else if (consulta.isError()) {
         <div class="rastro__error">
-          <p class="tipo-cuerpo" role="alert">{{ claveDeError(consulta.error()) | transloco }}</p>
+          <!--
+            Sin role="alert": el mensaje ya sale por la región viva de arriba, y con los dos se
+            anunciaba dos veces. Es la misma corrección que la fila de cifras de HU-012.
+          -->
+          <p class="tipo-cuerpo">{{ claveDeError(consulta.error()) | transloco }}</p>
           <!--
             Sin `disabled`: al pulsarlo la consulta vuelve a `pending` y esta rama se destruye,
-            así que el botón desaparece solo. Es la misma decisión que en las cifras de HU-012.
+            así que el botón desaparece solo. Lo que sí hay que recoger es el foco, que se
+            queda huérfano; lo hace el componente.
           -->
           <button type="button" class="btn btn-secundario" (click)="reintentar()">
             {{ 'listing.trail.retry' | transloco }}
@@ -53,8 +75,8 @@
       } @else {
         <!--
           Una lista ordenada porque el orden es la información: lo más reciente arriba. Cada
-          paso dice **con palabras** qué pasó, que es RN-012 en otra pantalla: un rechazo no se
-          distingue de una aprobación por el color.
+          paso dice **con palabras** qué pasó (WCAG 1.4.1): un rechazo no se distingue de una
+          aprobación por el color.
         -->
         <ol class="rastro__linea">
           @for (paso of pasos(); track paso.clave) {

@@ -189,3 +189,10 @@
 .mias__cifras-zona:focus {
   outline: none;
 }
+
+/* El rastro es un boton de 44px y `.mias__datos` separa a sus hijos con --esp-4, que esta
+   pensado para renglones de texto pegados: sin esto el boton queda cosido al parrafo de
+   atencion. Va aqui y no en el componente, que no sabe donde lo montan. */
+.mias__datos sendik-moderation-trail {
+  margin-block-start: var(--esp-8);
+}

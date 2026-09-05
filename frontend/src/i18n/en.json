@@ -1151,9 +1151,9 @@
     "trail": {
       "show": "See what happened",
       "hide": "Hide what happened",
-      "loading": "Loading the history",
+      "loading": "Loading the trail",
+      "ready": "Trail up to date",
       "empty": "Nothing has happened with this listing yet.",
-      "error": "We could not load the history.",
       "retry": "Try again",
       "reasonLabel": "Reason",
       "action": {

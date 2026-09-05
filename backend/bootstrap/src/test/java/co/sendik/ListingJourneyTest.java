@@ -149,7 +149,8 @@ class ListingJourneyTest {
     void deberia_dejar_corregir_y_reenviar_lo_rechazado() throws Exception {
         User vendedor = vendedorVerificado();
         String suToken = tokenDe(vendedor);
-        String deModerador = tokenDe(moderador());
+        UserId laModeradora = moderador();
+        String deModerador = tokenDe(laModeradora);
 
         String id = crearBorrador(suToken);
         subirLasOchoTomas(suToken, id);
@@ -216,8 +217,13 @@ class ListingJourneyTest {
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
+        // El identificador de **la moderadora**, que es el dato que RN-074 protege: es el actor
+        // de REJECTED y de APPROVED. Antes solo se comprobaba el del vendedor, que es el actor
+        // de los SUBMITTED y que ademas es quien pregunta, asi que no revelaba nada aunque
+        // saliera: la asercion no podia fallar por la razon que decia.
         assertThat(rastro)
                 .doesNotContain("Se ven movidas.")
+                .doesNotContain(laModeradora.value().toString())
                 .doesNotContain(vendedor.id().value().toString());
     }
 

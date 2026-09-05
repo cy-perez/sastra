@@ -45,7 +45,6 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -626,6 +625,12 @@ class CatalogPersistenceTest {
                         tuple(ModerationAction.REJECTED, ListingRejectionReason.PHOTOS_UNUSABLE),
                         tuple(ModerationAction.SUBMITTED, null));
         assertThat(rastro.getLast().occurredAt()).isEqualTo(AHORA);
+
+        // Y la de la decision, que es la mitad que faltaba de la regresion de los dos
+        // relojes: `created_at` conserva su DEFAULT now(), asi que quitar `:cuando` del
+        // INSERT de `registrar` dejaba la fila fechada por el motor sin que nada lo viera.
+        // El orden no lo delata, porque sigue saliendo igual.
+        assertThat(rastro.getFirst().occurredAt()).isEqualTo(AHORA.plusSeconds(60));
     }
 
     /**
@@ -633,25 +638,52 @@ class CatalogPersistenceTest {
      *
      * <p>Dos eventos en el mismo instante -- aprobar y reenviar caben en el mismo
      * milisegundo -- dejan el orden indefinido si solo se ordena por fecha, y PostgreSQL
-     * puede devolverlos distinto entre dos cargas de la misma pantalla. Se escriben tres a
-     * la misma hora y se comprueba que salen del mas nuevo al mas viejo, que es lo que el
-     * identificador creciente (Uuid7) garantiza.
+     * puede devolverlos distinto entre dos cargas de la misma pantalla.
+     *
+     * <p><strong>Los tres eventos son distinguibles a proposito.</strong> La primera version
+     * de esta prueba escribia tres envios identicos y afirmaba que sus identificadores salian
+     * descendentes... de una consulta propia que ella misma ordenaba por
+     * {@code created_at DESC, id DESC}. Es decir, comprobaba que su propio {@code ORDER BY}
+     * funciona: borrar {@code , id DESC} del adaptador la dejaba en verde. Con tres acciones
+     * distintas se afirma sobre lo que devuelve {@code historial}, que es lo que se quiere
+     * proteger, y sin el desempate el orden sale mal.
      */
     @Test
     void deberia_desempatar_por_identificador_cuando_dos_eventos_caen_a_la_misma_hora() {
         Listing publicacion = publicaciones.guardar(borradorConTomas());
-        SellerId vendedor = publicacion.sellerId();
+        ModeratorId moderador = new ModeratorId(nuevoUsuario());
 
-        bitacora.registrarEnvio(publicacion.id(), vendedor, AHORA);
-        bitacora.registrarEnvio(publicacion.id(), vendedor, AHORA);
-        bitacora.registrarEnvio(publicacion.id(), vendedor, AHORA);
+        bitacora.registrarEnvio(publicacion.id(), publicacion.sellerId(), AHORA);
+        bitacora.registrar(publicacion.id(), moderador, ModerationAction.APPROVED, null, null, AHORA);
+        bitacora.registrar(publicacion.id(), moderador, ModerationAction.ARCHIVED, "PROHIBITED_ITEM", null, AHORA);
 
-        List<Instant> fechas = bitacora.historial(publicacion.id()).stream()
-                .map(ModerationEvent::occurredAt)
-                .toList();
+        List<ModerationEvent> rastro = bitacora.historial(publicacion.id());
 
-        assertThat(fechas).containsExactly(AHORA, AHORA, AHORA);
-        assertThat(idsDelRastro(publicacion.id())).isSortedAccordingTo(Comparator.reverseOrder());
+        assertThat(rastro)
+                .extracting(ModerationEvent::action)
+                .containsExactly(ModerationAction.ARCHIVED, ModerationAction.APPROVED, ModerationAction.SUBMITTED);
+        assertThat(rastro).extracting(ModerationEvent::occurredAt).containsOnly(AHORA);
+    }
+
+    /**
+     * Criterio 3: el retiro de RN-024 vuelve con su motivo desde la base de verdad.
+     *
+     * <p>Estaba probado solo en {@code application}, sobre el doble en memoria. Que
+     * {@code ARCHIVED} y su motivo sobrevivan al viaje de ida y vuelta por PostgreSQL no lo
+     * miraba nadie, y es el evento que mas le importa a quien vende.
+     */
+    @Test
+    void deberia_devolver_el_retiro_con_su_motivo_criterio_3() {
+        Listing publicacion = publicaciones.guardar(borradorConTomas());
+        ModeratorId moderador = new ModeratorId(nuevoUsuario());
+
+        bitacora.registrar(
+                publicacion.id(), moderador, ModerationAction.ARCHIVED, "SUSPECTED_COUNTERFEIT", "replica", AHORA);
+
+        assertThat(bitacora.historial(publicacion.id())).singleElement().satisfies(evento -> {
+            assertThat(evento.action()).isEqualTo(ModerationAction.ARCHIVED);
+            assertThat(evento.reason()).isEqualTo(ListingRejectionReason.SUSPECTED_COUNTERFEIT);
+        });
     }
 
     /** Criterio 6: un borrador que nunca salio no tiene rastro, y eso no es un fallo. */
@@ -685,14 +717,6 @@ class CatalogPersistenceTest {
 
         assertThat(fila.get("actor_id")).isEqualTo(moderador.value());
         assertThat(fila.get("notes")).isEqualTo("nota interna");
-    }
-
-    /** Los identificadores de los eventos, en el orden en que los devuelve la consulta. */
-    private List<UUID> idsDelRastro(ListingId publicacion) {
-        return jdbc.sql("SELECT id FROM moderation_events WHERE listing_id = :l ORDER BY created_at DESC, id DESC")
-                .param("l", publicacion.value())
-                .query(UUID.class)
-                .list();
     }
 
     // --- El catalogo publico. HU-009 -----------------------------------------

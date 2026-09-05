@@ -1,11 +1,17 @@
 import {
+  afterNextRender,
   ChangeDetectionStrategy,
   Component,
   computed,
   DestroyRef,
+  effect,
+  ElementRef,
   inject,
+  Injector,
   input,
+  signal,
   untracked,
+  viewChild,
 } from '@angular/core';
 import { TranslocoPipe, TranslocoService } from '@jsverse/transloco';
 
@@ -33,8 +39,9 @@ interface PasoDelRastro {
  * Cuál está abierto lo guarda el store, así que abrir uno cierra el otro sin que ninguno
  * de los dos componentes sepa que el otro existe.
  *
- * <p><strong>Con texto y no solo con color</strong>, que es RN-012 aplicado a otra
- * pantalla: un rechazo no puede distinguirse de una aprobación por el tono.
+ * <p><strong>Con texto y no solo con color</strong> (WCAG 1.4.1): un rechazo no puede
+ * distinguirse de una aprobación por el tono. Es lo mismo que ya hacen la bandeja y el
+ * detalle del moderador, y no hay ninguna regla de negocio detrás: es accesibilidad.
  *
  * <p>Sus cuatro estados —cargando, vacío, error y listo— quedan acotados a este bloque. Un
  * rastro que no carga no puede tumbar la publicación de la que cuelga, que es lo mismo que
@@ -50,9 +57,22 @@ interface PasoDelRastro {
 export class ModerationTrail {
   private readonly store = inject(ListingStore);
   private readonly idioma = inject(TranslocoService);
+  private readonly inyector = inject(Injector);
 
   /** De qué publicación es el rastro. */
   readonly publicacion = input.required<string>();
+
+  /**
+   * Qué elemento describe este rastro, si lo hay.
+   *
+   * <p>Existe por `/mis-publicaciones`, que pinta hasta veinte filas y por tanto hasta
+   * veinte botones con el mismo nombre accesible. Quien navega por lista de botones o por
+   * voz obtiene veinte entradas idénticas. Apuntando al título de la fila, cada botón se
+   * distingue por lo que describe.
+   *
+   * <p>En `/publicar/:id` no hace falta y llega nulo: allí solo hay un rastro.
+   */
+  readonly etiquetadoPor = input<string | null>(null);
 
   protected readonly consulta = this.store.history;
 
@@ -75,6 +95,37 @@ export class ModerationTrail {
    */
   protected readonly idDeLaRegion = computed(() => `rastro-${this.publicacion()}`);
 
+  /**
+   * Lo que se anuncia, con los cuatro desenlaces. WCAG 4.1.3.
+   *
+   * <p>Calcado de la fila de cifras de HU-012, incluida la razón de mirar `isFetching()` y
+   * no `isPending()`: sin sesión la consulta nace deshabilitada y se queda pendiente para
+   * siempre, y con `isPending()` se anunciaría «cargando» indefinidamente a quien no ha
+   * entrado.
+   *
+   * <p>Callado mientras está plegado, que es cuando no hay nada que contar.
+   */
+  protected readonly anuncio = computed<string | null>(() => {
+    if (!this.abierto()) {
+      return null;
+    }
+    if (this.consulta.isFetching()) {
+      return 'listing.trail.loading';
+    }
+    if (this.consulta.isError()) {
+      return ListingStore.claveDeError(this.consulta.error());
+    }
+    if (this.consulta.isSuccess()) {
+      return this.pasos().length === 0 ? 'listing.trail.empty' : 'listing.trail.ready';
+    }
+    return null;
+  });
+
+  /** El bloque entero, que existe en los cuatro estados. Adonde vuelve el foco. */
+  private readonly zona = viewChild<ElementRef<HTMLElement>>('zonaDelRastro');
+
+  private readonly focoHuerfano = signal(false);
+
   constructor() {
     // Si esta fila desaparece con su rastro abierto —al archivar, al cambiar de página—,
     // el store se quedaria creyendo que sigue a la vista y pidiendolo. Solo se limpia si
@@ -84,13 +135,36 @@ export class ModerationTrail {
         this.store.mirarElRastro(null);
       }
     });
+
+    // Sincroniza el foco -que es del navegador, no del marco- con el final del reintento.
+    // Es el unico uso de `effect` que frontend/CLAUDE.md admite.
+    effect(() => {
+      if (!this.focoHuerfano() || this.consulta.isFetching()) {
+        return;
+      }
+      untracked(() => {
+        this.focoHuerfano.set(false);
+        afterNextRender(() => this.zona()?.nativeElement.focus(), { injector: this.inyector });
+      });
+    });
   }
 
   protected alternar(): void {
     this.store.mirarElRastro(this.abierto() ? null : this.publicacion());
   }
 
+  /**
+   * Vuelve a pedir el rastro.
+   *
+   * <p><strong>Recoge el foco</strong>, que es la mitad que faltaba. Al reintentar, la
+   * consulta vuelve a `pending`, esta rama se destruye y con ella el botón que se acaba de
+   * pulsar: el foco cae al `body`, y en `/mis-publicaciones` eso significa volver al
+   * principio del documento y reatravesar la cabecera, las cifras y hasta veinte filas.
+   * Cuando la petición termina se lleva a la zona del rastro, que existe en los cuatro
+   * estados. Es lo mismo que hace la fila de cifras de HU-012.
+   */
   protected reintentar(): void {
+    this.focoHuerfano.set(true);
     void this.consulta.refetch();
   }
 
@@ -128,6 +202,15 @@ export class ModerationTrail {
    *
    * <p>Con `Intl` y la zona del navegador, no en UTC crudo: «2026-09-04T22:10:00Z» no le
    * dice a nadie en Colombia qué día pasó eso.
+   *
+   * <p><strong>La zona es la del navegador y no una configurada</strong>, que es lo que el
+   * criterio 9 pide al pie de la letra. El frontend no tiene ninguna zona configurada -la de
+   * `AppProperties` es del backend- y las cuatro pantallas que ya formatean fechas hacen
+   * exactamente esto. Inventar aquí una configuración divergente sería peor que la
+   * divergencia con el texto del criterio.
+   *
+   * <p>No hay riesgo de hidratación aunque las dos zonas difieran: este bloque solo se pinta
+   * al desplegarlo, así que en el servidor no se renderiza nunca.
    */
   private fechaDe(evento: ModerationEvent): string {
     return new Intl.DateTimeFormat(this.idioma.getActiveLang(), {

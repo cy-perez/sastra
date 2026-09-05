@@ -1151,9 +1151,9 @@
     "trail": {
       "show": "Ver qué ha pasado",
       "hide": "Ocultar lo que ha pasado",
-      "loading": "Cargando el historial",
+      "loading": "Cargando el rastro",
+      "ready": "Rastro al día",
       "empty": "Todavía no ha pasado nada con esta publicación.",
-      "error": "No pudimos cargar el historial.",
       "retry": "Reintentar",
       "reasonLabel": "Motivo",
       "action": {

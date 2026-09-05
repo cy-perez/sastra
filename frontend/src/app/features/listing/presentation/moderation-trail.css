@@ -21,10 +21,22 @@
   border-radius: var(--radio-md);
 }
 
-.rastro__cargando,
 .rastro__vacio {
   margin: 0;
   color: var(--color-texto-suave);
+}
+
+/* Dos renglones del alto que va a tener el primer paso, para que el bloque no salte al
+   llegar los datos. Es la misma forma que el esqueleto de la lista de esta pantalla. */
+.rastro__cargando {
+  display: flex;
+  flex-direction: column;
+  gap: var(--esp-12);
+}
+
+.rastro__esqueleto {
+  height: var(--esp-48);
+  margin: 0;
 }
 
 /* El error se acota a este bloque y deja intacta la publicacion de la que cuelga. */
@@ -50,14 +62,19 @@
    la firma grafica y va una sola vez por pieza, no una por fila. Tampoco lleva acento: el
    bronce es de la insignia de vendedor verificado y aqui habria uno por paso.
 
-   No distingue una accion de otra por color, y eso es RN-012: lo que separa un rechazo de
-   una aprobacion es el texto de `.rastro__que`. */
+   No distingue una accion de otra por color (WCAG 1.4.1): lo que separa un rechazo de una
+   aprobacion es el texto de `.rastro__que`. */
 .rastro__paso {
   display: flex;
   flex-direction: column;
   gap: var(--esp-4);
   padding-inline-start: var(--esp-12);
-  border-inline-start: 2px solid var(--color-borde);
+  /* `--color-borde-control` y no `--color-borde`: aquel ya esta en la lista PARES de
+     verificar.py y este no, y un par que no esta en la lista no se comprueba. La linea es
+     decorativa -- el orden lo lleva el <ol> y lo que distingue las acciones es el texto --
+     asi que 1.4.11 no la alcanza, pero agregar un token sin medir es como se cuela un
+     contraste malo. */
+  border-inline-start: 2px solid var(--color-borde-control);
 }
 
 .rastro__que {

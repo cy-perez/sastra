@@ -152,3 +152,10 @@
 .publicar__esqueleto--alto {
   height: var(--esp-96);
 }
+
+/* `.publicar__rechazo` alinea sus hijos al principio, asi que el host del rastro se
+   dimensiona a su contenido y su caja con borde sale mas estrecha que los parrafos
+   hermanos. Se estira aqui, que es donde vive esa decision de alineacion. */
+.publicar__rechazo sendik-moderation-trail {
+  align-self: stretch;
+}

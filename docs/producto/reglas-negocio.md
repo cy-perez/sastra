@@ -299,11 +299,20 @@ Cada regla tiene identificador. Úsalo en el código y en las pruebas:
   rechazo que aplicó una regla escrita. Es la misma razón por la que el aviso de
   rechazo se manda a nombre de Sendik.
 
-  Tampoco sale la **nota interna** que acompaña a una decisión. Se escribió para
-  Sendik, y enseñarla exigiría decidir antes que se escribe pensando en que la
-  lea el vendedor, que hoy no es así. Lo que sí llega al vendedor es el motivo de
-  RN-022 y la nota que el moderador redactó **para él**, que son cosas distintas
-  y viajan por su propio camino.
+  Tampoco sale por el rastro la **nota** que acompaña a una decisión.
+
+  Y aquí hace falta una precisión, porque la frase corta engaña: hoy
+  `moderation_events.notes` guarda **la misma nota que el vendedor ya recibe**
+  por otro camino. Al rechazar, esa nota viaja a `listings.rejection_note`, sale
+  en `GET /api/v1/listings/{id}` como `rejectionNote` y va en el correo de
+  rechazo, que es justo lo que RN-022 quiere. Lo que dice esta regla es que **el
+  rastro no la repite**, no que exista un campo donde se pueda escribir algo que
+  el vendedor no vaya a leer. **No lo hay.** Quien escriba ahí pensando que es
+  privado se equivoca.
+
+  Separar de verdad las dos notas —una para el vendedor y una para Sendik— es una
+  decisión que nadie ha tomado. Mientras no se tome, se escribe una sola y se
+  escribe para que la lea el vendedor.
 
   Hasta HU-013 esto se estaba deduciendo de RN-046, que habla de otra cosa: de
   quién puede *leer* la cédula y la selfie, no de a quién se le atribuye una

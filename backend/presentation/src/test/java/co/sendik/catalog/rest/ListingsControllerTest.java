@@ -716,24 +716,34 @@ class ListingsControllerTest {
 
     // --- El rastro de moderacion. HU-013 -------------------------------------
 
-    /** Criterios 1 a 3: cada paso con su accion, su motivo cuando lo hay y su fecha. */
+    /**
+     * Criterios 1 a 3: cada paso con su accion, su motivo cuando lo hay y su fecha.
+     *
+     * <p>Las cuatro acciones, incluida {@code ARCHIVED}: es el retiro de RN-024, el evento
+     * que mas le importa a quien vende, y no salia por ninguna prueba por encima de
+     * {@code application}.
+     */
     @Test
     void deberia_devolver_el_rastro_de_lo_mio_HU_013() throws Exception {
         String id = UUID.randomUUID().toString();
         when(rastro.execute(any()))
                 .thenReturn(List.of(
+                        new ModerationEvent(ModerationAction.ARCHIVED, ListingRejectionReason.PROHIBITED_ITEM, CUANDO),
                         new ModerationEvent(ModerationAction.APPROVED, null, CUANDO),
                         new ModerationEvent(ModerationAction.REJECTED, ListingRejectionReason.PHOTOS_UNUSABLE, CUANDO),
                         new ModerationEvent(ModerationAction.SUBMITTED, null, CUANDO)));
 
         mvc.perform(get("/api/v1/listings/" + id + "/moderation-history"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.events.length()").value(3))
-                .andExpect(jsonPath("$.events[0].action").value("APPROVED"))
-                .andExpect(jsonPath("$.events[0].reason").doesNotExist())
-                .andExpect(jsonPath("$.events[1].action").value("REJECTED"))
-                .andExpect(jsonPath("$.events[1].reason").value("PHOTOS_UNUSABLE"))
-                .andExpect(jsonPath("$.events[2].action").value("SUBMITTED"));
+                .andExpect(jsonPath("$.events.length()").value(4))
+                .andExpect(jsonPath("$.events[0].action").value("ARCHIVED"))
+                .andExpect(jsonPath("$.events[0].reason").value("PROHIBITED_ITEM"))
+                .andExpect(jsonPath("$.events[0].occurredAt").value("2026-09-04T15:00:00Z"))
+                .andExpect(jsonPath("$.events[1].action").value("APPROVED"))
+                .andExpect(jsonPath("$.events[1].reason").doesNotExist())
+                .andExpect(jsonPath("$.events[2].action").value("REJECTED"))
+                .andExpect(jsonPath("$.events[2].reason").value("PHOTOS_UNUSABLE"))
+                .andExpect(jsonPath("$.events[3].action").value("SUBMITTED"));
 
         // El vendedor sale del token y nunca del parametro. Es lo que impide pedir el
         // rastro de otra persona cambiando un identificador en la direccion.

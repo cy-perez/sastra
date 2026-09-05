@@ -59,8 +59,18 @@ describe('ModerationTrail', () => {
     return { fixture, backend: TestBed.inject(HttpTestingController) };
   };
 
+  /**
+   * Por nombre accesible y no por `querySelector('button')`: es lo que pide
+   * frontend/CLAUDE.md, y de paso distingue el interruptor del botón de reintentar.
+   */
+  const boton = (fixture: { nativeElement: HTMLElement }, texto: string) =>
+    [...fixture.nativeElement.querySelectorAll('button')].find((candidato) =>
+      candidato.textContent?.includes(texto),
+    ) as HTMLButtonElement;
+
+  /** El interruptor, se llame como se llame según esté plegado o desplegado. */
   const interruptor = (fixture: { nativeElement: HTMLElement }) =>
-    fixture.nativeElement.querySelector('button') as HTMLButtonElement;
+    boton(fixture, 'Ver qué ha pasado') ?? boton(fixture, 'Ocultar lo que ha pasado');
 
   /**
    * Lo despliega y responde la consulta.
@@ -91,10 +101,14 @@ describe('ModerationTrail', () => {
     return peticion;
   };
 
+  /** El texto de cada paso, por rol: el marcado ya es un `<ol><li>`. */
   const pasos = (fixture: { nativeElement: HTMLElement }) =>
-    [...fixture.nativeElement.querySelectorAll('.rastro__paso')].map((paso) =>
+    [...fixture.nativeElement.querySelectorAll('ol li')].map((paso) =>
       (paso.textContent ?? '').replace(/\s+/g, ' ').trim(),
     );
+
+  const texto = (fixture: { nativeElement: HTMLElement }) =>
+    (fixture.nativeElement.textContent ?? '').replace(/\s+/g, ' ');
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -131,18 +145,29 @@ describe('ModerationTrail', () => {
 
     expect(interruptor(contexto.fixture).getAttribute('aria-expanded')).toBe('true');
 
-    // La region que despliega es la que el boton dice controlar. Sin esto, `aria-controls`
-    // apunta a un identificador que no existe y el anuncio no lleva a ninguna parte.
-    const region = contexto.fixture.nativeElement.querySelector('[role="region"]');
-    expect(region?.id).toBe(interruptor(contexto.fixture).getAttribute('aria-controls'));
+    // Lo que el boton dice controlar existe de verdad. Sin esto, `aria-controls` apunta a un
+    // identificador que no esta en el documento y el anuncio no lleva a ninguna parte.
+    const controlado = interruptor(contexto.fixture).getAttribute('aria-controls');
+    expect(controlado).not.toBeNull();
+    expect(contexto.fixture.nativeElement.querySelector(`#${controlado}`)).not.toBeNull();
+  });
+
+  /**
+   * Plegado no controla nada, y por eso no lo declara: `aria-controls` apuntaria a un
+   * identificador que no esta en el documento, que es una referencia rota. axe lo devuelve
+   * como incompleto y no como violacion, asi que la auditoria no lo caza.
+   */
+  it('no deberia declarar aria-controls mientras esta plegado', async () => {
+    const { fixture } = await montar();
+
+    expect(interruptor(fixture).getAttribute('aria-controls')).toBeNull();
   });
 
   // --- Criterios 1 a 3: las acciones, con texto ----------------------------
 
   /**
-   * RN-012 en otra pantalla: un rechazo no puede distinguirse de una aprobación por el
-   * color. Cada paso lo dice con palabras, y por eso se afirma sobre el texto y no sobre
-   * una clase.
+   * WCAG 1.4.1: un rechazo no puede distinguirse de una aprobación por el color. Cada paso
+   * lo dice con palabras, y por eso se afirma sobre el texto y no sobre una clase.
    */
   it('deberia contar cada accion con palabras y no solo con color', async () => {
     const contexto = await montar();
@@ -177,7 +202,7 @@ describe('ModerationTrail', () => {
       { action: 'APPROVED', reason: null, occurredAt: '2026-09-04T18:12:03Z' },
     ]);
 
-    expect(contexto.fixture.nativeElement.querySelector('.rastro__motivo')).toBeNull();
+    expect(texto(contexto.fixture)).not.toContain('Motivo');
   });
 
   /**
@@ -251,9 +276,26 @@ describe('ModerationTrail', () => {
     ]);
 
     const fecha = contexto.fixture.nativeElement.querySelector('time') as HTMLTimeElement;
+
+    // El instante original, sin ambigüedad, para quien lo lea con una máquina.
     expect(fecha.getAttribute('datetime')).toBe('2026-09-04T18:12:03Z');
+
+    // Y el texto, con el formato y el idioma activos. **Se afirma el valor exacto**: la
+    // versión anterior solo comprobaba que no fuera la cadena ISO y que no estuviera vacía,
+    // y eso lo cumple igual `new Date(x).toString()`, o UTC crudo formateado, o la
+    // configuración regional equivocada. Con el valor puesto, cambiar cualquiera de las tres
+    // cosas rompe la prueba.
+    const esperada = new Intl.DateTimeFormat('es', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(new Date('2026-09-04T18:12:03Z'));
+
+    expect(fecha.textContent?.trim()).toBe(esperada);
+
+    // Y no es la cadena cruda ni el `toString()` del navegador, que es lo que sale si alguien
+    // quita el `Intl` de en medio.
     expect(fecha.textContent).not.toContain('2026-09-04T18:12:03Z');
-    expect(fecha.textContent?.trim()).not.toBe('');
+    expect(fecha.textContent).not.toContain('GMT');
   });
 
   // --- Criterio 5: nunca quien decidio -------------------------------------
@@ -287,16 +329,42 @@ describe('ModerationTrail', () => {
     const contexto = await montar();
     await desplegar(contexto, []);
 
-    expect(contexto.fixture.nativeElement.querySelector('.rastro__linea')).toBeNull();
+    expect(contexto.fixture.nativeElement.querySelector('ol')).toBeNull();
     expect(contexto.fixture.nativeElement.textContent).toContain('Todavía no ha pasado nada');
   });
 
-  it('deberia decir que esta cargando mientras la consulta esta en vuelo', async () => {
+  /**
+   * La región viva es **permanente** y vive fuera del desplegable, no un `role="status"` que
+   * nace con el texto ya dentro: eso no se anuncia de forma fiable, que es la regla que ya
+   * estaba escrita en las dos pantallas donde se monta esto.
+   */
+  it('deberia anunciar la carga por la region viva permanente', async () => {
     const contexto = await montar();
+
+    // Existe desde antes de desplegar, que es lo que la hace funcionar.
+    const viva = contexto.fixture.nativeElement.querySelector('[role="status"]');
+    expect(viva).not.toBeNull();
+    expect(viva?.textContent?.trim()).toBe('');
+
     await desplegar(contexto, null);
 
+    expect(viva?.textContent).toContain('Cargando el rastro');
+
+    // Y lo visual es el esqueleto del sistema, escondido a quien no ve la pantalla.
+    const esqueleto = contexto.fixture.nativeElement.querySelector('.esqueleto');
+    expect(esqueleto).not.toBeNull();
+    expect(esqueleto?.closest('[aria-hidden="true"]')).not.toBeNull();
+  });
+
+  /** Y al terminar lo dice, que es lo que faltaba: vaciar la región no anuncia nada. */
+  it('deberia anunciar tambien que termino de cargar', async () => {
+    const contexto = await montar();
+    await desplegar(contexto, [
+      { action: 'SUBMITTED', reason: null, occurredAt: '2026-09-02T21:33:47Z' },
+    ]);
+
     expect(contexto.fixture.nativeElement.querySelector('[role="status"]')?.textContent).toContain(
-      'Cargando el historial',
+      'Rastro al día',
     );
   });
 
@@ -312,8 +380,13 @@ describe('ModerationTrail', () => {
     peticion.flush({ code: 'COMMON_UNEXPECTED' }, { status: 500, statusText: 'Server Error' });
     await asentar(contexto.fixture);
 
-    expect(contexto.fixture.nativeElement.querySelector('[role="alert"]')).not.toBeNull();
-    expect(contexto.fixture.nativeElement.querySelector('.rastro__error button')).not.toBeNull();
+    // El mensaje, no solo que exista un hueco donde ponerlo.
+    expect(texto(contexto.fixture)).toContain('Algo salió mal de nuestro lado');
+    expect(boton(contexto.fixture, 'Reintentar')).toBeDefined();
+
+    // **Sin `role="alert"`**: el error viaja por la región viva permanente, y con los dos se
+    // anunciaba dos veces. Es la misma corrección que la fila de cifras de HU-012.
+    expect(contexto.fixture.nativeElement.querySelector('[role="alert"]')).toBeNull();
   });
 
   /**
@@ -326,9 +399,7 @@ describe('ModerationTrail', () => {
     peticion.flush({ code: 'COMMON_UNEXPECTED' }, { status: 500, statusText: 'Server Error' });
     await asentar(contexto.fixture);
 
-    (
-      contexto.fixture.nativeElement.querySelector('.rastro__error button') as HTMLButtonElement
-    ).click();
+    boton(contexto.fixture, 'Reintentar').click();
     await bombear(contexto.fixture);
 
     contexto.backend
@@ -344,6 +415,78 @@ describe('ModerationTrail', () => {
     expect(pasos(contexto.fixture)[0]).toContain('La enviaste a revisión');
   });
 
+  /**
+   * Criterio 3: el retiro de RN-024, que es el evento que más le duele a quien vende y el
+   * único cuya clave de traducción no ejercitaba nada. Si `listing.trail.action.ARCHIVED`
+   * faltara o estuviera mal escrita, la pantalla pintaba la clave cruda y la suite seguía
+   * verde.
+   */
+  it('deberia contar el retiro del catalogo con su motivo', async () => {
+    const contexto = await montar();
+    await desplegar(contexto, [
+      { action: 'ARCHIVED', reason: 'PROHIBITED_ITEM', occurredAt: '2026-09-04T18:12:03Z' },
+    ]);
+
+    expect(pasos(contexto.fixture)[0]).toContain('Se retiró del catálogo');
+    expect(pasos(contexto.fixture)[0]).toContain('Motivo');
+    expect(texto(contexto.fixture)).not.toContain('PROHIBITED_ITEM');
+  });
+
+  /**
+   * El hermano del caso de la acción desconocida, por el lado del motivo, y se resuelve al
+   * revés: un motivo que no se reconoce **se descarta**, porque se pinta traducido y sin
+   * traducción saldría el nombre crudo de la enumeración. La fila se pinta igual.
+   */
+  it('deberia descartar un motivo que no reconoce en vez de pintarlo crudo', async () => {
+    const contexto = await montar();
+    await desplegar(contexto, [
+      { action: 'REJECTED', reason: 'MOTIVO_QUE_NO_EXISTE', occurredAt: '2026-09-03T09:05:22Z' },
+    ]);
+
+    expect(pasos(contexto.fixture)).toHaveLength(1);
+    expect(pasos(contexto.fixture)[0]).toContain('Se rechazó');
+    expect(texto(contexto.fixture)).not.toContain('MOTIVO_QUE_NO_EXISTE');
+    expect(texto(contexto.fixture)).not.toContain('Motivo');
+  });
+
+  /**
+   * Criterio 8 por el lado del navegador. **La sesión se pone después de crear el
+   * componente**, que es como ocurre en una carga real: el token de acceso vive en memoria y
+   * se pierde al recargar, así que la sesión llega después por la cookie de refresco.
+   *
+   * <p>Ponerla antes es exactamente el error que `frontend/CLAUDE.md` documenta como la
+   * causa de que `/mi-cuenta` no cargara nunca sin que ninguna prueba lo viera: con la sesión
+   * ya puesta, la cláusula `sesion.isAuthenticated()` de la consulta se puede borrar entera y
+   * todo sigue verde.
+   */
+  it('no deberia pedir el rastro hasta que llegue la sesion', async () => {
+    const fixture = TestBed.createComponent(ModerationTrail);
+    fixture.componentRef.setInput('publicacion', ID);
+    await bombear(fixture);
+
+    // La sesión se resuelve en anónima, que es lo que hace el inicializador cuando no hay
+    // cookie de refresco que recuperar. Es la misma forma que usa `my-listings-page.spec.ts`.
+    TestBed.inject(SessionStore).clear();
+    await bombear(fixture);
+
+    const backend = TestBed.inject(HttpTestingController);
+
+    interruptor(fixture).click();
+    await bombear(fixture);
+    backend.expectNone((llamada) => llamada.url.includes('moderation-history'));
+
+    // Y en cuanto llega, sale sola: quien recarga con el rastro abierto lo vuelve a ver.
+    TestBed.inject(SessionStore).set(SESION);
+    await bombear(fixture);
+
+    backend
+      .expectOne((llamada) => llamada.url === `${API}/listings/${ID}/moderation-history`)
+      .flush({ events: [] });
+    await bombear(fixture);
+
+    expect(texto(fixture)).toContain('Todavía no ha pasado nada');
+  });
+
   /** Al plegarlo desaparece la región, y el botón vuelve a decir que abre. */
   it('deberia poder plegarse otra vez', async () => {
     const contexto = await montar();
@@ -354,7 +497,7 @@ describe('ModerationTrail', () => {
     interruptor(contexto.fixture).click();
     await asentar(contexto.fixture);
 
-    expect(contexto.fixture.nativeElement.querySelector('[role="region"]')).toBeNull();
+    expect(contexto.fixture.nativeElement.querySelector('ol')).toBeNull();
     expect(interruptor(contexto.fixture).getAttribute('aria-expanded')).toBe('false');
   });
 });

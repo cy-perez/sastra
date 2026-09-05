@@ -90,5 +90,51 @@ for (const modo of MODOS) {
       await page.unroute('**/users/me/listings/summary');
       await retirarDeRevision(page, id);
     });
+
+    /**
+     * El rastro desplegado. HU-013.
+     *
+     * <p>Nace plegado, asi que la auditoria del panel recorre la pantalla con la lista de
+     * pasos, su desplegable y sus cuatro estados **fuera del DOM**. Es el mismo hueco que
+     * HU-012 cerro para las cifras: lo que se auditaba eran siete esqueletos con
+     * `aria-hidden`, no las cifras.
+     */
+    test('el rastro desplegado no incumple ningun criterio', async ({ page }) => {
+      const id = await abrirElPanelEn(page, modo);
+
+      await page.getByRole('button', { name: 'Ver qué ha pasado' }).first().click();
+
+      // Con datos de verdad: la publicacion se envio a revision, asi que tiene al menos un
+      // paso. Auditar el estado vacio dejaria la lista sin mirar.
+      await expect(page.getByText('La enviaste a revisión').first()).toBeVisible();
+      await auditar(page);
+
+      await retirarDeRevision(page, id);
+    });
+
+    /**
+     * Y su rama de error, que es donde vive el otro boton de reintentar.
+     *
+     * <p>Se fuerza cortando la peticion del rastro, por lo mismo que con las cifras: sin
+     * esto, ese boton -su foco, su contraste, su jerarquia- no lo audita nadie.
+     */
+    test('el rastro roto tampoco incumple ningun criterio', async ({ page }) => {
+      const id = await abrirElPanelEn(page, modo);
+
+      await page.route('**/moderation-history', (ruta) =>
+        ruta.fulfill({
+          status: 500,
+          contentType: 'application/json',
+          body: JSON.stringify({ code: 'COMMON_UNEXPECTED' }),
+        }),
+      );
+
+      await page.getByRole('button', { name: 'Ver qué ha pasado' }).first().click();
+      await expect(page.getByRole('button', { name: 'Reintentar' })).toBeVisible();
+      await auditar(page);
+
+      await page.unroute('**/moderation-history');
+      await retirarDeRevision(page, id);
+    });
   });
 }

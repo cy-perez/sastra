@@ -20,4 +20,15 @@ export const queryKeys = {
    */
   summary: ['catalog', 'listings', 'mine', 'summary'] as const,
   one: (id: string) => ['catalog', 'listings', id] as const,
+
+  /**
+   * El rastro de moderación de una publicación. HU-013.
+   *
+   * **Cuelga de `one` pero no se invalida con ella.** `refrescar` deja la publicación en la
+   * caché con `setQueryData`, que escribe una clave exacta y no invalida nada por prefijo,
+   * así que el rastro no se enteraría de un envío recién hecho. Por eso el store lo
+   * invalida aparte: enviar a revisión y editar una publicación viva crean una entrada, y
+   * el rastro abierto en esa misma pantalla mostraría el de antes.
+   */
+  history: (id: string) => ['catalog', 'listings', id, 'history'] as const,
 } as const;

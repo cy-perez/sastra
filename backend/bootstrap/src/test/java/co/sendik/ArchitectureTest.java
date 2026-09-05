@@ -3,13 +3,22 @@ package co.sendik;
 import static com.tngtech.archunit.base.DescribedPredicate.not;
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noFields;
 
 import com.tngtech.archunit.core.domain.JavaClasses;
+import com.tngtech.archunit.core.domain.JavaMethod;
+import com.tngtech.archunit.core.domain.JavaParameterizedType;
+import com.tngtech.archunit.core.domain.JavaType;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
+import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
+import com.tngtech.archunit.lang.ConditionEvents;
+import com.tngtech.archunit.lang.SimpleConditionEvent;
+import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -206,6 +215,77 @@ class ArchitectureTest {
                 .allowEmptyShould(true);
 
         regla.check(todasLasClases());
+    }
+
+    /**
+     * Un controlador tampoco <strong>devuelve</strong> un tipo del dominio.
+     *
+     * <p>La regla de arriba mira donde reside una clase, asi que solo protege lo que ya
+     * decidiste poner en {@code rest.dto}. No ve el otro camino, que es mas facil de tomar
+     * sin darse cuenta: un caso de uso devuelve un tipo del dominio -{@code Listing},
+     * {@code ModerationEvent}- y el metodo del controlador lo reenvia tal cual en vez de
+     * pasarlo por su mapeador. Ninguna clase reside donde no debe y el objeto sale igual.
+     *
+     * <p><strong>Lo hizo necesario HU-013 y RN-074.</strong> Ese rastro se apoya en que
+     * {@code actor_id} y {@code notes} no salen por tres sitios: la consulta no los
+     * selecciona, {@code ModerationEvent} no los lleva y el DTO no tiene campo para ellos.
+     * De las tres, la unica que alguien puede deshacer sin tocar nada mas es la tercera, y
+     * hasta aqui nada la vigilaba: basta declarar el metodo como {@code List<ModerationEvent>}
+     * y devolver lo que da el caso de uso.
+     *
+     * <p><strong>Mira dentro de los genericos</strong>, que es de lo que se trata: el tipo
+     * crudo de {@code List<ModerationEvent>} es {@code java.util.List} y no delata nada.
+     *
+     * <p>No se puede escribir como «un controlador no depende de {@code ..model..}»:
+     * {@code ListingsController} construye {@link co.sendik.catalog.model.ListingId} y
+     * {@code SellerId} a partir de la ruta y del token, y eso es correcto. Lo que no puede
+     * es devolverlos.
+     */
+    @Test
+    void un_controlador_no_devuelve_un_tipo_del_dominio() {
+        ArchRule regla = methods()
+                .that()
+                .areDeclaredInClassesThat()
+                .areAnnotatedWith("org.springframework.web.bind.annotation.RestController")
+                .and()
+                .arePublic()
+                .should(noDevolverTiposDelDominio())
+                .because("presentation traduce entre el mundo exterior y los casos de uso."
+                        + " Un objeto de dominio reenviado tal cual convierte el modelo en el contrato")
+                .allowEmptyShould(true);
+
+        regla.check(todasLasClases());
+    }
+
+    private static ArchCondition<JavaMethod> noDevolverTiposDelDominio() {
+        return new ArchCondition<>("no devolver tipos de co.sendik..model.. ni de co.sendik.shared.file..") {
+            @Override
+            public void check(JavaMethod metodo, ConditionEvents eventos) {
+                for (String tipo : tiposDe(metodo.getReturnType())) {
+                    if (esDelDominio(tipo)) {
+                        eventos.add(SimpleConditionEvent.violated(
+                                metodo, metodo.getFullName() + " devuelve " + tipo + ", que es del dominio"));
+                    }
+                }
+            }
+        };
+    }
+
+    /** El tipo y, si viene parametrizado, tambien lo que lleva dentro. */
+    private static List<String> tiposDe(JavaType tipo) {
+        List<String> nombres = new ArrayList<>();
+        nombres.add(tipo.toErasure().getName());
+
+        if (tipo instanceof JavaParameterizedType parametrizado) {
+            for (JavaType argumento : parametrizado.getActualTypeArguments()) {
+                nombres.addAll(tiposDe(argumento));
+            }
+        }
+        return nombres;
+    }
+
+    private static boolean esDelDominio(String tipo) {
+        return tipo.startsWith("co.sendik.") && (tipo.contains(".model.") || tipo.startsWith("co.sendik.shared.file."));
     }
 
     /**

@@ -198,6 +198,15 @@ class ListingSecurityTest {
         mvc.perform(post("/api/v1/listings/" + CUALQUIERA + "/images")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/v1/users/me/listings")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/v1/users/me/listings/summary")).andExpect(status().isUnauthorized());
+
+        // El rastro no escribe, pero es de quien vende y exige token igual (criterio 8 de
+        // HU-013). Esta linea vale por si sola: el `permitAll` de la lectura publica esta
+        // anclado a un identificador y nada mas, asi que esta ruta cae en la regla generica
+        // de /listings/**. Si alguien relajara aquella expresion regular -- para admitir un
+        // sufijo, por ejemplo -- el rastro de una publicacion quedaria abierto con sus
+        // motivos de rechazo dentro, y esto es lo unico que lo veria.
+        mvc.perform(get("/api/v1/listings/" + CUALQUIERA + "/moderation-history"))
+                .andExpect(status().isUnauthorized());
     }
 
     /**

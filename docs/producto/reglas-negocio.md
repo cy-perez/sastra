@@ -288,6 +288,42 @@ Cada regla tiene identificador. Úsalo en el código y en las pruebas:
   distingue desde fuera, por lo mismo que el 404 de una publicación ajena: decir
   «esto existía» ya es decir algo.
 
+- **RN-074** **La identidad de quien modera no se le muestra a quien vende.** La
+  bitácora la guarda —auditar exige saber quién decidió— y lo que no se hace es
+  devolverla: ni el nombre, ni el correo, ni el identificador, en ninguna
+  respuesta de la API ni en ninguna pantalla.
+
+  Una decisión de moderación es de Sendik, no de la persona que la firmó.
+  Ponerle nombre convierte una discrepancia con la plataforma en una
+  discrepancia con alguien, y quien modera pasa a cargar personalmente con un
+  rechazo que aplicó una regla escrita. Es la misma razón por la que el aviso de
+  rechazo se manda a nombre de Sendik.
+
+  Tampoco sale por el rastro la **nota** que acompaña a una decisión.
+
+  Y aquí hace falta una precisión, porque la frase corta engaña: hoy
+  `moderation_events.notes` guarda **la misma nota que el vendedor ya recibe**
+  por otro camino. Al rechazar, esa nota viaja a `listings.rejection_note`, sale
+  en `GET /api/v1/listings/{id}` como `rejectionNote` y va en el correo de
+  rechazo, que es justo lo que RN-022 quiere. Lo que dice esta regla es que **el
+  rastro no la repite**, no que exista un campo donde se pueda escribir algo que
+  el vendedor no vaya a leer. **No lo hay.** Quien escriba ahí pensando que es
+  privado se equivoca.
+
+  Separar de verdad las dos notas —una para el vendedor y una para Sendik— es una
+  decisión que nadie ha tomado. Mientras no se tome, se escribe una sola y se
+  escribe para que la lea el vendedor.
+
+  Hasta HU-013 esto se estaba deduciendo de RN-046, que habla de otra cosa: de
+  quién puede *leer* la cédula y la selfie, no de a quién se le atribuye una
+  decisión. Se escribió al hacer visible el rastro de moderación, que es la
+  primera pantalla donde la pregunta se puede llegar a hacer.
+
+  **Se cumple no trayendo el dato, no escondiéndolo.** La consulta del rastro no
+  selecciona `actor_id` ni `notes`, el tipo de dominio no los lleva y el DTO de
+  la API no tiene campo para ellos. Filtrar en el borde dejaría la regla a merced
+  de que nadie escriba un campo de más.
+
 ## Favoritos
 
 Las cuatro nacen con HU-011 y son las respuestas a lo que HU-009 dejó por

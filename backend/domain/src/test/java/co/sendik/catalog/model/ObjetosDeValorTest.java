@@ -195,10 +195,21 @@ class ObjetosDeValorTest {
             assertThat(reconstruida.submittedAt()).isEqualTo(original.submittedAt());
         }
 
+        /**
+         * Cuatro desde HU-013, y el orden es el del ciclo: primero se entra a revision y
+         * despues se decide. Eran tres mientras la bitacora contaba solo lo que hacia un
+         * moderador; {@code SUBMITTED} es la decision de que cuente lo que le paso a la
+         * publicacion, sin la cual el rastro de una rechazada y reenviada no deja ver las
+         * dos vueltas.
+         */
         @Test
-        void deberia_registrar_las_tres_acciones_de_moderacion_que_dejan_rastro() {
+        void deberia_registrar_las_cuatro_acciones_que_dejan_rastro() {
             assertThat(ModerationAction.values())
-                    .containsExactly(ModerationAction.APPROVED, ModerationAction.REJECTED, ModerationAction.ARCHIVED);
+                    .containsExactly(
+                            ModerationAction.SUBMITTED,
+                            ModerationAction.APPROVED,
+                            ModerationAction.REJECTED,
+                            ModerationAction.ARCHIVED);
             assertThat(ModerationAction.valueOf("APPROVED")).isEqualTo(ModerationAction.APPROVED);
         }
     }

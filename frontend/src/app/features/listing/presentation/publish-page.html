@@ -104,6 +104,13 @@
           </p>
         }
         <p class="tipo-secundario">{{ 'listing.rejected.retryHelp' | transloco }}</p>
+
+        <!--
+          El rastro, plegado, dentro del bloque de rechazo. HU-013: es donde hoy ya se ve el
+          motivo del ultimo rechazo, y donde quien fue rechazado dos veces necesita ver que
+          la primera vez fue por otra cosa.
+        -->
+        <sendik-moderation-trail [publicacion]="actual.id" />
         <button
           type="button"
           class="btn btn-primario"

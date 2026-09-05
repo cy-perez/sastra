@@ -8,12 +8,13 @@ import type {
   Condition,
   Listing,
   ListingStatus,
+  ModerationEvent,
   Money,
   Shipping,
   Size,
   StatusCount,
 } from '../../../shared/domain/listing';
-import { esEstadoConocido } from '../../../shared/domain/listing';
+import { esEstadoConocido, esMotivoDeRechazoConocido } from '../../../shared/domain/listing';
 
 /**
  * Lo que se manda al crear o editar. Es de esta capa y no sale de ella: la plantilla ve
@@ -68,6 +69,23 @@ interface SellerListingsPageDto {
  */
 interface SellerListingsSummaryDto {
   readonly counts: readonly { readonly status: string; readonly count: number }[];
+}
+
+/**
+ * Lo que responde el rastro de moderación. HU-013.
+ *
+ * <p>Un objeto con la lista dentro y no la lista suelta, como lo manda el servidor: una
+ * respuesta que es un arreglo de primer nivel no admite agregarle nada después.
+ *
+ * <p>`action` y `reason` son `string` porque llegan como texto y esta capa es donde se
+ * decide qué hacer con lo que no se reconoce.
+ */
+interface ModerationHistoryDto {
+  readonly events: readonly {
+    readonly action: string;
+    readonly reason: string | null;
+    readonly occurredAt: string;
+  }[];
 }
 
 /**
@@ -263,6 +281,32 @@ export class ListingApi {
     }
 
     return [...porEstado].map(([status, count]) => ({ status, count }));
+  }
+
+  /**
+   * Qué le pasó a una publicación propia. HU-013.
+   *
+   * <p>Responde 404 si no existe o si no es de quien pregunta, igual que {@link una}: el
+   * criterio 7 hace que las dos sean la misma respuesta.
+   *
+   * <p><strong>El mapeo de aquí no se parece al del resumen, y es a propósito.</strong> Una
+   * acción que no se reconoce **se conserva** —la fila se pinta con su fecha y una
+   * descripción genérica, porque omitirla escondería que algo pasó— y un motivo que no se
+   * reconoce **se descarta**, porque se pinta traducido y sin traducción saldría el nombre
+   * crudo de la enumeración. Se trata como la ausencia de motivo, que la fila ya sabe
+   * pintar.
+   */
+  async rastro(id: string): Promise<readonly ModerationEvent[]> {
+    const respuesta = await firstValueFrom(
+      this.http.get<ModerationHistoryDto>(`listings/${id}/moderation-history`),
+    );
+
+    return (respuesta.events ?? []).map((evento) => ({
+      action: evento.action,
+      reason:
+        evento.reason !== null && esMotivoDeRechazoConocido(evento.reason) ? evento.reason : null,
+      occurredAt: evento.occurredAt,
+    }));
   }
 }
 

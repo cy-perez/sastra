@@ -19,12 +19,14 @@ import co.sendik.catalog.dto.ChangeListingPriceCommand;
 import co.sendik.catalog.dto.ChangeListingShippingCommand;
 import co.sendik.catalog.dto.CreateListingCommand;
 import co.sendik.catalog.dto.ReadListingQuery;
+import co.sendik.catalog.dto.ReadModerationHistoryQuery;
 import co.sendik.catalog.dto.RemoveListingImageCommand;
 import co.sendik.catalog.dto.SellerListingCommand;
 import co.sendik.catalog.dto.UpdateListingContentCommand;
 import co.sendik.catalog.dto.UploadListingImageCommand;
 import co.sendik.catalog.exception.ConditionNotAllowedException;
 import co.sendik.catalog.exception.IncompleteListingException;
+import co.sendik.catalog.exception.ListingNotFoundException;
 import co.sendik.catalog.exception.MeasurementsIncompleteException;
 import co.sendik.catalog.exception.ReferenceImageNotAllowedException;
 import co.sendik.catalog.exception.SellerNotEligibleException;
@@ -32,9 +34,13 @@ import co.sendik.catalog.model.AttentionReason;
 import co.sendik.catalog.model.Condition;
 import co.sendik.catalog.model.ImageKind;
 import co.sendik.catalog.model.Listing;
+import co.sendik.catalog.model.ListingId;
+import co.sendik.catalog.model.ListingRejectionReason;
 import co.sendik.catalog.model.ListingStatus;
 import co.sendik.catalog.model.MeasurementGroup;
 import co.sendik.catalog.model.MeasurementKind;
+import co.sendik.catalog.model.ModerationAction;
+import co.sendik.catalog.model.ModerationEvent;
 import co.sendik.catalog.model.SellerId;
 import co.sendik.catalog.usecase.ArchiveListingUseCase;
 import co.sendik.catalog.usecase.ChangeListingPriceUseCase;
@@ -42,6 +48,7 @@ import co.sendik.catalog.usecase.ChangeListingShippingUseCase;
 import co.sendik.catalog.usecase.CreateListingUseCase;
 import co.sendik.catalog.usecase.PauseListingUseCase;
 import co.sendik.catalog.usecase.ReadListingUseCase;
+import co.sendik.catalog.usecase.ReadModerationHistoryUseCase;
 import co.sendik.catalog.usecase.RemoveListingImageUseCase;
 import co.sendik.catalog.usecase.ReopenListingUseCase;
 import co.sendik.catalog.usecase.ResumeListingUseCase;
@@ -53,9 +60,11 @@ import co.sendik.shared.file.FileKey;
 import co.sendik.shared.port.out.PublicFileStore;
 import co.sendik.shared.rest.ApiExceptionHandler;
 import java.net.URI;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -95,6 +104,8 @@ class ListingsControllerTest {
 
     private static final SellerId VENDEDOR = new SellerId(java.util.UUID.randomUUID());
 
+    private static final Instant CUANDO = Instant.parse("2026-09-04T15:00:00Z");
+
     private static final SellerId OTRO = new SellerId(java.util.UUID.randomUUID());
 
     private static final byte[] JPEG = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0};
@@ -112,6 +123,7 @@ class ListingsControllerTest {
     private final PauseListingUseCase pausar = mock(PauseListingUseCase.class);
     private final ResumeListingUseCase reanudar = mock(ResumeListingUseCase.class);
     private final ArchiveListingUseCase archivar = mock(ArchiveListingUseCase.class);
+    private final ReadModerationHistoryUseCase rastro = mock(ReadModerationHistoryUseCase.class);
     private final PublicFileStore almacen = mock(PublicFileStore.class);
 
     private final TokenDePrueba token = new TokenDePrueba();
@@ -191,6 +203,7 @@ class ListingsControllerTest {
                         pausar,
                         reanudar,
                         archivar,
+                        rastro,
                         almacen))
                 .setControllerAdvice(new ApiExceptionHandler())
                 .setCustomArgumentResolvers(token)
@@ -699,6 +712,99 @@ class ListingsControllerTest {
         verify(pausar).execute(new SellerListingCommand(VENDEDOR, co.sendik.catalog.model.ListingId.de(id)));
         verify(reanudar).execute(new SellerListingCommand(VENDEDOR, co.sendik.catalog.model.ListingId.de(id)));
         verify(archivar).execute(new SellerListingCommand(VENDEDOR, co.sendik.catalog.model.ListingId.de(id)));
+    }
+
+    // --- El rastro de moderacion. HU-013 -------------------------------------
+
+    /**
+     * Criterios 1 a 3: cada paso con su accion, su motivo cuando lo hay y su fecha.
+     *
+     * <p>Las cuatro acciones, incluida {@code ARCHIVED}: es el retiro de RN-024, el evento
+     * que mas le importa a quien vende, y no salia por ninguna prueba por encima de
+     * {@code application}.
+     */
+    @Test
+    void deberia_devolver_el_rastro_de_lo_mio_HU_013() throws Exception {
+        String id = UUID.randomUUID().toString();
+        when(rastro.execute(any()))
+                .thenReturn(List.of(
+                        new ModerationEvent(ModerationAction.ARCHIVED, ListingRejectionReason.PROHIBITED_ITEM, CUANDO),
+                        new ModerationEvent(ModerationAction.APPROVED, null, CUANDO),
+                        new ModerationEvent(ModerationAction.REJECTED, ListingRejectionReason.PHOTOS_UNUSABLE, CUANDO),
+                        new ModerationEvent(ModerationAction.SUBMITTED, null, CUANDO)));
+
+        mvc.perform(get("/api/v1/listings/" + id + "/moderation-history"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.events.length()").value(4))
+                .andExpect(jsonPath("$.events[0].action").value("ARCHIVED"))
+                .andExpect(jsonPath("$.events[0].reason").value("PROHIBITED_ITEM"))
+                .andExpect(jsonPath("$.events[0].occurredAt").value("2026-09-04T15:00:00Z"))
+                .andExpect(jsonPath("$.events[1].action").value("APPROVED"))
+                .andExpect(jsonPath("$.events[1].reason").doesNotExist())
+                .andExpect(jsonPath("$.events[2].action").value("REJECTED"))
+                .andExpect(jsonPath("$.events[2].reason").value("PHOTOS_UNUSABLE"))
+                .andExpect(jsonPath("$.events[3].action").value("SUBMITTED"));
+
+        // El vendedor sale del token y nunca del parametro. Es lo que impide pedir el
+        // rastro de otra persona cambiando un identificador en la direccion.
+        ArgumentCaptor<ReadModerationHistoryQuery> consulta = ArgumentCaptor.forClass(ReadModerationHistoryQuery.class);
+        verify(rastro).execute(consulta.capture());
+        assertThat(consulta.getValue().vendedor()).isEqualTo(VENDEDOR);
+        assertThat(consulta.getValue().publicacion().value()).hasToString(id);
+    }
+
+    /**
+     * Criterio 5 y RN-074, en el unico sitio donde se puede comprobar de verdad: el JSON.
+     *
+     * <p>Es lo unico que impide que el actor y la nota vuelvan por descuido. Las tres
+     * barreras -la consulta, el tipo de dominio y el DTO- son invisibles desde fuera; esta
+     * prueba mira lo que sale por el cable y falla si alguna cede.
+     */
+    @Test
+    void no_deberia_decir_nunca_quien_decidio_ni_la_nota_interna_criterio_5() throws Exception {
+        when(rastro.execute(any()))
+                .thenReturn(List.of(new ModerationEvent(
+                        ModerationAction.REJECTED, ListingRejectionReason.PHOTOS_UNUSABLE, CUANDO)));
+
+        String cuerpo = mvc.perform(get("/api/v1/listings/" + UUID.randomUUID() + "/moderation-history"))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        assertThat(cuerpo)
+                .doesNotContain("actor")
+                .doesNotContain("moderator")
+                .doesNotContain("note")
+                .doesNotContain("notes");
+    }
+
+    /** Criterio 6: un borrador que nunca salio responde 200 con la lista vacia, no 404. */
+    @Test
+    void deberia_devolver_una_lista_vacia_cuando_no_ha_pasado_nada_criterio_6() throws Exception {
+        when(rastro.execute(any())).thenReturn(List.of());
+
+        mvc.perform(get("/api/v1/listings/" + UUID.randomUUID() + "/moderation-history"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.events").isEmpty());
+    }
+
+    /**
+     * Criterio 7: sobre una publicacion ajena es 404 y no 403.
+     *
+     * <p>El borde no elige: el caso de uso lanza lo mismo cuando no existe y cuando no es
+     * tuya, asi que no tiene con que distinguirlas ni aunque quisiera. Lo que esta prueba
+     * fija es que esa excepcion sale como 404 y no como otra cosa.
+     */
+    @Test
+    void deberia_responder_404_y_no_403_sobre_una_publicacion_ajena_criterio_7() throws Exception {
+        when(rastro.execute(any())).thenThrow(new ListingNotFoundException(ListingId.nuevo()));
+
+        mvc.perform(get("/api/v1/listings/" + UUID.randomUUID() + "/moderation-history"))
+                .andExpect(status().isNotFound())
+                // El mismo codigo con el que responde una publicacion que no existe, que es
+                // justo lo que el criterio 7 quiere: los dos casos son indistinguibles.
+                .andExpect(jsonPath("$.code").value("COMMON_NOT_FOUND"));
     }
 
     /**

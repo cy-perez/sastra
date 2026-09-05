@@ -2,6 +2,7 @@ package co.sendik;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 import co.sendik.catalog.dto.CatalogCursor;
 import co.sendik.catalog.dto.CategoryView;
@@ -22,6 +23,7 @@ import co.sendik.catalog.model.MeasurementGroup;
 import co.sendik.catalog.model.MeasurementKind;
 import co.sendik.catalog.model.Measurements;
 import co.sendik.catalog.model.ModerationAction;
+import co.sendik.catalog.model.ModerationEvent;
 import co.sendik.catalog.model.ModeratorId;
 import co.sendik.catalog.model.Product;
 import co.sendik.catalog.model.ProductId;
@@ -565,8 +567,8 @@ class CatalogPersistenceTest {
         Listing publicacion = publicaciones.guardar(borradorConTomas());
         ModeratorId moderador = new ModeratorId(nuevoUsuario());
 
-        bitacora.registrar(publicacion.id(), moderador, ModerationAction.APPROVED, null, null);
-        bitacora.registrar(publicacion.id(), moderador, ModerationAction.ARCHIVED, "PROHIBITED_ITEM", "replica");
+        bitacora.registrar(publicacion.id(), moderador, ModerationAction.APPROVED, null, null, AHORA);
+        bitacora.registrar(publicacion.id(), moderador, ModerationAction.ARCHIVED, "PROHIBITED_ITEM", "replica", AHORA);
 
         long entradas = jdbc.sql("SELECT count(*) FROM moderation_events WHERE listing_id = :l")
                 .param("l", publicacion.id().value())
@@ -574,6 +576,147 @@ class CatalogPersistenceTest {
                 .single();
 
         assertThat(entradas).isEqualTo(2);
+    }
+
+    // --- El rastro de moderacion. HU-013 -------------------------------------
+
+    /**
+     * Criterio 7 visto desde abajo: el rastro de dos publicaciones no se mezcla.
+     *
+     * <p>El caso de uso comprueba el dueno antes de preguntar, pero esta consulta filtra
+     * por publicacion y tiene que filtrar de verdad. Si el {@code WHERE} se perdiera, esa
+     * comprobacion previa dejaria de proteger nada: la publicacion seria tuya y los eventos
+     * de todo el mundo.
+     */
+    @Test
+    void deberia_devolver_solo_el_rastro_de_la_publicacion_que_se_pide() {
+        Listing mia = publicaciones.guardar(borradorConTomas());
+        Listing suya = publicaciones.guardar(borradorConTomas());
+        ModeratorId moderador = new ModeratorId(nuevoUsuario());
+
+        bitacora.registrarEnvio(mia.id(), mia.sellerId(), AHORA);
+        bitacora.registrar(suya.id(), moderador, ModerationAction.REJECTED, "PROHIBITED_ITEM", "nota ajena", AHORA);
+
+        assertThat(bitacora.historial(mia.id()))
+                .extracting(ModerationEvent::action)
+                .containsExactly(ModerationAction.SUBMITTED);
+    }
+
+    /** Criterios 1 a 3: cada accion vuelve con su motivo, y el envio sin ninguno. */
+    @Test
+    void deberia_devolver_cada_accion_con_su_motivo_y_su_fecha() {
+        Listing publicacion = publicaciones.guardar(borradorConTomas());
+        ModeratorId moderador = new ModeratorId(nuevoUsuario());
+
+        bitacora.registrarEnvio(publicacion.id(), publicacion.sellerId(), AHORA);
+        bitacora.registrar(
+                publicacion.id(),
+                moderador,
+                ModerationAction.REJECTED,
+                "PHOTOS_UNUSABLE",
+                "borrosa",
+                AHORA.plusSeconds(60));
+
+        List<ModerationEvent> rastro = bitacora.historial(publicacion.id());
+
+        assertThat(rastro)
+                .extracting(ModerationEvent::action, ModerationEvent::reason)
+                .containsExactly(
+                        tuple(ModerationAction.REJECTED, ListingRejectionReason.PHOTOS_UNUSABLE),
+                        tuple(ModerationAction.SUBMITTED, null));
+        assertThat(rastro.getLast().occurredAt()).isEqualTo(AHORA);
+
+        // Y la de la decision, que es la mitad que faltaba de la regresion de los dos
+        // relojes: `created_at` conserva su DEFAULT now(), asi que quitar `:cuando` del
+        // INSERT de `registrar` dejaba la fila fechada por el motor sin que nada lo viera.
+        // El orden no lo delata, porque sigue saliendo igual.
+        assertThat(rastro.getFirst().occurredAt()).isEqualTo(AHORA.plusSeconds(60));
+    }
+
+    /**
+     * El desempate por identificador, que es la leccion ya pagada en las dos colas.
+     *
+     * <p>Dos eventos en el mismo instante -- aprobar y reenviar caben en el mismo
+     * milisegundo -- dejan el orden indefinido si solo se ordena por fecha, y PostgreSQL
+     * puede devolverlos distinto entre dos cargas de la misma pantalla.
+     *
+     * <p><strong>Los tres eventos son distinguibles a proposito.</strong> La primera version
+     * de esta prueba escribia tres envios identicos y afirmaba que sus identificadores salian
+     * descendentes... de una consulta propia que ella misma ordenaba por
+     * {@code created_at DESC, id DESC}. Es decir, comprobaba que su propio {@code ORDER BY}
+     * funciona: borrar {@code , id DESC} del adaptador la dejaba en verde. Con tres acciones
+     * distintas se afirma sobre lo que devuelve {@code historial}, que es lo que se quiere
+     * proteger, y sin el desempate el orden sale mal.
+     */
+    @Test
+    void deberia_desempatar_por_identificador_cuando_dos_eventos_caen_a_la_misma_hora() {
+        Listing publicacion = publicaciones.guardar(borradorConTomas());
+        ModeratorId moderador = new ModeratorId(nuevoUsuario());
+
+        bitacora.registrarEnvio(publicacion.id(), publicacion.sellerId(), AHORA);
+        bitacora.registrar(publicacion.id(), moderador, ModerationAction.APPROVED, null, null, AHORA);
+        bitacora.registrar(publicacion.id(), moderador, ModerationAction.ARCHIVED, "PROHIBITED_ITEM", null, AHORA);
+
+        List<ModerationEvent> rastro = bitacora.historial(publicacion.id());
+
+        assertThat(rastro)
+                .extracting(ModerationEvent::action)
+                .containsExactly(ModerationAction.ARCHIVED, ModerationAction.APPROVED, ModerationAction.SUBMITTED);
+        assertThat(rastro).extracting(ModerationEvent::occurredAt).containsOnly(AHORA);
+    }
+
+    /**
+     * Criterio 3: el retiro de RN-024 vuelve con su motivo desde la base de verdad.
+     *
+     * <p>Estaba probado solo en {@code application}, sobre el doble en memoria. Que
+     * {@code ARCHIVED} y su motivo sobrevivan al viaje de ida y vuelta por PostgreSQL no lo
+     * miraba nadie, y es el evento que mas le importa a quien vende.
+     */
+    @Test
+    void deberia_devolver_el_retiro_con_su_motivo_criterio_3() {
+        Listing publicacion = publicaciones.guardar(borradorConTomas());
+        ModeratorId moderador = new ModeratorId(nuevoUsuario());
+
+        bitacora.registrar(
+                publicacion.id(), moderador, ModerationAction.ARCHIVED, "SUSPECTED_COUNTERFEIT", "replica", AHORA);
+
+        assertThat(bitacora.historial(publicacion.id())).singleElement().satisfies(evento -> {
+            assertThat(evento.action()).isEqualTo(ModerationAction.ARCHIVED);
+            assertThat(evento.reason()).isEqualTo(ListingRejectionReason.SUSPECTED_COUNTERFEIT);
+        });
+    }
+
+    /** Criterio 6: un borrador que nunca salio no tiene rastro, y eso no es un fallo. */
+    @Test
+    void deberia_devolver_un_rastro_vacio_cuando_no_ha_pasado_nada() {
+        Listing borrador = publicaciones.guardar(borradorConTomas());
+
+        assertThat(bitacora.historial(borrador.id())).isEmpty();
+    }
+
+    /**
+     * Criterio 5 y RN-074, comprobados donde de verdad se cumplen.
+     *
+     * <p>La fila lleva actor y nota -- auditar exige saber quien decidio -- y la consulta
+     * del rastro no los nombra. Esta prueba los escribe con valores reconocibles y afirma
+     * sobre la fila cruda que siguen ahi, para que se vea que lo que no sale es una decision
+     * de la lectura y no que se dejaran de escribir.
+     */
+    @Test
+    void deberia_seguir_guardando_actor_y_nota_aunque_el_rastro_no_los_devuelva_RN_074() {
+        Listing publicacion = publicaciones.guardar(borradorConTomas());
+        ModeratorId moderador = new ModeratorId(nuevoUsuario());
+
+        bitacora.registrar(
+                publicacion.id(), moderador, ModerationAction.REJECTED, "PHOTOS_UNUSABLE", "nota interna", AHORA);
+
+        Map<String, Object> fila = jdbc.sql("SELECT actor_id, notes FROM moderation_events WHERE listing_id = :l")
+                .param("l", publicacion.id().value())
+                .query()
+                .singleRow();
+
+        assertThat(fila.get("actor_id")).isEqualTo(moderador.value());
+        assertThat(fila.get("notes")).isEqualTo("nota interna");
     }
 
     // --- El catalogo publico. HU-009 -----------------------------------------

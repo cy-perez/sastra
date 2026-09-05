@@ -1,6 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
 
+import { MODERADORA } from '../playwright.completo.config';
 import {
+  NOMBRE_MODERADORA,
   RUTA_MIS_PUBLICACIONES,
   correoNuevo,
   dejarUnaVendedoraVerificada,
@@ -47,6 +49,9 @@ test.use({ locale: 'es-CO' });
 
 /** La cola es de esta suite y no de los recorridos: solo la abre quien modera. */
 const RUTA_COLA = '/moderacion/publicaciones';
+
+/** El backend de verdad, para las pruebas que tienen que ver lo que hace Tomcat con la URI. */
+const API = 'http://localhost:8081/api/v1';
 
 /**
  * Abre el detalle de una publicación concreta, por su identificador.
@@ -109,6 +114,40 @@ test.describe('moderación de publicaciones', () => {
     // casualidad. Lo que importa es que no se haya PINTADO nada de la cola.
     expect(/<h1[^>]*>\s*Publicaciones pendientes/.test(html)).toBe(false);
     expect(/<title>([^<]*)<\/title>/.exec(html)?.[1]).toBe('Página no encontrada');
+  });
+
+  /**
+   * El rodeo del `%3F`, contra Tomcat de verdad. HU-013.
+   *
+   * <p>Es la unica suite que puede verlo. La regla que hace publica la lectura de una
+   * publicacion casaba sobre la ruta **ya decodificada**, y con la expresion regular que
+   * tenia hasta HU-013 no distinguia el `?` que separa la cadena de consulta del `?` que
+   * llego como `%3F` dentro de un segmento: `/api/v1/listings/{uuid}%3Fx/moderation-history`
+   * se decodificaba a algo que casaba con ese `permitAll` y **saltaba la regla autenticada**
+   * que protege todo lo que cuelga de `/listings`.
+   *
+   * <p>MockMvc no lo reproduce -no decodifica la URI ni pasa por el `servletPath` del
+   * contenedor-, asi que `ListingSecurityTest` daba verde con el agujero abierto. Aqui hay
+   * un Tomcat real.
+   *
+   * <p>Lo que se afirma es que **no sale 200 ni 500**: sin sesion tiene que ser 401, y lo
+   * que habia era una peticion sin token entrando al manejador y reventando con una traza.
+   */
+  test('un identificador con %3F no salta la regla autenticada del rastro', async ({ request }) => {
+    const uuid = '01a06fdf-0c21-7bf3-bff7-2ffbb34a63c1';
+
+    const rodeo = await request.get(`${API}/listings/${uuid}%3Fx/moderation-history`, {
+      failOnStatusCode: false,
+    });
+    expect(rodeo.status()).toBe(401);
+
+    // Y la ruta que si es publica lo sigue siendo, con cadena de consulta incluida: el
+    // arreglo no podia cerrar de paso el catalogo, que es de lo que trataba el sufijo que
+    // se quito.
+    const publica = await request.get(`${API}/listings/${uuid}?campana=x`, {
+      failOnStatusCode: false,
+    });
+    expect(publica.status()).toBe(404);
   });
 
   /**
@@ -177,8 +216,59 @@ test.describe('moderación de publicaciones', () => {
     await expect(page.getByText('Las fotos no se pueden usar')).toBeVisible();
     await expect(page.getByText('La frontal está borrosa.')).toBeVisible();
 
+    // El rastro, desde el propio bloque de rechazo, con la primera vuelta ya dentro
+    // (HU-013). Todavía es una sola: envió y se la rechazaron.
+    await page.getByRole('button', { name: 'Ver qué ha pasado' }).click();
+    await expect(page.getByText('Se rechazó')).toBeVisible();
+    await expect(page.getByText('La enviaste a revisión')).toBeVisible();
+
     await page.getByRole('button', { name: 'Corregir y volver a enviar' }).click();
     await expect(page.getByRole('button', { name: 'Enviar a revisión' })).toBeVisible();
+
+    // --- Y el final que le faltaba a este recorrido: la segunda vuelta -------
+    //
+    // Criterio 4 de HU-013, que es la razón de que el envío se anote como evento. Hasta
+    // aquí el recorrido dejaba al vendedor con el botón de reenviar delante y no
+    // comprobaba nunca que reenviar dejara rastro de las dos idas.
+
+    await page.getByRole('button', { name: 'Enviar a revisión' }).click();
+    await expect(page.getByText('En revisión')).toBeVisible();
+
+    await salirSiHaySesion(page);
+    await entrarComoModeradora(page);
+    await abrirElDetalle(page, id, titulo);
+    await page.getByRole('button', { name: 'Aprobar' }).click();
+    await page.getByRole('button', { name: 'Confirmar' }).click();
+    await expect(page.getByText('Publicación aprobada')).toBeVisible();
+
+    // El vendedor abre el rastro desde el panel -la publicación ya está viva, así que el
+    // bloque de rechazo no existe- y ve **las dos vueltas**, no solo la última.
+    await salirSiHaySesion(page);
+    await ingresar(page, vendedora);
+    await page.goto(RUTA_MIS_PUBLICACIONES);
+
+    // Por rol y no por clase: esta suite existe para ver el producto como lo ve una persona,
+    // y ahí el nombre de una clase de CSS es un detalle interno. La fila se localiza por su
+    // título, que es lo que distingue una publicación de otra en la pantalla.
+    const fila = page.getByRole('listitem').filter({ hasText: titulo });
+    await fila.getByRole('button', { name: 'Ver qué ha pasado' }).click();
+
+    const pasos = fila.getByRole('list').getByRole('listitem');
+    await expect(pasos).toHaveCount(4);
+    await expect(pasos.nth(0)).toContainText('Se aprobó y quedó publicada');
+    await expect(pasos.nth(1)).toContainText('La enviaste a revisión');
+    await expect(pasos.nth(2)).toContainText('Se rechazó');
+    await expect(pasos.nth(2)).toContainText('Las fotos no se pueden usar');
+    await expect(pasos.nth(3)).toContainText('La enviaste a revisión');
+
+    // Criterio 5 y RN-074: no dice quién decidió ni repite la nota. Se afirma sobre **el
+    // nombre y el correo reales de la moderadora**, no sobre la palabra «moderador», que no
+    // iba a aparecer ahí bajo ninguna circunstancia y hacía que esta comprobación no pudiera
+    // fallar.
+    const rastro = await fila.innerText();
+    expect(rastro).not.toContain('La frontal está borrosa');
+    expect(rastro).not.toContain(NOMBRE_MODERADORA);
+    expect(rastro).not.toContain(MODERADORA);
   });
 
   /**

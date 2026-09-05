@@ -39,6 +39,7 @@ import {
   puedeIntentarEnviar,
 } from '../domain/publish-rules';
 import type { DatosDelProducto } from '../infrastructure/listing.api';
+import { ModerationTrail } from './moderation-trail';
 import { ShotsField } from './shots-field';
 
 /**
@@ -82,7 +83,7 @@ const CAMPOS_DE_ENVIO: readonly string[] = ['weightGrams', 'lengthCm', 'widthCm'
  */
 @Component({
   selector: 'sendik-publish-page',
-  imports: [ReactiveFormsModule, TranslocoPipe, ShotsField],
+  imports: [ModerationTrail, ReactiveFormsModule, TranslocoPipe, ShotsField],
   templateUrl: './publish-page.html',
   styleUrl: './publish-page.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

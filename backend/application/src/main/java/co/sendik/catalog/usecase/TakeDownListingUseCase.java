@@ -58,14 +58,17 @@ public class TakeDownListingUseCase {
         }
         exigirQueHayaSidoVisible(actual);
 
-        Listing retirada = publicaciones.guardar(actual.archivar(Instant.now(reloj)));
+        // Un solo instante para la publicacion y para el rastro, como al aprobar.
+        Instant ahora = Instant.now(reloj);
+        Listing retirada = publicaciones.guardar(actual.archivar(ahora));
 
         bitacora.registrar(
                 retirada.id(),
                 comando.moderador(),
                 ModerationAction.ARCHIVED,
                 comando.motivo().name(),
-                comando.nota());
+                comando.nota(),
+                ahora);
         avisos.publicacionRetirada(retirada, comando.motivo(), comando.nota());
 
         // Lo que se retira por RN-024 no puede seguir servido. Es el caso mas claro:

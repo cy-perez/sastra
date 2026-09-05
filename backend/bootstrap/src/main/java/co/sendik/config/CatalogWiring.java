@@ -25,6 +25,7 @@ import co.sendik.catalog.usecase.ListSellerListingsUseCase;
 import co.sendik.catalog.usecase.PauseListingUseCase;
 import co.sendik.catalog.usecase.ReadFavoriteStateUseCase;
 import co.sendik.catalog.usecase.ReadListingUseCase;
+import co.sendik.catalog.usecase.ReadModerationHistoryUseCase;
 import co.sendik.catalog.usecase.ReadSellerProfileUseCase;
 import co.sendik.catalog.usecase.RejectListingUseCase;
 import co.sendik.catalog.usecase.RemoveFavoriteUseCase;
@@ -103,8 +104,12 @@ public class CatalogWiring {
 
     @Bean
     UpdateListingContentUseCase updateListingContentUseCase(
-            ListingRepository publicaciones, Categories categorias, SellerEligibility elegibilidad, Clock reloj) {
-        return new UpdateListingContentUseCase(publicaciones, categorias, elegibilidad, reloj);
+            ListingRepository publicaciones,
+            Categories categorias,
+            SellerEligibility elegibilidad,
+            ModerationLog bitacora,
+            Clock reloj) {
+        return new UpdateListingContentUseCase(publicaciones, categorias, elegibilidad, bitacora, reloj);
     }
 
     @Bean
@@ -156,8 +161,12 @@ public class CatalogWiring {
 
     @Bean
     SubmitListingForReviewUseCase submitListingForReviewUseCase(
-            ListingRepository publicaciones, Categories categorias, SellerEligibility elegibilidad, Clock reloj) {
-        return new SubmitListingForReviewUseCase(publicaciones, categorias, elegibilidad, reloj);
+            ListingRepository publicaciones,
+            Categories categorias,
+            SellerEligibility elegibilidad,
+            ModerationLog bitacora,
+            Clock reloj) {
+        return new SubmitListingForReviewUseCase(publicaciones, categorias, elegibilidad, bitacora, reloj);
     }
 
     @Bean
@@ -216,6 +225,12 @@ public class CatalogWiring {
     @Bean
     SummarizeSellerListingsUseCase summarizeSellerListingsUseCase(ListingRepository publicaciones) {
         return new SummarizeSellerListingsUseCase(publicaciones);
+    }
+
+    /** El rastro de moderacion de una publicacion propia. HU-013. */
+    @Bean
+    ReadModerationHistoryUseCase readModerationHistoryUseCase(ListingRepository publicaciones, ModerationLog bitacora) {
+        return new ReadModerationHistoryUseCase(publicaciones, bitacora);
     }
 
     /** La cola del moderador. HU-008. */

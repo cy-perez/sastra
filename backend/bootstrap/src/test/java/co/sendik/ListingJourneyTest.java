@@ -131,8 +131,10 @@ class ListingJourneyTest {
                 .doesNotContain("version")
                 .doesNotContain("status");
 
-        // Y queda el rastro de quien decidio (criterio 21).
-        assertThat(bitacoraDe(id)).containsExactly("APPROVED");
+        // Y queda el rastro entero (criterio 21, y el criterio 4 de HU-013): el envio y la
+        // decision, en ese orden. Desde HU-013 el envio tambien se anota, porque el rastro
+        // cuenta lo que le paso a la publicacion y no solo lo que hizo Sendik.
+        assertThat(bitacoraDe(id)).containsExactly("SUBMITTED", "APPROVED");
     }
 
     /**
@@ -147,7 +149,8 @@ class ListingJourneyTest {
     void deberia_dejar_corregir_y_reenviar_lo_rechazado() throws Exception {
         User vendedor = vendedorVerificado();
         String suToken = tokenDe(vendedor);
-        String deModerador = tokenDe(moderador());
+        UserId laModeradora = moderador();
+        String deModerador = tokenDe(laModeradora);
 
         String id = crearBorrador(suToken);
         subirLasOchoTomas(suToken, id);
@@ -191,7 +194,37 @@ class ListingJourneyTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("PUBLISHED"));
 
-        assertThat(bitacoraDe(id)).containsExactly("REJECTED", "APPROVED");
+        // Las dos vueltas enteras, que es el criterio 4 de HU-013 por la puerta por la que
+        // entra todo el mundo: envio, rechazo, reenvio y aprobacion. Sin las dos entradas de
+        // envio, el rastro contaria dos decisiones sin decir nunca como llego a ellas.
+        assertThat(bitacoraDe(id)).containsExactly("SUBMITTED", "REJECTED", "SUBMITTED", "APPROVED");
+
+        // Y el vendedor las ve, por la ruta y con la forma que va a leer la pantalla: lo mas
+        // reciente arriba, el motivo del rechazo traducible, y sin rastro de quien decidio
+        // (HU-013, criterios 4 y 5).
+        mvc.perform(get("/api/v1/listings/" + id + "/moderation-history").header("Authorization", "Bearer " + suToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.events.length()").value(4))
+                .andExpect(jsonPath("$.events[0].action").value("APPROVED"))
+                .andExpect(jsonPath("$.events[1].action").value("SUBMITTED"))
+                .andExpect(jsonPath("$.events[2].action").value("REJECTED"))
+                .andExpect(jsonPath("$.events[2].reason").value("PHOTOS_UNUSABLE"))
+                .andExpect(jsonPath("$.events[3].action").value("SUBMITTED"));
+
+        // La nota del rechazo se la llevo el correo, no el rastro: se escribio para Sendik.
+        String rastro = mvc.perform(get("/api/v1/listings/" + id + "/moderation-history")
+                        .header("Authorization", "Bearer " + suToken))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        // El identificador de **la moderadora**, que es el dato que RN-074 protege: es el actor
+        // de REJECTED y de APPROVED. Antes solo se comprobaba el del vendedor, que es el actor
+        // de los SUBMITTED y que ademas es quien pregunta, asi que no revelaba nada aunque
+        // saliera: la asercion no podia fallar por la razon que decia.
+        assertThat(rastro)
+                .doesNotContain("Se ven movidas.")
+                .doesNotContain(laModeradora.value().toString())
+                .doesNotContain(vendedor.id().value().toString());
     }
 
     /**

@@ -11,13 +11,15 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.util.matcher.RegexRequestMatcher;
 
 /**
  * Entrada de Spring Security al proyecto (HU-001, ADR-0003).
  *
- * <p>Se declara con la DSL de lambdas y un bean {@link SecurityFilterChain}.
- * {@code WebSecurityConfigurerAdapter} no existe desde hace varias versiones.
+ * <p>Se declara con la DSL de lambdas y un bean {@link SecurityFilterChain}. La clase
+ * adaptadora con la que esto se configuraba en Spring Security 5 no existe desde hace
+ * varias versiones; quien la nombra por su nombre es {@code ArchitectureTest}, que es el
+ * catalogo de API prohibidas y el unico archivo exento del hook de convenciones. Aqui no
+ * se escribe, o este archivo no se podria editar sin que el hook saltara.
  *
  * <p><strong>Lo ultimo es {@code denyAll} y no {@code authenticated}.</strong> Con
  * {@code authenticated}, un endpoint nuevo al que se olvide declararle su
@@ -90,15 +92,30 @@ public class SecurityConfig {
                             // nota de publicaciones ajenas dentro. Y el denyAll del
                             // final no salva nada: permitAll casa primero y gana.
                             //
-                            // **El patron admite cadena de consulta.** `RegexRequestMatcher`
-                            // compone la URL como ruta + "?" + consulta y exige coincidencia
-                            // total, asi que sin el sufijo `GET /api/v1/listings/{uuid}?x=1`
-                            // NO casaba: caia en la regla generica de /listings/** y
-                            // respondia 401 a quien no tiene sesion. Falla cerrado, asi que
-                            // no abria nada, pero dejaba de ser publica la ruta que el
-                            // catalogo va a usar en cuanto lleve un parametro de campana.
-                            .requestMatchers(RegexRequestMatcher.regexMatcher(
-                                    HttpMethod.GET, "/api/v1/listings/" + UUID + "(\\?.*)?"))
+                            // **Patron de ruta y no expresion regular, desde HU-013**, que es
+                            // cuando esto dejo de ser una cuestion de estilo.
+                            //
+                            // `RegexRequestMatcher` compara contra ruta + "?" + consulta sobre
+                            // una cadena **ya decodificada**, asi que hacia falta un sufijo
+                            // `(\?.*)?` para que `GET /api/v1/listings/{uuid}?x=1` siguiera
+                            // siendo publica. Y ese sufijo no distingue el `?` que separa la
+                            // consulta del `?` que llego como `%3F` dentro de un segmento:
+                            //
+                            //     /api/v1/listings/{uuid}%3Fx/moderation-history
+                            //
+                            // se decodificaba a `/api/v1/listings/{uuid}?x/moderation-history`,
+                            // casaba con este permitAll y **saltaba la regla autenticada** que
+                            // protege todo lo que cuelga de /listings. No llego a filtrar nada
+                            // -- ListingId.de rechaza un identificador de 37 caracteres -- pero
+                            // lo unico que lo impedia era una comprobacion de longitud
+                            // incidental, y la peticion entraba al manejador sin token.
+                            //
+                            // Un patron de ruta trabaja sobre segmentos ya separados e **ignora
+                            // la cadena de consulta por diseno**, asi que no necesita sufijo y
+                            // el `%3F` se queda dentro del segmento, donde no casa con la
+                            // plantilla del identificador. ListingSecurityTest lo fija con esa
+                            // URL exacta.
+                            .requestMatchers(HttpMethod.GET, "/api/v1/listings/{id:" + UUID + "}")
                             .permitAll();
 
                     // Revision de verificaciones: ver la cedula de otra persona y decidir
@@ -204,14 +221,13 @@ public class SecurityConfig {
                     // moderador. La lectura de una publicacion por identificador ya tiene
                     // su propia regla mas arriba, con su expresion regular.
                     //
-                    // **Con cadena de consulta**, por lo mismo que aquella: el catalogo se
-                    // pide siempre con `limit` y casi siempre con `cursor`, y
-                    // `RegexRequestMatcher` exige coincidencia total sobre ruta + "?" +
-                    // consulta. Sin el sufijo, la ruta publica dejaria de serlo en cuanto
-                    // llevara un parametro.
+                    // **Sin nada para la cadena de consulta**, desde HU-013: un patron de ruta
+                    // la ignora por diseno, asi que el catalogo se puede pedir con `limit` y
+                    // `cursor` sin que la ruta deje de ser publica. Con la expresion regular
+                    // hacia falta un sufijo, y ese sufijo era el agujero que se explica en la
+                    // regla de la lectura por identificador.
                     if (catalogoPublicoExpuesto) {
-                        rutas.requestMatchers(
-                                        RegexRequestMatcher.regexMatcher(HttpMethod.GET, "/api/v1/listings(\\?.*)?"))
+                        rutas.requestMatchers(HttpMethod.GET, "/api/v1/listings")
                                 .permitAll()
                                 // El perfil del vendedor y su escaparate. Prefijo entero
                                 // porque de /sellers no cuelga nada que no sea publico: es

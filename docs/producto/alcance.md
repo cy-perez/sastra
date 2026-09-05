@@ -184,10 +184,27 @@ Es la fase en curso desde el 21 de agosto de 2026.
   ese prefijo no existe: las publicaciones propias viven bajo `/api/v1/users/me`
   desde HU-007, y de ahí heredan la regla de seguridad que exige token.
 
-  **Las ventas son Fase 3** y quedan fuera por alcance, no por olvido. **El rastro es
-  HU-013**, escrita y todavía pendiente: necesita abrir para lectura el puerto
-  `ModerationLog`, que hoy solo escribe, y obliga a escribir una regla nueva. Con
-  ella este punto se cierra entero.
+  **Las ventas son Fase 3** y quedan fuera por alcance, no por olvido. **El rastro lo
+  cerró HU-013 el 5 de septiembre de 2026**, y con él este punto queda completo: quien
+  vende abre, dentro de cada publicación, qué le pasó y por qué —`GET
+  /api/v1/listings/{id}/moderation-history`— sin que en ningún sitio aparezca quién lo
+  decidió, que es la regla nueva que obligó a escribir, RN-074.
+
+  La decisión de fondo fue que el rastro cuenta **lo que le pasó a la publicación** y no
+  solo lo que hizo Sendik: el envío a revisión se anota como evento, porque
+  `listings.submitted_at` guarda uno solo y sin eso una publicación rechazada y reenviada
+  no deja ver las dos vueltas. Se anota por los dos caminos que llevan a `PENDING_REVIEW`,
+  incluido el que RN-062 abre al editar una publicación viva. `V17` reconstruye desde
+  `submitted_at` los envíos anteriores.
+
+  Destapó además un defecto que estaba en producción y no era suyo: el envío se fechaba con
+  el reloj de la aplicación y las decisiones del moderador con el `now()` de la tabla, y dos
+  relojes escribiendo en un mismo registro ordenado se cruzan. Arreglado, con la prueba de
+  recorrido que sí puede verlo.
+
+**Con esto la Fase 2 queda cerrada en cuanto a código.** Las tres banderas
+—`seller-verification`, `publishing` y `catalog`— siguen apagadas por omisión, y
+encenderlas es una decisión aparte.
 
 ## Fase 3 — transacción
 

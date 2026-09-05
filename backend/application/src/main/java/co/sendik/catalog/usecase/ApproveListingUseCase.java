@@ -48,9 +48,12 @@ public class ApproveListingUseCase {
             throw new SelfModerationForbiddenException();
         }
 
-        Listing aprobada = publicaciones.guardar(actual.aprobar(comando.moderador(), Instant.now(reloj)));
+        // Un solo instante para la publicacion y para el rastro: los dos cuentan el mismo
+        // momento o no cuentan lo mismo.
+        Instant ahora = Instant.now(reloj);
+        Listing aprobada = publicaciones.guardar(actual.aprobar(comando.moderador(), ahora));
 
-        bitacora.registrar(aprobada.id(), comando.moderador(), ModerationAction.APPROVED, null, null);
+        bitacora.registrar(aprobada.id(), comando.moderador(), ModerationAction.APPROVED, null, null, ahora);
         avisos.publicacionAprobada(aprobada);
         return aprobada;
     }

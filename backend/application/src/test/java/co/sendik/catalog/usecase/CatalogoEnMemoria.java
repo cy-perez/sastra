@@ -15,6 +15,7 @@ import co.sendik.catalog.model.ListingRejectionReason;
 import co.sendik.catalog.model.ListingStatus;
 import co.sendik.catalog.model.MeasurementGroup;
 import co.sendik.catalog.model.ModerationAction;
+import co.sendik.catalog.model.ModerationEvent;
 import co.sendik.catalog.model.ModeratorId;
 import co.sendik.catalog.model.SellerId;
 import co.sendik.catalog.model.SizeSystem;
@@ -29,7 +30,9 @@ import co.sendik.catalog.port.out.SellerProfiles;
 import co.sendik.shared.file.FileKey;
 import co.sendik.shared.file.NormalizedImage;
 import co.sendik.shared.port.out.PublicFileStore;
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
@@ -456,15 +459,34 @@ final class CatalogoEnMemoria {
 
     static final class Bitacora implements ModerationLog {
 
-        /** Guarda todos los argumentos: un doble que descarta uno no puede probarlo. */
+        /**
+         * Guarda todos los argumentos: un doble que descarta uno no puede probarlo.
+         *
+         * <p>El actor es {@code Object} porque quien escribe no siempre es un moderador: el
+         * envio lo anota el vendedor (HU-013). Tiparlo obligaria a dos listas o a convertir
+         * un {@link SellerId} en {@link ModeratorId}, que es justo lo que el puerto separa
+         * en dos metodos para no hacer.
+         */
         record Entrada(
                 ListingId publicacion,
-                ModeratorId actor,
+                Object actor,
                 ModerationAction accion,
                 @Nullable String motivo,
-                @Nullable String nota) {}
+                @Nullable String nota,
+                Instant cuando) {}
 
         private final List<Entrada> entradas = new ArrayList<>();
+
+        /**
+         * Si alguien ha leido el rastro.
+         *
+         * <p>Lo unico que este doble observa ademas de lo que guarda, y hace falta para una
+         * prueba concreta: que el caso de uso comprueba de quien es la publicacion
+         * <strong>antes</strong> de pedir la bitacora. Sin esto, esa prueba solo podria
+         * afirmar que la llamada falla, que es lo mismo que ocurriria si preguntara primero
+         * y tirara la respuesta al final.
+         */
+        private boolean leido;
 
         @Override
         public void registrar(
@@ -472,12 +494,74 @@ final class CatalogoEnMemoria {
                 ModeratorId actor,
                 ModerationAction accion,
                 @Nullable String motivo,
-                @Nullable String nota) {
-            entradas.add(new Entrada(publicacion, actor, accion, motivo, nota));
+                @Nullable String nota,
+                Instant cuando) {
+            entradas.add(new Entrada(publicacion, actor, accion, motivo, nota, cuando));
+        }
+
+        @Override
+        public void registrarEnvio(ListingId publicacion, SellerId vendedor, Instant cuando) {
+            entradas.add(new Entrada(publicacion, vendedor, ModerationAction.SUBMITTED, null, null, cuando));
+        }
+
+        /**
+         * Lo mas reciente primero, como el adaptador de verdad.
+         *
+         * <p>Se ordena aqui y no se devuelve el orden de insercion, que seria lo comodo: es
+         * la promesa del puerto, y una prueba que la de por buena sobre un doble que inserta
+         * al final no estaria probando nada. El desempate por posicion imita al del
+         * identificador, que en la tabla es creciente (Uuid7).
+         */
+        @Override
+        public List<ModerationEvent> historial(ListingId publicacion) {
+            leido = true;
+
+            List<Entrada> suyas = new ArrayList<>();
+            for (Entrada entrada : entradas) {
+                if (entrada.publicacion().equals(publicacion)) {
+                    suyas.add(entrada);
+                }
+            }
+            Collections.reverse(suyas);
+
+            List<ModerationEvent> rastro = new ArrayList<>();
+            for (Entrada entrada : suyas) {
+                rastro.add(new ModerationEvent(
+                        entrada.accion(),
+                        entrada.motivo() == null ? null : ListingRejectionReason.valueOf(entrada.motivo()),
+                        entrada.cuando()));
+            }
+            return List.copyOf(rastro);
         }
 
         List<Entrada> entradas() {
             return List.copyOf(entradas);
+        }
+
+        /**
+         * Solo lo que decidio un moderador.
+         *
+         * <p>Desde HU-013 la bitacora anota tambien el envio a revision, que hace el
+         * vendedor. Una prueba sobre lo que decide un moderador que afirme sobre
+         * {@link #entradas} cuenta tambien los envios y falla por un motivo que no tiene
+         * nada que ver con lo que esta probando.
+         */
+        List<Entrada> decisiones() {
+            List<Entrada> soloDecisiones = new ArrayList<>();
+            for (Entrada entrada : entradas) {
+                if (entrada.accion() != ModerationAction.SUBMITTED) {
+                    soloDecisiones.add(entrada);
+                }
+            }
+            return List.copyOf(soloDecisiones);
+        }
+
+        boolean seLeyo() {
+            return leido;
+        }
+
+        void olvidarQueSeLeyo() {
+            leido = false;
         }
     }
 

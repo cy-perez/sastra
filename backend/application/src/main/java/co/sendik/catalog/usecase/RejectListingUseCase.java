@@ -44,15 +44,18 @@ public class RejectListingUseCase {
             throw new SelfModerationForbiddenException();
         }
 
-        Listing rechazada = publicaciones.guardar(
-                actual.rechazar(comando.moderador(), comando.motivo(), comando.nota(), Instant.now(reloj)));
+        // Un solo instante para la publicacion y para el rastro, como al aprobar.
+        Instant ahora = Instant.now(reloj);
+        Listing rechazada =
+                publicaciones.guardar(actual.rechazar(comando.moderador(), comando.motivo(), comando.nota(), ahora));
 
         bitacora.registrar(
                 rechazada.id(),
                 comando.moderador(),
                 ModerationAction.REJECTED,
                 comando.motivo().name(),
-                comando.nota());
+                comando.nota(),
+                ahora);
         avisos.publicacionRechazada(rechazada, comando.nota());
         return rechazada;
     }

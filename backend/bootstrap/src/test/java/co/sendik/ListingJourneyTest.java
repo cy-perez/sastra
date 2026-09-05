@@ -131,8 +131,10 @@ class ListingJourneyTest {
                 .doesNotContain("version")
                 .doesNotContain("status");
 
-        // Y queda el rastro de quien decidio (criterio 21).
-        assertThat(bitacoraDe(id)).containsExactly("APPROVED");
+        // Y queda el rastro entero (criterio 21, y el criterio 4 de HU-013): el envio y la
+        // decision, en ese orden. Desde HU-013 el envio tambien se anota, porque el rastro
+        // cuenta lo que le paso a la publicacion y no solo lo que hizo Sendik.
+        assertThat(bitacoraDe(id)).containsExactly("SUBMITTED", "APPROVED");
     }
 
     /**
@@ -191,7 +193,10 @@ class ListingJourneyTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("PUBLISHED"));
 
-        assertThat(bitacoraDe(id)).containsExactly("REJECTED", "APPROVED");
+        // Las dos vueltas enteras, que es el criterio 4 de HU-013 por la puerta por la que
+        // entra todo el mundo: envio, rechazo, reenvio y aprobacion. Sin las dos entradas de
+        // envio, el rastro contaria dos decisiones sin decir nunca como llego a ellas.
+        assertThat(bitacoraDe(id)).containsExactly("SUBMITTED", "REJECTED", "SUBMITTED", "APPROVED");
     }
 
     /**

@@ -223,7 +223,7 @@ class CasosDeUsoDelCatalogoTest {
             Listing aprobada = aprobar().execute(new ApproveListingCommand(moderador, enRevision.id()));
 
             assertThat(aprobada.status()).isEqualTo(ListingStatus.PUBLISHED);
-            assertThat(bitacora.entradas()).singleElement().satisfies(entrada -> {
+            assertThat(bitacora.decisiones()).singleElement().satisfies(entrada -> {
                 assertThat(entrada.accion()).isEqualTo(ModerationAction.APPROVED);
                 assertThat(entrada.actor()).isEqualTo(moderador);
             });
@@ -244,7 +244,7 @@ class CasosDeUsoDelCatalogoTest {
 
             assertThat(publicaciones.buscar(enRevision.id()).orElseThrow().status())
                     .isEqualTo(ListingStatus.PENDING_REVIEW);
-            assertThat(bitacora.entradas()).isEmpty();
+            assertThat(bitacora.decisiones()).isEmpty();
             assertThat(avisos.enviados()).isEmpty();
         }
 
@@ -271,7 +271,7 @@ class CasosDeUsoDelCatalogoTest {
                             moderador, enRevision.id(), ListingRejectionReason.PHOTOS_UNUSABLE, "Frontal borrosa"));
 
             assertThat(rechazada.status()).isEqualTo(ListingStatus.REJECTED);
-            assertThat(bitacora.entradas())
+            assertThat(bitacora.decisiones())
                     .singleElement()
                     .satisfies(entrada -> assertThat(entrada.motivo()).isEqualTo("PHOTOS_UNUSABLE"));
             // La nota viaja al vendedor: es el dato del criterio 22.
@@ -291,9 +291,9 @@ class CasosDeUsoDelCatalogoTest {
                             moderador, publicada.id(), ListingRejectionReason.SUSPECTED_COUNTERFEIT, null));
 
             assertThat(retirada.status()).isEqualTo(ListingStatus.ARCHIVED);
-            // Dos entradas y no una: la aprobacion previa tambien dejo rastro, y ese
+            // Dos decisiones y no una: la aprobacion previa tambien dejo rastro, y ese
             // rastro no se sobrescribe. Es justo lo que RN-045 exige.
-            assertThat(bitacora.entradas()).hasSize(2).last().satisfies(entrada -> {
+            assertThat(bitacora.decisiones()).hasSize(2).last().satisfies(entrada -> {
                 assertThat(entrada.accion()).isEqualTo(ModerationAction.ARCHIVED);
                 assertThat(entrada.motivo()).isEqualTo("SUSPECTED_COUNTERFEIT");
             });
@@ -723,13 +723,13 @@ class CasosDeUsoDelCatalogoTest {
     }
 
     private SubmitListingForReviewUseCase enviar() {
-        return new SubmitListingForReviewUseCase(publicaciones, arbol, elegibilidad, RELOJ);
+        return new SubmitListingForReviewUseCase(publicaciones, arbol, elegibilidad, bitacora, RELOJ);
     }
 
     /** Para escalonar la cola: el reloj del proyecto es fijo y todas caerian a la vez. */
     private SubmitListingForReviewUseCase enviarEn(Instant momento) {
         return new SubmitListingForReviewUseCase(
-                publicaciones, arbol, elegibilidad, Clock.fixed(momento, ZoneOffset.UTC));
+                publicaciones, arbol, elegibilidad, bitacora, Clock.fixed(momento, ZoneOffset.UTC));
     }
 
     private ApproveListingUseCase aprobar() {
@@ -745,7 +745,7 @@ class CasosDeUsoDelCatalogoTest {
     }
 
     private UpdateListingContentUseCase editar() {
-        return new UpdateListingContentUseCase(publicaciones, arbol, elegibilidad, RELOJ);
+        return new UpdateListingContentUseCase(publicaciones, arbol, elegibilidad, bitacora, RELOJ);
     }
 
     private ChangeListingPriceUseCase cambiarPrecio() {

@@ -37,10 +37,16 @@ que cada envío moría con un 403 del proveedor:
 ERROR c.s.identity.client.ResendMailSender : El proveedor rechazo un correo transaccional con estado 403
 ```
 
-Ese mismo día se añadieron DKIM (`resend._domainkey.sendik.co`) y SPF
-(`send.sendik.co`), y Resend dejó de rechazar. **El correo sigue sin llegar al
-buzón**, ni a la bandeja ni a no deseados; falta revisar el panel de Resend, que es
-donde se ve el estado de cada envío.
+Ese mismo día se añadieron los tres —MX y SPF en `send.sendik.co`, DKIM en
+`resend._domainkey.sendik.co`— y los tres resuelven bien: el `include` de GoDaddy
+lleva a `amazonses.com`, que es lo que Resend usa por debajo. **Aun así el envío
+sigue muriendo con 403** y Resend da el dominio por *parcialmente verificado*.
+
+La sospecha es el SPF: lo publicado es `include:dc-fd741b8612._spfm.send.sendik.co`,
+la macro de aplanado de GoDaddy, y un verificador que compara cadenas no sigue esa
+indirección aunque resuelva al valor correcto. Sustituirlo por el literal
+`v=spf1 include:amazonses.com ~all` y volver a pulsar *Verify* es lo siguiente que
+hay que probar. La pantalla *Domains* de Resend lo dice registro a registro.
 
 **Nadie lo había visto porque nadie se había registrado nunca en `dev`.** El perfil
 `local` usa `MAIL_PROVIDER=console` y las suites leen el enlace del registro de la
@@ -51,6 +57,14 @@ Lo que queda inservible mientras siga así: verificar un correo, recuperar una
 contraseña, y todos los avisos de moderación de HU-002 y HU-007. Es decir, **no se
 puede lanzar**. Va con los textos legales en la lista de lo que bloquea producción,
 y a diferencia de aquellos esto sí es trabajo técnico.
+
+**Un fallo transitorio ya no pierde el correo.** Ese mismo día se perdió uno por un
+corte de red de un segundo: `enviar()` registraba el fallo y seguía, sin reintentar,
+y quien esperaba el enlace no tenía salida porque el reenvío exige el token caducado
+que viajaba en ese correo. Desde entonces se reintenta tres veces lo transitorio
+—cortes de red y 5xx— y **nunca un 4xx**, que es configuración. Lo que sigue sin
+haber es un buzón de reintentos: si los tres fallan, el correo se pierde y el
+registro lo dice.
 
 | Pieza | Dónde | Costo en `dev` |
 |---|---|---|

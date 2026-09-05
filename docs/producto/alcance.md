@@ -240,10 +240,15 @@ ERROR c.s.identity.client.ResendMailSender : El proveedor rechazo un correo tran
 
 El dominio `sendik.co` se contrató el 26 de agosto y **nunca se le añadieron los
 registros que Resend exige** para verificar un remitente. Se añadieron ese mismo 5
-de septiembre —DKIM en `resend._domainkey.sendik.co` y SPF en `send.sendik.co`— y
-con eso Resend dejó de rechazar, pero **el correo sigue sin llegar al buzón**, ni a
-la bandeja ni a no deseados. Falta mirar el panel de Resend, que es donde se ve el
-estado de cada envío.
+de septiembre —MX y SPF en `send.sendik.co`, DKIM en `resend._domainkey.sendik.co`—
+y todos resuelven bien; el `include` de GoDaddy lleva a `amazonses.com`, que es lo
+que Resend usa por debajo. **Aun así el envío sigue muriendo con 403** y el dominio
+figura en Resend como *parcialmente verificado*.
+
+La sospecha, para quien lo retome: el SPF publicado es
+`include:dc-fd741b8612._spfm.send.sendik.co`, la macro de aplanado de GoDaddy, y un
+verificador que compara cadenas no sigue esa indirección aunque resuelva al valor
+correcto. La pantalla *Domains* de Resend lo dice registro a registro.
 
 Sin correo, el ciclo se corta en el primer paso: las cuentas se crean y hasta
 inician sesión, pero con `emailVerified` en falso y sin rol. El moderador no recibe
